@@ -34,7 +34,7 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 // ─── Nav button metadata ────────────────────────────────────────────────────
 const NAV_ITEMS = [
   { key: 'WorldMap',  icon: '🗺️', label: 'World Map',  sub: 'Explore zones' },
-  { key: 'Forge',     icon: '⚒️', label: 'Forge',      sub: 'Craft gear' },
+  { key: 'Shop',      icon: '🛒', label: 'Shop',       sub: 'Buy & craft' },
   { key: 'SkillTree', icon: '🌟', label: 'Skills',     sub: 'Spend SP' },
   { key: 'Inventory', icon: '🎒', label: 'Inventory',  sub: 'Manage items' },
 ];

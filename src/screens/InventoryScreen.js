@@ -1,25 +1,20 @@
 /**
  * =============================================================================
- * InventoryScreen.js — Equipment, Stats & Shop
+ * InventoryScreen.js — Equipment, Stats & Pack Bag
  * =============================================================================
  *
- * This screen lets the player manage Mochi's loadout and purchase supplies:
+ * This screen lets the player manage Mochi's equipped loadout, view combat stats,
+ * open mystery chests from the bag, and equip crafted gear.
  *
- *   Tab 1: GEAR & STATS
- *     - Equipped gear slots (Weapon, Armor, Trinket)
- *     - Detailed combat stats grid
- *     - Active set bonuses
- *     - Owned gear list (equip crafted items)
- *
- *   Tab 2: BAG & SHOP
- *     - Gold balance card
- *     - Consumable items bag
- *     - Camp Apothecary (buy potions and vials)
- *
- * =============================================================================
+ * It is structured as a single clean, minimalistic view:
+ *   1. Equipped Gear slots (Weapon, Armor, Trinket)
+ *   2. Detailed combat stats grid
+ *   3. Active set bonuses (if any)
+ *   4. Pack Bag (Consumable items and lootbox opener)
+ *   5. Owned Gear (Equip weapons/armors/trinkets)
  */
 
-import React, { useState, useMemo } from 'react';
+import React, { useMemo } from 'react';
 import {
   View,
   Text,
@@ -34,13 +29,13 @@ import { useNavigation } from '@react-navigation/native';
 
 import theme from '../constants/theme';
 import { useGame } from '../state/gameState';
-import { GEAR, CONSUMABLES } from '../data/gear';
+import { GEAR, CONSUMABLES, MATERIALS } from '../data/gear';
 import {
   calculateEffectiveStats,
   getActiveSetBonuses,
 } from '../logic/progressionEngine';
 
-// ─── Slot metadata ──────────────────────────────────────────────────────────
+// Slot metadata
 const SLOT_CONFIG = [
   { key: 'weapon',  label: 'Weapon',  emoji: '⚔️' },
   { key: 'armor',   label: 'Armor',   emoji: '🛡️' },
@@ -52,6 +47,7 @@ const CONSUMABLE_ICONS = {
   mega_potion: '💊',
   antidote: '🌿',
   smoke_vial: '💨',
+  mystery_chest: '🎁',
 };
 
 // ============================================================================
@@ -62,16 +58,14 @@ export default function InventoryScreen() {
   const { state, dispatch } = useGame();
   const { hero } = state;
 
-  const [activeTab, setActiveTab] = useState('gear'); // 'gear' | 'shop'
-
-  // -- Derived data ----------------------------------------------------------
+  // -- Derived data --
   const effectiveStats = calculateEffectiveStats(hero);
   const activeSets     = getActiveSetBonuses(hero.gear);
 
-  // ── Helper: format percentage display ─────────────────────────────────────
+  // ── Helper: format percentage display ──
   const pct = (value) => `${Math.round((value || 0) * 100)}%`;
 
-  // ── Helper: summarize stats for display ───────────────────────────────────
+  // ── Helper: summarize stats for display ──
   const statSummary = (gearDef) => {
     if (!gearDef?.stats) return '';
     const parts = [];
@@ -90,16 +84,7 @@ export default function InventoryScreen() {
     return parts.join('  ');
   };
 
-  // ── Consumables inventory counts ──────────────────────────────────────────
-  const consumableInventory = useMemo(() => {
-    const counts = {};
-    (hero.inventory?.consumables || []).forEach(c => {
-      counts[c.id] = c.quantity;
-    });
-    return counts;
-  }, [hero.inventory?.consumables]);
-
-  // ── Equip handler ────────────────────────────────────────────────────────
+  // ── Equip handler ──
   const handleEquip = (gearItem) => {
     dispatch({
       type: 'EQUIP_GEAR',
@@ -107,16 +92,71 @@ export default function InventoryScreen() {
     });
   };
 
-  // ── Purchase handler ──────────────────────────────────────────────────────
-  const handleBuy = (consumable) => {
-    if (hero.gold < consumable.cost) {
-      Alert.alert('Insufficent Gold', "You don't have enough gold for this purchase.");
-      return;
+  // ── Open Lootbox (Chest) handler ──
+  const handleOpenChest = () => {
+    // 1. Roll Gold: 15g to 45g
+    const rolledGold = Math.floor(Math.random() * 31) + 15;
+
+    // 2. Roll 3 Crystals: Shard (60%), Small (25%), Big (12%), Core (3%)
+    const rolledMaterials = {};
+    const crystalFamilies = ['black', 'green', 'yellow'];
+    
+    const rollTier = () => {
+      const roll = Math.random() * 100;
+      if (roll < 60) return 'shard';
+      if (roll < 85) return 'crystal_small';
+      if (roll < 97) return 'crystal_big';
+      return 'core';
+    };
+
+    for (let i = 0; i < 3; i++) {
+      const family = crystalFamilies[Math.floor(Math.random() * crystalFamilies.length)];
+      const tier = rollTier();
+      
+      let key = '';
+      if (tier === 'shard') {
+        key = `${family}_shard`;
+      } else if (tier === 'core') {
+        key = `${family}_crystal_core`;
+      } else {
+        key = `${family}_${tier}`;
+      }
+
+      rolledMaterials[key] = (rolledMaterials[key] || 0) + 1;
     }
-    dispatch({
-      type: 'BUY_CONSUMABLE',
-      payload: { consumableId: consumable.id, price: consumable.cost },
+
+    // Format display list
+    const rewardLines = [];
+    rewardLines.push(`💰 ${rolledGold} gold`);
+    
+    Object.entries(rolledMaterials).forEach(([itemId, qty]) => {
+      const name = MATERIALS[itemId]?.name || itemId;
+      let emoji = '💎';
+      if (itemId.startsWith('black')) emoji = '🖤';
+      if (itemId.startsWith('green')) emoji = '💚';
+      if (itemId.startsWith('yellow')) emoji = '💛';
+
+      rewardLines.push(`${emoji} ${name} ×${qty}`);
     });
+
+    Alert.alert(
+      '🎁 Chest Opened!',
+      `You obtained:\n\n${rewardLines.join('\n')}`,
+      [
+        {
+          text: 'Awesome',
+          onPress: () => {
+            dispatch({
+              type: 'OPEN_LOOTBOX',
+              payload: {
+                gold: rolledGold,
+                materials: rolledMaterials,
+              },
+            });
+          },
+        },
+      ]
+    );
   };
 
   // =========================================================================
@@ -133,230 +173,151 @@ export default function InventoryScreen() {
         <View style={styles.backBtnPlaceholder} />
       </View>
 
-      {/* ── Segmented Tab Switcher ──────────────────────────────────── */}
-      <View style={styles.tabContainer}>
-        <TouchableOpacity
-          style={[styles.tabButton, activeTab === 'gear' && styles.tabButtonActive]}
-          activeOpacity={0.8}
-          onPress={() => setActiveTab('gear')}
-        >
-          <Text style={[styles.tabButtonText, activeTab === 'gear' && styles.tabButtonTextActive]}>
-            ⚔️ Gear & Stats
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.tabButton, activeTab === 'shop' && styles.tabButtonActive]}
-          activeOpacity={0.8}
-          onPress={() => setActiveTab('shop')}
-        >
-          <Text style={[styles.tabButtonText, activeTab === 'shop' && styles.tabButtonTextActive]}>
-            🧪 Shop & Bag
-          </Text>
-        </TouchableOpacity>
-      </View>
-
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* ═══════════════════════════════════════════════════════════════════
-            TAB 1: GEAR & STATS
-            ═══════════════════════════════════════════════════════════════════ */}
-        {activeTab === 'gear' && (
-          <View style={styles.tabContent}>
-            {/* Equipped Slots */}
-            <View style={styles.slotsRow}>
-              {SLOT_CONFIG.map(({ key, label, emoji }) => {
-                const gearId  = hero.gear[key];
-                const gearDef = gearId ? GEAR[gearId] : null;
-                const isEmpty = !gearDef;
+        {/* 1. Equipped Slots */}
+        <View style={styles.slotsRow}>
+          {SLOT_CONFIG.map(({ key, label, emoji }) => {
+            const gearId  = hero.gear[key];
+            const gearDef = gearId ? GEAR[gearId] : null;
+            const isEmpty = !gearDef;
 
+            return (
+              <View
+                key={key}
+                style={[
+                  styles.slotCard,
+                  !isEmpty && styles.slotCardEquipped,
+                ]}
+              >
+                <Text style={styles.slotEmoji}>{emoji}</Text>
+                <Text style={styles.slotLabel}>{label}</Text>
+                {isEmpty ? (
+                  <Text style={styles.slotEmpty}>Empty</Text>
+                ) : (
+                  <>
+                    <Text style={styles.slotName} numberOfLines={1}>{gearDef.name}</Text>
+                    <Text style={styles.slotStats} numberOfLines={2}>{statSummary(gearDef)}</Text>
+                  </>
+                )}
+              </View>
+            );
+          })}
+        </View>
+
+        {/* 2. Combat Stats Grid */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>📊 Combat Stats</Text>
+          <View style={styles.statsGrid}>
+            <StatBadge label="ATK"    value={effectiveStats.attack} />
+            <StatBadge label="DEF"    value={effectiveStats.defence} />
+            <StatBadge label="HP"     value={effectiveStats.maxHp} />
+            <StatBadge label="CRIT"   value={pct(effectiveStats.critChance)} />
+            <StatBadge label="DODGE"  value={pct(effectiveStats.dodge)} />
+          </View>
+        </View>
+
+        {/* 3. Active Set Bonuses (conditional) */}
+        {activeSets.length > 0 && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>✨ Set Bonuses</Text>
+            {activeSets.map((set) => (
+              <View key={set.name} style={styles.setBonusCard}>
+                <Text style={styles.setBonusName}>🔗 {set.name}</Text>
+                <Text style={styles.setBonusDesc}>{set.bonus}</Text>
+              </View>
+            ))}
+          </View>
+        )}
+
+        {/* 4. Pack Bag (Consumables) */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>🎒 Pack Bag</Text>
+          {hero.inventory.consumables.length === 0 || !hero.inventory.consumables.some(c => c.quantity > 0) ? (
+            <View style={styles.emptyContainer}>
+              <Text style={styles.emptyText}>
+                No consumables in your bag. Visit the Town Shop to buy items!
+              </Text>
+            </View>
+          ) : (
+            hero.inventory.consumables
+              .filter(c => c.quantity > 0)
+              .map((entry) => {
+                const def = CONSUMABLES.find((c) => c.id === entry.id);
+                const icon = CONSUMABLE_ICONS[entry.id] || '🧪';
                 return (
-                  <View
-                    key={key}
-                    style={[
-                      styles.slotCard,
-                      !isEmpty && styles.slotCardEquipped,
-                    ]}
-                  >
-                    <Text style={styles.slotEmoji}>{emoji}</Text>
-                    <Text style={styles.slotLabel}>{label}</Text>
-                    {isEmpty ? (
-                      <Text style={styles.slotEmpty}>Empty</Text>
+                  <View key={entry.id} style={styles.consumableRow}>
+                    <Text style={styles.consumableIcon}>{icon}</Text>
+                    <View style={styles.consumableInfo}>
+                      <Text style={styles.consumableName}>
+                        {def?.name || entry.id}
+                      </Text>
+                      <Text style={styles.consumableDesc} numberOfLines={1}>
+                        {def?.description || ''}
+                      </Text>
+                    </View>
+                    {entry.id === 'mystery_chest' ? (
+                      <TouchableOpacity
+                        style={styles.openChestBtn}
+                        activeOpacity={0.7}
+                        onPress={() => handleOpenChest()}
+                      >
+                        <Text style={styles.openChestBtnText}>Open (×{entry.quantity})</Text>
+                      </TouchableOpacity>
                     ) : (
-                      <>
-                        <Text style={styles.slotName} numberOfLines={1}>{gearDef.name}</Text>
-                        <Text style={styles.slotStats} numberOfLines={2}>{statSummary(gearDef)}</Text>
-                      </>
+                      <Text style={styles.consumableQty}>×{entry.quantity}</Text>
                     )}
                   </View>
                 );
-              })}
-            </View>
+              })
+          )}
+        </View>
 
-            {/* Combat Stats */}
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>📊 Combat Stats</Text>
-              <View style={styles.statsGrid}>
-                <StatBadge label="ATK"    value={effectiveStats.attack} />
-                <StatBadge label="DEF"    value={effectiveStats.defence} />
-                <StatBadge label="HP"     value={effectiveStats.maxHp} />
-                <StatBadge label="CRIT"   value={pct(effectiveStats.critChance)} />
-                <StatBadge label="DODGE"  value={pct(effectiveStats.dodge)} />
-              </View>
+        {/* 5. Owned Gear */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>⚒️ Owned Gear</Text>
+          {hero.inventory.craftedGear.length === 0 ? (
+            <View style={styles.emptyContainer}>
+              <Text style={styles.emptyText}>
+                No gear forged yet. Visit the Town Shop to craft equipment!
+              </Text>
             </View>
+          ) : (
+            hero.inventory.craftedGear.map((gearId) => {
+              const gearDef = GEAR[gearId];
+              if (!gearDef) return null;
 
-            {/* Active Set Bonuses */}
-            {activeSets.length > 0 && (
-              <View style={styles.section}>
-                <Text style={styles.sectionTitle}>✨ Set Bonuses</Text>
-                {activeSets.map((set) => (
-                  <View key={set.name} style={styles.setBonusCard}>
-                    <Text style={styles.setBonusName}>🔗 {set.name}</Text>
-                    <Text style={styles.setBonusDesc}>{set.bonus}</Text>
+              const isEquipped = hero.gear[gearDef.type] === gearId;
+
+              return (
+                <View key={gearId} style={styles.gearRow}>
+                  <View style={styles.gearInfo}>
+                    <Text style={styles.gearName}>{gearDef.name}</Text>
+                    <Text style={styles.gearType}>
+                      {gearDef.type.charAt(0).toUpperCase() + gearDef.type.slice(1)}
+                    </Text>
+                    <Text style={styles.gearStats}>{statSummary(gearDef)}</Text>
                   </View>
-                ))}
-              </View>
-            )}
 
-            {/* Owned Gear */}
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>⚒️ Owned Gear</Text>
-              {hero.inventory.craftedGear.length === 0 ? (
-                <View style={styles.emptyContainer}>
-                  <Text style={styles.emptyText}>
-                    No gear crafted yet. Visit the Forge to craft equipment!
-                  </Text>
-                </View>
-              ) : (
-                hero.inventory.craftedGear.map((gearId) => {
-                  const gearDef = GEAR[gearId];
-                  if (!gearDef) return null;
-
-                  const isEquipped = hero.gear[gearDef.type] === gearId;
-
-                  return (
-                    <View key={gearId} style={styles.gearRow}>
-                      <View style={styles.gearInfo}>
-                        <Text style={styles.gearName}>{gearDef.name}</Text>
-                        <Text style={styles.gearType}>
-                          {gearDef.type.charAt(0).toUpperCase() + gearDef.type.slice(1)}
-                        </Text>
-                        <Text style={styles.gearStats}>{statSummary(gearDef)}</Text>
-                      </View>
-
-                      {isEquipped ? (
-                        <View style={styles.equippedBadge}>
-                          <Text style={styles.equippedBadgeText}>Equipped</Text>
-                        </View>
-                      ) : (
-                        <TouchableOpacity
-                          style={styles.equipBtn}
-                          onPress={() => handleEquip(gearDef)}
-                        >
-                          <Text style={styles.equipBtnText}>Equip</Text>
-                        </TouchableOpacity>
-                      )}
+                  {isEquipped ? (
+                    <View style={styles.equippedBadge}>
+                      <Text style={styles.equippedBadgeText}>Equipped</Text>
                     </View>
-                  );
-                })
-              )}
-            </View>
-          </View>
-        )}
-
-        {/* ═══════════════════════════════════════════════════════════════════
-            TAB 2: SHOP & BAG
-            ═══════════════════════════════════════════════════════════════════ */}
-        {activeTab === 'shop' && (
-          <View style={styles.tabContent}>
-            {/* Gold balance banner */}
-            <View style={styles.goldBanner}>
-              <View style={styles.goldBannerLeft}>
-                <Text style={styles.goldBannerTitle}>Apothecary Supplies</Text>
-                <Text style={styles.goldBannerSub}>Stock up before diving into dungeons</Text>
-              </View>
-              <View style={styles.goldBadge}>
-                <Text style={styles.goldBadgeIcon}>💰</Text>
-                <Text style={styles.goldBadgeText}>{hero.gold}g</Text>
-              </View>
-            </View>
-
-            {/* Owned consumables */}
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>🎒 Pack Bag</Text>
-              {hero.inventory.consumables.length === 0 || !hero.inventory.consumables.some(c => c.quantity > 0) ? (
-                <View style={styles.emptyContainer}>
-                  <Text style={styles.emptyText}>
-                    No consumables in your bag. Purchase some below!
-                  </Text>
+                  ) : (
+                    <TouchableOpacity
+                      style={styles.equipBtn}
+                      onPress={() => handleEquip(gearDef)}
+                    >
+                      <Text style={styles.equipBtnText}>Equip</Text>
+                    </TouchableOpacity>
+                  )}
                 </View>
-              ) : (
-                hero.inventory.consumables
-                  .filter(c => c.quantity > 0)
-                  .map((entry) => {
-                    const def = CONSUMABLES.find((c) => c.id === entry.id);
-                    const icon = CONSUMABLE_ICONS[entry.id] || '🧪';
-                    return (
-                      <View key={entry.id} style={styles.consumableRow}>
-                        <Text style={styles.consumableIcon}>{icon}</Text>
-                        <View style={styles.consumableInfo}>
-                          <Text style={styles.consumableName}>
-                            {def?.name || entry.id}
-                          </Text>
-                          <Text style={styles.consumableDesc} numberOfLines={1}>
-                            {def?.description || ''}
-                          </Text>
-                        </View>
-                        <Text style={styles.consumableQty}>×{entry.quantity}</Text>
-                      </View>
-                    );
-                  })
-              )}
-            </View>
-
-            {/* Shop items */}
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>🧪 Camp Shop</Text>
-              <View style={styles.shopGrid}>
-                {CONSUMABLES.map((item) => {
-                  const owned = consumableInventory[item.id] || 0;
-                  const canAfford = hero.gold >= item.cost;
-                  const icon = CONSUMABLE_ICONS[item.id] || '🧪';
-
-                  return (
-                    <View key={item.id} style={styles.shopRow}>
-                      <View style={styles.shopRowLeft}>
-                        <Text style={styles.shopRowIcon}>{icon}</Text>
-                        <View style={styles.shopRowInfo}>
-                          <View style={styles.shopNameRow}>
-                            <Text style={styles.shopRowName}>{item.name}</Text>
-                            {owned > 0 && (
-                              <View style={styles.shopOwnedPill}>
-                                <Text style={styles.shopOwnedPillText}>×{owned}</Text>
-                              </View>
-                            )}
-                          </View>
-                          <Text style={styles.shopRowDesc}>{item.description}</Text>
-                        </View>
-                      </View>
-                      <TouchableOpacity
-                        style={[styles.buyBtn, !canAfford && styles.buyBtnDisabled]}
-                        activeOpacity={0.7}
-                        disabled={!canAfford}
-                        onPress={() => handleBuy(item)}
-                      >
-                        <Text style={[styles.buyBtnText, !canAfford && styles.buyBtnTextDisabled]}>
-                          💰 {item.cost}g
-                        </Text>
-                      </TouchableOpacity>
-                    </View>
-                  );
-                })}
-              </View>
-            </View>
-          </View>
-        )}
+              );
+            })
+          )}
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -385,6 +346,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: 16,
+    paddingTop: 16,
     paddingBottom: 60,
   },
 
@@ -417,42 +379,6 @@ const styles = StyleSheet.create({
   },
   backBtnPlaceholder: {
     width: 60,
-  },
-
-  /* ═══ Tab Switcher ═════════════════════════════════════════════════════════ */
-  tabContainer: {
-    flexDirection: 'row',
-    backgroundColor: 'rgba(255, 255, 255, 0.02)',
-    borderRadius: 12,
-    padding: 4,
-    marginHorizontal: 16,
-    marginTop: 16,
-    marginBottom: 8,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.05)',
-  },
-  tabButton: {
-    flex: 1,
-    paddingVertical: 10,
-    alignItems: 'center',
-    borderRadius: 9,
-  },
-  tabButtonActive: {
-    backgroundColor: 'rgba(212, 167, 84, 0.15)',
-    borderWidth: 1,
-    borderColor: 'rgba(212, 167, 84, 0.25)',
-  },
-  tabButtonText: {
-    fontFamily: 'System',
-    fontSize: 13,
-    fontWeight: 'bold',
-    color: 'rgba(255, 255, 255, 0.4)',
-  },
-  tabButtonTextActive: {
-    color: '#D4A754',
-  },
-  tabContent: {
-    marginTop: 12,
   },
 
   /* ═══ Gear slots ═══════════════════════════════════════════════════════════ */
@@ -646,55 +572,6 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
 
-  /* ═══ Tab 2: Gold Banner ═══════════════════════════════════════════════════ */
-  goldBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: 'rgba(255, 255, 255, 0.02)',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.05)',
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 20,
-  },
-  goldBannerLeft: {
-    flex: 1,
-  },
-  goldBannerTitle: {
-    fontFamily: 'System',
-    fontSize: 15,
-    fontWeight: 'bold',
-    color: '#FFF5E6',
-  },
-  goldBannerSub: {
-    fontFamily: 'System',
-    fontSize: 11,
-    color: 'rgba(255, 255, 255, 0.35)',
-    marginTop: 2,
-  },
-  goldBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: 'rgba(255, 215, 0, 0.08)',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 215, 0, 0.2)',
-    borderRadius: 14,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    marginLeft: 12,
-  },
-  goldBadgeIcon: {
-    fontSize: 14,
-  },
-  goldBadgeText: {
-    fontFamily: 'System',
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: '#FFD700',
-  },
-
   /* ═══ Consumable Rows ══════════════════════════════════════════════════════ */
   consumableRow: {
     flexDirection: 'row',
@@ -732,89 +609,20 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginLeft: 12,
   },
-
-  /* ═══ Shop Rows ════════════════════════════════════════════════════════════ */
-  shopGrid: {
-    gap: 8,
-  },
-  shopRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: 'rgba(255, 255, 255, 0.02)',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.05)',
-    borderRadius: 14,
-    padding: 14,
-  },
-  shopRowLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-    marginRight: 12,
-  },
-  shopRowIcon: {
-    fontSize: 24,
-    marginRight: 12,
-  },
-  shopRowInfo: {
-    flex: 1,
-  },
-  shopNameRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  shopRowName: {
-    fontFamily: 'System',
-    fontSize: 14,
-    color: '#FFF5E6',
-    fontWeight: 'bold',
-  },
-  shopOwnedPill: {
-    backgroundColor: 'rgba(212, 167, 84, 0.1)',
-    borderWidth: 1,
-    borderColor: 'rgba(212, 167, 84, 0.25)',
-    borderRadius: 6,
-    paddingHorizontal: 5,
-    paddingVertical: 1,
-  },
-  shopOwnedPillText: {
-    fontFamily: 'System',
-    fontSize: 9,
-    fontWeight: 'bold',
-    color: '#D4A754',
-  },
-  shopRowDesc: {
-    fontFamily: 'System',
-    fontSize: 11,
-    color: 'rgba(255, 255, 255, 0.35)',
-    marginTop: 3,
-    lineHeight: 14,
-  },
-  buyBtn: {
+  openChestBtn: {
     backgroundColor: 'rgba(212, 167, 84, 0.15)',
     borderWidth: 1,
     borderColor: 'rgba(212, 167, 84, 0.25)',
-    borderRadius: 10,
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-    minWidth: 80,
+    borderRadius: 8,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    marginLeft: 12,
   },
-  buyBtnDisabled: {
-    backgroundColor: 'rgba(255, 255, 255, 0.01)',
-    borderColor: 'rgba(255, 255, 255, 0.04)',
-  },
-  buyBtnText: {
+  openChestBtnText: {
     fontFamily: 'System',
     fontSize: 12,
     fontWeight: 'bold',
     color: '#D4A754',
-  },
-  buyBtnTextDisabled: {
-    color: 'rgba(255, 255, 255, 0.15)',
   },
 
   /* ═══ Empty / States ═══════════════════════════════════════════════════════ */

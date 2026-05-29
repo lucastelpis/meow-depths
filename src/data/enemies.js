@@ -3,22 +3,10 @@
  *
  * Every creature the player can encounter across the three dungeon zones.
  * Bosses carry `isBoss: true` and define `phaseChanges` for mid-fight events.
- *
- * Shape reference:
- *   id            – unique key (matches the ENEMIES map key)
- *   name          – display name
- *   hp            – base hit points
- *   attack        – base attack value
- *   zone          – which dungeon zone this enemy appears in (1-3)
- *   isBoss        – true for zone bosses
- *   isElite       – true for elite-tier encounters (reserved for future use)
- *   drops         – array of { itemId, chance } loot entries
- *   moves         – array of { name, damage, effect?, effectChance? }
- *   phaseChanges  – (bosses only) array of triggers that fire during the fight
  */
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Zone 1 — The Soggy Sewers
+// Zone 1 — The Soggy Sewers (Black Crystals)
 // ─────────────────────────────────────────────────────────────────────────────
 
 const sewer_rat = {
@@ -29,7 +17,9 @@ const sewer_rat = {
   zone: 1,
   isBoss: false,
   isElite: false,
-  drops: [{ itemId: 'rat_tail', chance: 0.6 }],
+  drops: [
+    { itemId: 'black_shard', chance: 0.6 },
+  ],
   moves: [
     { name: 'Gnaw', damage: 6 },
   ],
@@ -44,7 +34,10 @@ const slimeling = {
   zone: 1,
   isBoss: false,
   isElite: false,
-  drops: [{ itemId: 'slime_glob', chance: 0.6 }],
+  drops: [
+    { itemId: 'black_shard', chance: 0.5 },
+    { itemId: 'black_crystal_small', chance: 0.2 },
+  ],
   moves: [
     { name: 'Ooze Splash', damage: 4, effect: 'bleed', effectChance: 0.3 },
   ],
@@ -59,7 +52,9 @@ const cockroach_knight = {
   zone: 1,
   isBoss: false,
   isElite: false,
-  drops: [{ itemId: 'carapace_chip', chance: 0.5 }],
+  drops: [
+    { itemId: 'black_crystal_small', chance: 0.5 },
+  ],
   moves: [
     { name: 'Shell Bash', damage: 8 },
   ],
@@ -74,14 +69,17 @@ const plague_frog = {
   zone: 1,
   isBoss: false,
   isElite: false,
-  drops: [{ itemId: 'frog_mucus', chance: 0.4 }],
+  drops: [
+    { itemId: 'black_shard', chance: 0.4 },
+    { itemId: 'black_crystal_small', chance: 0.3 },
+  ],
   moves: [
     { name: 'Toxic Spit', damage: 5, effect: 'bleed', effectChance: 0.4 },
   ],
   phaseChanges: [],
 };
 
-/** Boss — King Rat summons reinforcements at 50 % HP */
+/** Boss — King Rat summons reinforcements at 50% HP */
 const king_rat = {
   id: 'king_rat',
   name: 'King Rat',
@@ -90,7 +88,11 @@ const king_rat = {
   zone: 1,
   isBoss: true,
   isElite: false,
-  drops: [{ itemId: 'gnarlcrown_shard', chance: 1.0 }],
+  drops: [
+    { itemId: 'black_crystal_core', chance: 1.0 },
+    { itemId: 'black_crystal_big', chance: 0.5 },
+    { itemId: 'black_crystal_small', chance: 0.5 },
+  ],
   moves: [
     { name: 'Gnaw', damage: 12 },
   ],
@@ -105,7 +107,7 @@ const king_rat = {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Zone 2 — The Twisted Garden
+// Zone 2 — The Twisted Garden (Green Crystals)
 // ─────────────────────────────────────────────────────────────────────────────
 
 const thorn_sprite = {
@@ -116,7 +118,9 @@ const thorn_sprite = {
   zone: 2,
   isBoss: false,
   isElite: false,
-  drops: [{ itemId: 'thorn_shard', chance: 0.6 }],
+  drops: [
+    { itemId: 'green_shard', chance: 0.6 },
+  ],
   moves: [
     { name: 'Thorn Jab', damage: 14 },
   ],
@@ -131,7 +135,9 @@ const giant_beetle = {
   zone: 2,
   isBoss: false,
   isElite: false,
-  drops: [{ itemId: 'beetle_shell', chance: 0.6 }],
+  drops: [
+    { itemId: 'green_crystal_small', chance: 0.5 },
+  ],
   moves: [
     { name: 'Crush', damage: 12 },
   ],
@@ -146,7 +152,10 @@ const mushroom_puffer = {
   zone: 2,
   isBoss: false,
   isElite: false,
-  drops: [{ itemId: 'glowspore', chance: 0.5 }],
+  drops: [
+    { itemId: 'green_shard', chance: 0.5 },
+    { itemId: 'green_crystal_small', chance: 0.2 },
+  ],
   moves: [
     { name: 'Spore Cloud', damage: 10, effect: 'random_debuff', effectChance: 0.5 },
   ],
@@ -161,14 +170,17 @@ const vine_lurker = {
   zone: 2,
   isBoss: false,
   isElite: false,
-  drops: [{ itemId: 'strangling_vine', chance: 0.4 }],
+  drops: [
+    { itemId: 'green_shard', chance: 0.4 },
+    { itemId: 'green_crystal_small', chance: 0.3 },
+  ],
   moves: [
     { name: 'Constrict', damage: 16, effect: 'dodge_reduce', effectChance: 1.0 },
   ],
   phaseChanges: [],
 };
 
-/** Boss — Rootmother entangles the player at 60 % HP, forcing a skipped turn */
+/** Boss — Rootmother entangles the player at 60% HP, forcing a skipped turn */
 const rootmother = {
   id: 'rootmother',
   name: 'Rootmother',
@@ -177,7 +189,11 @@ const rootmother = {
   zone: 2,
   isBoss: true,
   isElite: false,
-  drops: [{ itemId: 'rootmother_heart', chance: 1.0 }],
+  drops: [
+    { itemId: 'green_crystal_core', chance: 1.0 },
+    { itemId: 'green_crystal_big', chance: 0.5 },
+    { itemId: 'green_crystal_small', chance: 0.5 },
+  ],
   moves: [
     { name: 'Root Slam', damage: 20 },
   ],
@@ -191,7 +207,7 @@ const rootmother = {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Zone 3 — The Sunken Docks
+// Zone 3 — The Sunken Docks (Yellow Crystals)
 // ─────────────────────────────────────────────────────────────────────────────
 
 const barnacle_crab = {
@@ -202,7 +218,9 @@ const barnacle_crab = {
   zone: 3,
   isBoss: false,
   isElite: false,
-  drops: [{ itemId: 'barnacle_core', chance: 0.6 }],
+  drops: [
+    { itemId: 'yellow_shard', chance: 0.6 },
+  ],
   moves: [
     { name: 'Claw Snap', damage: 18 },
   ],
@@ -217,7 +235,9 @@ const sea_witch_eel = {
   zone: 3,
   isBoss: false,
   isElite: false,
-  drops: [{ itemId: 'ghost_silk', chance: 0.5 }],
+  drops: [
+    { itemId: 'yellow_crystal_small', chance: 0.5 },
+  ],
   moves: [
     { name: 'Hex', damage: 22, effect: 'crit_reduce', effectChance: 1.0 },
   ],
@@ -232,7 +252,10 @@ const drowned_sailor = {
   zone: 3,
   isBoss: false,
   isElite: false,
-  drops: [{ itemId: 'spectral_coin', chance: 0.4 }],
+  drops: [
+    { itemId: 'yellow_shard', chance: 0.4 },
+    { itemId: 'yellow_crystal_small', chance: 0.3 },
+  ],
   moves: [
     { name: 'Haunt', damage: 20, effect: 'stun', effectChance: 0.3 },
   ],
@@ -248,7 +271,10 @@ const pufferfish_bomb = {
   zone: 3,
   isBoss: false,
   isElite: false,
-  drops: [{ itemId: 'toxin_sac', chance: 0.5 }],
+  drops: [
+    { itemId: 'yellow_shard', chance: 0.5 },
+    { itemId: 'yellow_crystal_small', chance: 0.2 },
+  ],
   moves: [
     { name: 'Explode', damage: 28, effect: 'self_destruct', effectChance: 1.0 },
   ],
@@ -267,7 +293,11 @@ const captain_moray = {
   zone: 3,
   isBoss: true,
   isElite: false,
-  drops: [{ itemId: 'morays_fang', chance: 1.0 }],
+  drops: [
+    { itemId: 'yellow_crystal_core', chance: 1.0 },
+    { itemId: 'yellow_crystal_big', chance: 0.5 },
+    { itemId: 'yellow_crystal_small', chance: 0.5 },
+  ],
   moves: [
     { name: 'Cutlass Sweep', damage: 25 },
   ],

@@ -22,7 +22,7 @@ import { GameProvider } from './src/state/gameState';
 import CampScreen from './src/screens/CampScreen';
 import WorldMapScreen from './src/screens/WorldMapScreen';
 import CombatScreen from './src/screens/CombatScreen';
-import ForgeScreen from './src/screens/ForgeScreen';
+import ShopScreen from './src/screens/ShopScreen';
 import SkillTreeScreen from './src/screens/SkillTreeScreen';
 import InventoryScreen from './src/screens/InventoryScreen';
 
@@ -73,8 +73,8 @@ export default function App() {
               }}
             />
 
-            {/* Forge — crafting gear */}
-            <Stack.Screen name="Forge" component={ForgeScreen} />
+            {/* Shop — purchasing supplies & equipment */}
+            <Stack.Screen name="Shop" component={ShopScreen} />
 
             {/* Skill Tree — spending skill points */}
             <Stack.Screen name="SkillTree" component={SkillTreeScreen} />

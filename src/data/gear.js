@@ -3,16 +3,6 @@
  *
  * Contains every craftable item the player can equip, the raw materials
  * needed to forge them, set-bonus definitions, and purchasable consumables.
- *
- * Shape reference (GEAR):
- *   id            – unique key
- *   name          – display name
- *   type          – 'weapon' | 'armor' | 'trinket'
- *   zone          – dungeon zone where the recipe is available (1-3)
- *   materials     – array of { itemId, qty }
- *   stats         – stat modifiers granted while equipped
- *   setId         – links to SET_BONUSES for 2-piece bonus tracking
- *   specialEffect – flavour text / tooltip for unique gear effects (or null)
  */
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -20,24 +10,23 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const MATERIALS = {
-  // Zone 1 — Soggy Sewers
-  rat_tail:         { name: 'Rat Tail' },
-  slime_glob:       { name: 'Slime Glob' },
-  carapace_chip:    { name: 'Carapace Chip' },
-  frog_mucus:       { name: 'Frog Mucus' },
-  gnarlcrown_shard: { name: 'Gnarlcrown Shard' },
-  // Zone 2 — Twisted Garden
-  thorn_shard:      { name: 'Thorn Shard' },
-  beetle_shell:     { name: 'Beetle Shell' },
-  glowspore:        { name: 'Glowspore' },
-  strangling_vine:  { name: 'Strangling Vine' },
-  rootmother_heart: { name: 'Rootmother Heart' },
-  // Zone 3 — Sunken Docks
-  barnacle_core:    { name: 'Barnacle Core' },
-  ghost_silk:       { name: 'Ghost Silk' },
-  spectral_coin:    { name: 'Spectral Coin' },
-  toxin_sac:        { name: 'Toxin Sac' },
-  morays_fang:      { name: "Moray's Fang" },
+  // Zone 1 — Soggy Sewers (Black Crystals)
+  black_shard:         { name: 'Black Crystal Shard' },
+  black_crystal_small: { name: 'Small Black Crystal' },
+  black_crystal_big:   { name: 'Big Black Crystal' },
+  black_crystal_core:  { name: 'Black Crystal Core' },
+
+  // Zone 2 — Twisted Garden (Green Crystals)
+  green_shard:         { name: 'Green Crystal Shard' },
+  green_crystal_small: { name: 'Small Green Crystal' },
+  green_crystal_big:   { name: 'Big Green Crystal' },
+  green_crystal_core:  { name: 'Green Crystal Core' },
+
+  // Zone 3 — Sunken Docks (Yellow Crystals)
+  yellow_shard:         { name: 'Yellow Crystal Shard' },
+  yellow_crystal_small: { name: 'Small Yellow Crystal' },
+  yellow_crystal_big:   { name: 'Big Yellow Crystal' },
+  yellow_crystal_core:  { name: 'Yellow Crystal Core' },
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -78,8 +67,8 @@ const sewer_shiv = {
   type: 'weapon',
   zone: 1,
   materials: [
-    { itemId: 'rat_tail', qty: 3 },
-    { itemId: 'gnarlcrown_shard', qty: 1 },
+    { itemId: 'black_shard', qty: 4 },
+    { itemId: 'black_crystal_small', qty: 2 },
   ],
   stats: { attack: 12, bleedChance: 0.15 },
   setId: 'sewer_set',
@@ -92,7 +81,7 @@ const rat_hide_vest = {
   type: 'armor',
   zone: 1,
   materials: [
-    { itemId: 'rat_tail', qty: 4 },
+    { itemId: 'black_shard', qty: 5 },
   ],
   stats: { maxHp: 18, dodge: 0.05 },
   setId: 'sewer_set',
@@ -105,7 +94,7 @@ const slimecrawler_shell = {
   type: 'armor',
   zone: 1,
   materials: [
-    { itemId: 'slime_glob', qty: 4 },
+    { itemId: 'black_crystal_small', qty: 4 },
   ],
   stats: { maxHp: 22, poisonImmune: true },
   setId: 'sewer_set',
@@ -118,8 +107,8 @@ const plague_cloak = {
   type: 'armor',
   zone: 1,
   materials: [
-    { itemId: 'frog_mucus', qty: 3 },
-    { itemId: 'carapace_chip', qty: 2 },
+    { itemId: 'black_shard', qty: 3 },
+    { itemId: 'black_crystal_small', qty: 2 },
   ],
   stats: { maxHp: 14, defence: 4 },
   setId: 'sewer_set',
@@ -132,7 +121,8 @@ const gnarlcrown = {
   type: 'trinket',
   zone: 1,
   materials: [
-    { itemId: 'gnarlcrown_shard', qty: 1 },
+    { itemId: 'black_crystal_big', qty: 2 },
+    { itemId: 'black_crystal_core', qty: 1 },
   ],
   stats: { critChance: 0.10 },
   setId: 'sewer_set',
@@ -145,7 +135,8 @@ const cockroach_carapace = {
   type: 'trinket',
   zone: 1,
   materials: [
-    { itemId: 'carapace_chip', qty: 4 },
+    { itemId: 'black_crystal_small', qty: 3 },
+    { itemId: 'black_crystal_big', qty: 1 },
   ],
   stats: { defence: 4, dodge: 0.05 },
   setId: 'sewer_set',
@@ -162,8 +153,8 @@ const thorn_dagger = {
   type: 'weapon',
   zone: 2,
   materials: [
-    { itemId: 'thorn_shard', qty: 3 },
-    { itemId: 'rootmother_heart', qty: 1 },
+    { itemId: 'green_shard', qty: 4 },
+    { itemId: 'green_crystal_small', qty: 2 },
   ],
   stats: { attack: 20, poisonChance: 0.20 },
   setId: 'garden_set',
@@ -176,7 +167,8 @@ const beetle_shell_vest = {
   type: 'armor',
   zone: 2,
   materials: [
-    { itemId: 'beetle_shell', qty: 4 },
+    { itemId: 'green_shard', qty: 5 },
+    { itemId: 'green_crystal_small', qty: 2 },
   ],
   stats: { maxHp: 30, defence: 8 },
   setId: 'garden_set',
@@ -189,7 +181,7 @@ const spore_cloak = {
   type: 'armor',
   zone: 2,
   materials: [
-    { itemId: 'glowspore', qty: 4 },
+    { itemId: 'green_crystal_small', qty: 4 },
   ],
   stats: { maxHp: 24, dodge: 0.10 },
   setId: 'garden_set',
@@ -202,8 +194,8 @@ const vine_wrap = {
   type: 'armor',
   zone: 2,
   materials: [
-    { itemId: 'strangling_vine', qty: 3 },
-    { itemId: 'thorn_shard', qty: 2 },
+    { itemId: 'green_shard', qty: 3 },
+    { itemId: 'green_crystal_small', qty: 2 },
   ],
   stats: { maxHp: 20, defence: 6, critChance: 0.05 },
   setId: 'garden_set',
@@ -216,7 +208,8 @@ const rootmother_eye = {
   type: 'trinket',
   zone: 2,
   materials: [
-    { itemId: 'rootmother_heart', qty: 1 },
+    { itemId: 'green_crystal_big', qty: 2 },
+    { itemId: 'green_crystal_core', qty: 1 },
   ],
   stats: { skillDamage: 0.15 },
   setId: 'garden_set',
@@ -229,7 +222,8 @@ const glowspore_vial = {
   type: 'trinket',
   zone: 2,
   materials: [
-    { itemId: 'glowspore', qty: 3 },
+    { itemId: 'green_crystal_small', qty: 3 },
+    { itemId: 'green_crystal_big', qty: 1 },
   ],
   stats: { critChance: 0.08, dodge: 0.05 },
   setId: 'garden_set',
@@ -246,8 +240,8 @@ const ghost_cutlass = {
   type: 'weapon',
   zone: 3,
   materials: [
-    { itemId: 'barnacle_core', qty: 3 },
-    { itemId: 'morays_fang', qty: 1 },
+    { itemId: 'yellow_shard', qty: 4 },
+    { itemId: 'yellow_crystal_small', qty: 2 },
   ],
   stats: { attack: 28, stunChance: 0.12 },
   setId: 'docks_set',
@@ -260,7 +254,8 @@ const barnacle_plate = {
   type: 'armor',
   zone: 3,
   materials: [
-    { itemId: 'barnacle_core', qty: 4 },
+    { itemId: 'yellow_shard', qty: 5 },
+    { itemId: 'yellow_crystal_small', qty: 2 },
   ],
   stats: { maxHp: 40, defence: 10 },
   setId: 'docks_set',
@@ -273,7 +268,7 @@ const ghost_silk_coat = {
   type: 'armor',
   zone: 3,
   materials: [
-    { itemId: 'ghost_silk', qty: 4 },
+    { itemId: 'yellow_crystal_small', qty: 4 },
   ],
   stats: { maxHp: 30, dodge: 0.15 },
   setId: 'docks_set',
@@ -286,8 +281,8 @@ const saltcaptain_coat = {
   type: 'armor',
   zone: 3,
   materials: [
-    { itemId: 'ghost_silk', qty: 2 },
-    { itemId: 'spectral_coin', qty: 3 },
+    { itemId: 'yellow_shard', qty: 3 },
+    { itemId: 'yellow_crystal_small', qty: 2 },
   ],
   stats: { maxHp: 34, defence: 8, dodge: 0.08 },
   setId: 'docks_set',
@@ -300,7 +295,8 @@ const morays_compass = {
   type: 'trinket',
   zone: 3,
   materials: [
-    { itemId: 'morays_fang', qty: 1 },
+    { itemId: 'yellow_crystal_big', qty: 2 },
+    { itemId: 'yellow_crystal_core', qty: 1 },
   ],
   stats: { critChance: 0.20, dodge: 0.10 },
   setId: 'docks_set',
@@ -313,7 +309,8 @@ const toxin_vial = {
   type: 'trinket',
   zone: 3,
   materials: [
-    { itemId: 'toxin_sac', qty: 3 },
+    { itemId: 'yellow_crystal_small', qty: 3 },
+    { itemId: 'yellow_crystal_big', qty: 1 },
   ],
   stats: { bleedExtraDamage: 2 },
   setId: 'docks_set',
@@ -352,6 +349,13 @@ export const CONSUMABLES = [
     cost: 40,
     effect: { type: 'debuff_attack', reduction: 0.3, duration: 2 },
     description: 'Reduce all enemy Attack by 30% for 2 turns',
+  },
+  {
+    id: 'mystery_chest',
+    name: 'Mystery Chest',
+    cost: 50,
+    effect: { type: 'lootbox' },
+    description: 'Open to receive random crystals, with a small chance for a Crystal Core!',
   },
 ];
 

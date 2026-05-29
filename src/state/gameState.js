@@ -417,6 +417,43 @@ function gameReducer(state, action) {
     }
 
     // -----------------------------------------------------------------------
+    // OPEN_LOOTBOX — consume a mystery chest and add gold/crystals
+    // Payload: { gold: number, materials: { [itemId: string]: number } }
+    // -----------------------------------------------------------------------
+    case 'OPEN_LOOTBOX': {
+      const { gold, materials } = action.payload;
+
+      // Decrement Mystery Chest count
+      const newConsumables = state.hero.inventory.consumables.map(c => {
+        if (c.id === 'mystery_chest') {
+          return { ...c, quantity: Math.max(0, c.quantity - 1) };
+        }
+        return c;
+      }).filter(c => c.quantity > 0);
+
+      // Merge rolled materials
+      const newMaterials = { ...state.hero.inventory.materials };
+      Object.entries(materials || {}).forEach(([id, qty]) => {
+        if (qty > 0) {
+          newMaterials[id] = (newMaterials[id] || 0) + qty;
+        }
+      });
+
+      return {
+        ...state,
+        hero: {
+          ...state.hero,
+          gold: state.hero.gold + (gold || 0),
+          inventory: {
+            ...state.hero.inventory,
+            consumables: newConsumables,
+            materials: newMaterials,
+          },
+        },
+      };
+    }
+
+    // -----------------------------------------------------------------------
     // TAKE_DAMAGE — reduce hero's HP (combat)
     // Payload: { amount: number }
     // -----------------------------------------------------------------------
