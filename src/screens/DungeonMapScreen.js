@@ -514,14 +514,14 @@ export default function DungeonMapScreen({ navigation }) {
         {renderCellSVG(currentRun.zoneId, tile, isPlayerHere, isFog)}
 
         {isPlayerHere ? (
-          <View style={styles.playerSpriteContainer}>
+          <View style={styles.cellContent}>
             <AnimatedSprite
               {...HERO_FIREPLACE_SPRITE}
               fps={8}
               loop={true}
               displaySize={cellWidth * 0.65}
             />
-            <Text style={[styles.playerHereText, { color: zTheme.accent }]} numberOfLines={1}>
+            <Text style={[styles.cellLabel, { color: zTheme.accent }]} numberOfLines={1}>
               YOU ARE HERE
             </Text>
           </View>
