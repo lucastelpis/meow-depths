@@ -467,29 +467,29 @@ export default function DungeonMapScreen({ navigation }) {
     } else if (!isFog) {
       if (tile.type === 'combat') {
         emoji = '⚔️';
-        label = 'Combat';
+        label = tile.cleared ? 'Cleared' : 'Combat';
         cellStyle = styles.combatCell;
-        labelColor = '#EF4444';
+        labelColor = tile.cleared ? '#10B981' : '#EF4444';
       } else if (tile.type === 'rest') {
         emoji = '🔥';
-        label = 'Rest';
+        label = tile.cleared ? 'Cleared' : 'Rest';
         cellStyle = styles.restCell;
         labelColor = '#10B981';
       } else if (tile.type === 'treasure') {
         emoji = '💎';
-        label = 'Treasure';
+        label = tile.cleared ? 'Cleared' : 'Treasure';
         cellStyle = styles.treasureCell;
-        labelColor = '#FBBF24';
+        labelColor = tile.cleared ? '#10B981' : '#FBBF24';
       } else if (tile.type === 'gamble') {
         emoji = '❓';
-        label = '???';
+        label = tile.cleared ? 'Cleared' : '???';
         cellStyle = styles.gambleCell;
-        labelColor = '#8B5CF6';
+        labelColor = tile.cleared ? '#10B981' : '#8B5CF6';
       } else if (tile.type === 'boss') {
         emoji = '💀';
-        label = 'Boss';
+        label = tile.cleared ? 'Cleared' : 'Boss';
         cellStyle = styles.bossCell;
-        labelColor = '#EF4444';
+        labelColor = tile.cleared ? '#10B981' : '#EF4444';
       }
     }
 
@@ -518,13 +518,6 @@ export default function DungeonMapScreen({ navigation }) {
             <Text style={[styles.cellLabel, { color: zTheme.accent }]} numberOfLines={1}>
               YOU ARE HERE
             </Text>
-          </View>
-        ) : tile.cleared ? (
-          <View style={styles.checkmarkOverlay}>
-            <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
-              <Rect width="100%" height="100%" fill="rgba(0,0,0,0.4)" />
-            </Svg>
-            <Text style={styles.checkmark}>✓</Text>
           </View>
         ) : (
           <View style={styles.cellContent}>
@@ -1335,25 +1328,11 @@ const styles = StyleSheet.create({
   clearedCell: {
     opacity: 0.55,
   },
-  playerSpriteContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 5,
-  },
-  playerHereText: {
-    fontSize: 7,
-    fontFamily: 'System',
-    fontWeight: 'bold',
-    letterSpacing: 0.2,
-    textTransform: 'uppercase',
-    marginTop: 1,
-    textAlign: 'center',
-  },
   cellLabel: {
-    fontSize: 7,
+    fontSize: 8,
     fontFamily: 'System',
     fontWeight: 'bold',
-    letterSpacing: 0.2,
+    letterSpacing: 0.5,
     textTransform: 'uppercase',
     marginTop: 1,
     textAlign: 'center',
