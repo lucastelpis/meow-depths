@@ -516,7 +516,7 @@ export default function DungeonMapScreen({ navigation }) {
           <View style={styles.cellContent}>
             <Text style={styles.cellEmoji}>🐱</Text>
             <Text style={[styles.cellLabel, { color: zTheme.accent }]} numberOfLines={1}>
-              YOU ARE HERE
+              HERE
             </Text>
           </View>
         ) : (
