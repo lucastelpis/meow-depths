@@ -101,6 +101,11 @@ const initialState = {
       zone2: 0,
       zone3: 0,
     },
+    runsCompleted: {          // count of successful runs completed per zone
+      zone1: 0,
+      zone2: 0,
+      zone3: 0,
+    },
   },
 
   // -- Current Run (temporary, reset after each dungeon run) ----------------
@@ -541,6 +546,15 @@ function gameReducer(state, action) {
       // Restores Mochi's HP to full when outside of the Dungeon
       const finalHp = state.hero.maxHp;
 
+      // Handle Runs Completed Counter
+      const zoneId = state.currentRun.zoneId;
+      const currentProgress = state.progress || {};
+      const currentRunsCompleted = currentProgress.runsCompleted || { zone1: 0, zone2: 0, zone3: 0 };
+      const newRunsCompleted = { ...currentRunsCompleted };
+      if (outcome === 'win' && zoneId) {
+        newRunsCompleted[zoneId] = (newRunsCompleted[zoneId] || 0) + 1;
+      }
+
       return {
         ...state,
         hero: {
@@ -551,6 +565,10 @@ function gameReducer(state, action) {
             ...state.hero.inventory,
             materials: updatedMaterials
           }
+        },
+        progress: {
+          ...state.progress,
+          runsCompleted: newRunsCompleted
         },
         currentRun: {
           active: false,
