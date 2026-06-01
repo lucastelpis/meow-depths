@@ -61,6 +61,9 @@ const CONSUMABLE_ICONS = {
   mega_potion: '💊',
   antidote: '🌿',
   smoke_vial: '💨',
+  mystery_chest: '🎁',
+};
+
 // ── SVG Zone Illustration Renderers ──────────────────────────────────────────
 const renderZoneSVG = (zoneId, unlocked, grad) => {
   const startColor = unlocked ? grad.start : '#15151C';
