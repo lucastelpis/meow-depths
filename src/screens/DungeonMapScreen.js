@@ -505,8 +505,11 @@ export default function DungeonMapScreen({ navigation }) {
               {...HERO_SPRITE.idle}
               fps={8}
               loop={true}
-              displaySize={cellWidth * 0.8}
+              displaySize={cellWidth * 0.65}
             />
+            <Text style={[styles.playerHereText, { color: zTheme.accent }]} numberOfLines={1}>
+              YOU ARE HERE
+            </Text>
           </View>
         ) : tile.cleared ? (
           <View style={styles.checkmarkOverlay}>
@@ -1325,6 +1328,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 5,
+  },
+  playerHereText: {
+    fontSize: 7,
+    fontFamily: 'System',
+    fontWeight: 'bold',
+    letterSpacing: 0.2,
+    textTransform: 'uppercase',
+    marginTop: 1,
+    textAlign: 'center',
   },
 
   // Footer
