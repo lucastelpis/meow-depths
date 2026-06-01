@@ -456,27 +456,41 @@ export default function DungeonMapScreen({ navigation }) {
     const isFog = !tile.revealed;
 
     let emoji = '🔒';
+    let label = 'Lock';
     let cellStyle = styles.fogCell;
+    let labelColor = 'rgba(255, 255, 255, 0.25)';
 
     if (tile.type === 'start') {
       emoji = '🏠';
+      label = 'Start';
       cellStyle = styles.startCell;
+      labelColor = '#3B82F6';
     } else if (!isFog) {
       if (tile.type === 'combat') {
         emoji = '⚔️';
+        label = 'Combat';
         cellStyle = styles.combatCell;
+        labelColor = '#EF4444';
       } else if (tile.type === 'rest') {
         emoji = '🔥';
+        label = 'Rest';
         cellStyle = styles.restCell;
+        labelColor = '#10B981';
       } else if (tile.type === 'treasure') {
         emoji = '💎';
+        label = 'Treasure';
         cellStyle = styles.treasureCell;
+        labelColor = '#FBBF24';
       } else if (tile.type === 'gamble') {
         emoji = '❓';
+        label = '???';
         cellStyle = styles.gambleCell;
+        labelColor = '#8B5CF6';
       } else if (tile.type === 'boss') {
         emoji = '💀';
+        label = 'Boss';
         cellStyle = styles.bossCell;
+        labelColor = '#EF4444';
       }
     }
 
@@ -521,6 +535,9 @@ export default function DungeonMapScreen({ navigation }) {
         ) : (
           <View style={styles.cellContent}>
             <Text style={styles.cellEmoji}>{emoji}</Text>
+            <Text style={[styles.cellLabel, { color: labelColor }]} numberOfLines={1}>
+              {label}
+            </Text>
           </View>
         )}
 
@@ -1330,6 +1347,15 @@ const styles = StyleSheet.create({
     zIndex: 5,
   },
   playerHereText: {
+    fontSize: 7,
+    fontFamily: 'System',
+    fontWeight: 'bold',
+    letterSpacing: 0.2,
+    textTransform: 'uppercase',
+    marginTop: 1,
+    textAlign: 'center',
+  },
+  cellLabel: {
     fontSize: 7,
     fontFamily: 'System',
     fontWeight: 'bold',
