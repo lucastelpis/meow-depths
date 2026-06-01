@@ -503,7 +503,7 @@ export default function DungeonMapScreen({ navigation }) {
           { width: cellWidth, height: cellWidth },
           cellStyle,
           isPlayerHere && styles.currentCell,
-          tile.cleared && styles.clearedCell,
+          tile.cleared && !isPlayerHere && styles.clearedCell,
         ]}
         disabled={!adjacent}
         onPress={() => handleTileTap(tile)}
@@ -515,7 +515,7 @@ export default function DungeonMapScreen({ navigation }) {
         {isPlayerHere ? (
           <View style={styles.cellContent}>
             <Text style={styles.cellEmoji}>🐱</Text>
-            <Text style={[styles.cellLabel, { color: zTheme.accent }]} numberOfLines={1}>
+            <Text style={[styles.cellLabel, { color: '#D4A754' }]} numberOfLines={1}>
               You're Here
             </Text>
           </View>
