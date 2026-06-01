@@ -73,6 +73,64 @@ export default function CampScreen({ navigation }) {
     return 'Shadow Claw Path 🌙';
   }, [hero.unlockedSkills]);
 
+  // ── Daily Reward Claiming Logic ───────────────────────────────────────────
+  const hasClaimedToday = React.useCallback(() => {
+    if (!state.progress.lastDailyClaim) return false;
+    const lastClaimDate = new Date(state.progress.lastDailyClaim);
+    const nowDate = new Date();
+    return (
+      lastClaimDate.getDate() === nowDate.getDate() &&
+      lastClaimDate.getMonth() === nowDate.getMonth() &&
+      lastClaimDate.getFullYear() === nowDate.getFullYear()
+    );
+  }, [state.progress.lastDailyClaim]);
+
+  const handleDailyRewardPress = () => {
+    if (hasClaimedToday()) {
+      Alert.alert(
+        "🎁 Already Claimed",
+        "You already claimed your daily reward today. Come back tomorrow for more potions and gems! 🐱",
+        [{ text: "Okay" }]
+      );
+      return;
+    }
+
+    // Scale rewards based on level
+    const lvl = hero.level || 1;
+    const goldReward = 100 + lvl * 50;
+    const gemsReward = 10 + lvl * 5;
+    
+    // Potions: health potions scaled, mega potions starting at lvl 3
+    const healthPotionQty = 1 + Math.floor(lvl / 5);
+    const megaPotionQty = lvl >= 3 ? 1 : 0;
+    
+    const consumablesReward = {};
+    if (healthPotionQty > 0) consumablesReward['health_potion'] = healthPotionQty;
+    if (megaPotionQty > 0) consumablesReward['mega_potion'] = megaPotionQty;
+
+    // Dispatch state update
+    dispatch({
+      type: 'CLAIM_DAILY_REWARD',
+      payload: {
+        gold: goldReward,
+        gems: gemsReward,
+        consumables: consumablesReward,
+      }
+    });
+
+    // Success alert
+    Alert.alert(
+      "🎁 Daily Reward Claimed!",
+      `Level ${lvl} Rewards Granted:\n\n` +
+      `💰 +${goldReward} Gold\n` +
+      `💎 +${gemsReward} Gems\n` +
+      (healthPotionQty > 0 ? `🧪 +${healthPotionQty} Health Potion${healthPotionQty > 1 ? 's' : ''}\n` : '') +
+      (megaPotionQty > 0 ? `🧪 +${megaPotionQty} Mega Potion${megaPotionQty > 1 ? 's' : ''}\n` : '') +
+      `\nCome back tomorrow for more!`,
+      [{ text: "Meow-tastic!" }]
+    );
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView
@@ -115,9 +173,14 @@ export default function CampScreen({ navigation }) {
             resizeMode="contain"
           />
 
-          {/* Floating Gold Display Chip */}
-          <View style={styles.goldChip}>
-            <Text style={styles.goldChipText}>💰 {hero.gold}</Text>
+          {/* Floating Currencies Display Chip Row */}
+          <View style={styles.currencyRow}>
+            <View style={styles.goldChip}>
+              <Text style={styles.goldChipText}>💰 {hero.gold}</Text>
+            </View>
+            <View style={[styles.goldChip, styles.gemsChip]}>
+              <Text style={styles.gemsChipText}>💎 {hero.gems || 0}</Text>
+            </View>
           </View>
 
           {/* Left Column: Avatar & Level Badge */}
@@ -205,6 +268,35 @@ export default function CampScreen({ navigation }) {
               <Text style={styles.ctaSub}>Choose a zone and begin your run</Text>
             </View>
             <Text style={styles.ctaArrow}>›</Text>
+          </View>
+        </TouchableOpacity>
+
+        {/* Daily Reward Button */}
+        <TouchableOpacity
+          style={[
+            styles.dailyRewardBtn,
+            hasClaimedToday() ? styles.dailyRewardBtnClaimed : styles.dailyRewardBtnActive,
+            !hasClaimedToday() && theme.SHADOWS.glowPrimary,
+          ]}
+          activeOpacity={0.8}
+          onPress={handleDailyRewardPress}
+        >
+          <View style={styles.dailyRewardInner}>
+            <Text style={styles.dailyRewardEmoji}>🎁</Text>
+            <View style={styles.dailyRewardTexts}>
+              <Text style={[
+                styles.dailyRewardTitle,
+                hasClaimedToday() ? styles.dailyRewardTitleClaimed : styles.dailyRewardTitleActive
+              ]}>
+                {hasClaimedToday() ? "Daily Reward Claimed" : "Claim Daily Reward"}
+              </Text>
+              <Text style={styles.dailyRewardSub}>
+                {hasClaimedToday()
+                  ? "You already claimed your daily reward, come back tomorrow for more!"
+                  : `Potions and gems scaling with Level ${hero.level}`}
+              </Text>
+            </View>
+            {!hasClaimedToday() && <Text style={styles.dailyRewardArrow}>›</Text>}
           </View>
         </TouchableOpacity>
 
@@ -538,5 +630,75 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     fontSize: 12,
     color: 'rgba(239, 68, 68, 0.5)',
+  },
+
+  /* ═══ Floating CurrenciesDisplay Chip Row ══════════════════════════════════ */
+  currencyRow: {
+    position: 'absolute',
+    top: 12,
+    right: 12,
+    flexDirection: 'row',
+    gap: 6,
+    zIndex: 3,
+  },
+  gemsChip: {
+    backgroundColor: 'rgba(6, 182, 212, 0.08)',
+    borderColor: 'rgba(6, 182, 212, 0.2)',
+  },
+  gemsChipText: {
+    fontFamily: 'System',
+    fontWeight: 'bold',
+    fontSize: 11,
+    color: '#06B6D4',
+  },
+
+  /* ═══ Daily Reward Button ══════════════════════════════════════════════════ */
+  dailyRewardBtn: {
+    marginBottom: 20,
+    borderRadius: 16,
+    borderWidth: 1.2,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+  },
+  dailyRewardBtnActive: {
+    backgroundColor: 'rgba(168, 85, 247, 0.06)',
+    borderColor: 'rgba(168, 85, 247, 0.25)',
+  },
+  dailyRewardBtnClaimed: {
+    backgroundColor: 'rgba(255, 255, 255, 0.015)',
+    borderColor: 'rgba(255, 255, 255, 0.05)',
+  },
+  dailyRewardInner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  dailyRewardEmoji: {
+    fontSize: 22,
+    marginRight: 14,
+  },
+  dailyRewardTexts: {
+    flex: 1,
+  },
+  dailyRewardTitle: {
+    fontFamily: 'System',
+    fontWeight: 'bold',
+    fontSize: 14,
+  },
+  dailyRewardTitleActive: {
+    color: '#A855F7',
+  },
+  dailyRewardTitleClaimed: {
+    color: '#707F94',
+  },
+  dailyRewardSub: {
+    fontFamily: 'System',
+    fontWeight: '500',
+    fontSize: 10,
+    color: '#707F94',
+    marginTop: 1,
+  },
+  dailyRewardArrow: {
+    fontSize: 24,
+    color: '#A855F7',
   },
 });

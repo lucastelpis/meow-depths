@@ -70,6 +70,7 @@ const initialState = {
     critChance: 0.05,         // 5 % base crit chance
     dodge: 0.05,              // 5 % base dodge chance
     gold: 100,                // start with some gold for first potions
+    gems: 0,                  // premium currency / gems
     skillPoints: 0,           // earned 1 per level-up, spent on skills
     unlockedSkills: [],       // array of skill IDs the hero has learned
     equippedSkills: [null, null], // two active skill slots for combat
@@ -94,6 +95,7 @@ const initialState = {
     zone1Cleared: false,
     zone2Cleared: false,
     zone3Cleared: false,
+    lastDailyClaim: null,     // timestamp of last daily reward claim
     currentZone: null,        // which zone the player was last exploring
     currentFloor: 0,
     floorsCleared: {          // highest floor cleared in each zone
@@ -686,6 +688,45 @@ function gameReducer(state, action) {
             ...state.hero.inventory,
             consumables: newConsumables,
           },
+        },
+      };
+    }
+
+    // -----------------------------------------------------------------------
+    // CLAIM_DAILY_REWARD — rewards gold, gems, potions based on level
+    // Payload: { gold: number, gems: number, consumables: { [id: string]: number } }
+    // -----------------------------------------------------------------------
+    case 'CLAIM_DAILY_REWARD': {
+      const { gold, gems, consumables } = action.payload;
+
+      // Update consumables array
+      let updatedConsumables = [...state.hero.inventory.consumables];
+      for (const [id, qty] of Object.entries(consumables || {})) {
+        const existingIndex = updatedConsumables.findIndex(c => c.id === id);
+        if (existingIndex > -1) {
+          updatedConsumables[existingIndex] = {
+            ...updatedConsumables[existingIndex],
+            quantity: updatedConsumables[existingIndex].quantity + qty,
+          };
+        } else {
+          updatedConsumables.push({ id, quantity: qty });
+        }
+      }
+
+      return {
+        ...state,
+        hero: {
+          ...state.hero,
+          gold: state.hero.gold + (gold || 0),
+          gems: (state.hero.gems || 0) + (gems || 0),
+          inventory: {
+            ...state.hero.inventory,
+            consumables: updatedConsumables,
+          },
+        },
+        progress: {
+          ...state.progress,
+          lastDailyClaim: Date.now(),
         },
       };
     }
