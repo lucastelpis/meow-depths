@@ -9,17 +9,10 @@
  *   so switching from idle to attack just means passing new props; the
  *   component resets to frame 0 and starts playing the new sheet automatically.
  *
- * USAGE EXAMPLE (idle loop):
- *   <AnimatedSprite source={HERO.idle.source} frameSize={192} totalFrames={8}
- *     fps={8} loop={true} displaySize={80} />
- *
- * USAGE EXAMPLE (one-shot attack, return to idle when done):
- *   <AnimatedSprite source={HERO.attack.source} frameSize={192} totalFrames={4}
- *     fps={10} loop={false} onComplete={() => setAnim('idle')} displaySize={80} />
- *
  * @param {object}   source       – require() result for the sprite sheet PNG
  * @param {number}   frameSize    – pixel width (= height) of one frame in the sheet
  * @param {number}   totalFrames  – total number of frames in the sheet
+ * @param {number}   frames       – fallback for totalFrames (commonly used in sprite constants)
  * @param {number}   [fps=8]      – playback speed in frames per second
  * @param {boolean}  [loop=true]  – true = loop forever; false = play once then hold last frame
  * @param {function} [onComplete] – called once when a non-looping animation finishes
@@ -35,6 +28,7 @@ export default function AnimatedSprite({
   source,
   frameSize,
   totalFrames,
+  frames,
   fps         = 8,
   loop        = true,
   onComplete,
@@ -42,17 +36,19 @@ export default function AnimatedSprite({
   flipX       = false,
   style,
 }) {
+  const finalTotalFrames = totalFrames || frames || 1;
+
   const [frame, setFrame]   = useState(0);
   const frameRef            = useRef(0);
   const intervalRef         = useRef(null);
 
-  // Synchronously reset frame state to 0 if source or totalFrames changes to prevent out-of-bounds flashes
+  // Synchronously reset frame state to 0 if source or finalTotalFrames changes to prevent out-of-bounds flashes
   const [prevSource, setPrevSource] = useState(source);
-  const [prevTotalFrames, setPrevTotalFrames] = useState(totalFrames);
+  const [prevTotalFrames, setPrevTotalFrames] = useState(finalTotalFrames);
 
-  if (source !== prevSource || totalFrames !== prevTotalFrames) {
+  if (source !== prevSource || finalTotalFrames !== prevTotalFrames) {
     setPrevSource(source);
-    setPrevTotalFrames(totalFrames);
+    setPrevTotalFrames(finalTotalFrames);
     setFrame(0);
     frameRef.current = 0;
   }
@@ -72,14 +68,14 @@ export default function AnimatedSprite({
     }
 
     // Static sprite — nothing to animate
-    if (totalFrames <= 1) return;
+    if (finalTotalFrames <= 1) return;
 
     const ms = Math.round(1000 / fps);
 
     intervalRef.current = setInterval(() => {
       const next = frameRef.current + 1;
 
-      if (next >= totalFrames) {
+      if (next >= finalTotalFrames) {
         if (loop) {
           // Loop back to the beginning
           frameRef.current = 0;
@@ -102,10 +98,10 @@ export default function AnimatedSprite({
         intervalRef.current = null;
       }
     };
-  }, [source, frameSize, totalFrames, fps, loop]);
+  }, [source, frameSize, finalTotalFrames, fps, loop]);
 
   const scale = displaySize / frameSize;
-  const safeFrame = totalFrames > 0 ? Math.min(frame, totalFrames - 1) : 0;
+  const safeFrame = finalTotalFrames > 0 ? Math.min(frame, finalTotalFrames - 1) : 0;
 
   return (
     <View
@@ -126,7 +122,7 @@ export default function AnimatedSprite({
         source={source}
         style={{
           // Stretch the full sheet to scale, then shift left to expose current frame
-          width:    frameSize * totalFrames * scale,
+          width:    frameSize * finalTotalFrames * scale,
           height:   displaySize,
           position: 'absolute',
           left:     -(safeFrame * displaySize),
