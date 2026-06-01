@@ -39,7 +39,7 @@ import { ZONES } from '../data/zones';
 import { MATERIALS, CONSUMABLES } from '../data/gear';
 import { calculateEffectiveStats } from '../logic/progressionEngine';
 import AnimatedSprite from '../components/AnimatedSprite';
-import { HERO_SPRITE } from '../constants/sprites';
+import { HERO_FIREPLACE_SPRITE } from '../constants/sprites';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -502,7 +502,7 @@ export default function DungeonMapScreen({ navigation }) {
         {isPlayerHere ? (
           <View style={styles.playerSpriteContainer}>
             <AnimatedSprite
-              {...HERO_SPRITE.idle}
+              {...HERO_FIREPLACE_SPRITE}
               fps={8}
               loop={true}
               displaySize={cellWidth * 0.65}

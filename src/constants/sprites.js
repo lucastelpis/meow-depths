@@ -38,6 +38,12 @@ export const HERO_SPRITE = {
   },
 };
 
+export const HERO_FIREPLACE_SPRITE = {
+  source:    require('../../assets/sprites/Tiny Swords (Free Pack)/Units/Original/sitting_fireplace.png'),
+  frameSize: 104,
+  frames:    8,
+};
+
 // ─── Enemy sprite definitions ─────────────────────────────────────────────────
 
 export const ENEMY_SPRITES = {
