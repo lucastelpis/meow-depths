@@ -20,7 +20,18 @@ import {
   Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import Svg, { Defs, LinearGradient, RadialGradient, Stop, Rect } from 'react-native-svg';
+import Svg, {
+  Defs,
+  LinearGradient,
+  RadialGradient,
+  Stop,
+  Rect,
+  Path,
+  G,
+  Line,
+  Circle,
+  Polygon,
+} from 'react-native-svg';
 
 import theme from '../constants/theme';
 import { useGame } from '../state/gameState';
@@ -89,6 +100,114 @@ const ZONE_THEMES = {
     accentGlow: 'rgba(6, 182, 212, 0.08)',
     border: 'rgba(6, 182, 212, 0.2)',
   },
+};
+
+// ── SVG Dungeon Grid Cell Background Renderers ──────────────────────────────
+const renderCellSVG = (zoneId, tile, isPlayerHere, isFog) => {
+  // Define colors based on zone and fog status
+  let bgStart = '#07070A';
+  let bgEnd = '#030305';
+  let elementColor = 'rgba(255, 255, 255, 0.05)';
+  let accentColor = '#D4A754';
+  
+  if (zoneId === 'zone1') {
+    // Soggy Sewers: Green/toxic
+    bgStart = isFog ? '#060B06' : '#0B170B';
+    bgEnd = isFog ? '#020402' : '#040904';
+    elementColor = isFog ? 'rgba(76, 175, 80, 0.04)' : 'rgba(76, 175, 80, 0.12)';
+    accentColor = '#10B981';
+  } else if (zoneId === 'zone2') {
+    // Twisted Garden: Purple/mystic
+    bgStart = isFog ? '#0B060F' : '#170B21';
+    bgEnd = isFog ? '#040206' : '#09040D';
+    elementColor = isFog ? 'rgba(168, 85, 247, 0.04)' : 'rgba(168, 85, 247, 0.12)';
+    accentColor = '#A855F7';
+  } else if (zoneId === 'zone3') {
+    // Sunken Docks: Blue/cyan
+    bgStart = isFog ? '#060B12' : '#0B1726';
+    bgEnd = isFog ? '#020406' : '#04090F';
+    elementColor = isFog ? 'rgba(6, 182, 212, 0.04)' : 'rgba(6, 182, 212, 0.12)';
+    accentColor = '#06B6D4';
+  }
+
+  // Linear gradient ID must be unique per cell type/fog combo to prevent rendering issues
+  const gradId = `cellGrad_${zoneId}_${tile.x}_${tile.y}_${isFog ? 'fog' : 'rev'}`;
+
+  return (
+    <Svg style={StyleSheet.absoluteFill} width="100%" height="100%" viewBox="0 0 80 80">
+      <Defs>
+        <LinearGradient id={gradId} x1="0" y1="0" x2="1" y2="1">
+          <Stop offset="0%" stopColor={bgStart} />
+          <Stop offset="100%" stopColor={bgEnd} />
+        </LinearGradient>
+      </Defs>
+      <Rect width="80" height="80" fill={`url(#${gradId})`} />
+      
+      {/* Zone-Specific Background Artwork */}
+      {zoneId === 'zone1' && (
+        <G stroke={elementColor} strokeWidth="1" fill="none">
+          {/* Sewer Grate/Brick Pattern */}
+          <Line x1="0" y1="20" x2="80" y2="20" strokeDasharray="3,3" />
+          <Line x1="0" y1="40" x2="80" y2="40" strokeDasharray="3,3" />
+          <Line x1="0" y1="60" x2="80" y2="60" strokeDasharray="3,3" />
+          <Line x1="20" y1="0" x2="20" y2="80" strokeDasharray="3,3" />
+          <Line x1="40" y1="0" x2="40" y2="80" strokeDasharray="3,3" />
+          <Line x1="60" y1="0" x2="60" y2="80" strokeDasharray="3,3" />
+          
+          {/* Subtle pipe outline in one of the corners for revealed tiles */}
+          {!isFog && (
+            <G stroke={accentColor} strokeWidth="1.2" opacity="0.3">
+              <Path d="M 0 10 Q 10 10 10 0" />
+              <Path d="M 0 14 Q 14 14 14 0" />
+              <Circle cx="40" cy="40" r="3" fill="none" stroke={accentColor} opacity="0.2" />
+            </G>
+          )}
+        </G>
+      )}
+
+      {zoneId === 'zone2' && (
+        <G fill="none">
+          {/* Winding organic forest roots/spores */}
+          <Path d="M -10 40 Q 20 20 40 50 T 90 40" stroke={elementColor} strokeWidth="1.5" />
+          <Path d="M 40 -10 Q 50 30 30 50 T 40 90" stroke={elementColor} strokeWidth="1" />
+          
+          {!isFog && (
+            <G opacity="0.35">
+              {/* Spores or tiny flower outline */}
+              <Circle cx="60" cy="20" r="2.5" fill={accentColor} />
+              <Circle cx="20" cy="60" r="1.5" fill={accentColor} />
+              {/* Tiny thorn leaf */}
+              <Path d="M 35 45 Q 40 38 45 45 Q 40 52 35 45 Z" fill={accentColor} />
+            </G>
+          )}
+        </G>
+      )}
+
+      {zoneId === 'zone3' && (
+        <G stroke={elementColor} strokeWidth="1" fill="none">
+          {/* Docks: Wood Planks */}
+          <Line x1="0" y1="16" x2="80" y2="16" />
+          <Line x1="0" y1="32" x2="80" y2="32" />
+          <Line x1="0" y1="48" x2="80" y2="48" />
+          <Line x1="0" y1="64" x2="80" y2="64" />
+          
+          {/* Vertical wood grain lines */}
+          <Line x1="30" y1="0" x2="30" y2="16" strokeDasharray="2,2" />
+          <Line x1="55" y1="16" x2="55" y2="32" strokeDasharray="2,2" />
+          <Line x1="20" y1="32" x2="20" y2="48" strokeDasharray="2,2" />
+          <Line x1="65" y1="48" x2="65" y2="64" strokeDasharray="2,2" />
+          
+          {!isFog && (
+            <G stroke={accentColor} strokeWidth="1" opacity="0.3">
+              {/* Subtle water ripple waves */}
+              <Path d="M 10 24 Q 20 20 30 24" />
+              <Path d="M 50 56 Q 60 52 70 56" />
+            </G>
+          )}
+        </G>
+      )}
+    </Svg>
+  );
 };
 
 export default function DungeonMapScreen({ navigation }) {
@@ -336,42 +455,28 @@ export default function DungeonMapScreen({ navigation }) {
     const adjacent = isAdjacent(x, y);
     const isFog = !tile.revealed;
 
-    let emoji = '❓';
-    let label = 'Fog';
+    let emoji = '🔒';
     let cellStyle = styles.fogCell;
-    let labelStyle = styles.fogLabel;
 
     if (tile.type === 'start') {
       emoji = '🏠';
-      label = 'Start';
       cellStyle = styles.startCell;
-      labelStyle = styles.startLabel;
     } else if (!isFog) {
       if (tile.type === 'combat') {
         emoji = '⚔️';
-        label = 'Combat';
         cellStyle = styles.combatCell;
-        labelStyle = styles.combatLabel;
       } else if (tile.type === 'rest') {
         emoji = '🔥';
-        label = 'Rest';
         cellStyle = styles.restCell;
-        labelStyle = styles.restLabel;
       } else if (tile.type === 'treasure') {
         emoji = '💎';
-        label = 'Treasure';
         cellStyle = styles.treasureCell;
-        labelStyle = styles.treasureLabel;
       } else if (tile.type === 'gamble') {
         emoji = '❓';
-        label = '???';
         cellStyle = styles.gambleCell;
-        labelStyle = styles.gambleLabel;
       } else if (tile.type === 'boss') {
         emoji = '💀';
-        label = 'Boss';
         cellStyle = styles.bossCell;
-        labelStyle = styles.bossLabel;
       }
     }
 
@@ -391,6 +496,9 @@ export default function DungeonMapScreen({ navigation }) {
         onPress={() => handleTileTap(tile)}
         activeOpacity={0.7}
       >
+        {/* Render zone-specific background SVG */}
+        {renderCellSVG(currentRun.zoneId, tile, isPlayerHere, isFog)}
+
         {isPlayerHere ? (
           <View style={styles.playerSpriteContainer}>
             <AnimatedSprite
@@ -410,9 +518,6 @@ export default function DungeonMapScreen({ navigation }) {
         ) : (
           <View style={styles.cellContent}>
             <Text style={styles.cellEmoji}>{emoji}</Text>
-            <Text style={labelStyle} numberOfLines={1}>
-              {label}
-            </Text>
           </View>
         )}
 
@@ -1104,7 +1209,6 @@ const styles = StyleSheet.create({
   },
   cellEmoji: {
     fontSize: 22,
-    marginBottom: 2,
   },
   checkmarkOverlay: {
     ...StyleSheet.absoluteFillObject,
