@@ -25,6 +25,7 @@ import CombatScreen from './src/screens/CombatScreen';
 import ShopScreen from './src/screens/ShopScreen';
 import SkillTreeScreen from './src/screens/SkillTreeScreen';
 import InventoryScreen from './src/screens/InventoryScreen';
+import DungeonMapScreen from './src/screens/DungeonMapScreen';
 
 // Create the stack navigator
 const Stack = createStackNavigator();
@@ -69,6 +70,15 @@ export default function App() {
               component={CombatScreen}
               options={{
                 // Prevent going back during combat (use the in-game buttons)
+                gestureEnabled: false,
+              }}
+            />
+
+            {/* Dungeon Map — the explorable map screen */}
+            <Stack.Screen
+              name="DungeonMap"
+              component={DungeonMapScreen}
+              options={{
                 gestureEnabled: false,
               }}
             />

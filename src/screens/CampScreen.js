@@ -1,12 +1,10 @@
 /**
  * =============================================================================
- * CampScreen.js — Home Base Hub (Simplified)
+ * CampScreen.js — Home Base Hub (Redesigned Premium UI)
  * =============================================================================
  *
- * The home base hub is a minimalistic, clean dashboard for Mochi. It serves
- * as the gateway to the adventure and sub-screens.
- *
- * =============================================================================
+ * The home base hub serves as the premium gateway dashboard. It highlights Mochi's
+ * progress, equipment stats summary, gold, and links to all primary menus.
  */
 
 import React from 'react';
@@ -21,6 +19,7 @@ import {
   Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import Svg, { Defs, LinearGradient, RadialGradient, Stop, Rect, Circle } from 'react-native-svg';
 
 // ── Project imports ──────────────────────────────────────────────────────────
 import theme from '../constants/theme';
@@ -28,20 +27,17 @@ import { useGame } from '../state/gameState';
 import { getXpForLevel } from '../logic/progressionEngine';
 import AnimatedSprite from '../components/AnimatedSprite';
 import { HERO_SPRITE, CAMP_CASTLE } from '../constants/sprites';
+import { SKILLS } from '../data/skills';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 // ─── Nav button metadata ────────────────────────────────────────────────────
 const NAV_ITEMS = [
-  { key: 'WorldMap',  icon: '🗺️', label: 'World Map',  sub: 'Explore zones' },
-  { key: 'Shop',      icon: '🛒', label: 'Shop',       sub: 'Buy & craft' },
-  { key: 'SkillTree', icon: '🌟', label: 'Skills',     sub: 'Spend SP' },
-  { key: 'Inventory', icon: '🎒', label: 'Inventory',  sub: 'Manage items' },
+  { key: 'WorldMap',  icon: '🗺️', label: 'World Map',  sub: 'Conquer Zones',  color: '#D4A754' },
+  { key: 'Shop',      icon: '🛒', label: 'Shop & Forge', sub: 'Buy & Craft',    color: '#10B981' },
+  { key: 'SkillTree', icon: '🌟', label: 'Skill Tree', sub: 'Unlock Talents',  color: '#06B6D4' },
+  { key: 'Inventory', icon: '🎒', label: 'Bag & Gear',  sub: 'Manage Loadout',  color: '#EC4899' },
 ];
-
-// =============================================================================
-// Component
-// =============================================================================
 
 export default function CampScreen({ navigation }) {
   const { state, dispatch } = useGame();
@@ -55,9 +51,28 @@ export default function CampScreen({ navigation }) {
   const xpProgress     = xpNeeded > 0 ? xpIntoLevel / xpNeeded : 1;
   const hpProgress     = hero.maxHp > 0 ? hero.hp / hero.maxHp : 1;
 
-  // ════════════════════════════════════════════════════════════════════════════
-  // Render
-  // ════════════════════════════════════════════════════════════════════════════
+  // Calculate Mochi's primary path for cozy visual title
+  const primaryPath = React.useMemo(() => {
+    let ironPawCount = 0;
+    let stonefurCount = 0;
+    let shadowClawCount = 0;
+
+    (hero.unlockedSkills || []).forEach(skillId => {
+      const skill = SKILLS[skillId];
+      if (skill) {
+        if (skill.path === 'ironPaw') ironPawCount++;
+        else if (skill.path === 'stonefur') stonefurCount++;
+        else if (skill.path === 'shadowClaw') shadowClawCount++;
+      }
+    });
+
+    const max = Math.max(ironPawCount, stonefurCount, shadowClawCount);
+    if (max === 0) return 'Novice Adventurer 🐱';
+    if (max === ironPawCount) return 'Iron Paw Path 🐾';
+    if (max === stonefurCount) return 'Stonefur Path 🪨';
+    return 'Shadow Claw Path 🌙';
+  }, [hero.unlockedSkills]);
+
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView
@@ -65,84 +80,126 @@ export default function CampScreen({ navigation }) {
         showsVerticalScrollIndicator={false}
       >
         {/* ═══════════════════════════════════════════════════════════════════
-            HERO BANNER — Compact hero introduction card
+            HERO CARD — Premium Split Layout (Cozy & Compact)
             ═══════════════════════════════════════════════════════════════════ */}
-        <View style={styles.heroBanner}>
-          {/* Ambient camp building behind the hero */}
+        <View style={[styles.heroBanner, theme.SHADOWS.cardShadow]}>
+          {/* SVG Gradient Background Wrapper (ensures absolute positioning alignment) */}
+          <View style={StyleSheet.absoluteFill}>
+            <Svg width="100%" height="100%">
+              <Defs>
+                <LinearGradient id="cardGrad" x1="0" y1="0" x2="0" y2="1">
+                  <Stop offset="0%" stopColor="#171725" stopOpacity="0.95" />
+                  <Stop offset="100%" stopColor="#0B0B12" stopOpacity="1" />
+                </LinearGradient>
+                <RadialGradient id="avatarGlow" cx="22%" cy="50%" rx="35%" ry="60%">
+                  <Stop offset="0%" stopColor="#D4A754" stopOpacity="0.15" />
+                  <Stop offset="100%" stopColor="#D4A754" stopOpacity="0" />
+                </RadialGradient>
+              </Defs>
+              <Rect width="100%" height="100%" fill="url(#cardGrad)" rx={20} />
+              <Rect width="100%" height="100%" fill="url(#avatarGlow)" rx={20} />
+            </Svg>
+          </View>
+
+          {/* Decorative SVG Corner Borders */}
+          <View style={styles.cardBorderOverlay}>
+            <Svg width="100%" height="100%">
+              <Rect x="6" y="6" width="96%" height="91%" rx={14} fill="none" stroke="rgba(212, 167, 84, 0.08)" strokeWidth="1" />
+            </Svg>
+          </View>
+
+          {/* Ambient Castle Logo (pushed to background watermark) */}
           <Image
             source={CAMP_CASTLE}
             style={styles.campBg}
             resizeMode="contain"
           />
 
-          {/* Animated hero sprite */}
-          <View style={styles.heroSpriteContainer}>
-            <AnimatedSprite
-              {...HERO_SPRITE.idle}
-              fps={8}
-              loop={true}
-              displaySize={80}
-            />
+          {/* Floating Gold Display Chip */}
+          <View style={styles.goldChip}>
+            <Text style={styles.goldChipText}>💰 {hero.gold}</Text>
           </View>
 
-          {/* Name + Level tag */}
-          <View style={styles.heroIdentity}>
-            <Text style={styles.heroName}>{hero.name}</Text>
-            <View style={styles.levelPill}>
-              <Text style={styles.levelPillText}>LV {hero.level}</Text>
+          {/* Left Column: Avatar & Level Badge */}
+          <View style={styles.avatarContainer}>
+            <View style={styles.avatarCircle}>
+              <AnimatedSprite
+                {...HERO_SPRITE.idle}
+                fps={8}
+                loop={true}
+                displaySize={64}
+              />
+            </View>
+            <View style={styles.levelBadge}>
+              <Text style={styles.levelBadgeText}>{hero.level}</Text>
             </View>
           </View>
 
-          {/* Resource bars inside the banner */}
-          <View style={styles.barsContainer}>
-            {/* HP Bar */}
-            <View style={styles.barRow}>
-              <Text style={styles.barIcon}>❤️</Text>
-              <View style={styles.barTrack}>
-                <View
-                  style={[
-                    styles.barFill,
-                    styles.hpFill,
-                    { width: `${Math.min(hpProgress * 100, 100)}%` },
-                  ]}
-                />
+          {/* Right Column: Identity & Stacked Pill Gauges */}
+          <View style={styles.heroDetails}>
+            <View style={styles.identityRow}>
+              <Text style={styles.heroName}>{hero.name}</Text>
+              <Text style={styles.heroPathText}>{primaryPath}</Text>
+            </View>
+
+            <View style={styles.gaugesStack}>
+              {/* HP Bar */}
+              <View style={styles.gaugeRow}>
+                <Text style={styles.gaugeLabel}>HP</Text>
+                <View style={styles.gaugeTrack}>
+                  <View
+                    style={[
+                      styles.gaugeFill,
+                      styles.hpFillGrad,
+                      { width: `${Math.min(hpProgress * 100, 100)}%` },
+                    ]}
+                  />
+                </View>
+                <Text style={styles.gaugeValue}>{hero.hp}/{hero.maxHp}</Text>
               </View>
-              <Text style={styles.barValue}>{hero.hp}/{hero.maxHp}</Text>
-            </View>
-            {/* XP Bar */}
-            <View style={styles.barRow}>
-              <Text style={styles.barIcon}>⭐</Text>
-              <View style={styles.barTrack}>
-                <View
-                  style={[
-                    styles.barFill,
-                    styles.xpFill,
-                    { width: `${Math.min(xpProgress * 100, 100)}%` },
-                  ]}
-                />
-              </View>
-              <Text style={styles.barValue}>{xpIntoLevel}/{xpNeeded}</Text>
-            </View>
-          </View>
 
-          {/* Gold display */}
-          <View style={styles.goldContainer}>
-            <Text style={styles.goldIcon}>💰</Text>
-            <Text style={styles.goldAmount}>{hero.gold}</Text>
-            <Text style={styles.goldLabel}>Gold</Text>
+              {/* XP Bar */}
+              <View style={styles.gaugeRow}>
+                <Text style={styles.gaugeLabel}>XP</Text>
+                <View style={styles.gaugeTrack}>
+                  <View
+                    style={[
+                      styles.gaugeFill,
+                      styles.xpFillGrad,
+                      { width: `${Math.min(xpProgress * 100, 100)}%` },
+                    ]}
+                  />
+                </View>
+                <Text style={styles.gaugeValue}>{xpIntoLevel}/{xpNeeded}</Text>
+              </View>
+            </View>
           </View>
         </View>
 
         {/* ═══════════════════════════════════════════════════════════════════
-            ENTER DUNGEON — Primary CTA
+            ENTER DUNGEON — Premium Gilded Action Banner
             ═══════════════════════════════════════════════════════════════════ */}
         <TouchableOpacity
-          style={styles.dungeonCTA}
-          activeOpacity={0.85}
+          style={[styles.dungeonCTA, theme.SHADOWS.glowPrimary]}
+          activeOpacity={0.88}
           onPress={() => navigation.navigate('WorldMap')}
         >
+          {/* Metallic Gold SVG Gradient */}
+          <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
+            <Defs>
+              <LinearGradient id="ctaGrad" x1="0" y1="0" x2="1" y2="0">
+                <Stop offset="0%" stopColor="#F9D99A" />
+                <Stop offset="50%" stopColor="#D4A754" />
+                <Stop offset="100%" stopColor="#A37E33" />
+              </LinearGradient>
+            </Defs>
+            <Rect width="100%" height="100%" fill="url(#ctaGrad)" rx={16} />
+          </Svg>
+
           <View style={styles.ctaInner}>
-            <Text style={styles.ctaIcon}>⚔️</Text>
+            <View style={styles.ctaIconContainer}>
+              <Text style={styles.ctaIcon}>⚔️</Text>
+            </View>
             <View style={styles.ctaTextBlock}>
               <Text style={styles.ctaTitle}>Enter the Depths</Text>
               <Text style={styles.ctaSub}>Choose a zone and begin your run</Text>
@@ -152,7 +209,7 @@ export default function CampScreen({ navigation }) {
         </TouchableOpacity>
 
         {/* ═══════════════════════════════════════════════════════════════════
-            NAVIGATION GRID — 2×2 quick access
+            NAVIGATION GRID — Glassmorphic Grid Layout
             ═══════════════════════════════════════════════════════════════════ */}
         <View style={styles.navGrid}>
           {NAV_ITEMS.map(item => (
@@ -162,7 +219,12 @@ export default function CampScreen({ navigation }) {
               activeOpacity={0.8}
               onPress={() => navigation.navigate(item.key)}
             >
-              <Text style={styles.navIcon}>{item.icon}</Text>
+              <View style={styles.navHeaderRow}>
+                <View style={[styles.navIconContainer, { backgroundColor: `${item.color}15` }]}>
+                  <Text style={[styles.navIcon, { color: item.color }]}>{item.icon}</Text>
+                </View>
+                <Text style={styles.navCardArrow}>→</Text>
+              </View>
               <Text style={styles.navLabel}>{item.label}</Text>
               <Text style={styles.navSub}>{item.sub}</Text>
             </TouchableOpacity>
@@ -170,7 +232,7 @@ export default function CampScreen({ navigation }) {
         </View>
 
         {/* ═══════════════════════════════════════════════════════════════════
-            DEV TOOLS — Reset button (bottom)
+            DEV TOOLS — Reset button
             ═══════════════════════════════════════════════════════════════════ */}
         <TouchableOpacity
           style={styles.resetBtn}
@@ -200,176 +262,191 @@ export default function CampScreen({ navigation }) {
 // =============================================================================
 // Styles
 // =============================================================================
-
 const styles = StyleSheet.create({
-  /* ═══ Layout ═══════════════════════════════════════════════════════════════ */
   container: {
     flex: 1,
-    backgroundColor: '#0E0E14',
+    backgroundColor: '#07070A',
   },
   scroll: {
     paddingBottom: 40,
+    paddingHorizontal: 16,
+    paddingTop: 16,
+  },
+  cardBorderOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    pointerEvents: 'none',
   },
 
-  /* ═══ Hero Banner ══════════════════════════════════════════════════════════ */
+  /* ═══ Hero Card ══════════════════════════════════════════════════════════ */
   heroBanner: {
+    flexDirection: 'row',
     alignItems: 'center',
-    paddingTop: 24,
-    paddingBottom: 24,
-    paddingHorizontal: 20,
-    backgroundColor: 'rgba(26, 18, 0, 0.4)',
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(212, 167, 84, 0.1)',
+    paddingVertical: 18,
+    paddingHorizontal: 16,
+    borderRadius: 20,
     position: 'relative',
     overflow: 'hidden',
     marginBottom: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(212, 167, 84, 0.12)',
   },
   campBg: {
     position: 'absolute',
-    top: -10,
-    right: -20,
-    width: 140,
-    height: 120,
-    opacity: 0.05,
+    bottom: 4,
+    right: 8,
+    width: 80,
+    height: 70,
+    opacity: 0.04,
   },
-  heroSpriteContainer: {
-    marginBottom: 10,
-    shadowColor: '#D4A754',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.35,
-    shadowRadius: 12,
+  goldChip: {
+    position: 'absolute',
+    top: 12,
+    right: 12,
+    backgroundColor: 'rgba(251, 191, 36, 0.08)',
+    borderColor: 'rgba(251, 191, 36, 0.2)',
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    zIndex: 3,
   },
-  heroIdentity: {
-    flexDirection: 'row',
+  goldChipText: {
+    fontFamily: 'System',
+    fontWeight: 'bold',
+    fontSize: 11,
+    color: '#FBBF24',
+  },
+  avatarContainer: {
+    position: 'relative',
+    width: 74,
+    height: 74,
+    justifyContent: 'center',
     alignItems: 'center',
-    gap: 10,
-    marginBottom: 16,
+  },
+  avatarCircle: {
+    width: 74,
+    height: 74,
+    borderRadius: 37,
+    borderWidth: 1.5,
+    borderColor: '#D4A754',
+    backgroundColor: 'rgba(0, 0, 0, 0.25)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    overflow: 'hidden',
+  },
+  levelBadge: {
+    position: 'absolute',
+    bottom: -2,
+    right: -2,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: '#D4A754',
+    borderWidth: 1.5,
+    borderColor: '#171725',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 3,
+  },
+  levelBadgeText: {
+    fontFamily: 'System',
+    color: '#1A1200',
+    fontWeight: '900',
+    fontSize: 9,
+    textAlign: 'center',
+  },
+  heroDetails: {
+    flex: 1,
+    marginLeft: 14,
+    justifyContent: 'center',
+  },
+  identityRow: {
+    marginBottom: 8,
   },
   heroName: {
     fontFamily: 'System',
     fontWeight: 'bold',
-    fontSize: 24,
-    color: '#FFF5E6',
+    fontSize: 18,
+    color: '#F8FAFC',
+    letterSpacing: 0.3,
+  },
+  heroPathText: {
+    fontFamily: 'System',
+    fontSize: 10,
+    color: '#D4A754',
+    fontWeight: 'bold',
+    marginTop: 1,
+    textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
-  levelPill: {
-    backgroundColor: 'rgba(212, 167, 84, 0.15)',
-    borderWidth: 1,
-    borderColor: 'rgba(212, 167, 84, 0.3)',
-    borderRadius: 12,
-    paddingHorizontal: 10,
-    paddingVertical: 3,
+  gaugesStack: {
+    gap: 6,
   },
-  levelPillText: {
-    fontFamily: 'System',
-    fontWeight: 'bold',
-    fontSize: 11,
-    color: '#D4A754',
-    letterSpacing: 1,
-  },
-
-  /* ═══ Resource Bars ════════════════════════════════════════════════════════ */
-  barsContainer: {
-    width: '100%',
-    gap: 10,
-    marginBottom: 16,
-    paddingHorizontal: 10,
-  },
-  barRow: {
+  gaugeRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
   },
-  barIcon: {
-    fontSize: 12,
+  gaugeLabel: {
+    fontFamily: 'System',
+    fontSize: 9,
+    fontWeight: '900',
+    color: '#707F94',
     width: 18,
-    textAlign: 'center',
   },
-  barTrack: {
+  gaugeTrack: {
     flex: 1,
     height: 8,
-    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+    backgroundColor: 'rgba(0, 0, 0, 0.45)',
     borderRadius: 4,
     overflow: 'hidden',
+    marginHorizontal: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.02)',
   },
-  barFill: {
+  gaugeFill: {
     height: '100%',
     borderRadius: 4,
   },
-  hpFill: {
-    backgroundColor: '#E84545',
-    shadowColor: '#E84545',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.5,
-    shadowRadius: 4,
+  hpFillGrad: {
+    backgroundColor: '#EF4444',
   },
-  xpFill: {
-    backgroundColor: '#5B8FCF',
-    shadowColor: '#5B8FCF',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.5,
-    shadowRadius: 4,
+  xpFillGrad: {
+    backgroundColor: '#3B82F6',
   },
-  barValue: {
+  gaugeValue: {
     fontFamily: 'System',
-    fontWeight: '600',
-    fontSize: 10,
-    color: 'rgba(255, 255, 255, 0.5)',
-    width: 54,
-    textAlign: 'right',
-  },
-
-  /* ═══ Gold ═════════════════════════════════════════════════════════════════ */
-  goldContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: 'rgba(255, 215, 0, 0.06)',
-    borderRadius: 20,
-    paddingHorizontal: 16,
-    paddingVertical: 6,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 215, 0, 0.12)',
-  },
-  goldIcon: {
-    fontSize: 14,
-  },
-  goldAmount: {
-    fontFamily: 'System',
+    fontSize: 9,
     fontWeight: 'bold',
-    fontSize: 16,
-    color: '#FFD700',
-  },
-  goldLabel: {
-    fontFamily: 'System',
-    fontWeight: '500',
-    fontSize: 11,
-    color: 'rgba(255, 215, 0, 0.6)',
-    marginLeft: 2,
+    color: '#F8FAFC',
+    width: 44,
+    textAlign: 'right',
   },
 
   /* ═══ Dungeon CTA ══════════════════════════════════════════════════════════ */
   dungeonCTA: {
-    marginHorizontal: 16,
     marginBottom: 20,
     borderRadius: 16,
     overflow: 'hidden',
-    backgroundColor: '#D4A754',
-    shadowColor: '#D4A754',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
-    elevation: 6,
+    borderWidth: 1.5,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
   },
   ctaInner: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 18,
+    paddingVertical: 16,
     paddingHorizontal: 20,
   },
-  ctaIcon: {
-    fontSize: 24,
+  ctaIconContainer: {
+    backgroundColor: 'rgba(26, 18, 0, 0.12)',
+    borderRadius: 12,
+    width: 44,
+    height: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
     marginRight: 14,
+  },
+  ctaIcon: {
+    fontSize: 22,
   },
   ctaTextBlock: {
     flex: 1,
@@ -378,72 +455,88 @@ const styles = StyleSheet.create({
     fontFamily: 'System',
     fontWeight: 'bold',
     fontSize: 18,
-    color: '#1A1200',
+    color: '#07070A',
     letterSpacing: 0.3,
   },
   ctaSub: {
     fontFamily: 'System',
-    fontWeight: '500',
+    fontWeight: '600',
     fontSize: 12,
-    color: 'rgba(26, 18, 0, 0.6)',
-    marginTop: 2,
+    color: 'rgba(7, 7, 10, 0.65)',
+    marginTop: 1,
   },
   ctaArrow: {
     fontSize: 28,
-    fontWeight: '300',
-    color: 'rgba(26, 18, 0, 0.4)',
+    fontWeight: '400',
+    color: 'rgba(7, 7, 10, 0.5)',
   },
 
   /* ═══ Navigation Grid ══════════════════════════════════════════════════════ */
   navGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    paddingHorizontal: 16,
     gap: 12,
     marginBottom: 24,
   },
   navCard: {
     width: (SCREEN_WIDTH - 44) / 2,
-    backgroundColor: 'rgba(255, 255, 255, 0.03)',
+    backgroundColor: 'rgba(255, 255, 255, 0.015)',
     borderRadius: 16,
     paddingVertical: 20,
     paddingHorizontal: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.05)',
+    borderWidth: 1.2,
+    borderColor: 'rgba(255, 255, 255, 0.04)',
+    position: 'relative',
+  },
+  navHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  navIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   navIcon: {
-    fontSize: 24,
-    marginBottom: 8,
+    fontSize: 20,
+  },
+  navCardArrow: {
+    color: 'rgba(255,255,255,0.15)',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
   navLabel: {
     fontFamily: 'System',
     fontWeight: 'bold',
     fontSize: 15,
-    color: '#FFF5E6',
+    color: '#F8FAFC',
     marginBottom: 4,
   },
   navSub: {
     fontFamily: 'System',
     fontWeight: '400',
     fontSize: 11,
-    color: 'rgba(255, 255, 255, 0.35)',
+    color: '#707F94',
   },
 
   /* ═══ Reset Button ═════════════════════════════════════════════════════════ */
   resetBtn: {
-    marginHorizontal: 16,
     marginTop: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 68, 68, 0.12)',
+    borderWidth: 1.2,
+    borderColor: 'rgba(239, 68, 68, 0.15)',
     borderRadius: 14,
     paddingVertical: 12,
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 68, 68, 0.02)',
+    backgroundColor: 'rgba(239, 68, 68, 0.02)',
   },
   resetBtnText: {
     fontFamily: 'System',
     fontWeight: '600',
     fontSize: 12,
-    color: 'rgba(255, 68, 68, 0.45)',
+    color: 'rgba(239, 68, 68, 0.5)',
   },
 });

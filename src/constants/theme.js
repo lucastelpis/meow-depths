@@ -8,10 +8,10 @@
 // ─── Colour Palette ────────────────────────────────────────────────────────────
 const COLORS = {
   /* Scene backgrounds */
-  background: '#0D0D0D',           // Generic dark fallback
-  campBackground: '#0E0E14',       // Sleek premium dark background
-  dungeonBackground: '#0F0F1A',    // Cold dungeon blue-black
-  mapBackground: '#0A120A',        // Dark mossy green
+  background: '#07070A',           // Deep obsidian
+  campBackground: '#0B0B12',       // Twilight navy
+  dungeonBackground: '#0A0A10',    // Obsidian dungeon
+  mapBackground: '#050B05',        // Mossy dark green
 
   /* Brand / UI accents */
   primary: '#D4A754',              // Warm amber — main interactive colour
@@ -20,36 +20,78 @@ const COLORS = {
 
   /* Semantic colours */
   danger: '#FF4444',
-  success: '#4CAF50',
+  success: '#10B981',              // Modern emerald green
+  info: '#06B6D4',                 // Modern cyan/teal
 
   /* Player resource bars */
-  hp: '#FF4444',
-  hpBar: '#CC3333',
-  xp: '#6B9BD2',
-  gold: '#FFD700',
+  hp: '#EF4444',
+  hpBar: '#B91C1C',
+  xp: '#3B82F6',
+  gold: '#FBBF24',
 
   /* Typography */
-  text: '#E8DCC8',                 // Default body text (parchment white)
-  textDim: '#8B7D6B',             // Muted / secondary labels
-  textBright: '#FFF5E6',          // Emphasised / title text
+  text: '#E2E8F0',                 // Cool parchment white
+  textDim: '#707F94',              // Muted grey-blue labels
+  textBright: '#F8FAFC',           // Emphasised title white
 
   /* Cards & containers */
-  cardBg: 'rgba(255, 255, 255, 0.03)',
+  cardBg: 'rgba(255, 255, 255, 0.025)',
   cardBorder: 'rgba(255, 255, 255, 0.05)',
+  glassBg: 'rgba(255, 255, 255, 0.015)',
+  glassBorder: 'rgba(255, 255, 255, 0.04)',
 
   /* Buttons */
   buttonPrimary: '#D4A754',
-  buttonDisabled: '#4A4A4A',
+  buttonDisabled: '#334155',
 
   /* Combat overlays */
-  cooldownOverlay: 'rgba(0,0,0,0.7)',
+  cooldownOverlay: 'rgba(0,0,0,0.75)',
 
   /* Status-effect colours */
-  bleed: '#FF3333',
-  stun: '#FFD700',
-  guard: '#4488FF',
-  stealth: '#9933FF',
-  deathMark: '#FF0066',
+  bleed: '#EF4444',
+  stun: '#FBBF24',
+  guard: '#3B82F6',
+  stealth: '#8B5CF6',
+  deathMark: '#EC4899',
+};
+
+// ─── Glow & Drop Shadows ───────────────────────────────────────────────────────
+const SHADOWS = {
+  glowPrimary: {
+    shadowColor: '#D4A754',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.35,
+    shadowRadius: 10,
+    elevation: 5,
+  },
+  glowDanger: {
+    shadowColor: '#FF4444',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.35,
+    shadowRadius: 10,
+    elevation: 5,
+  },
+  glowSuccess: {
+    shadowColor: '#10B981',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.35,
+    shadowRadius: 10,
+    elevation: 5,
+  },
+  glowInfo: {
+    shadowColor: '#06B6D4',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.35,
+    shadowRadius: 10,
+    elevation: 5,
+  },
+  cardShadow: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
+  },
 };
 
 // ─── Font Presets ───────────────────────────────────────────────────────────────
@@ -104,4 +146,5 @@ export default {
   FONTS,
   SPACING,
   BORDER_RADIUS,
+  SHADOWS,
 };

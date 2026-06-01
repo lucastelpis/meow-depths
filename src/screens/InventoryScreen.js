@@ -1,17 +1,12 @@
 /**
  * =============================================================================
- * InventoryScreen.js — Equipment, Stats & Pack Bag
+ * InventoryScreen.js — Equipment, Stats & Pack Bag (Redesigned Premium UI)
  * =============================================================================
  *
  * This screen lets the player manage Mochi's equipped loadout, view combat stats,
  * open mystery chests from the bag, and equip crafted gear.
  *
- * It is structured as a single clean, minimalistic view:
- *   1. Equipped Gear slots (Weapon, Armor, Trinket)
- *   2. Detailed combat stats grid
- *   3. Active set bonuses (if any)
- *   4. Pack Bag (Consumable items and lootbox opener)
- *   5. Owned Gear (Equip weapons/armors/trinkets)
+ * Designed with a premium "Twilight Obsidian & Gilded Amber" theme.
  */
 
 import React, { useMemo } from 'react';
@@ -26,6 +21,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
+import Svg, { Defs, LinearGradient, RadialGradient, Stop, Rect } from 'react-native-svg';
 
 import theme from '../constants/theme';
 import { useGame } from '../state/gameState';
@@ -34,6 +30,8 @@ import {
   calculateEffectiveStats,
   getActiveSetBonuses,
 } from '../logic/progressionEngine';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 // Slot metadata
 const SLOT_CONFIG = [
@@ -50,9 +48,6 @@ const CONSUMABLE_ICONS = {
   mystery_chest: '🎁',
 };
 
-// ============================================================================
-// Component
-// ============================================================================
 export default function InventoryScreen() {
   const navigation = useNavigation();
   const { state, dispatch } = useGame();
@@ -159,14 +154,23 @@ export default function InventoryScreen() {
     );
   };
 
-  // =========================================================================
-  // Render
-  // =========================================================================
   return (
     <SafeAreaView style={styles.root}>
+      {/* Top ambient glow background */}
+      <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
+        <Defs>
+          <RadialGradient id="topGlow" cx="50%" cy="0%" rx="80%" ry="40%">
+            <Stop offset="0%" stopColor="#D4A754" stopOpacity="0.08" />
+            <Stop offset="100%" stopColor="#07070A" stopOpacity="0" />
+          </RadialGradient>
+        </Defs>
+        <Rect width="100%" height="100%" fill="#07070A" />
+        <Rect width="100%" height="100%" fill="url(#topGlow)" />
+      </Svg>
+
       {/* ── Header ──────────────────────────────────────────────────── */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn} activeOpacity={0.7}>
           <Text style={styles.backText}>← Hub</Text>
         </TouchableOpacity>
         <Text style={styles.title}>🎒 Inventory</Text>
@@ -177,7 +181,7 @@ export default function InventoryScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* 1. Equipped Slots */}
+        {/* ── Equipped Slots ────────────────────────────────────────── */}
         <View style={styles.slotsRow}>
           {SLOT_CONFIG.map(({ key, label, emoji }) => {
             const gearId  = hero.gear[key];
@@ -185,54 +189,89 @@ export default function InventoryScreen() {
             const isEmpty = !gearDef;
 
             return (
-              <View
-                key={key}
-                style={[
-                  styles.slotCard,
-                  !isEmpty && styles.slotCardEquipped,
-                ]}
-              >
-                <Text style={styles.slotEmoji}>{emoji}</Text>
-                <Text style={styles.slotLabel}>{label}</Text>
-                {isEmpty ? (
-                  <Text style={styles.slotEmpty}>Empty</Text>
-                ) : (
-                  <>
-                    <Text style={styles.slotName} numberOfLines={1}>{gearDef.name}</Text>
-                    <Text style={styles.slotStats} numberOfLines={2}>{statSummary(gearDef)}</Text>
-                  </>
-                )}
+              <View key={key} style={[styles.slotCard, !isEmpty && theme.SHADOWS.glowPrimary]}>
+                <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
+                  <Defs>
+                    <LinearGradient id={`slotGrad_${key}`} x1="0" y1="0" x2="0" y2="1">
+                      <Stop offset="0%" stopColor="#12121A" stopOpacity={0.9} />
+                      <Stop offset="100%" stopColor="#0A0A0F" stopOpacity={1} />
+                    </LinearGradient>
+                    {!isEmpty && (
+                      <LinearGradient id={`gildedGrad_${key}`} x1="0" y1="0" x2="1" y2="1">
+                        <Stop offset="0%" stopColor="#F9D99A" />
+                        <Stop offset="50%" stopColor="#D4A754" />
+                        <Stop offset="100%" stopColor="#8B6914" />
+                      </LinearGradient>
+                    )}
+                  </Defs>
+                  <Rect width="100%" height="100%" fill={`url(#slotGrad_${key})`} rx={16} />
+                  <Rect
+                    x="1"
+                    y="1"
+                    width="98%"
+                    height="98%"
+                    rx={15}
+                    fill="none"
+                    stroke={!isEmpty ? `url(#gildedGrad_${key})` : 'rgba(255,255,255,0.06)'}
+                    strokeWidth={!isEmpty ? 1.5 : 1}
+                  />
+                </Svg>
+
+                <View style={styles.slotInner}>
+                  <Text style={styles.slotEmoji}>{emoji}</Text>
+                  <Text style={styles.slotLabel}>{label}</Text>
+                  {isEmpty ? (
+                    <Text style={styles.slotEmpty}>Empty</Text>
+                  ) : (
+                    <>
+                      <Text style={styles.slotName} numberOfLines={1}>{gearDef.name}</Text>
+                      <Text style={styles.slotStats} numberOfLines={2}>{statSummary(gearDef)}</Text>
+                    </>
+                  )}
+                </View>
               </View>
             );
           })}
         </View>
 
-        {/* 2. Combat Stats Grid */}
+        {/* ── Combat Stats Grid ──────────────────────────────────────── */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>📊 Combat Stats</Text>
           <View style={styles.statsGrid}>
-            <StatBadge label="ATK"    value={effectiveStats.attack} />
-            <StatBadge label="DEF"    value={effectiveStats.defence} />
-            <StatBadge label="HP"     value={effectiveStats.maxHp} />
-            <StatBadge label="CRIT"   value={pct(effectiveStats.critChance)} />
-            <StatBadge label="DODGE"  value={pct(effectiveStats.dodge)} />
+            <StatCard label="ATK"    value={effectiveStats.attack}    emoji="⚔️" />
+            <StatCard label="DEF"    value={effectiveStats.defence}   emoji="🛡️" />
+            <StatCard label="HP"     value={effectiveStats.maxHp}     emoji="❤️" color="#EF4444" />
+            <StatCard label="CRIT"   value={pct(effectiveStats.critChance)}  emoji="💥" color="#FBBF24" />
+            <StatCard label="DODGE"  value={pct(effectiveStats.dodge)}       emoji="💨" color="#06B6D4" />
           </View>
         </View>
 
-        {/* 3. Active Set Bonuses (conditional) */}
+        {/* ── Active Set Bonuses ────────────────────────────────────── */}
         {activeSets.length > 0 && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>✨ Set Bonuses</Text>
             {activeSets.map((set) => (
-              <View key={set.name} style={styles.setBonusCard}>
-                <Text style={styles.setBonusName}>🔗 {set.name}</Text>
-                <Text style={styles.setBonusDesc}>{set.bonus}</Text>
+              <View key={set.name} style={[styles.setBonusCard, theme.SHADOWS.glowPrimary]}>
+                <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
+                  <Defs>
+                    <LinearGradient id="setGrad" x1="0" y1="0" x2="1" y2="0">
+                      <Stop offset="0%" stopColor="#1E1911" />
+                      <Stop offset="100%" stopColor="#0B0B0E" />
+                    </LinearGradient>
+                  </Defs>
+                  <Rect width="100%" height="100%" fill="url(#setGrad)" rx={12} />
+                  <Rect x="1" y="1" width="99%" height="98%" rx={11} fill="none" stroke="rgba(212, 167, 84, 0.25)" strokeWidth={1} />
+                </Svg>
+                <View style={styles.setBonusInner}>
+                  <Text style={styles.setBonusName}>🔗 {set.name}</Text>
+                  <Text style={styles.setBonusDesc}>{set.bonus}</Text>
+                </View>
               </View>
             ))}
           </View>
         )}
 
-        {/* 4. Pack Bag (Consumables) */}
+        {/* ── Pack Bag (Consumables) ─────────────────────────────────── */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>🎒 Pack Bag</Text>
           {hero.inventory.consumables.length === 0 || !hero.inventory.consumables.some(c => c.quantity > 0) ? (
@@ -247,35 +286,55 @@ export default function InventoryScreen() {
               .map((entry) => {
                 const def = CONSUMABLES.find((c) => c.id === entry.id);
                 const icon = CONSUMABLE_ICONS[entry.id] || '🧪';
+                const isChest = entry.id === 'mystery_chest';
                 return (
-                  <View key={entry.id} style={styles.consumableRow}>
-                    <Text style={styles.consumableIcon}>{icon}</Text>
-                    <View style={styles.consumableInfo}>
-                      <Text style={styles.consumableName}>
-                        {def?.name || entry.id}
-                      </Text>
-                      <Text style={styles.consumableDesc} numberOfLines={1}>
-                        {def?.description || ''}
-                      </Text>
+                  <View key={entry.id} style={styles.itemRow}>
+                    <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
+                      <Rect width="100%" height="100%" fill="rgba(255,255,255,0.02)" rx={12} />
+                      <Rect x="1" y="1" width="99%" height="98%" rx={11} fill="none" stroke="rgba(255, 255, 255, 0.05)" strokeWidth={1} />
+                    </Svg>
+                    <View style={styles.itemRowInner}>
+                      <View style={styles.itemIconWrapper}>
+                        <Text style={styles.itemIcon}>{icon}</Text>
+                      </View>
+                      <View style={styles.itemInfo}>
+                        <Text style={styles.itemName}>
+                          {def?.name || entry.id}
+                        </Text>
+                        <Text style={styles.itemDesc} numberOfLines={1}>
+                          {def?.description || ''}
+                        </Text>
+                      </View>
+                      {isChest ? (
+                        <TouchableOpacity
+                          style={[styles.openChestBtn, theme.SHADOWS.glowPrimary]}
+                          activeOpacity={0.8}
+                          onPress={handleOpenChest}
+                        >
+                          <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
+                            <Defs>
+                              <LinearGradient id="chestBtnGrad" x1="0" y1="0" x2="1" y2="0">
+                                <Stop offset="0%" stopColor="#F9D99A" />
+                                <Stop offset="100%" stopColor="#D4A754" />
+                              </LinearGradient>
+                            </Defs>
+                            <Rect width="100%" height="100%" fill="url(#chestBtnGrad)" rx={8} />
+                          </Svg>
+                          <Text style={styles.openChestBtnText}>Open ({entry.quantity})</Text>
+                        </TouchableOpacity>
+                      ) : (
+                        <View style={styles.qtyBadge}>
+                          <Text style={styles.qtyText}>×{entry.quantity}</Text>
+                        </View>
+                      )}
                     </View>
-                    {entry.id === 'mystery_chest' ? (
-                      <TouchableOpacity
-                        style={styles.openChestBtn}
-                        activeOpacity={0.7}
-                        onPress={() => handleOpenChest()}
-                      >
-                        <Text style={styles.openChestBtnText}>Open (×{entry.quantity})</Text>
-                      </TouchableOpacity>
-                    ) : (
-                      <Text style={styles.consumableQty}>×{entry.quantity}</Text>
-                    )}
                   </View>
                 );
               })
           )}
         </View>
 
-        {/* 5. Owned Gear */}
+        {/* ── Owned Gear ────────────────────────────────────────────── */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>⚒️ Owned Gear</Text>
           {hero.inventory.craftedGear.length === 0 ? (
@@ -292,27 +351,52 @@ export default function InventoryScreen() {
               const isEquipped = hero.gear[gearDef.type] === gearId;
 
               return (
-                <View key={gearId} style={styles.gearRow}>
-                  <View style={styles.gearInfo}>
-                    <Text style={styles.gearName}>{gearDef.name}</Text>
-                    <Text style={styles.gearType}>
-                      {gearDef.type.charAt(0).toUpperCase() + gearDef.type.slice(1)}
-                    </Text>
-                    <Text style={styles.gearStats}>{statSummary(gearDef)}</Text>
-                  </View>
+                <View key={gearId} style={[styles.itemRow, isEquipped && styles.itemRowEquipped]}>
+                  <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
+                    <Defs>
+                      <LinearGradient id="equippedRowGrad" x1="0" y1="0" x2="1" y2="0">
+                        <Stop offset="0%" stopColor="#1E1911" />
+                        <Stop offset="100%" stopColor="#0B0B0E" />
+                      </LinearGradient>
+                    </Defs>
+                    <Rect width="100%" height="100%" fill={isEquipped ? "url(#equippedRowGrad)" : "rgba(255,255,255,0.02)"} rx={12} />
+                    <Rect
+                      x="1"
+                      y="1"
+                      width="99%"
+                      height="98%"
+                      rx={11}
+                      fill="none"
+                      stroke={isEquipped ? 'rgba(212, 167, 84, 0.3)' : 'rgba(255, 255, 255, 0.05)'}
+                      strokeWidth={1}
+                    />
+                  </Svg>
 
-                  {isEquipped ? (
-                    <View style={styles.equippedBadge}>
-                      <Text style={styles.equippedBadgeText}>Equipped</Text>
+                  <View style={styles.itemRowInner}>
+                    <View style={styles.itemInfo}>
+                      <View style={styles.nameRow}>
+                        <Text style={styles.itemName}>{gearDef.name}</Text>
+                        <Text style={styles.gearTag}>
+                          {gearDef.type.toUpperCase()}
+                        </Text>
+                      </View>
+                      <Text style={styles.gearStats}>{statSummary(gearDef)}</Text>
                     </View>
-                  ) : (
-                    <TouchableOpacity
-                      style={styles.equipBtn}
-                      onPress={() => handleEquip(gearDef)}
-                    >
-                      <Text style={styles.equipBtnText}>Equip</Text>
-                    </TouchableOpacity>
-                  )}
+
+                    {isEquipped ? (
+                      <View style={styles.equippedBadge}>
+                        <Text style={styles.equippedBadgeText}>Equipped</Text>
+                      </View>
+                    ) : (
+                      <TouchableOpacity
+                        style={styles.equipBtn}
+                        activeOpacity={0.7}
+                        onPress={() => handleEquip(gearDef)}
+                      >
+                        <Text style={styles.equipBtnText}>Equip</Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
                 </View>
               );
             })
@@ -324,25 +408,35 @@ export default function InventoryScreen() {
 }
 
 // ============================================================================
-// Tiny sub-component — a single stat badge in the stats grid
+// Sub-component — A single premium stat card
 // ============================================================================
-function StatBadge({ label, value }) {
+function StatCard({ label, value, emoji, color = '#D4A754' }) {
   return (
-    <View style={styles.statBadge}>
-      <Text style={styles.statLabel}>{label}</Text>
-      <Text style={styles.statValue}>{value}</Text>
+    <View style={styles.statCard}>
+      {/* Card Border & Background */}
+      <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
+        <Rect width="100%" height="100%" fill="rgba(255, 255, 255, 0.02)" rx={12} />
+        <Rect x="1" y="1" width="98%" height="98%" rx={11} fill="none" stroke="rgba(255, 255, 255, 0.04)" strokeWidth={1} />
+      </Svg>
+
+      <View style={styles.statCardInner}>
+        <View style={styles.statEmojiWrapper}>
+          <Text style={styles.statEmoji}>{emoji}</Text>
+        </View>
+        <Text style={styles.statLabel}>{label}</Text>
+        <Text style={[styles.statValue, { color }]}>{value}</Text>
+      </View>
     </View>
   );
 }
 
 // ============================================================================
-// Styles — modern dark glassmorphic aesthetic
+// Styles — Twilight Obsidian & Gilded Amber Theme
 // ============================================================================
 const styles = StyleSheet.create({
-  /* ═══ Root & Layout ════════════════════════════════════════════════════════ */
   root: {
     flex: 1,
-    backgroundColor: '#0E0E14',
+    backgroundColor: '#07070A',
   },
   scrollContent: {
     paddingHorizontal: 16,
@@ -356,81 +450,75 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 14,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.05)',
+    borderBottomColor: 'rgba(255, 255, 255, 0.04)',
   },
   backBtn: {
-    width: 60,
+    width: 70,
     paddingVertical: 6,
   },
   backText: {
     color: '#D4A754',
     fontFamily: 'System',
     fontWeight: 'bold',
-    fontSize: 15,
+    fontSize: 16,
+    letterSpacing: 0.5,
   },
   title: {
     fontFamily: 'System',
     fontWeight: 'bold',
     fontSize: 20,
-    color: '#FFF5E6',
+    color: '#F8FAFC',
     textAlign: 'center',
+    letterSpacing: 0.8,
   },
   backBtnPlaceholder: {
-    width: 60,
+    width: 70,
   },
 
-  /* ═══ Gear slots ═══════════════════════════════════════════════════════════ */
+  /* ═══ Gear Slots ═══════════════════════════════════════════════════════════ */
   slotsRow: {
     flexDirection: 'row',
-    gap: 8,
-    marginBottom: 20,
+    gap: 10,
+    marginBottom: 24,
   },
   slotCard: {
     flex: 1,
-    backgroundColor: 'rgba(255, 255, 255, 0.02)',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.05)',
-    borderRadius: 14,
-    padding: 10,
-    alignItems: 'center',
-    minHeight: 110,
-    justifyContent: 'center',
+    borderRadius: 16,
+    minHeight: 120,
+    overflow: 'hidden',
   },
-  slotCardEquipped: {
-    borderColor: 'rgba(212, 167, 84, 0.35)',
-    borderWidth: 1.5,
-    backgroundColor: 'rgba(212, 167, 84, 0.03)',
-    shadowColor: '#D4A754',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 4,
+  slotInner: {
+    padding: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flex: 1,
+    zIndex: 2,
   },
   slotEmoji: {
-    fontSize: 24,
-    marginBottom: 6,
+    fontSize: 26,
+    marginBottom: 4,
   },
   slotLabel: {
     fontFamily: 'System',
-    fontSize: 9,
-    fontWeight: 'bold',
+    fontSize: 10,
+    fontWeight: '800',
     color: 'rgba(255, 255, 255, 0.25)',
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    letterSpacing: 1,
     marginBottom: 4,
   },
   slotEmpty: {
     fontFamily: 'System',
-    fontSize: 11,
+    fontSize: 12,
     color: 'rgba(255, 255, 255, 0.2)',
     fontStyle: 'italic',
   },
   slotName: {
     fontFamily: 'System',
-    fontSize: 11,
-    color: '#FFF5E6',
+    fontSize: 12,
+    color: '#F8FAFC',
     fontWeight: 'bold',
     textAlign: 'center',
   },
@@ -439,128 +527,211 @@ const styles = StyleSheet.create({
     fontSize: 9,
     color: '#D4A754',
     textAlign: 'center',
-    marginTop: 3,
+    marginTop: 4,
     lineHeight: 12,
+    fontWeight: '500',
   },
 
   /* ═══ Sections ═════════════════════════════════════════════════════════════ */
   section: {
-    marginBottom: 20,
+    marginBottom: 24,
   },
   sectionTitle: {
     fontFamily: 'System',
-    fontWeight: 'bold',
+    fontWeight: '800',
     fontSize: 15,
     color: '#D4A754',
-    marginBottom: 10,
-    letterSpacing: 0.3,
+    marginBottom: 12,
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
   },
 
   /* ═══ Stats Grid ═══════════════════════════════════════════════════════════ */
   statsGrid: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
     gap: 8,
   },
-  statBadge: {
-    backgroundColor: 'rgba(255, 255, 255, 0.02)',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.05)',
-    borderRadius: 10,
-    paddingVertical: 10,
+  statCard: {
+    flex: 1,
+    borderRadius: 12,
+    minHeight: 80,
+    overflow: 'hidden',
+  },
+  statCardInner: {
+    padding: 8,
     alignItems: 'center',
-    width: (Dimensions.get('window').width - 64) / 5,
+    justifyContent: 'center',
+    flex: 1,
+    zIndex: 2,
+  },
+  statEmojiWrapper: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: 'rgba(255, 255, 255, 0.04)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 4,
+  },
+  statEmoji: {
+    fontSize: 14,
   },
   statLabel: {
     fontFamily: 'System',
     fontSize: 9,
     fontWeight: 'bold',
-    color: 'rgba(255, 255, 255, 0.3)',
+    color: '#707F94',
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    letterSpacing: 0.8,
     marginBottom: 2,
   },
   statValue: {
     fontFamily: 'System',
     fontSize: 14,
-    color: '#FFF5E6',
     fontWeight: 'bold',
   },
 
-  /* ═══ Set bonuses ══════════════════════════════════════════════════════════ */
+  /* ═══ Set Bonuses ══════════════════════════════════════════════════════════ */
   setBonusCard: {
-    backgroundColor: 'rgba(212, 167, 84, 0.04)',
-    borderWidth: 1,
-    borderColor: 'rgba(212, 167, 84, 0.15)',
     borderRadius: 12,
-    padding: 12,
+    overflow: 'hidden',
     marginBottom: 8,
+  },
+  setBonusInner: {
+    padding: 14,
+    zIndex: 2,
   },
   setBonusName: {
     fontFamily: 'System',
-    fontSize: 13,
+    fontSize: 14,
     color: '#D4A754',
     fontWeight: 'bold',
+    letterSpacing: 0.5,
   },
   setBonusDesc: {
     fontFamily: 'System',
-    fontSize: 11,
+    fontSize: 12,
     color: 'rgba(255, 255, 255, 0.5)',
-    marginTop: 4,
-    lineHeight: 15,
+    marginTop: 6,
+    lineHeight: 16,
   },
 
-  /* ═══ Owned Gear Row ═══════════════════════════════════════════════════════ */
-  gearRow: {
+  /* ═══ Premium Item Rows (Consumables & Gear) ═══════════════════════════════ */
+  itemRow: {
+    borderRadius: 12,
+    overflow: 'hidden',
+    marginBottom: 8,
+    minHeight: 64,
+  },
+  itemRowEquipped: {
+    borderColor: 'rgba(212, 167, 84, 0.2)',
+  },
+  itemRowInner: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.02)',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.05)',
-    borderRadius: 12,
     padding: 12,
-    marginBottom: 8,
+    zIndex: 2,
   },
-  gearInfo: {
+  itemIconWrapper: {
+    width: 40,
+    height: 40,
+    borderRadius: 8,
+    backgroundColor: 'rgba(255,255,255,0.03)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.05)',
+  },
+  itemIcon: {
+    fontSize: 22,
+  },
+  itemInfo: {
     flex: 1,
+    justifyContent: 'center',
   },
-  gearName: {
+  itemName: {
     fontFamily: 'System',
     fontSize: 14,
-    color: '#FFF5E6',
+    color: '#F8FAFC',
     fontWeight: 'bold',
   },
-  gearType: {
+  nameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  gearTag: {
     fontFamily: 'System',
-    fontSize: 9,
-    color: 'rgba(255, 255, 255, 0.3)',
-    fontWeight: 'bold',
-    textTransform: 'uppercase',
+    fontSize: 8,
+    fontWeight: '900',
+    color: '#707F94',
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    paddingHorizontal: 5,
+    paddingVertical: 2,
+    borderRadius: 4,
     letterSpacing: 0.5,
+  },
+  itemDesc: {
+    fontFamily: 'System',
+    fontSize: 12,
+    color: '#707F94',
     marginTop: 2,
   },
   gearStats: {
     fontFamily: 'System',
-    fontSize: 11,
+    fontSize: 12,
     color: '#D4A754',
-    marginTop: 4,
+    marginTop: 3,
+    fontWeight: '500',
+  },
+  qtyBadge: {
+    backgroundColor: 'rgba(212, 167, 84, 0.1)',
+    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderWidth: 1,
+    borderColor: 'rgba(212, 167, 84, 0.2)',
+  },
+  qtyText: {
+    fontFamily: 'System',
+    fontSize: 14,
+    color: '#D4A754',
+    fontWeight: 'bold',
+  },
+  openChestBtn: {
+    width: 90,
+    height: 32,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  openChestBtnText: {
+    fontFamily: 'System',
+    fontSize: 12,
+    fontWeight: 'bold',
+    color: '#1A1200',
+    zIndex: 2,
   },
   equipBtn: {
-    backgroundColor: '#D4A754',
+    backgroundColor: 'rgba(255,255,255,0.06)',
     borderRadius: 8,
-    paddingVertical: 8,
+    paddingVertical: 6,
     paddingHorizontal: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
   },
   equipBtnText: {
     fontFamily: 'System',
     fontSize: 12,
-    color: '#1A1200',
+    color: '#F8FAFC',
     fontWeight: 'bold',
   },
   equippedBadge: {
-    backgroundColor: 'rgba(76, 175, 80, 0.15)',
+    backgroundColor: 'rgba(16, 185, 129, 0.1)',
     borderWidth: 1,
-    borderColor: 'rgba(76, 175, 80, 0.3)',
+    borderColor: 'rgba(16, 185, 129, 0.25)',
     borderRadius: 8,
     paddingVertical: 6,
     paddingHorizontal: 12,
@@ -568,61 +739,8 @@ const styles = StyleSheet.create({
   equippedBadgeText: {
     fontFamily: 'System',
     fontSize: 11,
-    color: '#4CAF50',
+    color: '#10B981',
     fontWeight: 'bold',
-  },
-
-  /* ═══ Consumable Rows ══════════════════════════════════════════════════════ */
-  consumableRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.02)',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.05)',
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 8,
-  },
-  consumableIcon: {
-    fontSize: 20,
-    marginRight: 10,
-  },
-  consumableInfo: {
-    flex: 1,
-  },
-  consumableName: {
-    fontFamily: 'System',
-    fontSize: 14,
-    color: '#FFF5E6',
-    fontWeight: 'bold',
-  },
-  consumableDesc: {
-    fontFamily: 'System',
-    fontSize: 11,
-    color: 'rgba(255, 255, 255, 0.35)',
-    marginTop: 2,
-  },
-  consumableQty: {
-    fontFamily: 'System',
-    fontSize: 18,
-    color: '#D4A754',
-    fontWeight: 'bold',
-    marginLeft: 12,
-  },
-  openChestBtn: {
-    backgroundColor: 'rgba(212, 167, 84, 0.15)',
-    borderWidth: 1,
-    borderColor: 'rgba(212, 167, 84, 0.25)',
-    borderRadius: 8,
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    marginLeft: 12,
-  },
-  openChestBtnText: {
-    fontFamily: 'System',
-    fontSize: 12,
-    fontWeight: 'bold',
-    color: '#D4A754',
   },
 
   /* ═══ Empty / States ═══════════════════════════════════════════════════════ */

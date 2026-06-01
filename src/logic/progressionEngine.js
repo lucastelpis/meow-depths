@@ -143,7 +143,7 @@ export function checkLevelUp(hero) {
  *   passives: Object           – aggregated passive bonuses
  * }}
  */
-export function calculateEffectiveStats(hero, skillDefinitions = SKILLS) {
+export function calculateEffectiveStats(hero, skillDefinitions = SKILLS, runBuffs = null) {
   // --- Start from the hero's base stats ------------------------------------
   let maxHp     = hero.maxHp      || 50;
   let attack    = hero.attack     || 10;
@@ -258,6 +258,16 @@ export function calculateEffectiveStats(hero, skillDefinitions = SKILLS) {
     if (bonus.maxHp)      maxHp      += bonus.maxHp;
     if (bonus.critChance) critChance += bonus.critChance;
     if (bonus.dodge)      dodge      += bonus.dodge;
+  }
+
+  // --- 4. Run-only buffs (applied on top) ----------------------------------
+  // Tracked in currentRun.runBuffs and cleared when run ends
+  if (runBuffs) {
+    if (runBuffs.attackBonus)  attack     += runBuffs.attackBonus;
+    if (runBuffs.defenceBonus) defence    += runBuffs.defenceBonus;
+    if (runBuffs.maxHpBonus)   maxHp      += runBuffs.maxHpBonus;
+    if (runBuffs.critBonus)    critChance += runBuffs.critBonus;
+    if (runBuffs.dodgeBonus)   dodge      += runBuffs.dodgeBonus;
   }
 
   return {

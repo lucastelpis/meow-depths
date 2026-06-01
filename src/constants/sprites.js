@@ -20,24 +20,21 @@
  * NOTE: Metro bundler requires fully-static require() strings — no template literals.
  */
 
-// ─── Hero ─────────────────────────────────────────────────────────────────────
-
 export const HERO_SPRITE = {
-  // TODO: replace source images with Mochi's own cat sprite when available
   idle: {
-    source:    require('../../assets/sprites/Tiny Swords (Free Pack)/Units/Blue Units/Warrior/Warrior_Idle.png'),
-    frameSize: 192,
-    frames:    8,
+    source:    require('../../assets/sprites/Tiny Swords (Free Pack)/Units/Original/cat_idle.png'),
+    frameSize: 104,
+    frames:    9,
   },
   attack: {
-    source:    require('../../assets/sprites/Tiny Swords (Free Pack)/Units/Blue Units/Warrior/Warrior_Attack1.png'),
-    frameSize: 192,
-    frames:    4,
+    source:    require('../../assets/sprites/Tiny Swords (Free Pack)/Units/Original/cat_attack.png'),
+    frameSize: 104,
+    frames:    11,
   },
   guard: {
-    source:    require('../../assets/sprites/Tiny Swords (Free Pack)/Units/Blue Units/Warrior/Warrior_Guard.png'),
-    frameSize: 192,
-    frames:    6,
+    source:    require('../../assets/sprites/Tiny Swords (Free Pack)/Units/Original/cat_idle.png'),
+    frameSize: 104,
+    frames:    9,
   },
 };
 

@@ -1,11 +1,9 @@
 /**
- * SkillTreeScreen.js — Meow Depths Skill Tree
+ * SkillTreeScreen.js — Meow Depths Skill Tree (Redesigned Premium UI)
  *
- * Displays three class paths (Iron Paw, Stonefur, Shadow Claw) via a clean
- * tab bar selector at the top. Selecting a tab displays a single, vertical tree
- * with branch nodes rendered side-by-side. 
- *
- * Tapping a node opens a detailed skill drawer/modal to learn or equip skills.
+ * Displays three class paths (Iron Paw, Stonefur, Shadow Claw) via a premium tab bar.
+ * Renders the skill tree as a beautiful SVG constellation path with glowing nodes and
+ * connections, and a slide-up detail panel for learning and equipping skills.
  */
 
 import React, { useState, useMemo, useCallback } from 'react';
@@ -17,21 +15,24 @@ import {
   StyleSheet,
   Modal,
   Pressable,
+  Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
+import Svg, { Defs, LinearGradient, RadialGradient, Stop, Rect, Line, Circle } from 'react-native-svg';
 
 import theme from '../constants/theme';
 import { useGame } from '../state/gameState';
 import { SKILLS, getSkillsByPath } from '../data/skills';
 import { canUnlockSkill } from '../logic/progressionEngine';
 
-// ─── Path metadata ──────────────────────────────────────────────────────────
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
+// ─── Path metadata ──────────────────────────────────────────────────────────
 const PATHS = [
-  { key: 'ironPaw',    label: 'Iron Paw',    icon: '🐾' },
-  { key: 'stonefur',   label: 'Stonefur',    icon: '🪨' },
-  { key: 'shadowClaw', label: 'Shadow Claw', icon: '🌙' },
+  { key: 'ironPaw',    label: 'Iron Paw',    icon: '🐾', color: '#EF4444' },
+  { key: 'stonefur',   label: 'Stonefur',    icon: '🪨', color: '#06B6D4' },
+  { key: 'shadowClaw', label: 'Shadow Claw', icon: '🌙', color: '#A855F7' },
 ];
 
 const PATH_DESCRIPTIONS = {
@@ -41,21 +42,18 @@ const PATH_DESCRIPTIONS = {
 };
 
 const SKILL_EMOJIS = {
-  // Iron Paw
   iron_slash: '⚔️',
   steady_paws: '🐾',
   rally: '❤️',
   power_strike: '💥',
   veteran: '🛡️',
   sharp_mind: '🧠',
-  // Stonefur
   guard_stance: '🛡️',
   iron_hide: '🪵',
   retaliate: '⚡',
   thick_fur: '🧥',
   unbreakable: '🧱',
   titan_slam: '🔨',
-  // Shadow Claw
   vanish: '💨',
   serrated_claws: '🔪',
   death_mark: '🎯',
@@ -64,20 +62,9 @@ const SKILL_EMOJIS = {
   phantom_step: '👣',
 };
 
-// ─── Helpers ────────────────────────────────────────────────────────────────
-
-/**
- * Determine a skill node's visual status.
- *
- * @param {Object}   skill          – Skill definition.
- * @param {string[]} unlockedSkills – Hero's unlocked skill IDs.
- * @param {number}   skillPoints    – Hero's available skill points.
- * @returns {'unlocked'|'available'|'no_points'|'blocked'|'locked'}
- */
 function getSkillStatus(skill, unlockedSkills, skillPoints) {
   if (unlockedSkills.includes(skill.id)) return 'unlocked';
 
-  // Check if the other branch in the same tier was already chosen
   if (skill.branch) {
     const otherBranch = skill.branch === 'a' ? 'b' : 'a';
     const conflicting = Object.values(SKILLS).find(
@@ -86,109 +73,14 @@ function getSkillStatus(skill, unlockedSkills, skillPoints) {
     if (conflicting && unlockedSkills.includes(conflicting.id)) return 'blocked';
   }
 
-  // Check if fully available
   const result = canUnlockSkill(skill.id, unlockedSkills, skillPoints, SKILLS);
   if (result.canUnlock) return 'available';
 
-  // Check if it WOULD be available if we had points (prereq met, not blocked, not unlocked)
   const potentialResult = canUnlockSkill(skill.id, unlockedSkills, 1, SKILLS);
   if (potentialResult.canUnlock) return 'no_points';
 
   return 'locked';
 }
-
-// ─── Connector Components ───────────────────────────────────────────────────
-
-const VerticalLine = ({ active }) => (
-  <View style={[styles.lineVertical, active && styles.lineActive]} />
-);
-
-const SplitConnector = ({ activeLeft, activeRight }) => (
-  <View style={styles.splitConnectorContainer}>
-    <View style={[styles.lineVerticalHalf, (activeLeft || activeRight) && styles.lineActive]} />
-    <View style={styles.horizontalBarContainer}>
-      <View style={[styles.lineHorizontal, activeLeft && styles.lineActive]} />
-      <View style={[styles.lineHorizontal, activeRight && styles.lineActive]} />
-    </View>
-    <View style={styles.splitDownLines}>
-      <View style={[styles.lineVerticalHalf, activeLeft && styles.lineActive]} />
-      <View style={[styles.lineVerticalHalf, activeRight && styles.lineActive]} />
-    </View>
-  </View>
-);
-
-const DoubleConnector = ({ activeLeft, activeRight }) => (
-  <View style={styles.doubleConnectorContainer}>
-    <View style={[styles.lineVertical, activeLeft && styles.lineActive]} />
-    <View style={[styles.lineVertical, activeRight && styles.lineActive]} />
-  </View>
-);
-
-// ─── Skill Node Component ───────────────────────────────────────────────────
-
-function SkillNode({ skill, status, onPress }) {
-  const isActive = skill.type === 'active';
-  const emoji = SKILL_EMOJIS[skill.id] || '✨';
-
-  // Style helper based on status
-  const getStatusStyles = () => {
-    switch (status) {
-      case 'unlocked':
-        return { node: styles.nodeUnlocked, badge: styles.badgeUnlocked, text: '✓ Learned' };
-      case 'available':
-        return { node: styles.nodeAvailable, badge: styles.badgeAvailable, text: 'Ready' };
-      case 'no_points':
-        return { node: styles.nodeNoPoints, badge: styles.badgeNoPoints, text: 'Need SP' };
-      case 'blocked':
-        return { node: styles.nodeBlocked, badge: styles.badgeBlocked, text: 'Blocked' };
-      case 'locked':
-      default:
-        return { node: styles.nodeLocked, badge: styles.badgeLocked, text: 'Locked' };
-    }
-  };
-
-  const statusStyle = getStatusStyles();
-
-  return (
-    <TouchableOpacity
-      style={[styles.node, statusStyle.node]}
-      onPress={onPress}
-      activeOpacity={0.8}
-    >
-      {/* Emoji Icon */}
-      <Text style={[styles.nodeEmoji, (status === 'locked' || status === 'blocked') && styles.fadedText]}>
-        {emoji}
-      </Text>
-
-      {/* Skill Name */}
-      <Text style={[styles.skillName, (status === 'locked' || status === 'blocked') && styles.fadedText]} numberOfLines={1}>
-        {skill.name}
-      </Text>
-
-      {/* Badges Box */}
-      <View style={styles.badgeRow}>
-        {/* Active/Passive badge */}
-        <View style={[styles.typeBadge, isActive ? styles.badgeActive : styles.badgePassive]}>
-          <Text style={styles.typeBadgeText}>{isActive ? 'Active' : 'Passive'}</Text>
-        </View>
-
-        {/* Status badge */}
-        <View style={[styles.statusBadge, statusStyle.badge]}>
-          <Text style={styles.statusBadgeText}>{statusStyle.text}</Text>
-        </View>
-      </View>
-
-      {/* Branch Label for T3/T4 */}
-      {skill.branch && (
-        <Text style={[styles.branchLabel, status === 'blocked' && styles.fadedText]}>
-          Branch {skill.branch.toUpperCase()}
-        </Text>
-      )}
-    </TouchableOpacity>
-  );
-}
-
-// ─── Main Component ─────────────────────────────────────────────────────────
 
 export default function SkillTreeScreen() {
   const navigation = useNavigation();
@@ -229,7 +121,6 @@ export default function SkillTreeScreen() {
 
   const { t1, t2, t3_a, t3_b, t4_a, t4_b } = treeNodes;
 
-  // Calculate unlock progress for each path tab
   const tabProgress = useMemo(() => {
     const counts = {};
     pathData.forEach(p => {
@@ -239,7 +130,17 @@ export default function SkillTreeScreen() {
     return counts;
   }, [pathData, unlockedSkills]);
 
-  // Prerequisite description helper for Modal
+  // Constellation Connectors Logic (solid only if target skill is unlocked/chosen)
+  const connectionStatuses = useMemo(() => {
+    return {
+      t1_t2: t2 ? unlockedSkills.includes(t2.id) : false,
+      t2_t3a: t3_a ? unlockedSkills.includes(t3_a.id) : false,
+      t2_t3b: t3_b ? unlockedSkills.includes(t3_b.id) : false,
+      t3a_t4a: t4_a ? unlockedSkills.includes(t4_a.id) : false,
+      t3b_t4b: t4_b ? unlockedSkills.includes(t4_b.id) : false,
+    };
+  }, [t2, t3_a, t3_b, t4_a, t4_b, unlockedSkills]);
+
   const prereqInfo = useMemo(() => {
     if (!selectedSkill) return null;
     if (!selectedSkill.requires) return { met: true, text: 'No Prerequisite' };
@@ -252,7 +153,6 @@ export default function SkillTreeScreen() {
     };
   }, [selectedSkill, unlockedSkills]);
 
-  // Conflict description helper for Modal
   const conflictInfo = useMemo(() => {
     if (!selectedSkill || !selectedSkill.branch) return null;
     const otherBranch = selectedSkill.branch === 'a' ? 'b' : 'a';
@@ -272,9 +172,6 @@ export default function SkillTreeScreen() {
   const handleLearnSkill = useCallback(() => {
     if (!selectedSkill) return;
     dispatch({ type: 'UNLOCK_SKILL', payload: { skillId: selectedSkill.id, cost: 1 } });
-    
-    // Automatically keep the modal open, letting status update dynamically to 'unlocked'
-    // where they can see the equip choices immediately.
   }, [selectedSkill, dispatch]);
 
   const handleEquipSkill = useCallback((slotIndex) => {
@@ -285,7 +182,6 @@ export default function SkillTreeScreen() {
     });
   }, [selectedSkill, dispatch]);
 
-  // Modal active slots names
   const slot1Label = useMemo(() => {
     return equippedSkills[0] ? SKILLS[equippedSkills[0]]?.name || 'Skill 1' : 'Empty';
   }, [equippedSkills]);
@@ -299,12 +195,95 @@ export default function SkillTreeScreen() {
     return getSkillStatus(selectedSkill, unlockedSkills, skillPoints);
   }, [selectedSkill, unlockedSkills, skillPoints]);
 
+  // Absolute coordinate offsets inside our tree container (340 width, 520 height)
+  const renderSkillNode = (skill, cx, cy) => {
+    if (!skill) return null;
+    const status = getSkillStatus(skill, unlockedSkills, skillPoints);
+    const isEquipped = equippedSkills.includes(skill.id);
+    const emoji = SKILL_EMOJIS[skill.id] || '✨';
+
+    // Status visual styles
+    let borderColor = 'rgba(255,255,255,0.06)';
+    let glowColor = 'transparent';
+    let opacity = 1;
+    let badgeText = '';
+    let badgeColor = '#707F94';
+
+    if (isEquipped) {
+      borderColor = '#D4A754';
+      glowColor = 'rgba(212, 167, 84, 0.4)';
+    } else if (status === 'unlocked') {
+      borderColor = '#10B981';
+      glowColor = 'rgba(16, 185, 129, 0.15)';
+    } else if (status === 'available') {
+      borderColor = '#FFC107';
+      glowColor = 'rgba(255, 193, 7, 0.2)';
+    } else if (status === 'no_points') {
+      borderColor = '#FF6B35';
+      glowColor = 'rgba(255, 107, 53, 0.1)';
+    } else {
+      borderColor = 'rgba(255,255,255,0.03)';
+      opacity = 0.4;
+    }
+
+    return (
+      <View key={skill.id} style={[styles.nodeWrapper, { left: cx - 35, top: cy - 35, opacity }]}>
+        <TouchableOpacity
+          style={[
+            styles.nodeCircle,
+            { borderColor, shadowColor: borderColor },
+            isEquipped && styles.nodeCircleEquipped,
+          ]}
+          onPress={() => setSelectedSkill(skill)}
+          activeOpacity={0.8}
+        >
+          {/* Node SVG Glow background */}
+          <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
+            <Defs>
+              <RadialGradient id={`nodeGlow_${skill.id}`} cx="50%" cy="50%" r="50%">
+                <Stop offset="0%" stopColor={borderColor} stopOpacity="0.25" />
+                <Stop offset="100%" stopColor="#0B0B12" stopOpacity="0" stopColor="transparent" />
+              </RadialGradient>
+            </Defs>
+            <Rect width="100%" height="100%" fill={`url(#nodeGlow_${skill.id})`} rx={35} />
+          </Svg>
+          <Text style={styles.nodeEmoji}>{emoji}</Text>
+          {isEquipped && (
+            <View style={styles.equippedDot} />
+          )}
+        </TouchableOpacity>
+
+        {/* Node Name underneath */}
+        <View style={styles.nodeNameWrapper}>
+          <Text style={[styles.nodeNameText, isEquipped && { color: '#D4A754', fontWeight: 'bold' }]} numberOfLines={1}>
+            {skill.name}
+          </Text>
+          <Text style={styles.nodeTypeText}>
+            {skill.type === 'active' ? 'ACT' : 'PAS'}
+          </Text>
+        </View>
+      </View>
+    );
+  };
+
   return (
     <SafeAreaView style={styles.container}>
+      {/* Top ambient glow background */}
+      <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
+        <Defs>
+          <RadialGradient id="topGlow" cx="50%" cy="0%" rx="80%" ry="45%">
+            <Stop offset="0%" stopColor="#A855F7" stopOpacity="0.05" />
+            <Stop offset="100%" stopColor="#07070A" stopOpacity="0" stopColor="transparent" />
+          </RadialGradient>
+        </Defs>
+        <Rect width="100%" height="100%" fill="#07070A" />
+        <Rect width="100%" height="100%" fill="url(#topGlow)" />
+      </Svg>
+
       {/* ── Header ─────────────────────────────────────────────────────── */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-          <Text style={styles.backText}>← Back</Text>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn} activeOpacity={0.7}>
+          <Text style={styles.backText}>← Hub</Text>
         </TouchableOpacity>
         <Text style={styles.title}>🌟 Skill Tree</Text>
         <View style={styles.spBadgeContainer}>
@@ -315,17 +294,32 @@ export default function SkillTreeScreen() {
       {/* ── Path Tab Bar ───────────────────────────────────────────────── */}
       <View style={styles.tabBarContainer}>
         <View style={styles.tabBar}>
-          {PATHS.map(({ key, label, icon }) => {
+          {PATHS.map(({ key, label, icon, color }) => {
             const isActive = selectedPath === key;
             return (
               <TouchableOpacity
                 key={key}
-                style={[styles.tabButton, isActive && styles.tabButtonActive]}
+                style={[styles.tabButton, isActive && { backgroundColor: 'rgba(255,255,255,0.03)' }]}
+                activeOpacity={0.8}
                 onPress={() => setSelectedPath(key)}
               >
-                <Text style={[styles.tabIcon, isActive && styles.tabTextActive]}>{icon}</Text>
-                <Text style={[styles.tabLabel, isActive && styles.tabTextActive]}>{label}</Text>
-                <Text style={[styles.tabProgressText, isActive && styles.tabProgressActive]}>
+                {isActive && (
+                  <View style={StyleSheet.absoluteFill}>
+                    <Svg width="100%" height="100%">
+                      <Defs>
+                        <LinearGradient id={`tabGrad_${key}`} x1="0" y1="0" x2="1" y2="0">
+                          <Stop offset="0%" stopColor={`${color}15`} />
+                          <Stop offset="100%" stopColor="transparent" />
+                        </LinearGradient>
+                      </Defs>
+                      <Rect width="100%" height="100%" fill={`url(#tabGrad_${key})`} rx={10} />
+                      <Rect width="100%" height="100%" fill="none" stroke={`${color}40`} strokeWidth={1} rx={10} />
+                    </Svg>
+                  </View>
+                )}
+                <Text style={[styles.tabIcon, isActive && { opacity: 1 }]}>{icon}</Text>
+                <Text style={[styles.tabLabel, isActive && { color: '#F8FAFC', fontWeight: '800' }]}>{label}</Text>
+                <Text style={[styles.tabProgressText, isActive && { color }]}>
                   {tabProgress[key]}
                 </Text>
               </TouchableOpacity>
@@ -342,114 +336,88 @@ export default function SkillTreeScreen() {
       >
         {/* Selected Path Intro Card */}
         <View style={styles.introCard}>
-          <Text style={styles.introTitle}>
-            {selectedPathData?.icon} {selectedPathData?.label} Path
-          </Text>
-          <Text style={styles.introDesc}>
-            {PATH_DESCRIPTIONS[selectedPath]}
-          </Text>
+          <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
+            <Rect width="100%" height="100%" fill="rgba(255,255,255,0.015)" rx={14} />
+            <Rect x="1" y="1" width="98%" height="98%" rx={13} fill="none" stroke="rgba(255,255,255,0.04)" strokeWidth={1} />
+          </Svg>
+          <View style={styles.introCardInner}>
+            <Text style={styles.introTitle}>
+              {selectedPathData?.icon} {selectedPathData?.label} Path
+            </Text>
+            <Text style={styles.introDesc}>
+              {PATH_DESCRIPTIONS[selectedPath]}
+            </Text>
+          </View>
         </View>
 
-        {/* Tree Container */}
+        {/* Tree Container (Constellation Canvas) */}
         <View style={styles.treeContainer}>
-          {/* Tier 1 */}
-          {t1 && (
-            <View style={styles.singleRow}>
-              <SkillNode
-                skill={t1}
-                status={getSkillStatus(t1, unlockedSkills, skillPoints)}
-                onPress={() => setSelectedSkill(t1)}
-              />
-            </View>
-          )}
+          {/* SVG Constellation Lines */}
+          <Svg width={340} height={520} style={StyleSheet.absoluteFill}>
+            <Defs>
+              <LinearGradient id="glowingLineGrad" x1="0" y1="0" x2="0" y2="1">
+                <Stop offset="0%" stopColor="#F9D99A" />
+                <Stop offset="100%" stopColor="#D4A754" />
+              </LinearGradient>
+            </Defs>
 
-          {/* Connector T1 -> T2 */}
-          {t1 && t2 && (
-            <VerticalLine
-              active={['unlocked', 'available', 'no_points'].includes(
-                getSkillStatus(t2, unlockedSkills, skillPoints)
-              )}
+            {/* Line T1 -> T2 */}
+            <Line
+              x1={170} y1={60}
+              x2={170} y2={190}
+              stroke={connectionStatuses.t1_t2 ? "url(#glowingLineGrad)" : "rgba(255,255,255,0.08)"}
+              strokeWidth={connectionStatuses.t1_t2 ? 2.5 : 1.5}
+              strokeDasharray={connectionStatuses.t1_t2 ? undefined : "4 4"}
             />
-          )}
-
-          {/* Tier 2 */}
-          {t2 && (
-            <View style={styles.singleRow}>
-              <SkillNode
-                skill={t2}
-                status={getSkillStatus(t2, unlockedSkills, skillPoints)}
-                onPress={() => setSelectedSkill(t2)}
-              />
-            </View>
-          )}
-
-          {/* Connector T2 -> T3 split */}
-          {t2 && (t3_a || t3_b) && (
-            <SplitConnector
-              activeLeft={t3_a && ['unlocked', 'available', 'no_points'].includes(
-                getSkillStatus(t3_a, unlockedSkills, skillPoints)
-              )}
-              activeRight={t3_b && ['unlocked', 'available', 'no_points'].includes(
-                getSkillStatus(t3_b, unlockedSkills, skillPoints)
-              )}
+            
+            {/* Line T2 -> T3_A */}
+            <Line
+              x1={170} y1={190}
+              x2={80} y2={320}
+              stroke={connectionStatuses.t2_t3a ? "url(#glowingLineGrad)" : "rgba(255,255,255,0.08)"}
+              strokeWidth={connectionStatuses.t2_t3a ? 2.5 : 1.5}
+              strokeDasharray={connectionStatuses.t2_t3a ? undefined : "4 4"}
             />
-          )}
-
-          {/* Tier 3 Branch Row */}
-          {(t3_a || t3_b) && (
-            <View style={styles.branchRow}>
-              {t3_a && (
-                <SkillNode
-                  skill={t3_a}
-                  status={getSkillStatus(t3_a, unlockedSkills, skillPoints)}
-                  onPress={() => setSelectedSkill(t3_a)}
-                />
-              )}
-              {t3_b && (
-                <SkillNode
-                  skill={t3_b}
-                  status={getSkillStatus(t3_b, unlockedSkills, skillPoints)}
-                  onPress={() => setSelectedSkill(t3_b)}
-                />
-              )}
-            </View>
-          )}
-
-          {/* Connector T3 -> T4 double */}
-          {((t3_a && t4_a) || (t3_b && t4_b)) && (
-            <DoubleConnector
-              activeLeft={t4_a && ['unlocked', 'available', 'no_points'].includes(
-                getSkillStatus(t4_a, unlockedSkills, skillPoints)
-              )}
-              activeRight={t4_b && ['unlocked', 'available', 'no_points'].includes(
-                getSkillStatus(t4_b, unlockedSkills, skillPoints)
-              )}
+            
+            {/* Line T2 -> T3_B */}
+            <Line
+              x1={170} y1={190}
+              x2={260} y2={320}
+              stroke={connectionStatuses.t2_t3b ? "url(#glowingLineGrad)" : "rgba(255,255,255,0.08)"}
+              strokeWidth={connectionStatuses.t2_t3b ? 2.5 : 1.5}
+              strokeDasharray={connectionStatuses.t2_t3b ? undefined : "4 4"}
             />
-          )}
 
-          {/* Tier 4 Branch Row */}
-          {(t4_a || t4_b) && (
-            <View style={styles.branchRow}>
-              {t4_a && (
-                <SkillNode
-                  skill={t4_a}
-                  status={getSkillStatus(t4_a, unlockedSkills, skillPoints)}
-                  onPress={() => setSelectedSkill(t4_a)}
-                />
-              )}
-              {t4_b && (
-                <SkillNode
-                  skill={t4_b}
-                  status={getSkillStatus(t4_b, unlockedSkills, skillPoints)}
-                  onPress={() => setSelectedSkill(t4_b)}
-                />
-              )}
-            </View>
-          )}
+            {/* Line T3_A -> T4_A */}
+            <Line
+              x1={80} y1={320}
+              x2={80} y2={450}
+              stroke={connectionStatuses.t3a_t4a ? "url(#glowingLineGrad)" : "rgba(255,255,255,0.08)"}
+              strokeWidth={connectionStatuses.t3a_t4a ? 2.5 : 1.5}
+              strokeDasharray={connectionStatuses.t3a_t4a ? undefined : "4 4"}
+            />
+
+            {/* Line T3_B -> T4_B */}
+            <Line
+              x1={260} y1={320}
+              x2={260} y2={450}
+              stroke={connectionStatuses.t3b_t4b ? "url(#glowingLineGrad)" : "rgba(255,255,255,0.08)"}
+              strokeWidth={connectionStatuses.t3b_t4b ? 2.5 : 1.5}
+              strokeDasharray={connectionStatuses.t3b_t4b ? undefined : "4 4"}
+            />
+          </Svg>
+
+          {/* Render Nodes Absolute Over SVG Lines */}
+          {renderSkillNode(t1, 170, 60)}
+          {renderSkillNode(t2, 170, 190)}
+          {renderSkillNode(t3_a, 80, 320)}
+          {renderSkillNode(t3_b, 260, 320)}
+          {renderSkillNode(t4_a, 80, 450)}
+          {renderSkillNode(t4_b, 260, 450)}
         </View>
       </ScrollView>
 
-      {/* ─── Detail Modal ──────────────────────────────────────────────── */}
+      {/* ─── Detail Drawer Modal ────────────────────────────────────────── */}
       <Modal
         visible={selectedSkill !== null}
         transparent
@@ -461,12 +429,30 @@ export default function SkillTreeScreen() {
           onPress={() => setSelectedSkill(null)}
         >
           <Pressable style={styles.modalCard}>
+            {/* Modal Ambient Glow */}
+            <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
+              <Defs>
+                <RadialGradient id="modalCardGlow" cx="50%" cy="0%" rx="80%" ry="50%">
+                  <Stop offset="0%" stopColor="#D4A754" stopOpacity="0.08" />
+                  <Stop offset="100%" stopColor="#14161C" stopOpacity="0" stopColor="transparent" />
+                </RadialGradient>
+              </Defs>
+              <Rect width="100%" height="100%" fill="#14161C" rx={20} />
+              <Rect width="100%" height="100%" fill="url(#modalCardGlow)" rx={20} />
+              <Rect x="1" y="1" width="98%" height="98%" rx={19} fill="none" stroke="rgba(212, 167, 84, 0.15)" strokeWidth={1} />
+            </Svg>
+
             {selectedSkill && (
-              <>
+              <ScrollView
+                style={{ maxHeight: SCREEN_HEIGHT * 0.85 }}
+                contentContainerStyle={styles.modalInner}
+                showsVerticalScrollIndicator={false}
+              >
                 {/* Close Button */}
                 <TouchableOpacity
                   style={styles.modalCloseBtn}
                   onPress={() => setSelectedSkill(null)}
+                  activeOpacity={0.7}
                 >
                   <Text style={styles.modalCloseText}>✕</Text>
                 </TouchableOpacity>
@@ -478,9 +464,11 @@ export default function SkillTreeScreen() {
 
                 {/* Skill Title Section */}
                 <View style={styles.modalTitleRow}>
-                  <Text style={styles.modalEmoji}>
-                    {SKILL_EMOJIS[selectedSkill.id] || '✨'}
-                  </Text>
+                  <View style={styles.modalEmojiWrapper}>
+                    <Text style={styles.modalEmoji}>
+                      {SKILL_EMOJIS[selectedSkill.id] || '✨'}
+                    </Text>
+                  </View>
                   <View style={styles.modalTitleTextContainer}>
                     <Text style={styles.modalSkillName}>{selectedSkill.name}</Text>
                     <View style={styles.modalBadgeRow}>
@@ -503,7 +491,6 @@ export default function SkillTreeScreen() {
 
                 {/* Prerequisites & Conflict Box */}
                 <View style={styles.modalInfoBox}>
-                  {/* Prerequisite status */}
                   {prereqInfo && (
                     <View style={styles.modalInfoLine}>
                       <Text style={[styles.modalInfoBullet, prereqInfo.met ? styles.bulletGreen : styles.bulletRed]}>
@@ -515,7 +502,6 @@ export default function SkillTreeScreen() {
                     </View>
                   )}
 
-                  {/* Conflict status */}
                   {conflictInfo && (
                     <View style={styles.modalInfoLine}>
                       <Text style={[styles.modalInfoBullet, conflictInfo.chosen ? styles.bulletRed : styles.bulletGreen]}>
@@ -527,7 +513,6 @@ export default function SkillTreeScreen() {
                     </View>
                   )}
 
-                  {/* Cost status */}
                   {selectedSkillStatus !== 'unlocked' && (
                     <View style={styles.modalInfoLine}>
                       <Text style={[styles.modalInfoBullet, skillPoints >= 1 ? styles.bulletGreen : styles.bulletRed]}>
@@ -546,8 +531,18 @@ export default function SkillTreeScreen() {
                   {selectedSkillStatus === 'available' && (
                     <TouchableOpacity
                       style={styles.learnBtn}
+                      activeOpacity={0.8}
                       onPress={handleLearnSkill}
                     >
+                      <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
+                        <Defs>
+                          <LinearGradient id="learnBtnGrad" x1="0" y1="0" x2="1" y2="0">
+                            <Stop offset="0%" stopColor="#F9D99A" />
+                            <Stop offset="100%" stopColor="#D4A754" />
+                          </LinearGradient>
+                        </Defs>
+                        <Rect width="100%" height="100%" fill="url(#learnBtnGrad)" rx={10} />
+                      </Svg>
                       <Text style={styles.learnBtnText}>Learn Skill 🌟</Text>
                     </TouchableOpacity>
                   )}
@@ -621,7 +616,7 @@ export default function SkillTreeScreen() {
                     </View>
                   )}
                 </View>
-              </>
+              </ScrollView>
             )}
           </Pressable>
         </Pressable>
@@ -631,19 +626,17 @@ export default function SkillTreeScreen() {
 }
 
 // ─── Styles ──────────────────────────────────────────────────────────────────
-
 const styles = StyleSheet.create({
-  /* ── Layout ──────────────────────────────────────────────── */
   container: {
     flex: 1,
-    backgroundColor: theme.COLORS.dungeonBackground,
+    backgroundColor: '#07070A',
   },
   treeScroll: {
     flex: 1,
   },
   treeScrollContent: {
-    paddingVertical: theme.SPACING.md,
-    paddingBottom: theme.SPACING.xl * 3,
+    paddingVertical: 16,
+    paddingBottom: 80,
   },
 
   /* ── Header ──────────────────────────────────────────────── */
@@ -651,371 +644,250 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: theme.SPACING.md,
-    paddingVertical: theme.SPACING.md,
-    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.08)',
+    borderBottomColor: 'rgba(255, 255, 255, 0.04)',
   },
   backBtn: {
-    paddingVertical: theme.SPACING.xs,
-    paddingRight: theme.SPACING.sm,
+    width: 70,
+    paddingVertical: 6,
   },
   backText: {
-    ...theme.FONTS.body,
-    color: theme.COLORS.primary,
-    fontWeight: '600',
+    color: '#D4A754',
+    fontFamily: 'System',
+    fontWeight: 'bold',
+    fontSize: 16,
+    letterSpacing: 0.5,
   },
   title: {
-    ...theme.FONTS.title,
-    color: theme.COLORS.textBright,
+    fontFamily: 'System',
+    fontWeight: 'bold',
     fontSize: 20,
+    color: '#F8FAFC',
+    textAlign: 'center',
+    letterSpacing: 0.8,
   },
   spBadgeContainer: {
-    backgroundColor: 'rgba(212, 167, 84, 0.15)',
-    borderRadius: theme.BORDER_RADIUS.md,
-    paddingHorizontal: theme.SPACING.sm,
-    paddingVertical: 4,
+    backgroundColor: 'rgba(212, 167, 84, 0.12)',
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
     borderWidth: 1,
     borderColor: 'rgba(212, 167, 84, 0.3)',
+    width: 70,
+    alignItems: 'center',
   },
   skillPointsBadge: {
-    ...theme.FONTS.body,
-    color: theme.COLORS.primary,
+    fontFamily: 'System',
+    color: '#D4A754',
     fontWeight: 'bold',
+    fontSize: 12,
   },
 
   /* ── Tab Bar ─────────────────────────────────────────────── */
   tabBarContainer: {
-    paddingHorizontal: theme.SPACING.md,
-    paddingVertical: theme.SPACING.sm,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
     backgroundColor: 'rgba(0, 0, 0, 0.2)',
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(255, 255, 255, 0.04)',
   },
   tabBar: {
     flexDirection: 'row',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    borderRadius: theme.BORDER_RADIUS.lg,
+    backgroundColor: 'rgba(255, 255, 255, 0.015)',
+    borderRadius: 14,
     padding: 4,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.05)',
+    borderColor: 'rgba(255, 255, 255, 0.04)',
   },
   tabButton: {
     flex: 1,
     flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 6,
-    borderRadius: theme.BORDER_RADIUS.md,
-  },
-  tabButtonActive: {
-    backgroundColor: theme.COLORS.primary,
-    shadowColor: theme.COLORS.primary,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 4,
+    borderRadius: 10,
+    position: 'relative',
+    overflow: 'hidden',
+    height: 60,
   },
   tabIcon: {
     fontSize: 16,
-    color: theme.COLORS.textDim,
+    opacity: 0.4,
   },
   tabLabel: {
-    ...theme.FONTS.tiny,
+    fontFamily: 'System',
     fontSize: 10,
-    fontWeight: 'bold',
-    color: theme.COLORS.textDim,
+    fontWeight: '600',
+    color: '#707F94',
     marginTop: 2,
   },
   tabProgressText: {
-    ...theme.FONTS.tiny,
-    fontSize: 8,
-    color: theme.COLORS.textDim,
-    opacity: 0.7,
+    fontFamily: 'System',
+    fontSize: 9,
+    fontWeight: 'bold',
     marginTop: 1,
-  },
-  tabTextActive: {
-    color: '#0D0D0D', // dark contrast text on active tab
-  },
-  tabProgressActive: {
-    color: '#0D0D0D',
-    opacity: 0.8,
   },
 
   /* ── Intro Card ──────────────────────────────────────────── */
   introCard: {
-    marginHorizontal: theme.SPACING.md,
-    backgroundColor: 'rgba(20, 25, 35, 0.5)',
-    borderRadius: theme.BORDER_RADIUS.lg,
-    padding: theme.SPACING.md,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.06)',
-    marginBottom: theme.SPACING.md,
+    marginHorizontal: 16,
+    borderRadius: 14,
+    marginBottom: 20,
+    overflow: 'hidden',
+    minHeight: 70,
+  },
+  introCardInner: {
+    padding: 14,
+    zIndex: 2,
   },
   introTitle: {
-    ...theme.FONTS.body,
+    fontFamily: 'System',
+    fontSize: 15,
     fontWeight: 'bold',
-    color: theme.COLORS.primary,
+    color: '#D4A754',
     marginBottom: 4,
   },
   introDesc: {
-    ...theme.FONTS.small,
-    color: theme.COLORS.text,
+    fontFamily: 'System',
+    fontSize: 12,
+    color: 'rgba(255, 255, 255, 0.65)',
     lineHeight: 16,
   },
 
-  /* ── Tree Layout ─────────────────────────────────────────── */
+  /* ── Tree Constellation Layout ───────────────────────────── */
   treeContainer: {
+    alignSelf: 'center',
+    width: 340,
+    height: 520,
+    position: 'relative',
+  },
+  nodeWrapper: {
+    position: 'absolute',
+    width: 70,
+    height: 120,
     alignItems: 'center',
-    width: '100%',
-    paddingHorizontal: theme.SPACING.md,
+    zIndex: 5,
   },
-  singleRow: {
-    alignItems: 'center',
-    width: '100%',
-  },
-  branchRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    width: 310,
-    alignSelf: 'center',
-  },
-
-  /* ── Connector Styling ────────────────────────────────────── */
-  lineVertical: {
-    width: 2,
-    height: 24,
-    backgroundColor: 'rgba(255, 255, 255, 0.12)',
-    alignSelf: 'center',
-  },
-  lineVerticalHalf: {
-    width: 2,
-    height: 12,
-    backgroundColor: 'rgba(255, 255, 255, 0.12)',
-    alignSelf: 'center',
-  },
-  lineActive: {
-    backgroundColor: theme.COLORS.primary,
-    shadowColor: theme.COLORS.primary,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.8,
-    shadowRadius: 4,
-  },
-  splitConnectorContainer: {
-    width: 310,
-    alignSelf: 'center',
-  },
-  horizontalBarContainer: {
-    flexDirection: 'row',
-    width: 156, // distance between left and right branch lines
-    alignSelf: 'center',
-    justifyContent: 'center',
-  },
-  lineHorizontal: {
-    height: 2,
-    width: 78,
-    backgroundColor: 'rgba(255, 255, 255, 0.12)',
-  },
-  splitDownLines: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    width: 156,
-    alignSelf: 'center',
-  },
-  doubleConnectorContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    width: 156,
-    alignSelf: 'center',
-    height: 24,
-  },
-
-  /* ── Skill Node ──────────────────────────────────────────── */
-  node: {
-    width: 145,
-    backgroundColor: 'rgba(25, 30, 40, 0.85)',
-    borderRadius: theme.BORDER_RADIUS.lg,
+  nodeCircle: {
+    width: 70,
+    height: 70,
+    borderRadius: 35,
+    backgroundColor: '#0A0A0F',
     borderWidth: 1.5,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
-    padding: theme.SPACING.sm + 2,
     alignItems: 'center',
-    minHeight: 110,
-    justifyContent: 'space-between',
-  },
-  nodeEmoji: {
-    fontSize: 22,
-    marginBottom: 2,
-  },
-  skillName: {
-    ...theme.FONTS.tiny,
-    fontWeight: 'bold',
-    color: theme.COLORS.textBright,
-    textAlign: 'center',
-    fontSize: 12,
-    marginBottom: 4,
-  },
-  badgeRow: {
-    flexDirection: 'column',
-    alignItems: 'center',
-    gap: 3,
-    width: '100%',
-  },
-  fadedText: {
-    color: theme.COLORS.textDim,
-    opacity: 0.5,
-  },
-  branchLabel: {
-    ...theme.FONTS.tiny,
-    fontSize: 7,
-    color: theme.COLORS.textDim,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    marginTop: 2,
-  },
-
-  /* Node States styling */
-  nodeUnlocked: {
-    borderColor: theme.COLORS.success,
-    backgroundColor: 'rgba(76, 175, 80, 0.08)',
-    shadowColor: theme.COLORS.success,
+    justifyContent: 'center',
+    overflow: 'hidden',
     shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.25,
-    shadowRadius: 5,
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
     elevation: 3,
   },
-  nodeAvailable: {
-    borderColor: theme.COLORS.primary,
-    backgroundColor: 'rgba(212, 167, 84, 0.1)',
-    shadowColor: theme.COLORS.primary,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.5,
-    shadowRadius: 8,
-    elevation: 5,
+  nodeCircleEquipped: {
+    borderWidth: 2,
+    shadowOpacity: 0.4,
+    shadowRadius: 10,
+    elevation: 6,
   },
-  nodeNoPoints: {
-    borderColor: theme.COLORS.accent,
-    backgroundColor: 'rgba(255, 107, 53, 0.04)',
+  nodeEmoji: {
+    fontSize: 24,
+    zIndex: 2,
   },
-  nodeBlocked: {
-    borderColor: 'rgba(255, 68, 68, 0.15)',
-    backgroundColor: 'rgba(255, 68, 68, 0.01)',
-    opacity: 0.35,
+  equippedDot: {
+    position: 'absolute',
+    bottom: 6,
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#D4A754',
+    zIndex: 3,
   },
-  nodeLocked: {
-    borderColor: 'rgba(255, 255, 255, 0.05)',
-    backgroundColor: 'rgba(255, 255, 255, 0.01)',
-    opacity: 0.45,
+  nodeNameWrapper: {
+    marginTop: 6,
+    alignItems: 'center',
+    width: 90,
   },
-
-  /* Node Badges */
-  typeBadge: {
-    borderRadius: theme.BORDER_RADIUS.sm,
-    paddingHorizontal: 5,
-    paddingVertical: 1.5,
+  nodeNameText: {
+    fontFamily: 'System',
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#F8FAFC',
+    textAlign: 'center',
   },
-  badgeActive: {
-    backgroundColor: 'rgba(255, 107, 53, 0.15)',
-  },
-  badgePassive: {
-    backgroundColor: 'rgba(107, 155, 210, 0.15)',
-  },
-  typeBadgeText: {
-    ...theme.FONTS.tiny,
-    fontSize: 7,
-    color: theme.COLORS.textBright,
+  nodeTypeText: {
+    fontFamily: 'System',
+    fontSize: 8,
+    color: '#707F94',
     fontWeight: 'bold',
     textTransform: 'uppercase',
-  },
-  statusBadge: {
-    borderRadius: theme.BORDER_RADIUS.sm,
-    paddingHorizontal: 5,
-    paddingVertical: 1.5,
-    borderWidth: 0.5,
-  },
-  statusBadgeText: {
-    ...theme.FONTS.tiny,
-    fontSize: 7,
-    fontWeight: 'bold',
-    textTransform: 'uppercase',
-  },
-  badgeUnlocked: {
-    backgroundColor: 'rgba(76, 175, 80, 0.1)',
-    borderColor: 'rgba(76, 175, 80, 0.4)',
-  },
-  badgeAvailable: {
-    backgroundColor: 'rgba(212, 167, 84, 0.1)',
-    borderColor: 'rgba(212, 167, 84, 0.4)',
-  },
-  badgeNoPoints: {
-    backgroundColor: 'rgba(255, 107, 53, 0.05)',
-    borderColor: 'rgba(255, 107, 53, 0.3)',
-  },
-  badgeBlocked: {
-    backgroundColor: 'rgba(255, 68, 68, 0.05)',
-    borderColor: 'rgba(255, 68, 68, 0.3)',
-  },
-  badgeLocked: {
-    backgroundColor: 'rgba(255, 255, 255, 0.02)',
-    borderColor: 'rgba(255, 255, 255, 0.1)',
+    marginTop: 1,
+    letterSpacing: 0.5,
   },
 
-  /* ─── Detail Modal ──────────────────────────────────────────────── */
+  /* ─── Detail Drawer Modal ────────────────────────────────────────── */
   modalBackdrop: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.75)',
     justifyContent: 'center',
     alignItems: 'center',
-    padding: theme.SPACING.lg,
+    padding: 24,
   },
   modalCard: {
     width: '100%',
     maxWidth: 340,
-    backgroundColor: 'rgba(20, 22, 28, 0.98)',
     borderRadius: 20,
-    borderWidth: 1.5,
-    borderColor: theme.COLORS.primary,
-    padding: theme.SPACING.lg,
-    shadowColor: theme.COLORS.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 15,
+    overflow: 'hidden',
     elevation: 8,
+  },
+  modalInner: {
+    padding: 20,
+    zIndex: 2,
   },
   modalCloseBtn: {
     position: 'absolute',
     top: 12,
     right: 16,
-    padding: 4,
+    padding: 6,
     zIndex: 10,
   },
   modalCloseText: {
     fontSize: 16,
-    color: theme.COLORS.textDim,
+    color: '#707F94',
     fontWeight: 'bold',
   },
   modalPathTag: {
-    ...theme.FONTS.tiny,
-    color: theme.COLORS.textDim,
+    fontFamily: 'System',
+    fontSize: 9,
+    color: '#707F94',
     letterSpacing: 1.5,
-    fontWeight: 'bold',
-    marginBottom: theme.SPACING.sm,
+    fontWeight: '900',
+    marginBottom: 6,
   },
   modalTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: theme.SPACING.md,
+    marginBottom: 14,
+  },
+  modalEmojiWrapper: {
+    width: 48,
+    height: 48,
+    borderRadius: 10,
+    backgroundColor: 'rgba(255,255,255,0.03)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.05)',
   },
   modalEmoji: {
-    fontSize: 32,
-    marginRight: theme.SPACING.md,
+    fontSize: 28,
   },
   modalTitleTextContainer: {
     flex: 1,
   },
   modalSkillName: {
-    ...theme.FONTS.heading,
-    color: theme.COLORS.textBright,
+    fontFamily: 'System',
+    color: '#F8FAFC',
     fontWeight: 'bold',
     fontSize: 18,
     marginBottom: 4,
@@ -1025,25 +897,45 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
   },
+  typeBadge: {
+    borderRadius: 4,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  badgeActive: {
+    backgroundColor: 'rgba(255, 107, 53, 0.15)',
+  },
+  badgePassive: {
+    backgroundColor: 'rgba(6, 182, 212, 0.15)',
+  },
+  typeBadgeText: {
+    fontFamily: 'System',
+    fontSize: 8,
+    color: '#F8FAFC',
+    fontWeight: '900',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
   modalCooldown: {
-    ...theme.FONTS.tiny,
-    color: theme.COLORS.accent,
-    fontWeight: '600',
+    fontFamily: 'System',
+    fontSize: 9,
+    color: '#FF6B35',
+    fontWeight: 'bold',
   },
   modalDesc: {
-    ...theme.FONTS.body,
+    fontFamily: 'System',
     fontSize: 13,
-    color: theme.COLORS.text,
+    color: 'rgba(255, 255, 255, 0.7)',
     lineHeight: 18,
-    marginBottom: theme.SPACING.lg,
+    marginBottom: 16,
   },
   modalInfoBox: {
-    backgroundColor: 'rgba(0, 0, 0, 0.3)',
-    borderRadius: theme.BORDER_RADIUS.md,
-    padding: theme.SPACING.md,
-    marginBottom: theme.SPACING.lg,
+    backgroundColor: 'rgba(0, 0, 0, 0.25)',
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 18,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.05)',
+    borderColor: 'rgba(255, 255, 255, 0.04)',
   },
   modalInfoLine: {
     flexDirection: 'row',
@@ -1058,28 +950,28 @@ const styles = StyleSheet.create({
     marginRight: 6,
   },
   bulletGreen: {
-    color: theme.COLORS.success,
+    color: '#10B981',
   },
   bulletRed: {
-    color: theme.COLORS.danger,
+    color: '#FF4444',
   },
   modalInfoText: {
-    ...theme.FONTS.tiny,
+    fontFamily: 'System',
     fontSize: 11,
     flex: 1,
   },
   textMet: {
-    color: theme.COLORS.textBright,
+    color: '#F8FAFC',
   },
   textUnmet: {
-    color: theme.COLORS.textDim,
+    color: '#707F94',
   },
   textConflict: {
-    color: theme.COLORS.danger,
-    fontWeight: '500',
+    color: '#FF4444',
+    fontWeight: 'bold',
   },
   textNoConflict: {
-    color: theme.COLORS.textDim,
+    color: '#707F94',
   },
 
   /* Modal Actions Buttons */
@@ -1087,82 +979,88 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   learnBtn: {
-    backgroundColor: theme.COLORS.primary,
-    borderRadius: theme.BORDER_RADIUS.md,
-    paddingVertical: 12,
+    position: 'relative',
+    borderRadius: 10,
     alignItems: 'center',
-    shadowColor: theme.COLORS.primary,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 5,
-    elevation: 3,
+    justifyContent: 'center',
+    overflow: 'hidden',
+    height: 46,
   },
   learnBtnText: {
-    ...theme.FONTS.body,
-    color: '#0D0D0D',
+    fontFamily: 'System',
+    color: '#1A1200',
     fontWeight: 'bold',
+    fontSize: 13,
+    zIndex: 2,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   actionBtnDisabled: {
-    backgroundColor: 'rgba(255, 255, 255, 0.04)',
-    borderRadius: theme.BORDER_RADIUS.md,
-    paddingVertical: 12,
+    backgroundColor: 'rgba(255, 255, 255, 0.02)',
+    borderRadius: 10,
     alignItems: 'center',
+    justifyContent: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
+    borderColor: 'rgba(255, 255, 255, 0.05)',
+    height: 46,
   },
   noPointsBtn: {
-    borderColor: 'rgba(255, 107, 53, 0.3)',
+    borderColor: 'rgba(255, 107, 53, 0.2)',
     backgroundColor: 'rgba(255, 107, 53, 0.02)',
   },
   blockedBtn: {
-    borderColor: 'rgba(255, 68, 68, 0.3)',
+    borderColor: 'rgba(255, 68, 68, 0.2)',
     backgroundColor: 'rgba(255, 68, 68, 0.02)',
   },
   disabledBtnText: {
-    ...theme.FONTS.body,
-    color: theme.COLORS.textDim,
-    fontWeight: '600',
+    fontFamily: 'System',
+    fontSize: 12,
+    color: '#707F94',
+    fontWeight: 'bold',
   },
   unlockedBox: {
     alignItems: 'center',
     width: '100%',
   },
   unlockedLabel: {
-    ...theme.FONTS.body,
-    color: theme.COLORS.success,
+    fontFamily: 'System',
+    fontSize: 14,
+    color: '#10B981',
     fontWeight: 'bold',
-    marginBottom: theme.SPACING.md,
+    marginBottom: 12,
   },
   passiveActiveLabel: {
-    ...theme.FONTS.tiny,
-    color: theme.COLORS.textDim,
+    fontFamily: 'System',
+    fontSize: 11,
+    color: '#707F94',
     textAlign: 'center',
     fontStyle: 'italic',
   },
   equipRowContainer: {
     width: '100%',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.02)',
-    borderRadius: theme.BORDER_RADIUS.md,
-    padding: theme.SPACING.sm,
+    backgroundColor: 'rgba(255, 255, 255, 0.015)',
+    borderRadius: 10,
+    padding: 10,
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.04)',
   },
   equipPromptText: {
-    ...theme.FONTS.tiny,
-    color: theme.COLORS.textBright,
+    fontFamily: 'System',
+    fontSize: 11,
+    color: '#F8FAFC',
     fontWeight: 'bold',
-    marginBottom: theme.SPACING.sm,
+    marginBottom: 8,
   },
   equipRow: {
     flexDirection: 'row',
-    gap: theme.SPACING.md,
+    gap: 12,
     width: '100%',
   },
   equipBtn: {
     flex: 1,
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-    borderRadius: theme.BORDER_RADIUS.md,
+    backgroundColor: 'rgba(255, 255, 255, 0.03)',
+    borderRadius: 8,
     paddingVertical: 8,
     paddingHorizontal: 4,
     alignItems: 'center',
@@ -1170,18 +1068,19 @@ const styles = StyleSheet.create({
     borderColor: 'transparent',
   },
   equipBtnCurrent: {
-    borderColor: theme.COLORS.primary,
-    backgroundColor: 'rgba(212, 167, 84, 0.1)',
+    borderColor: '#D4A754',
+    backgroundColor: 'rgba(212, 167, 84, 0.08)',
   },
   equipBtnText: {
-    ...theme.FONTS.tiny,
-    color: theme.COLORS.textBright,
+    fontFamily: 'System',
+    fontSize: 11,
+    color: '#F8FAFC',
     fontWeight: 'bold',
   },
   equipBtnSubtext: {
-    ...theme.FONTS.tiny,
+    fontFamily: 'System',
     fontSize: 8,
-    color: theme.COLORS.textDim,
-    marginTop: 1,
+    color: '#707F94',
+    marginTop: 2,
   },
 });

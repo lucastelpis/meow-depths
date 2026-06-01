@@ -38,6 +38,8 @@ import React, {
   useRef,
 } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { generateDungeonGrid } from '../logic/dungeonGenerator';
+import { ZONES } from '../data/zones';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -105,9 +107,21 @@ const initialState = {
   currentRun: {
     active: false,            // true while a dungeon run is in progress
     zoneId: null,             // e.g. 'zone1'
-    floor: 0,                 // current floor number within the run
-    consumables: [],          // consumables brought into this run
-    lootCollected: [],        // loot accumulated during the run
+    gridWidth: 4,
+    gridHeight: 4,
+    tiles: [],                // flat array, access by index = y * gridWidth + x
+    playerPos: { x: 0, y: 3 },
+    roomsCleared: 0,
+    totalRooms: 16,
+    consumables: [],          // consumables brought into this run (array of item ID strings)
+    lootCollected: { materials: {}, gold: 0 }, // loot accumulated during the run
+    runBuffs: {               // run-only buffs from rest rooms
+      attackBonus: 0,
+      critBonus: 0,
+      dodgeBonus: 0,
+      defenceBonus: 0,
+      maxHpBonus: 0
+    }
   },
 };
 
@@ -285,72 +299,314 @@ function gameReducer(state, action) {
     }
 
     // -----------------------------------------------------------------------
-    // START_RUN — begin a new dungeon run
+    // START_RUN — begin a new dungeon run (grid-based map)
     // Payload: { zoneId: string, consumables: [] }
     // -----------------------------------------------------------------------
-    case 'START_RUN':
+    case 'START_RUN': {
+      const { zoneId, consumables } = action.payload;
+      const zone = ZONES[zoneId];
+      if (!zone) return state;
+
+      const { gridWidth, gridHeight } = zone;
+      const grid = generateDungeonGrid(gridWidth, gridHeight, zoneId);
+
+      // Flatten grid tiles
+      const flatTiles = [];
+      for (let y = 0; y < gridHeight; y++) {
+        for (let x = 0; x < gridWidth; x++) {
+          flatTiles.push(grid[y][x]);
+        }
+      }
+
+      // Start position is always bottom-left: (0, gridHeight - 1)
+      const startX = 0;
+      const startY = gridHeight - 1;
+
+      // Reveal adjacent tiles to start
+      const adjacentDirs = [
+        { x: 0, y: -1 },
+        { x: 0, y: 1 },
+        { x: -1, y: 0 },
+        { x: 1, y: 0 }
+      ];
+      for (const d of adjacentDirs) {
+        const nx = startX + d.x;
+        const ny = startY + d.y;
+        if (nx >= 0 && nx < gridWidth && ny >= 0 && ny < gridHeight) {
+          const adjIdx = ny * gridWidth + nx;
+          flatTiles[adjIdx].revealed = true;
+        }
+      }
+
+      // Deduct packed consumables from hero permanent inventory
+      const updatedPermanentConsumables = state.hero.inventory.consumables.map(c => {
+        const packedCount = (consumables || []).filter(id => id === c.id).length;
+        return {
+          ...c,
+          quantity: Math.max(0, c.quantity - packedCount)
+        };
+      }).filter(c => c.quantity > 0);
+
+      // Ensure HP is restored to full upon entering the run
+      const fullHp = state.hero.maxHp;
+
       return {
         ...state,
+        hero: {
+          ...state.hero,
+          hp: fullHp,
+          inventory: {
+            ...state.hero.inventory,
+            consumables: updatedPermanentConsumables
+          }
+        },
         currentRun: {
           active: true,
-          zoneId: action.payload.zoneId,
-          floor: 1,
-          consumables: action.payload.consumables || [],
-          lootCollected: [],
+          zoneId,
+          gridWidth,
+          gridHeight,
+          tiles: flatTiles,
+          playerPos: { x: startX, y: startY },
+          roomsCleared: 1, // Start room is cleared
+          totalRooms: gridWidth * gridHeight,
+          consumables: consumables || [],
+          lootCollected: { materials: {}, gold: 0 },
+          runBuffs: {
+            attackBonus: 0,
+            critBonus: 0,
+            dodgeBonus: 0,
+            defenceBonus: 0,
+            maxHpBonus: 0
+          }
         },
         progress: {
           ...state.progress,
-          currentZone: action.payload.zoneId,
-          currentFloor: 1,
-        },
+          currentZone: zoneId,
+        }
       };
+    }
 
     // -----------------------------------------------------------------------
-    // ADVANCE_FLOOR — move to the next floor in the run
-    // Payload: { loot: Object } (optional loot from the fight just completed)
+    // MOVE_PLAYER — move orthogonally on the grid
+    // Payload: { x: number, y: number }
     // -----------------------------------------------------------------------
-    case 'ADVANCE_FLOOR': {
-      const nextFloor = state.currentRun.floor + 1;
-      const zoneId = state.currentRun.zoneId;
-      const newLoot = action.payload?.loot
-        ? [...state.currentRun.lootCollected, action.payload.loot]
-        : state.currentRun.lootCollected;
+    case 'MOVE_PLAYER': {
+      const { x, y } = action.payload;
+      const { gridWidth, gridHeight, tiles } = state.currentRun;
+      
+      const newTiles = tiles.map(t => ({ ...t }));
+      
+      const targetIndex = y * gridWidth + x;
+      newTiles[targetIndex].revealed = true;
 
-      // Update highest floor cleared
-      const newFloorsCleared = { ...state.progress.floorsCleared };
-      if (state.currentRun.floor > (newFloorsCleared[zoneId] || 0)) {
-        newFloorsCleared[zoneId] = state.currentRun.floor;
+      // Reveal adjacent tiles
+      const adjacentDirs = [
+        { x: 0, y: -1 },
+        { x: 0, y: 1 },
+        { x: -1, y: 0 },
+        { x: 1, y: 0 }
+      ];
+      for (const d of adjacentDirs) {
+        const nx = x + d.x;
+        const ny = y + d.y;
+        if (nx >= 0 && nx < gridWidth && ny >= 0 && ny < gridHeight) {
+          const adjIdx = ny * gridWidth + nx;
+          newTiles[adjIdx].revealed = true;
+        }
       }
 
       return {
         ...state,
         currentRun: {
           ...state.currentRun,
-          floor: nextFloor,
-          lootCollected: newLoot,
-        },
-        progress: {
-          ...state.progress,
-          currentFloor: nextFloor,
-          floorsCleared: newFloorsCleared,
-        },
+          tiles: newTiles,
+          playerPos: { x, y }
+        }
       };
     }
 
     // -----------------------------------------------------------------------
-    // END_RUN — finish the dungeon run (win or loss)
-    // Payload: { loot?: Object } (final loot if victorious)
+    // CLEAR_CURRENT_TILE — mark the current tile as cleared/visited
     // -----------------------------------------------------------------------
-    case 'END_RUN': {
+    case 'CLEAR_CURRENT_TILE': {
+      const { gridWidth, playerPos, tiles } = state.currentRun;
+      const index = playerPos.y * gridWidth + playerPos.x;
+      const newTiles = tiles.map((t, idx) => idx === index ? { ...t, cleared: true } : t);
+      
       return {
         ...state,
         currentRun: {
+          ...state.currentRun,
+          tiles: newTiles,
+          roomsCleared: state.currentRun.roomsCleared + 1
+        }
+      };
+    }
+
+    // -----------------------------------------------------------------------
+    // ADD_RUN_LOOT — add gold and materials collected in this run
+    // Payload: { gold: number, materials: { itemId: qty } }
+    // -----------------------------------------------------------------------
+    case 'ADD_RUN_LOOT': {
+      const { gold, materials } = action.payload;
+      const newLootGold = state.currentRun.lootCollected.gold + (gold || 0);
+      const newLootMaterials = { ...state.currentRun.lootCollected.materials };
+      for (const [id, qty] of Object.entries(materials || {})) {
+        newLootMaterials[id] = (newLootMaterials[id] || 0) + qty;
+      }
+      return {
+        ...state,
+        currentRun: {
+          ...state.currentRun,
+          lootCollected: {
+            materials: newLootMaterials,
+            gold: newLootGold
+          }
+        }
+      };
+    }
+
+    // -----------------------------------------------------------------------
+    // APPLY_RUN_BUFF — apply buff from Rest room
+    // Payload: { type: string, value: number }
+    // -----------------------------------------------------------------------
+    case 'APPLY_RUN_BUFF': {
+      const { type, value } = action.payload;
+      const currentRunBuffs = { ...state.currentRun.runBuffs };
+      currentRunBuffs[type] = (currentRunBuffs[type] || 0) + value;
+
+      let updatedHp = state.hero.hp;
+      if (type === 'maxHpBonus') {
+        updatedHp = Math.min(state.hero.maxHp + currentRunBuffs.maxHpBonus, state.hero.hp + value);
+      }
+
+      return {
+        ...state,
+        hero: {
+          ...state.hero,
+          hp: updatedHp
+        },
+        currentRun: {
+          ...state.currentRun,
+          runBuffs: currentRunBuffs
+        }
+      };
+    }
+
+    // -----------------------------------------------------------------------
+    // UPDATE_RUN_AFTER_COMBAT — save player HP and consumables in run
+    // Payload: { hp: number, consumables: [] }
+    // -----------------------------------------------------------------------
+    case 'UPDATE_RUN_AFTER_COMBAT': {
+      const { hp, consumables } = action.payload;
+      const effectiveMaxHp = state.hero.maxHp + (state.currentRun.runBuffs?.maxHpBonus || 0);
+      return {
+        ...state,
+        hero: {
+          ...state.hero,
+          hp: Math.min(effectiveMaxHp, hp)
+        },
+        currentRun: {
+          ...state.currentRun,
+          consumables: consumables || state.currentRun.consumables
+        }
+      };
+    }
+
+    // -----------------------------------------------------------------------
+    // END_RUN — finish the dungeon run (win or loss/death)
+    // Payload: { outcome: 'win' | 'lose' }
+    // -----------------------------------------------------------------------
+    case 'END_RUN': {
+      const { outcome } = action.payload;
+      
+      let updatedGold = state.hero.gold;
+      const updatedMaterials = { ...state.hero.inventory.materials };
+      
+      if (outcome === 'win') {
+        updatedGold += state.currentRun.lootCollected.gold;
+        for (const [id, qty] of Object.entries(state.currentRun.lootCollected.materials)) {
+          updatedMaterials[id] = (updatedMaterials[id] || 0) + qty;
+        }
+      } else if (outcome === 'flee') {
+        updatedGold += Math.floor(state.currentRun.lootCollected.gold / 2);
+        for (const [id, qty] of Object.entries(state.currentRun.lootCollected.materials)) {
+          const keptQty = Math.floor(qty / 2);
+          if (keptQty > 0) {
+            updatedMaterials[id] = (updatedMaterials[id] || 0) + keptQty;
+          }
+        }
+      }
+
+      // Restores Mochi's HP to full when outside of the Dungeon
+      const finalHp = state.hero.maxHp;
+
+      return {
+        ...state,
+        hero: {
+          ...state.hero,
+          gold: updatedGold,
+          hp: finalHp,
+          inventory: {
+            ...state.hero.inventory,
+            materials: updatedMaterials
+          }
+        },
+        currentRun: {
           active: false,
           zoneId: null,
-          floor: 0,
+          gridWidth: 4,
+          gridHeight: 4,
+          tiles: [],
+          playerPos: { x: 0, y: 3 },
+          roomsCleared: 0,
+          totalRooms: 16,
           consumables: [],
-          lootCollected: [],
+          lootCollected: { materials: {}, gold: 0 },
+          runBuffs: {
+            attackBonus: 0,
+            critBonus: 0,
+            dodgeBonus: 0,
+            defenceBonus: 0,
+            maxHpBonus: 0
+          }
+        }
+      };
+    }
+
+    // -----------------------------------------------------------------------
+    // USE_RUN_CONSUMABLE — use a consumable brought into the run while on the map
+    // Payload: { consumableId: string }
+    // -----------------------------------------------------------------------
+    case 'USE_RUN_CONSUMABLE': {
+      const { consumableId } = action.payload;
+      const index = state.currentRun.consumables.indexOf(consumableId);
+      if (index === -1) return state;
+
+      const newRunConsumables = [...state.currentRun.consumables];
+      newRunConsumables.splice(index, 1);
+
+      const effectiveMaxHp = state.hero.maxHp + (state.currentRun.runBuffs?.maxHpBonus || 0);
+      let updatedHp = state.hero.hp;
+
+      if (consumableId === 'health_potion') {
+        const healAmt = Math.floor(effectiveMaxHp * 0.3);
+        updatedHp = Math.min(effectiveMaxHp, updatedHp + healAmt);
+      } else if (consumableId === 'mega_potion') {
+        const healAmt = Math.floor(effectiveMaxHp * 0.6);
+        updatedHp = Math.min(effectiveMaxHp, updatedHp + healAmt);
+      }
+
+      return {
+        ...state,
+        hero: {
+          ...state.hero,
+          hp: updatedHp,
         },
+        currentRun: {
+          ...state.currentRun,
+          consumables: newRunConsumables,
+        }
       };
     }
 
@@ -470,14 +726,18 @@ function gameReducer(state, action) {
     // HEAL — restore hero's HP (capped at maxHp)
     // Payload: { amount: number }
     // -----------------------------------------------------------------------
-    case 'HEAL':
+    case 'HEAL': {
+      const effectiveMaxHp = state.currentRun.active
+        ? state.hero.maxHp + (state.currentRun.runBuffs?.maxHpBonus || 0)
+        : state.hero.maxHp;
       return {
         ...state,
         hero: {
           ...state.hero,
-          hp: Math.min(state.hero.maxHp, state.hero.hp + (action.payload.amount || 0)),
+          hp: Math.min(effectiveMaxHp, state.hero.hp + (action.payload.amount || 0)),
         },
       };
+    }
 
     // -----------------------------------------------------------------------
     // CLEAR_ZONE — mark a zone as cleared (boss defeated)
@@ -498,7 +758,10 @@ function gameReducer(state, action) {
     // LEVEL_UP — apply level-up stat changes
     // Payload: { newLevel, newMaxHp, newAttack, newDefence, newSkillPoints }
     // -----------------------------------------------------------------------
-    case 'LEVEL_UP':
+    case 'LEVEL_UP': {
+      const effectiveMaxHp = state.currentRun.active
+        ? action.payload.newMaxHp + (state.currentRun.runBuffs?.maxHpBonus || 0)
+        : action.payload.newMaxHp;
       return {
         ...state,
         hero: {
@@ -509,9 +772,10 @@ function gameReducer(state, action) {
           defence:     action.payload.newDefence,
           skillPoints: action.payload.newSkillPoints,
           // Fully heal on level up — it feels good! 🎉
-          hp:          action.payload.newMaxHp,
+          hp:          effectiveMaxHp,
         },
       };
+    }
 
     // -----------------------------------------------------------------------
     // RESET_GAME — nuke everything and start fresh
