@@ -21,7 +21,7 @@ import {
   Pressable,
   Dimensions,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import Svg, {
   Defs,
@@ -140,40 +140,7 @@ function getFloorStatus(floor, cleared) {
   return 'locked';
 }
 
-// ─── Zone Banner SVG Patterns ─────────────────────────────────────────────────
-const BannerPattern = ({ zoneId, accent }) => {
-  if (zoneId === 'zone1') return (
-    <G opacity={0.18}>
-      <Line x1="0" y1="30" x2={SCREEN_WIDTH} y2="30" stroke={accent} strokeWidth="0.8" strokeDasharray="4,8" />
-      <Line x1="0" y1="65" x2={SCREEN_WIDTH} y2="65" stroke={accent} strokeWidth="0.8" strokeDasharray="4,8" />
-      <Line x1="0" y1="100" x2={SCREEN_WIDTH} y2="100" stroke={accent} strokeWidth="0.8" strokeDasharray="4,8" />
-      <Circle cx={SCREEN_WIDTH - 40} cy={55} r={28} stroke={accent} strokeWidth="1.5" fill="none" />
-      <Circle cx={SCREEN_WIDTH - 40} cy={55} r={10} stroke={accent} strokeWidth="1" fill="none" />
-      <Line x1={SCREEN_WIDTH - 68} y1="55" x2={SCREEN_WIDTH - 12} y2="55" stroke={accent} strokeWidth="1" />
-      <Line x1={SCREEN_WIDTH - 40} y1="27" x2={SCREEN_WIDTH - 40} y2="83" stroke={accent} strokeWidth="1" />
-    </G>
-  );
-  if (zoneId === 'zone2') return (
-    <G opacity={0.18}>
-      <Path d={`M -10 80 Q 60 40 130 70 T 270 55 T ${SCREEN_WIDTH + 10} 65`} stroke={accent} strokeWidth="1.5" fill="none" />
-      <Path d={`M -10 50 Q 80 20 160 60 T ${SCREEN_WIDTH + 10} 40`} stroke={accent} strokeWidth="1" fill="none" />
-      <Circle cx={SCREEN_WIDTH - 45} cy={50} r={5} fill={accent} />
-      <Circle cx={SCREEN_WIDTH - 65} cy={75} r={3} fill={accent} />
-      <Circle cx={SCREEN_WIDTH - 25} cy={80} r={4} fill={accent} />
-      <Path d={`M ${SCREEN_WIDTH - 46} 30 Q ${SCREEN_WIDTH - 40} 20 ${SCREEN_WIDTH - 34} 30 Q ${SCREEN_WIDTH - 40} 50 ${SCREEN_WIDTH - 46} 30 Z`} fill={accent} opacity={0.7} />
-    </G>
-  );
-  return (
-    <G opacity={0.18}>
-      <Line x1="0" y1="20" x2={SCREEN_WIDTH} y2="20" stroke={accent} strokeWidth="0.8" />
-      <Line x1="0" y1="50" x2={SCREEN_WIDTH} y2="50" stroke={accent} strokeWidth="0.8" />
-      <Line x1="0" y1="80" x2={SCREEN_WIDTH} y2="80" stroke={accent} strokeWidth="0.8" />
-      <Line x1="0" y1="110" x2={SCREEN_WIDTH} y2="110" stroke={accent} strokeWidth="0.8" />
-      <Path d={`M ${SCREEN_WIDTH - 60} 60 Q ${SCREEN_WIDTH - 40} 30 ${SCREEN_WIDTH - 20} 60 T ${SCREEN_WIDTH - 40} 95 T ${SCREEN_WIDTH - 60} 60`} stroke={accent} strokeWidth="1.2" fill="none" />
-      <Circle cx={SCREEN_WIDTH - 40} cy={60} r={4} fill={accent} />
-    </G>
-  );
-};
+
 
 // ─── Component ────────────────────────────────────────────────────────────────
 export default function DungeonFloorScreen() {
@@ -181,6 +148,7 @@ export default function DungeonFloorScreen() {
   const route = useRoute();
   const { zoneId } = route.params || {};
   const { state, dispatch } = useGame();
+  const insets = useSafeAreaInsets();
 
   const zone = ZONES[zoneId];
   const zc = ZONE_CONFIG[zoneId] || ZONE_CONFIG.zone1;
@@ -188,6 +156,12 @@ export default function DungeonFloorScreen() {
   const floorsCleared   = state.progress.floorsCleared?.[zoneId] || 0;
   const isZoneCleared   = !!state.progress[`${zoneId}Cleared`];
   const effectiveCleared = isZoneCleared ? 10 : floorsCleared;
+
+  // Constants for the circular progress ring
+  const radius = 24;
+  const strokeWidth = 4;
+  const circumference = 2 * Math.PI * radius;
+  const strokeDashoffset = circumference * (1 - effectiveCleared / 10);
 
   const [selectedFloor, setSelectedFloor] = useState(null);
   const [loadout, setLoadout]             = useState({});
@@ -371,7 +345,7 @@ export default function DungeonFloorScreen() {
   };
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: zc.bg }]}>
+    <View style={[styles.container, { backgroundColor: zc.bg }]}>
       {/* Full-screen ambient gradient */}
       <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
         <Defs>
@@ -388,83 +362,114 @@ export default function DungeonFloorScreen() {
         <Rect width="100%" height="100%" fill="url(#topGlow)" />
       </Svg>
 
-      {/* ── Header ────────────────────────────────────────────────────── */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn} activeOpacity={0.7}>
-          <Text style={styles.backText}>← Zones</Text>
-        </TouchableOpacity>
-        <View style={styles.headerCenter}>
-          <Text style={styles.headerIcon}>{zc.icon}</Text>
-          <Text style={[styles.headerTitle, { color: zc.accent }]} numberOfLines={1}>{zone.name}</Text>
-        </View>
-        <View style={[styles.progressChip, { borderColor: zc.border, backgroundColor: zc.accentDim }]}>
-          <Text style={[styles.progressChipText, { color: zc.accent }]}>
-            {isZoneCleared ? '✓ Done' : `${floorsCleared}/10`}
-          </Text>
-        </View>
-      </View>
-
-      {/* ── Zone Banner ───────────────────────────────────────────────── */}
-      <View style={[styles.banner, { borderColor: zc.border }]}>
-        <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
-          <Defs>
-            <LinearGradient id="bannerGrad" x1="0" y1="0" x2="1" y2="1">
-              <Stop offset="0%" stopColor={zc.bgGrad1} />
-              <Stop offset="100%" stopColor={zc.bgGrad2} />
-            </LinearGradient>
-            <RadialGradient id="bannerAccent" cx="85%" cy="50%" rx="50%" ry="70%">
-              <Stop offset="0%" stopColor={zc.accent} stopOpacity="0.1" />
-              <Stop offset="100%" stopColor="transparent" stopOpacity="0" />
-            </RadialGradient>
-          </Defs>
-          <Rect width="100%" height="100%" fill="url(#bannerGrad)" rx={16} />
-          <Rect width="100%" height="100%" fill="url(#bannerAccent)" rx={16} />
-          <BannerPattern zoneId={zoneId} accent={zc.accent} />
-          <Rect x="1" y="1" width="99%" height="98%" rx={15} fill="none" stroke={zc.border} strokeWidth="1" />
-        </Svg>
-
-        <View style={styles.bannerInner}>
-          <View style={styles.bannerLeft}>
-            <Text style={styles.bannerEyebrow}>DUNGEON ZONE</Text>
-            <Text style={[styles.bannerTitle, { color: zc.accent }]}>{zone.name}</Text>
-            <Text style={styles.bannerDesc} numberOfLines={2}>{zc.bannerDesc}</Text>
-          </View>
-          <View style={styles.bannerRight}>
-            <View style={[styles.bannerStatBox, { borderColor: zc.border }]}>
-              <Text style={[styles.bannerStatNum, { color: zc.accent }]}>
-                {isZoneCleared ? '10' : floorsCleared}
-              </Text>
-              <Text style={styles.bannerStatLabel}>Cleared</Text>
-            </View>
-            <View style={[styles.bannerStatBox, { borderColor: zc.border }]}>
-              <Text style={[styles.bannerStatNum, { color: 'rgba(207,224,238,0.7)' }]}>10</Text>
-              <Text style={styles.bannerStatLabel}>Total</Text>
-            </View>
-            <View style={[styles.levelChip, { borderColor: zc.border, backgroundColor: zc.accentDim }]}>
-              <Text style={[styles.levelChipText, { color: zc.accent }]}>Lv.{zone.minLevel}–{zone.maxLevel}</Text>
-            </View>
-          </View>
-        </View>
-
-        {/* Progress bar */}
-        <View style={styles.bannerProgressTrack}>
-          <View style={[
-            styles.bannerProgressFill,
-            {
-              backgroundColor: zc.accent,
-              width: `${(effectiveCleared / 10) * 100}%`,
-            },
-          ]} />
-        </View>
-      </View>
-
-      {/* ── Floor List ────────────────────────────────────────────────── */}
+      {/* ── Main Scroll View ────────────────────────────────────────── */}
       <ScrollView
         style={styles.scroll}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[
+          styles.scrollContent,
+          {
+            paddingTop: (insets.top || 12) + 8,
+            paddingBottom: insets.bottom + 24,
+          }
+        ]}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={[styles.sectionLabel, { color: zc.accent }]}>— SELECT FLOOR —</Text>
+        {/* Inline Back Button */}
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.inlineBackBtn} activeOpacity={0.7}>
+          <Text style={styles.inlineBackText}>← Back to Zones</Text>
+        </TouchableOpacity>
+
+        {/* ── Zone Banner ────────────────────────────────────────────── */}
+        <View style={[styles.banner, { borderColor: zc.border, marginHorizontal: 0, marginTop: 4, marginBottom: 20 }]}>
+          {/* SVG Background Patterns & Gradients */}
+          <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
+            <Defs>
+              <LinearGradient id="bannerGrad" x1="0" y1="0" x2="1" y2="1">
+                <Stop offset="0%" stopColor={zc.bgGrad1} />
+                <Stop offset="50%" stopColor={zc.bgGrad2} />
+                <Stop offset="100%" stopColor="#050607" />
+              </LinearGradient>
+              <RadialGradient id="bannerAccent" cx="85%" cy="50%" rx="55%" ry="75%">
+                <Stop offset="0%" stopColor={zc.accent} stopOpacity="0.12" />
+                <Stop offset="100%" stopColor="transparent" stopOpacity="0" />
+              </RadialGradient>
+            </Defs>
+            <Rect width="100%" height="100%" fill="url(#bannerGrad)" rx={18} />
+            <Rect width="100%" height="100%" fill="url(#bannerAccent)" rx={18} />
+            <Rect x="1" y="1" width="99%" height="98%" rx={17} fill="none" stroke={zc.border} strokeWidth="1.2" />
+          </Svg>
+
+          <View style={styles.bannerInner}>
+            {/* Left Column: Title, Level Badge, and Description */}
+            <View style={styles.bannerLeft}>
+              <View style={styles.eyebrowRow}>
+                <Text style={styles.bannerEyebrow}>DUNGEON ZONE</Text>
+                <View style={[styles.levelTag, { borderColor: zc.border, backgroundColor: zc.accentDim }]}>
+                  <Text style={[styles.levelTagText, { color: zc.accent }]}>
+                    Lv. {zone.minLevel}–{zone.maxLevel}
+                  </Text>
+                </View>
+              </View>
+              <Text style={[styles.bannerTitle, { color: zc.accent }]}>{zone.name}</Text>
+              <Text style={styles.bannerDesc}>{zc.bannerDesc}</Text>
+            </View>
+
+            {/* Right Column: Premium Circular Progress Ring */}
+            <View style={styles.bannerRight}>
+              <View style={styles.progressRingWrapper}>
+                <Svg width="64" height="64" viewBox="0 0 60 60">
+                  {/* Background Track Circle */}
+                  <Circle
+                    cx="30"
+                    cy="30"
+                    r={radius}
+                    stroke="rgba(255, 255, 255, 0.05)"
+                    strokeWidth={strokeWidth}
+                    fill="none"
+                  />
+                  {/* Glow Circle behind the active stroke for premium depth */}
+                  <Circle
+                    cx="30"
+                    cy="30"
+                    r={radius}
+                    stroke={zc.accent}
+                    strokeWidth={strokeWidth}
+                    fill="none"
+                    strokeDasharray={circumference}
+                    strokeDashoffset={strokeDashoffset}
+                    strokeLinecap="round"
+                    transform="rotate(-90 30 30)"
+                    opacity={0.3}
+                  />
+                  {/* Active Progress Circle */}
+                  <Circle
+                    cx="30"
+                    cy="30"
+                    r={radius}
+                    stroke={zc.accent}
+                    strokeWidth={strokeWidth}
+                    fill="none"
+                    strokeDasharray={circumference}
+                    strokeDashoffset={strokeDashoffset}
+                    strokeLinecap="round"
+                    transform="rotate(-90 30 30)"
+                  />
+                </Svg>
+                {/* Centered text display inside the progress ring */}
+                <View style={styles.progressRingTextContainer}>
+                  <Text style={[styles.progressRingCount, { color: zc.accent }]}>
+                    {effectiveCleared}
+                  </Text>
+                  <Text style={styles.progressRingDivider}>/</Text>
+                  <Text style={styles.progressRingTotal}>10</Text>
+                </View>
+              </View>
+              <Text style={styles.progressRingLabel}>CLEARED</Text>
+            </View>
+          </View>
+        </View>
+
+        <Text style={[styles.sectionLabel, { color: zc.accent, marginBottom: 12 }]}>— SELECT FLOOR —</Text>
         {Array.from({ length: 10 }, (_, i) => renderFloorRow(i + 1))}
         <View style={{ height: 32 }} />
       </ScrollView>
@@ -502,7 +507,7 @@ export default function DungeonFloorScreen() {
 
             <ScrollView
               style={{ maxHeight: SCREEN_HEIGHT * 0.86 }}
-              contentContainerStyle={styles.modalInner}
+              contentContainerStyle={[styles.modalInner, { paddingBottom: insets.bottom + 32 }]}
               showsVerticalScrollIndicator={false}
             >
               {/* Grabber */}
@@ -647,7 +652,7 @@ export default function DungeonFloorScreen() {
           </Pressable>
         </Pressable>
       </Modal>
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -661,143 +666,123 @@ const styles = StyleSheet.create({
     flex: 1,
   },
 
-  /* ── Header ─────────────────────────────────────────────── */
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.04)',
+  /* ── Header / Back Button ───────────────────────────────── */
+  inlineBackBtn: {
+    alignSelf: 'flex-start',
+    paddingVertical: 8,
+    paddingRight: 16,
+    marginBottom: 6,
   },
-  backBtn: {
-    width: 72,
-    paddingVertical: 6,
-  },
-  backText: {
+  inlineBackText: {
     color: '#D4A754',
     fontFamily: 'System',
     fontWeight: 'bold',
     fontSize: 15,
-  },
-  headerCenter: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-  },
-  headerIcon: {
-    fontSize: 16,
-  },
-  headerTitle: {
-    fontFamily: 'System',
-    fontWeight: 'bold',
-    fontSize: 17,
-    letterSpacing: 0.3,
-  },
-  progressChip: {
-    width: 72,
-    alignItems: 'center',
-    borderRadius: 10,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderWidth: 1,
-  },
-  progressChipText: {
-    fontFamily: 'System',
-    fontWeight: 'bold',
-    fontSize: 11,
   },
 
   /* ── Zone Banner ─────────────────────────────────────────── */
   banner: {
     marginHorizontal: 14,
     marginTop: 12,
-    marginBottom: 6,
-    borderRadius: 16,
+    marginBottom: 10,
+    borderRadius: 18,
     overflow: 'hidden',
     borderWidth: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.2)',
   },
   bannerInner: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 12,
+    paddingHorizontal: 20,
+    paddingVertical: 18,
     zIndex: 2,
   },
   bannerLeft: {
     flex: 1,
-    marginRight: 14,
+    marginRight: 18,
+    justifyContent: 'center',
+  },
+  eyebrowRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 6,
   },
   bannerEyebrow: {
     fontFamily: 'System',
-    fontSize: 8,
+    fontSize: 9,
     fontWeight: '900',
-    color: 'rgba(207,224,238,0.4)',
+    color: 'rgba(207,224,238,0.35)',
     letterSpacing: 1.5,
-    marginBottom: 4,
+    textTransform: 'uppercase',
+  },
+  levelTag: {
+    borderRadius: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderWidth: 1,
+  },
+  levelTagText: {
+    fontFamily: 'System',
+    fontSize: 9,
+    fontWeight: 'bold',
   },
   bannerTitle: {
     fontFamily: 'Courier New',
     fontWeight: 'bold',
-    fontSize: 19,
-    marginBottom: 4,
-    letterSpacing: 0.3,
+    fontSize: 22,
+    marginBottom: 6,
+    letterSpacing: 0.5,
   },
   bannerDesc: {
     fontFamily: 'System',
-    fontSize: 11,
-    color: 'rgba(207,224,238,0.5)',
-    lineHeight: 15,
+    fontSize: 12,
+    color: 'rgba(207,224,238,0.55)',
+    lineHeight: 17,
   },
   bannerRight: {
-    alignItems: 'flex-end',
-    gap: 6,
-  },
-  bannerStatBox: {
     alignItems: 'center',
-    borderWidth: 1,
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    minWidth: 50,
+    justifyContent: 'center',
+    width: 80,
   },
-  bannerStatNum: {
+  progressRingWrapper: {
+    position: 'relative',
+    width: 64,
+    height: 64,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  progressRingTextContainer: {
+    position: 'absolute',
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    justifyContent: 'center',
+  },
+  progressRingCount: {
     fontFamily: 'System',
     fontWeight: '900',
     fontSize: 16,
-    lineHeight: 20,
   },
-  bannerStatLabel: {
+  progressRingDivider: {
     fontFamily: 'System',
-    fontSize: 7,
+    fontSize: 11,
+    color: 'rgba(207,224,238,0.3)',
+    marginHorizontal: 1,
+  },
+  progressRingTotal: {
+    fontFamily: 'System',
+    fontWeight: '700',
+    fontSize: 11,
     color: 'rgba(207,224,238,0.45)',
-    fontWeight: 'bold',
-    letterSpacing: 0.5,
-    textTransform: 'uppercase',
   },
-  levelChip: {
-    borderRadius: 8,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderWidth: 1,
-  },
-  levelChipText: {
+  progressRingLabel: {
     fontFamily: 'System',
-    fontSize: 10,
-    fontWeight: 'bold',
-  },
-  bannerProgressTrack: {
-    height: 3,
-    backgroundColor: 'rgba(255,255,255,0.06)',
-    marginHorizontal: 0,
-  },
-  bannerProgressFill: {
-    height: '100%',
-    borderRadius: 2,
+    fontSize: 8,
+    color: 'rgba(207,224,238,0.4)',
+    fontWeight: '900',
+    letterSpacing: 1,
+    textAlign: 'center',
   },
 
   /* ── Section label ───────────────────────────────────────── */

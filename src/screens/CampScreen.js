@@ -28,7 +28,7 @@ import { getXpForLevel } from '../logic/progressionEngine';
 import AnimatedSprite from '../components/AnimatedSprite';
 import Button from '../components/ui/Button';
 import ResourceBar from '../components/ui/ResourceBar';
-import { HERO_SPRITE, CAMP_CASTLE } from '../constants/sprites';
+import { HERO_SPRITE } from '../constants/sprites';
 import { SKILLS } from '../data/skills';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -175,13 +175,6 @@ export default function CampScreen({ navigation }) {
               <Rect x="6" y="6" width="96%" height="91%" rx={14} fill="none" stroke="rgba(212, 167, 84, 0.08)" strokeWidth="1" />
             </Svg>
           </View>
-
-          {/* Ambient Castle Logo (pushed to background watermark) */}
-          <Image
-            source={CAMP_CASTLE}
-            style={styles.campBg}
-            resizeMode="contain"
-          />
 
           {/* Floating Currencies Display Chip Row */}
           <View style={styles.currencyRow}>
@@ -373,14 +366,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(232, 167, 58, 0.3)',
   },
-  campBg: {
-    position: 'absolute',
-    bottom: 4,
-    right: 8,
-    width: 80,
-    height: 70,
-    opacity: 0.04,
-  },
+
   goldChip: {
     position: 'absolute',
     top: 12,
