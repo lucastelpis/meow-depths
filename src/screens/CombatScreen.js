@@ -2192,13 +2192,11 @@ const styles = StyleSheet.create({
     zIndex: 100,
   },
   overlayCard: {
-    backgroundColor: theme.COLORS.dungeonBackground,
-    borderWidth: 2,
-    borderColor: theme.COLORS.primary,
     borderRadius: theme.BORDER_RADIUS.xl,
-    padding: theme.SPACING.xl,
+    overflow: 'hidden',
     width: '85%',
     alignItems: 'center',
+    position: 'relative',
   },
   victoryTitle: {
     fontSize: 28,
