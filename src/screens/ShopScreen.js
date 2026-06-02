@@ -104,6 +104,20 @@ export default function ShopScreen() {
   const { hero } = state;
 
   const [activeTab, setActiveTab] = useState('supplies'); // 'supplies' | 'armory'
+  const [quantities, setQuantities] = useState({});       // { [itemId]: number }
+
+  const getQty = (itemId) => quantities[itemId] || 1;
+
+  const incrementQty = (item) => {
+    const next = getQty(item.id) + 1;
+    const maxAffordable = Math.floor(hero.gold / item.cost);
+    if (next > maxAffordable) return;
+    setQuantities(prev => ({ ...prev, [item.id]: next }));
+  };
+
+  const decrementQty = (itemId) => {
+    setQuantities(prev => ({ ...prev, [itemId]: Math.max((prev[itemId] || 1) - 1, 1) }));
+  };
 
   const ownedMaterials = hero.inventory.materials || {};
   const craftedGear    = hero.inventory.craftedGear || [];
@@ -147,27 +161,14 @@ export default function ShopScreen() {
 
   // ── Supplies: purchase handler ─────────────────────────────────────────────
   const handleBuySupplies = (item) => {
-    if (hero.gold < item.cost) {
-      Alert.alert('Insufficient Gold', "You don't have enough gold for this purchase.");
-      return;
-    }
-
-    Alert.alert(
-      'Purchase Supplies',
-      `Buy 1 ${item.name} for 💰 ${item.cost} gold?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Buy',
-          onPress: () => {
-            dispatch({
-              type: 'BUY_CONSUMABLE',
-              payload: { consumableId: item.id, price: item.cost },
-            });
-          },
-        },
-      ]
-    );
+    const qty = getQty(item.id);
+    const totalCost = item.cost * qty;
+    if (hero.gold < totalCost) return;
+    dispatch({
+      type: 'BUY_CONSUMABLE_BULK',
+      payload: { consumableId: item.id, price: item.cost, quantity: qty },
+    });
+    setQuantities(prev => ({ ...prev, [item.id]: 1 }));
   };
 
   // ── Armory: craft/forge handler ────────────────────────────────────────────
@@ -218,7 +219,7 @@ export default function ShopScreen() {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn} activeOpacity={0.7}>
           <Text style={styles.backText}>← Hub</Text>
         </TouchableOpacity>
-        <Text style={styles.title}>🛒 Town Shop</Text>
+        <Text style={styles.title}>🏛️ Town Hall</Text>
         <View style={[styles.goldBadge, theme.SHADOWS.glowPrimary]}>
           <Text style={styles.goldBadgeIcon}>💰</Text>
           <Text style={styles.goldBadgeText}>{hero.gold}g</Text>
@@ -317,8 +318,12 @@ export default function ShopScreen() {
             <View style={styles.listContainer}>
               {CONSUMABLES.map((item) => {
                 const owned = consumableCounts[item.id] || 0;
-                const canAfford = hero.gold >= item.cost;
                 const icon = CONSUMABLE_ICONS[item.id] || '🧪';
+
+                const qty = getQty(item.id);
+                const totalCost = item.cost * qty;
+                const canAffordTotal = hero.gold >= totalCost;
+                const canIncrement = hero.gold >= item.cost * (qty + 1);
 
                 return (
                   <View key={item.id} style={styles.shopRow}>
@@ -330,6 +335,7 @@ export default function ShopScreen() {
                     </View>
 
                     <View style={styles.shopRowInner}>
+                      {/* Left: icon + info */}
                       <View style={styles.shopRowLeft}>
                         <View style={styles.shopIconWrapper}>
                           <Text style={styles.shopRowIcon}>{icon}</Text>
@@ -347,29 +353,54 @@ export default function ShopScreen() {
                         </View>
                       </View>
 
-                      <TouchableOpacity
-                        style={[styles.buyBtn, !canAfford && styles.buyBtnDisabled]}
-                        activeOpacity={0.7}
-                        disabled={!canAfford}
-                        onPress={() => handleBuySupplies(item)}
-                      >
-                        {canAfford && (
-                          <View style={StyleSheet.absoluteFill}>
-                            <Svg width="100%" height="100%">
-                              <Defs>
-                                <LinearGradient id={`buyBtnGrad_${item.id}`} x1="0" y1="0" x2="1" y2="0">
-                                  <Stop offset="0%" stopColor="#10B981" />
-                                  <Stop offset="100%" stopColor="#059669" />
-                                </LinearGradient>
-                              </Defs>
-                              <Rect width="100%" height="100%" fill={`url(#buyBtnGrad_${item.id})`} rx={10} />
-                            </Svg>
-                          </View>
-                        )}
-                        <Text style={[styles.buyBtnText, !canAfford && styles.buyBtnTextDisabled, canAfford && { color: '#031E12' }]}>
-                          💰 {item.cost}g
-                        </Text>
-                      </TouchableOpacity>
+                      {/* Right: stepper + buy */}
+                      <View style={styles.buyArea}>
+                        <View style={styles.stepper}>
+                          <TouchableOpacity
+                            style={[styles.stepBtn, qty <= 1 && styles.stepBtnDisabled]}
+                            onPress={() => decrementQty(item.id)}
+                            disabled={qty <= 1}
+                            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                          >
+                            <Text style={[styles.stepBtnText, qty <= 1 && styles.stepBtnTextDisabled]}>−</Text>
+                          </TouchableOpacity>
+
+                          <Text style={styles.stepQty}>{qty}</Text>
+
+                          <TouchableOpacity
+                            style={[styles.stepBtn, !canIncrement && styles.stepBtnDisabled]}
+                            onPress={() => incrementQty(item)}
+                            disabled={!canIncrement}
+                            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                          >
+                            <Text style={[styles.stepBtnText, !canIncrement && styles.stepBtnTextDisabled]}>+</Text>
+                          </TouchableOpacity>
+                        </View>
+
+                        <TouchableOpacity
+                          style={[styles.buyBtn, !canAffordTotal && styles.buyBtnDisabled]}
+                          activeOpacity={0.7}
+                          disabled={!canAffordTotal}
+                          onPress={() => handleBuySupplies(item)}
+                        >
+                          {canAffordTotal && (
+                            <View style={StyleSheet.absoluteFill}>
+                              <Svg width="100%" height="100%">
+                                <Defs>
+                                  <LinearGradient id={`buyBtnGrad_${item.id}`} x1="0" y1="0" x2="1" y2="0">
+                                    <Stop offset="0%" stopColor="#3FB56E" />
+                                    <Stop offset="100%" stopColor="#2A8A50" />
+                                  </LinearGradient>
+                                </Defs>
+                                <Rect width="100%" height="100%" fill={`url(#buyBtnGrad_${item.id})`} rx={10} />
+                              </Svg>
+                            </View>
+                          )}
+                          <Text style={[styles.buyBtnText, !canAffordTotal && styles.buyBtnTextDisabled, canAffordTotal && styles.buyBtnTextActive]}>
+                            💰 {totalCost}g
+                          </Text>
+                        </TouchableOpacity>
+                      </View>
                     </View>
                   </View>
                 );
@@ -779,13 +810,52 @@ const styles = StyleSheet.create({
     marginTop: 4,
     lineHeight: 15,
   },
+  /* ── Quantity stepper + buy area ─────────────────────────── */
+  buyArea: {
+    alignItems: 'flex-end',
+    gap: 6,
+  },
+  stepper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  stepBtn: {
+    width: 28,
+    height: 28,
+    borderRadius: 8,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.12)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  stepBtnDisabled: {
+    backgroundColor: 'rgba(255,255,255,0.02)',
+    borderColor: 'rgba(255,255,255,0.04)',
+  },
+  stepBtnText: {
+    color: theme.COLORS.parchment,
+    fontSize: 18,
+    fontWeight: '600',
+    lineHeight: 20,
+  },
+  stepBtnTextDisabled: {
+    color: 'rgba(255,255,255,0.2)',
+  },
+  stepQty: {
+    ...theme.FONTS.heading,
+    color: theme.COLORS.warmGlow,
+    minWidth: 22,
+    textAlign: 'center',
+  },
   buyBtn: {
     borderRadius: 10,
-    paddingVertical: 10,
+    paddingVertical: 8,
     paddingHorizontal: 14,
     alignItems: 'center',
     justifyContent: 'center',
-    minWidth: 84,
+    minWidth: 90,
     overflow: 'hidden',
   },
   buyBtnDisabled: {
@@ -798,6 +868,9 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: 'bold',
     zIndex: 2,
+  },
+  buyBtnTextActive: {
+    color: '#071A0E',
   },
   buyBtnTextDisabled: {
     color: 'rgba(255, 255, 255, 0.15)',

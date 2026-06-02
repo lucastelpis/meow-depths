@@ -285,7 +285,7 @@ export default function SkillTreeScreen() {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn} activeOpacity={0.7}>
           <Text style={styles.backText}>← Hub</Text>
         </TouchableOpacity>
-        <Text style={styles.title}>🌟 Skill Tree</Text>
+        <Text style={styles.title}>🌟 Skills</Text>
         <View style={styles.spBadgeContainer}>
           <Text style={styles.skillPointsBadge}>SP: {skillPoints}</Text>
         </View>

@@ -315,26 +315,36 @@ export function executeSkill(skill, attacker, targets, attackerState) {
     // DAMAGE — straightforward damage skill, possibly AoE
     // -----------------------------------------------------------------------
     case 'damage': {
-      // If the skill has `aoe: true`, hit every target; otherwise hit only the first.
-      const hitTargets = skill.effect.aoe ? targets : [targets[0]];
+      let currentMultiplier = skill.effect.multiplier || 1.0;
+      const falloff = skill.effect.damageFalloff || 1.0;
+      const secondaryMult = skill.effect.secondaryMultiplier || 1.0;
 
-      for (const target of hitTargets) {
+      for (let i = 0; i < targets.length; i++) {
+        const target = targets[i];
+        if (!target) continue;
+        const isPrimary = (i === 0);
+
+        let activeMultiplier = currentMultiplier;
+        if (!isPrimary) {
+          activeMultiplier = activeMultiplier * secondaryMult;
+        }
+
         // Check dodge first
         const isDodged = checkDodge(target);
         if (isDodged) {
-          results.push({ target: target.id, damage: 0, isDodged: true });
+          results.push({ target: target.uid || target.id, damage: 0, isDodged: true });
           log += `${target.name} dodged ${skill.name}! `;
           continue;
         }
 
         // Calculate damage with the skill's multiplier
         const dmgResult = calculateDamage(attacker, target, {
-          multiplier: skill.effect.multiplier,
+          multiplier: activeMultiplier,
           hasDeathMark: target.effects?.some(e => e.type === 'deathMark') || false,
         });
 
         results.push({
-          target: target.id,
+          target: target.uid || target.id,
           damage: dmgResult.damage,
           isCrit: dmgResult.isCrit,
           isDodged: false,
@@ -343,6 +353,8 @@ export function executeSkill(skill, attacker, targets, attackerState) {
         log += `${skill.name} hits ${target.name} for ${dmgResult.damage}`;
         if (dmgResult.isCrit) log += ' (CRIT!)';
         log += '. ';
+
+        currentMultiplier = currentMultiplier * falloff;
       }
       break;
     }
@@ -425,21 +437,26 @@ export function executeSkill(skill, attacker, targets, attackerState) {
     // DEATH MARK — target takes 50 % extra damage for N turns
     // -----------------------------------------------------------------------
     case 'death_mark': {
-      const target = targets[0]; // always single-target
+      const markDuration = skill.effect.duration || 3;
+      const bonus = skill.effect.damageBonus || 0.5;
+      const targetNames = targets.filter(Boolean).map(t => t.name).join(', ');
 
-      const deathMarkEffect = {
-        type: 'deathMark',
-        damageBonus: skill.effect.damageBonus || 0.5,
-        duration: skill.effect.duration || 3,
-      };
+      for (const target of targets) {
+        if (!target) continue;
+        const deathMarkEffect = {
+          type: 'deathMark',
+          damageBonus: bonus,
+          duration: markDuration,
+        };
 
-      results.push({
-        target: target.id,
-        type: 'deathMark',
-        effect: deathMarkEffect,
-      });
+        results.push({
+          target: target.uid || target.id,
+          type: 'deathMark',
+          effect: deathMarkEffect,
+        });
+      }
 
-      log = `${attacker.name || 'Mochi'} marks ${target.name} for death! (+${Math.round(deathMarkEffect.damageBonus * 100)}% damage for ${deathMarkEffect.duration} turns)`;
+      log = `${attacker.name || 'Mochi'} marks ${targetNames || 'Enemy'} for death! (+${Math.round(bonus * 100)}% damage for ${markDuration} turns).`;
       break;
     }
 
@@ -447,39 +464,54 @@ export function executeSkill(skill, attacker, targets, attackerState) {
     // DAMAGE + STUN — deal damage AND stun in one ability
     // -----------------------------------------------------------------------
     case 'damage_stun': {
-      const target = targets[0];
+      let currentMultiplier = skill.effect.multiplier || 1.0;
+      const falloff = skill.effect.damageFalloff || 1.0;
+      const secondaryMult = skill.effect.secondaryMultiplier || 1.0;
 
-      // Dodge check
-      const isDodged = checkDodge(target);
-      if (isDodged) {
-        results.push({ target: target.id, damage: 0, isDodged: true, stunApplied: false });
-        log = `${target.name} dodged ${skill.name}!`;
-        break;
+      for (let i = 0; i < targets.length; i++) {
+        const target = targets[i];
+        if (!target) continue;
+        const isPrimary = (i === 0);
+
+        let activeMultiplier = currentMultiplier;
+        if (!isPrimary) {
+          activeMultiplier = activeMultiplier * secondaryMult;
+        }
+
+        // Dodge check
+        const isDodged = checkDodge(target);
+        if (isDodged) {
+          results.push({ target: target.uid || target.id, damage: 0, isDodged: true, stunApplied: false });
+          log += `${target.name} dodged ${skill.name}! `;
+          continue;
+        }
+
+        // Calculate damage
+        const dmgResult = calculateDamage(attacker, target, {
+          multiplier: activeMultiplier,
+          hasDeathMark: target.effects?.some(e => e.type === 'deathMark') || false,
+        });
+
+        // Stun is guaranteed if the attack lands
+        const stunEffect = {
+          type: 'stun',
+          duration: skill.effect.stunDuration || 1,
+        };
+
+        results.push({
+          target: target.uid || target.id,
+          damage: dmgResult.damage,
+          isCrit: dmgResult.isCrit,
+          isDodged: false,
+          stunApplied: true,
+          stunEffect,
+        });
+
+        log += `${skill.name} hits ${target.name} for ${dmgResult.damage} and stuns them for ${stunEffect.duration} turn(s)! `;
+        if (dmgResult.isCrit) log += '(CRIT!) ';
+
+        currentMultiplier = currentMultiplier * falloff;
       }
-
-      // Calculate damage
-      const dmgResult = calculateDamage(attacker, target, {
-        multiplier: skill.effect.multiplier,
-        hasDeathMark: target.effects?.some(e => e.type === 'deathMark') || false,
-      });
-
-      // Stun is guaranteed if the attack lands (it's the whole point of the skill)
-      const stunEffect = {
-        type: 'stun',
-        duration: skill.effect.stunDuration || 1,
-      };
-
-      results.push({
-        target: target.id,
-        damage: dmgResult.damage,
-        isCrit: dmgResult.isCrit,
-        isDodged: false,
-        stunApplied: true,
-        stunEffect,
-      });
-
-      log = `${skill.name} hits ${target.name} for ${dmgResult.damage} and stuns them for ${stunEffect.duration} turn(s)!`;
-      if (dmgResult.isCrit) log += ' (CRIT!)';
       break;
     }
 

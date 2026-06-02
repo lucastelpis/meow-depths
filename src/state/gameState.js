@@ -70,7 +70,6 @@ const initialState = {
     critChance: 0.05,         // 5 % base crit chance
     dodge: 0.05,              // 5 % base dodge chance
     gold: 100,                // start with some gold for first potions
-    gems: 0,                  // premium currency / gems
     skillPoints: 0,           // earned 1 per level-up, spent on skills
     unlockedSkills: [],       // array of skill IDs the hero has learned
     equippedSkills: [null, null], // two active skill slots for combat
@@ -526,10 +525,10 @@ function gameReducer(state, action) {
     // -----------------------------------------------------------------------
     case 'END_RUN': {
       const { outcome } = action.payload;
-      
+
       let updatedGold = state.hero.gold;
       const updatedMaterials = { ...state.hero.inventory.materials };
-      
+
       if (outcome === 'win') {
         updatedGold += state.currentRun.lootCollected.gold;
         for (const [id, qty] of Object.entries(state.currentRun.lootCollected.materials)) {
@@ -542,6 +541,20 @@ function gameReducer(state, action) {
           if (keptQty > 0) {
             updatedMaterials[id] = (updatedMaterials[id] || 0) + keptQty;
           }
+        }
+      }
+
+      // Return any unused consumables from the run bag back to permanent inventory
+      let updatedInventoryConsumables = [...state.hero.inventory.consumables];
+      for (const id of (state.currentRun.consumables || [])) {
+        const existingIdx = updatedInventoryConsumables.findIndex(c => c.id === id);
+        if (existingIdx >= 0) {
+          updatedInventoryConsumables[existingIdx] = {
+            ...updatedInventoryConsumables[existingIdx],
+            quantity: updatedInventoryConsumables[existingIdx].quantity + 1,
+          };
+        } else {
+          updatedInventoryConsumables.push({ id, quantity: 1 });
         }
       }
 
@@ -565,7 +578,8 @@ function gameReducer(state, action) {
           hp: finalHp,
           inventory: {
             ...state.hero.inventory,
-            materials: updatedMaterials
+            materials: updatedMaterials,
+            consumables: updatedInventoryConsumables,
           }
         },
         progress: {
@@ -663,16 +677,13 @@ function gameReducer(state, action) {
     case 'BUY_CONSUMABLE': {
       const { consumableId, price } = action.payload;
 
-      // Check if the consumable already exists in inventory
       const existing = state.hero.inventory.consumables.find(c => c.id === consumableId);
       let newConsumables;
       if (existing) {
-        // Increment quantity
         newConsumables = state.hero.inventory.consumables.map(c =>
           c.id === consumableId ? { ...c, quantity: c.quantity + 1 } : c
         );
       } else {
-        // Add new consumable entry
         newConsumables = [
           ...state.hero.inventory.consumables,
           { id: consumableId, quantity: 1 },
@@ -693,11 +704,45 @@ function gameReducer(state, action) {
     }
 
     // -----------------------------------------------------------------------
-    // CLAIM_DAILY_REWARD — rewards gold, gems, potions based on level
-    // Payload: { gold: number, gems: number, consumables: { [id: string]: number } }
+    // BUY_CONSUMABLE_BULK — buy multiple units of a consumable at once
+    // Payload: { consumableId: string, price: number, quantity: number }
+    // -----------------------------------------------------------------------
+    case 'BUY_CONSUMABLE_BULK': {
+      const { consumableId, price, quantity } = action.payload;
+      const totalCost = price * quantity;
+
+      const existing = state.hero.inventory.consumables.find(c => c.id === consumableId);
+      let newConsumables;
+      if (existing) {
+        newConsumables = state.hero.inventory.consumables.map(c =>
+          c.id === consumableId ? { ...c, quantity: c.quantity + quantity } : c
+        );
+      } else {
+        newConsumables = [
+          ...state.hero.inventory.consumables,
+          { id: consumableId, quantity },
+        ];
+      }
+
+      return {
+        ...state,
+        hero: {
+          ...state.hero,
+          gold: state.hero.gold - totalCost,
+          inventory: {
+            ...state.hero.inventory,
+            consumables: newConsumables,
+          },
+        },
+      };
+    }
+
+    // -----------------------------------------------------------------------
+    // CLAIM_DAILY_REWARD — rewards gold, potions based on level
+    // Payload: { gold: number, consumables: { [id: string]: number } }
     // -----------------------------------------------------------------------
     case 'CLAIM_DAILY_REWARD': {
-      const { gold, gems, consumables } = action.payload;
+      const { gold, consumables } = action.payload;
 
       // Update consumables array
       let updatedConsumables = [...state.hero.inventory.consumables];
@@ -718,7 +763,6 @@ function gameReducer(state, action) {
         hero: {
           ...state.hero,
           gold: state.hero.gold + (gold || 0),
-          gems: (state.hero.gems || 0) + (gems || 0),
           inventory: {
             ...state.hero.inventory,
             consumables: updatedConsumables,

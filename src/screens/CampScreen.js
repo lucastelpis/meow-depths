@@ -26,6 +26,8 @@ import theme from '../constants/theme';
 import { useGame } from '../state/gameState';
 import { getXpForLevel } from '../logic/progressionEngine';
 import AnimatedSprite from '../components/AnimatedSprite';
+import Button from '../components/ui/Button';
+import ResourceBar from '../components/ui/ResourceBar';
 import { HERO_SPRITE, CAMP_CASTLE } from '../constants/sprites';
 import { SKILLS } from '../data/skills';
 
@@ -33,10 +35,10 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 // ─── Nav button metadata ────────────────────────────────────────────────────
 const NAV_ITEMS = [
-  { key: 'WorldMap',  icon: '🗺️', label: 'World Map',  sub: 'Conquer Zones',  color: '#D4A754' },
-  { key: 'Shop',      icon: '🛒', label: 'Shop & Forge', sub: 'Buy & Craft',    color: '#10B981' },
-  { key: 'SkillTree', icon: '🌟', label: 'Skill Tree', sub: 'Unlock Talents',  color: '#06B6D4' },
-  { key: 'Inventory', icon: '🎒', label: 'Bag & Gear',  sub: 'Manage Loadout',  color: '#EC4899' },
+  { key: 'WorldMap',  icon: '🚪', label: 'Enter the Depths', sub: 'Conquer Zones',  color: '#B5701A' }, // torchOrange / primary
+  { key: 'Shop',      icon: '🏛️', label: 'Town Hall',        sub: 'Buy & Craft',    color: '#5CC489' }, // buffMint
+  { key: 'SkillTree', icon: '🌟', label: 'Skills',           sub: 'Unlock Talents', color: '#A98EE0' }, // skillPurple
+  { key: 'Inventory', icon: '🎒', label: 'Inventory',        sub: 'Manage Loadout', color: '#5A9FE0' }, // coldBlue
 ];
 
 export default function CampScreen({ navigation }) {
@@ -89,7 +91,7 @@ export default function CampScreen({ navigation }) {
     if (hasClaimedToday()) {
       Alert.alert(
         "🎁 Already Claimed",
-        "You already claimed your daily reward today. Come back tomorrow for more potions and gems! 🐱",
+        "You already claimed your daily reward today. Come back tomorrow for more potions and gold! 🐱",
         [{ text: "Okay" }]
       );
       return;
@@ -98,7 +100,6 @@ export default function CampScreen({ navigation }) {
     // Scale rewards based on level
     const lvl = hero.level || 1;
     const goldReward = 100 + lvl * 50;
-    const gemsReward = 10 + lvl * 5;
     
     // Potions: health potions scaled, mega potions starting at lvl 3
     const healthPotionQty = 1 + Math.floor(lvl / 5);
@@ -113,7 +114,6 @@ export default function CampScreen({ navigation }) {
       type: 'CLAIM_DAILY_REWARD',
       payload: {
         gold: goldReward,
-        gems: gemsReward,
         consumables: consumablesReward,
       }
     });
@@ -123,7 +123,6 @@ export default function CampScreen({ navigation }) {
       "🎁 Daily Reward Claimed!",
       `Level ${lvl} Rewards Granted:\n\n` +
       `💰 +${goldReward} Gold\n` +
-      `💎 +${gemsReward} Gems\n` +
       (healthPotionQty > 0 ? `🧪 +${healthPotionQty} Health Potion${healthPotionQty > 1 ? 's' : ''}\n` : '') +
       (megaPotionQty > 0 ? `🧪 +${megaPotionQty} Mega Potion${megaPotionQty > 1 ? 's' : ''}\n` : '') +
       `\nCome back tomorrow for more!`,
@@ -141,17 +140,17 @@ export default function CampScreen({ navigation }) {
             HERO CARD — Premium Split Layout (Cozy & Compact)
             ═══════════════════════════════════════════════════════════════════ */}
         <View style={[styles.heroBanner, theme.SHADOWS.cardShadow]}>
-          {/* SVG Gradient Background Wrapper (ensures absolute positioning alignment) */}
+          {/* Warm gradient background — camp is a safe, cozy zone */}
           <View style={StyleSheet.absoluteFill}>
             <Svg width="100%" height="100%">
               <Defs>
                 <LinearGradient id="cardGrad" x1="0" y1="0" x2="0" y2="1">
-                  <Stop offset="0%" stopColor="#171725" stopOpacity="0.95" />
-                  <Stop offset="100%" stopColor="#0B0B12" stopOpacity="1" />
+                  <Stop offset="0%" stopColor="#2A1E0A" stopOpacity="1" />
+                  <Stop offset="100%" stopColor="#1A1200" stopOpacity="1" />
                 </LinearGradient>
                 <RadialGradient id="avatarGlow" cx="22%" cy="50%" rx="35%" ry="60%">
-                  <Stop offset="0%" stopColor="#D4A754" stopOpacity="0.15" />
-                  <Stop offset="100%" stopColor="#D4A754" stopOpacity="0" />
+                  <Stop offset="0%" stopColor="#E8A73A" stopOpacity="0.12" />
+                  <Stop offset="100%" stopColor="#E8A73A" stopOpacity="0" />
                 </RadialGradient>
               </Defs>
               <Rect width="100%" height="100%" fill="url(#cardGrad)" rx={20} />
@@ -177,9 +176,6 @@ export default function CampScreen({ navigation }) {
           <View style={styles.currencyRow}>
             <View style={styles.goldChip}>
               <Text style={styles.goldChipText}>💰 {hero.gold}</Text>
-            </View>
-            <View style={[styles.goldChip, styles.gemsChip]}>
-              <Text style={styles.gemsChipText}>💎 {hero.gems || 0}</Text>
             </View>
           </View>
 
@@ -207,76 +203,31 @@ export default function CampScreen({ navigation }) {
 
             <View style={styles.gaugesStack}>
               {/* HP Bar */}
-              <View style={styles.gaugeRow}>
-                <Text style={styles.gaugeLabel}>HP</Text>
-                <View style={styles.gaugeTrack}>
-                  <View
-                    style={[
-                      styles.gaugeFill,
-                      styles.hpFillGrad,
-                      { width: `${Math.min(hpProgress * 100, 100)}%` },
-                    ]}
-                  />
-                </View>
-                <Text style={styles.gaugeValue}>{hero.hp}/{hero.maxHp}</Text>
-              </View>
+              <ResourceBar
+                variant="heroHp"
+                label="HP"
+                current={hero.hp}
+                max={hero.maxHp}
+              />
 
               {/* XP Bar */}
-              <View style={styles.gaugeRow}>
-                <Text style={styles.gaugeLabel}>XP</Text>
-                <View style={styles.gaugeTrack}>
-                  <View
-                    style={[
-                      styles.gaugeFill,
-                      styles.xpFillGrad,
-                      { width: `${Math.min(xpProgress * 100, 100)}%` },
-                    ]}
-                  />
-                </View>
-                <Text style={styles.gaugeValue}>{xpIntoLevel}/{xpNeeded}</Text>
-              </View>
+              <ResourceBar
+                variant="xp"
+                label="XP"
+                current={xpIntoLevel}
+                max={xpNeeded}
+              />
             </View>
           </View>
         </View>
 
-        {/* ═══════════════════════════════════════════════════════════════════
-            ENTER DUNGEON — Premium Gilded Action Banner
-            ═══════════════════════════════════════════════════════════════════ */}
-        <TouchableOpacity
-          style={[styles.dungeonCTA, theme.SHADOWS.glowPrimary]}
-          activeOpacity={0.88}
-          onPress={() => navigation.navigate('WorldMap')}
-        >
-          {/* Metallic Gold SVG Gradient */}
-          <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
-            <Defs>
-              <LinearGradient id="ctaGrad" x1="0" y1="0" x2="1" y2="0">
-                <Stop offset="0%" stopColor="#F9D99A" />
-                <Stop offset="50%" stopColor="#D4A754" />
-                <Stop offset="100%" stopColor="#A37E33" />
-              </LinearGradient>
-            </Defs>
-            <Rect width="100%" height="100%" fill="url(#ctaGrad)" rx={16} />
-          </Svg>
 
-          <View style={styles.ctaInner}>
-            <View style={styles.ctaIconContainer}>
-              <Text style={styles.ctaIcon}>⚔️</Text>
-            </View>
-            <View style={styles.ctaTextBlock}>
-              <Text style={styles.ctaTitle}>Enter the Depths</Text>
-              <Text style={styles.ctaSub}>Choose a zone and begin your run</Text>
-            </View>
-            <Text style={styles.ctaArrow}>›</Text>
-          </View>
-        </TouchableOpacity>
 
         {/* Daily Reward Button */}
         <TouchableOpacity
           style={[
             styles.dailyRewardBtn,
             hasClaimedToday() ? styles.dailyRewardBtnClaimed : styles.dailyRewardBtnActive,
-            !hasClaimedToday() && theme.SHADOWS.glowPrimary,
           ]}
           activeOpacity={0.8}
           onPress={handleDailyRewardPress}
@@ -290,10 +241,10 @@ export default function CampScreen({ navigation }) {
               ]}>
                 {hasClaimedToday() ? "Daily Reward Claimed" : "Claim Daily Reward"}
               </Text>
-              <Text style={styles.dailyRewardSub}>
+              <Text style={[styles.dailyRewardSub, hasClaimedToday() && styles.dailyRewardSubClaimed]}>
                 {hasClaimedToday()
                   ? "You already claimed your daily reward, come back tomorrow for more!"
-                  : `Potions and gems scaling with Level ${hero.level}`}
+                  : `Potions and gold scaling with Level ${hero.level}`}
               </Text>
             </View>
             {!hasClaimedToday() && <Text style={styles.dailyRewardArrow}>›</Text>}
@@ -307,18 +258,36 @@ export default function CampScreen({ navigation }) {
           {NAV_ITEMS.map(item => (
             <TouchableOpacity
               key={item.key}
-              style={styles.navCard}
+              style={[
+                styles.navCard,
+                item.key === 'WorldMap' && styles.navCardPrimary
+              ]}
               activeOpacity={0.8}
               onPress={() => navigation.navigate(item.key)}
             >
               <View style={styles.navHeaderRow}>
-                <View style={[styles.navIconContainer, { backgroundColor: `${item.color}15` }]}>
-                  <Text style={[styles.navIcon, { color: item.color }]}>{item.icon}</Text>
+                <View style={[
+                  styles.navIconContainer,
+                  { backgroundColor: item.key === 'WorldMap' ? 'rgba(255, 255, 255, 0.2)' : `${item.color}28` }
+                ]}>
+                  <Text style={[
+                    styles.navIcon,
+                    { color: item.key === 'WorldMap' ? '#FFF3DA' : item.color }
+                  ]}>{item.icon}</Text>
                 </View>
-                <Text style={styles.navCardArrow}>→</Text>
+                <Text style={[
+                  styles.navCardArrow,
+                  item.key === 'WorldMap' && { color: '#FFF3DA' }
+                ]}>→</Text>
               </View>
-              <Text style={styles.navLabel}>{item.label}</Text>
-              <Text style={styles.navSub}>{item.sub}</Text>
+              <Text style={[
+                styles.navLabel,
+                item.key === 'WorldMap' && { color: '#FFF3DA' }
+              ]}>{item.label}</Text>
+              <Text style={[
+                styles.navSub,
+                item.key === 'WorldMap' && { color: '#FFEED0' }
+              ]}>{item.sub}</Text>
             </TouchableOpacity>
           ))}
         </View>
@@ -326,9 +295,11 @@ export default function CampScreen({ navigation }) {
         {/* ═══════════════════════════════════════════════════════════════════
             DEV TOOLS — Reset button
             ═══════════════════════════════════════════════════════════════════ */}
-        <TouchableOpacity
-          style={styles.resetBtn}
-          activeOpacity={0.7}
+        <Button
+          title="Reset Save Data"
+          icon="⚠️"
+          variant="danger"
+          style={{ marginTop: 12 }}
           onPress={() => {
             Alert.alert(
               'Reset Game Data',
@@ -343,9 +314,7 @@ export default function CampScreen({ navigation }) {
               ]
             );
           }}
-        >
-          <Text style={styles.resetBtnText}>⚠️ Reset Save Data</Text>
-        </TouchableOpacity>
+        />
       </ScrollView>
     </SafeAreaView>
   );
@@ -357,7 +326,7 @@ export default function CampScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#07070A',
+    backgroundColor: theme.COLORS.hearthBlack,
   },
   scroll: {
     paddingBottom: 40,
@@ -380,7 +349,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     marginBottom: 20,
     borderWidth: 1,
-    borderColor: 'rgba(212, 167, 84, 0.12)',
+    borderColor: 'rgba(232, 167, 58, 0.3)',
   },
   campBg: {
     position: 'absolute',
@@ -456,23 +425,17 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   heroName: {
-    fontFamily: 'System',
-    fontWeight: 'bold',
+    ...theme.FONTS.display,
     fontSize: 18,
-    color: '#F8FAFC',
-    letterSpacing: 0.3,
+    color: theme.COLORS.ghostWhite,
   },
   heroPathText: {
-    fontFamily: 'System',
-    fontSize: 10,
-    color: '#D4A754',
-    fontWeight: 'bold',
-    marginTop: 1,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    ...theme.FONTS.label,
+    color: theme.COLORS.torchOrange,
+    marginTop: 2,
   },
   gaugesStack: {
-    gap: 6,
+    gap: theme.SPACING.tight,
   },
   gaugeRow: {
     flexDirection: 'row',
@@ -572,13 +535,17 @@ const styles = StyleSheet.create({
   },
   navCard: {
     width: (SCREEN_WIDTH - 44) / 2,
-    backgroundColor: 'rgba(255, 255, 255, 0.015)',
-    borderRadius: 16,
+    backgroundColor: theme.COLORS.emberBrown,
+    borderRadius: theme.BORDER_RADIUS.card,
     paddingVertical: 20,
     paddingHorizontal: 16,
-    borderWidth: 1.2,
-    borderColor: 'rgba(255, 255, 255, 0.04)',
+    borderWidth: 1,
+    borderColor: '#57431A',
     position: 'relative',
+  },
+  navCardPrimary: {
+    backgroundColor: theme.COLORS.primary,
+    borderColor: theme.COLORS.candleGold,
   },
   navHeaderRow: {
     flexDirection: 'row',
@@ -597,39 +564,19 @@ const styles = StyleSheet.create({
     fontSize: 20,
   },
   navCardArrow: {
-    color: 'rgba(255,255,255,0.15)',
+    color: theme.COLORS.candleGold,
     fontSize: 16,
     fontWeight: 'bold',
   },
   navLabel: {
-    fontFamily: 'System',
-    fontWeight: 'bold',
-    fontSize: 15,
-    color: '#F8FAFC',
+    ...theme.FONTS.heading,
+    color: theme.COLORS.parchment,
     marginBottom: 4,
   },
   navSub: {
-    fontFamily: 'System',
-    fontWeight: '400',
+    ...theme.FONTS.body,
     fontSize: 11,
-    color: '#707F94',
-  },
-
-  /* ═══ Reset Button ═════════════════════════════════════════════════════════ */
-  resetBtn: {
-    marginTop: 12,
-    borderWidth: 1.2,
-    borderColor: 'rgba(239, 68, 68, 0.15)',
-    borderRadius: 14,
-    paddingVertical: 12,
-    alignItems: 'center',
-    backgroundColor: 'rgba(239, 68, 68, 0.02)',
-  },
-  resetBtnText: {
-    fontFamily: 'System',
-    fontWeight: '600',
-    fontSize: 12,
-    color: 'rgba(239, 68, 68, 0.5)',
+    color: theme.COLORS.warmGlow,
   },
 
   /* ═══ Floating CurrenciesDisplay Chip Row ══════════════════════════════════ */
@@ -641,32 +588,22 @@ const styles = StyleSheet.create({
     gap: 6,
     zIndex: 3,
   },
-  gemsChip: {
-    backgroundColor: 'rgba(6, 182, 212, 0.08)',
-    borderColor: 'rgba(6, 182, 212, 0.2)',
-  },
-  gemsChipText: {
-    fontFamily: 'System',
-    fontWeight: 'bold',
-    fontSize: 11,
-    color: '#06B6D4',
-  },
 
   /* ═══ Daily Reward Button ══════════════════════════════════════════════════ */
   dailyRewardBtn: {
     marginBottom: 20,
-    borderRadius: 16,
-    borderWidth: 1.2,
+    borderRadius: theme.BORDER_RADIUS.button,
+    borderWidth: 1,
     paddingVertical: 12,
     paddingHorizontal: 20,
   },
   dailyRewardBtnActive: {
-    backgroundColor: 'rgba(168, 85, 247, 0.06)',
-    borderColor: 'rgba(168, 85, 247, 0.25)',
+    backgroundColor: '#241A0C', // Secondary button
+    borderColor: '#4A3917',
   },
   dailyRewardBtnClaimed: {
-    backgroundColor: 'rgba(255, 255, 255, 0.015)',
-    borderColor: 'rgba(255, 255, 255, 0.05)',
+    backgroundColor: '#1A1A1A', // Disabled button
+    borderColor: '#2A2A2A',
   },
   dailyRewardInner: {
     flexDirection: 'row',
@@ -680,25 +617,26 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   dailyRewardTitle: {
-    fontFamily: 'System',
-    fontWeight: 'bold',
-    fontSize: 14,
+    ...theme.FONTS.heading,
   },
   dailyRewardTitleActive: {
-    color: '#A855F7',
+    color: '#F0E0BD', // Secondary text
   },
   dailyRewardTitleClaimed: {
-    color: '#707F94',
+    color: '#8A8A8A', // Better contrast disabled text
   },
   dailyRewardSub: {
-    fontFamily: 'System',
-    fontWeight: '500',
-    fontSize: 10,
-    color: '#707F94',
-    marginTop: 1,
+    ...theme.FONTS.body,
+    fontSize: 11,
+    color: '#F0E0BD',
+    opacity: 0.8,
+    marginTop: 2,
+  },
+  dailyRewardSubClaimed: {
+    color: '#8A8A8A',
   },
   dailyRewardArrow: {
     fontSize: 24,
-    color: '#A855F7',
+    color: theme.COLORS.warmGlow,
   },
 });

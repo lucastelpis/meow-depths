@@ -7,137 +7,131 @@
 
 // ─── Colour Palette ────────────────────────────────────────────────────────────
 const COLORS = {
-  /* Scene backgrounds */
-  background: '#07070A',           // Deep obsidian
-  campBackground: '#0B0B12',       // Twilight navy
-  dungeonBackground: '#0A0A10',    // Obsidian dungeon
-  mapBackground: '#050B05',        // Mossy dark green
+  // Warm palette (safe — camp, shop, menus, victory)
+  hearthBlack: '#1A1200',
+  emberBrown: '#3A2C14',
+  torchOrange: '#B5701A',
+  candleGold: '#E8A73A',
+  warmGlow: '#F5CF7A',
+  parchment: '#F3E2BD',
 
-  /* Brand / UI accents */
-  primary: '#D4A754',              // Warm amber — main interactive colour
-  secondary: '#8B6914',            // Darker gold — secondary actions
-  accent: '#FF6B35',               // Orange pop — highlights & notifications
+  // Cold palette (danger — dungeons, combat)
+  voidNavy: '#0D1016',
+  sewerBlack: '#0A120C',
+  slateSteel: '#24323F',
+  coldBlue: '#5A9FE0',
+  mysteryViolet: '#A98EE0',
+  ghostWhite: '#CFE0EE',
 
-  /* Semantic colours */
-  danger: '#FF4444',
-  success: '#10B981',              // Modern emerald green
-  info: '#06B6D4',                 // Modern cyan/teal
+  // Functional colors (consistent meaning everywhere)
+  healthGreen: '#3FB56E',
+  damageRed: '#D8483F',
+  critOrange: '#F08A4A',
+  treasureGold: '#F5CF4A',
+  skillPurple: '#A98EE0',
+  buffMint: '#5CC489',
 
-  /* Player resource bars */
-  hp: '#EF4444',
-  hpBar: '#B91C1C',
-  xp: '#3B82F6',
-  gold: '#FBBF24',
+  // Zone background tints
+  zoneSoggySewers: '#0A120C',
+  zoneTwistedGarden: '#0C1A08',
+  zoneSunkenDocks: '#08101F',
 
-  /* Typography */
-  text: '#E2E8F0',                 // Cool parchment white
-  textDim: '#707F94',              // Muted grey-blue labels
-  textBright: '#F8FAFC',           // Emphasised title white
+  // --- Legacy bindings to prevent instant crashes during refactor ---
+  background: '#1A1200',        // fallback to hearthBlack
+  primary: '#B5701A',           // fallback to torchOrange
+  secondary: '#3A2C14',         // fallback to emberBrown
+  text: '#F3E2BD',              // fallback to parchment
+  textDim: '#E8A73A',           // fallback to candleGold
 
-  /* Cards & containers */
-  cardBg: 'rgba(255, 255, 255, 0.025)',
-  cardBorder: 'rgba(255, 255, 255, 0.05)',
-  glassBg: 'rgba(255, 255, 255, 0.015)',
-  glassBorder: 'rgba(255, 255, 255, 0.04)',
+  // --- Extended aliases used across screens ---
+  textBright: '#CFE0EE',        // ghostWhite alias
+  danger: '#D8483F',            // damageRed alias
+  stun: '#F5CF4A',              // treasureGold alias (stun / gold highlight)
+  dungeonBackground: '#0D1016', // voidNavy alias
+  cardBg: '#241A0C',            // dark warm panel background
+  cardBorder: '#4A3917',        // dark warm panel border
 
-  /* Buttons */
-  buttonPrimary: '#D4A754',
-  buttonDisabled: '#334155',
-
-  /* Combat overlays */
-  cooldownOverlay: 'rgba(0,0,0,0.75)',
-
-  /* Status-effect colours */
-  bleed: '#EF4444',
-  stun: '#FBBF24',
-  guard: '#3B82F6',
-  stealth: '#8B5CF6',
-  deathMark: '#EC4899',
+  // --- Missing variables referenced in components ---
+  success: '#5CC489',           // buffMint alias
+  gold: '#F5CF7A',              // warmGlow alias
+  accent: '#F5CF7A',            // warmGlow alias
+  hp: '#D8483F',                // damageRed alias
+  buttonDisabled: '#1A1A1A',    // dark grey disabled background
+  bleed: '#D8483F',             // damageRed alias
+  guard: '#5A9FE0',             // coldBlue alias
+  stealth: '#A98EE0',           // mysteryViolet alias
 };
 
 // ─── Glow & Drop Shadows ───────────────────────────────────────────────────────
 const SHADOWS = {
-  glowPrimary: {
-    shadowColor: '#D4A754',
+  glowFocus: { // border / focus
+    shadowColor: COLORS.treasureGold,
     shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.35,
-    shadowRadius: 10,
-    elevation: 5,
-  },
-  glowDanger: {
-    shadowColor: '#FF4444',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.35,
-    shadowRadius: 10,
-    elevation: 5,
-  },
-  glowSuccess: {
-    shadowColor: '#10B981',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.35,
-    shadowRadius: 10,
-    elevation: 5,
-  },
-  glowInfo: {
-    shadowColor: '#06B6D4',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.35,
-    shadowRadius: 10,
-    elevation: 5,
+    shadowOpacity: 0.8,
+    shadowRadius: 4,
+    elevation: 2,
   },
   cardShadow: {
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
   },
 };
 
 // ─── Font Presets ───────────────────────────────────────────────────────────────
 const FONTS = {
-  title: {
-    fontFamily: 'System',
-    fontWeight: 'bold',
+  display: {
+    fontFamily: 'Courier New', // Fallback for pixel font until loaded natively
+    fontWeight: '700',
     fontSize: 24,
   },
   heading: {
     fontFamily: 'System',
-    fontWeight: 'bold',
-    fontSize: 20,
+    fontWeight: '500',
+    fontSize: 16,
   },
   body: {
     fontFamily: 'System',
-    fontWeight: 'normal',
-    fontSize: 16,
+    fontWeight: '400',
+    fontSize: 13,
+    lineHeight: 19.5, // 1.5x of 13px
+  },
+  label: {
+    fontFamily: 'System',
+    fontWeight: '500',
+    fontSize: 11,
+    letterSpacing: 0.66, // ~0.06em
+    textTransform: 'uppercase',
   },
   small: {
     fontFamily: 'System',
-    fontWeight: 'normal',
-    fontSize: 13,
-  },
-  tiny: {
-    fontFamily: 'System',
-    fontWeight: 'normal',
+    fontWeight: '400',
     fontSize: 11,
+    lineHeight: 16,
   },
 };
 
 // ─── Spacing Scale (multiples of 4) ────────────────────────────────────────────
 const SPACING = {
   xs: 4,
-  sm: 8,
-  md: 16,
-  lg: 24,
-  xl: 32,
+  sm: 8,           // alias for tight
+  tight: 8,        // gap / tight (6-8px)
+  md: 12,
+  section: 16,     // gap / section (14-16px)
+  screen: 14,      // padding / screen
+  lg: 20,
+  xl: 24,
 };
 
 // ─── Border Radius Tokens ──────────────────────────────────────────────────────
 const BORDER_RADIUS = {
-  sm: 4,
-  md: 8,
-  lg: 12,
-  xl: 16,
+  button: 12,     // radius / button
+  md: 12,         // alias for button
+  card: 14,       // radius / card
+  pill: 20,       // radius / pill
+  xl: 20,         // large overlay cards
 };
 
 // ─── Default Export ─────────────────────────────────────────────────────────────
@@ -148,3 +142,4 @@ export default {
   BORDER_RADIUS,
   SHADOWS,
 };
+

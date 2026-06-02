@@ -277,7 +277,7 @@ export default function InventoryScreen() {
           {hero.inventory.consumables.length === 0 || !hero.inventory.consumables.some(c => c.quantity > 0) ? (
             <View style={styles.emptyContainer}>
               <Text style={styles.emptyText}>
-                No consumables in your bag. Visit the Town Shop to buy items!
+                No consumables in your bag. Visit the Town Hall to buy items!
               </Text>
             </View>
           ) : (
@@ -340,7 +340,7 @@ export default function InventoryScreen() {
           {hero.inventory.craftedGear.length === 0 ? (
             <View style={styles.emptyContainer}>
               <Text style={styles.emptyText}>
-                No gear forged yet. Visit the Town Shop to craft equipment!
+                No gear forged yet. Visit the Town Hall to craft equipment!
               </Text>
             </View>
           ) : (

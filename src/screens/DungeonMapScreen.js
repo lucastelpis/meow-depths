@@ -38,6 +38,8 @@ import { useGame } from '../state/gameState';
 import { ZONES } from '../data/zones';
 import { MATERIALS, CONSUMABLES } from '../data/gear';
 import { calculateEffectiveStats } from '../logic/progressionEngine';
+import Button from '../components/ui/Button';
+import ResourceBar from '../components/ui/ResourceBar';
 
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -79,25 +81,32 @@ const ZONE_MATERIAL_POOLS = {
   zone3: ['yellow_shard', 'yellow_crystal_small', 'yellow_crystal_big', 'yellow_crystal_core'],
 };
 
-// Zone themes config
+// Zone-specific icons shown in the HUD header
+const ZONE_ICONS = {
+  zone1: '💧',
+  zone2: '🌿',
+  zone3: '⚓',
+};
+
+// Zone themes config — aligned to design system palette
 const ZONE_THEMES = {
   zone1: {
-    bg: '#050A05', // Soggy Sewers - Toxic Venom green theme
-    accent: '#10B981',
-    accentGlow: 'rgba(16, 185, 129, 0.08)',
-    border: 'rgba(76, 175, 80, 0.2)',
+    bg: '#0A120C',   // sewerBlack (Soggy Sewers)
+    accent: '#3FB56E',  // healthGreen
+    accentGlow: 'rgba(63, 181, 110, 0.08)',
+    border: 'rgba(63, 181, 110, 0.22)',
   },
   zone2: {
-    bg: '#0A050B', // Twisted Garden - Mystical Violet theme
-    accent: '#A855F7',
-    accentGlow: 'rgba(168, 85, 247, 0.08)',
-    border: 'rgba(168, 85, 247, 0.2)',
+    bg: '#0C1A08',   // deep green (Twisted Garden)
+    accent: '#A98EE0',  // mysteryViolet
+    accentGlow: 'rgba(169, 142, 224, 0.08)',
+    border: 'rgba(169, 142, 224, 0.22)',
   },
   zone3: {
-    bg: '#05080C', // Sunken Docks - Deep Ocean Cyan theme
-    accent: '#06B6D4',
-    accentGlow: 'rgba(6, 182, 212, 0.08)',
-    border: 'rgba(6, 182, 212, 0.2)',
+    bg: '#08101F',   // deep navy (Sunken Docks)
+    accent: '#5A9FE0',  // coldBlue
+    accentGlow: 'rgba(90, 159, 224, 0.08)',
+    border: 'rgba(90, 159, 224, 0.22)',
   },
 };
 
@@ -110,23 +119,23 @@ const renderCellSVG = (zoneId, tile, isPlayerHere, isFog) => {
   let accentColor = '#D4A754';
   
   if (zoneId === 'zone1') {
-    // Soggy Sewers: Green/toxic
+    // Soggy Sewers — design system sewerBlack palette
     bgStart = isFog ? '#060B06' : '#0B170B';
     bgEnd = isFog ? '#020402' : '#040904';
-    elementColor = isFog ? 'rgba(76, 175, 80, 0.04)' : 'rgba(76, 175, 80, 0.12)';
-    accentColor = '#10B981';
+    elementColor = isFog ? 'rgba(63, 181, 110, 0.04)' : 'rgba(63, 181, 110, 0.12)';
+    accentColor = '#3FB56E'; // healthGreen
   } else if (zoneId === 'zone2') {
-    // Twisted Garden: Purple/mystic
+    // Twisted Garden — design system mysteryViolet palette
     bgStart = isFog ? '#0B060F' : '#170B21';
     bgEnd = isFog ? '#040206' : '#09040D';
-    elementColor = isFog ? 'rgba(168, 85, 247, 0.04)' : 'rgba(168, 85, 247, 0.12)';
-    accentColor = '#A855F7';
+    elementColor = isFog ? 'rgba(169, 142, 224, 0.04)' : 'rgba(169, 142, 224, 0.12)';
+    accentColor = '#A98EE0'; // mysteryViolet
   } else if (zoneId === 'zone3') {
-    // Sunken Docks: Blue/cyan
+    // Sunken Docks — design system coldBlue palette
     bgStart = isFog ? '#060B12' : '#0B1726';
     bgEnd = isFog ? '#020406' : '#04090F';
-    elementColor = isFog ? 'rgba(6, 182, 212, 0.04)' : 'rgba(6, 182, 212, 0.12)';
-    accentColor = '#06B6D4';
+    elementColor = isFog ? 'rgba(90, 159, 224, 0.04)' : 'rgba(90, 159, 224, 0.12)';
+    accentColor = '#5A9FE0'; // coldBlue
   }
 
   // Linear gradient ID must be unique per cell type/fog combo to prevent rendering issues
@@ -459,37 +468,39 @@ export default function DungeonMapScreen({ navigation }) {
     let cellStyle = styles.fogCell;
     let labelColor = 'rgba(255, 255, 255, 0.25)';
 
+    const CLEARED_COLOR = '#5CC489'; // buffMint
+
     if (tile.type === 'start') {
       emoji = '🏠';
       label = 'Start';
       cellStyle = styles.startCell;
-      labelColor = '#3B82F6';
+      labelColor = '#5A9FE0'; // coldBlue — start is a special revealed tile
     } else if (!isFog) {
       if (tile.type === 'combat') {
         emoji = '⚔️';
         label = tile.cleared ? 'Cleared' : 'Combat';
         cellStyle = styles.combatCell;
-        labelColor = tile.cleared ? '#10B981' : '#EF4444';
+        labelColor = tile.cleared ? CLEARED_COLOR : '#5A9FE0'; // coldBlue
       } else if (tile.type === 'rest') {
         emoji = '🔥';
         label = tile.cleared ? 'Cleared' : 'Rest';
         cellStyle = styles.restCell;
-        labelColor = '#10B981';
+        labelColor = tile.cleared ? CLEARED_COLOR : '#3FB56E'; // healthGreen
       } else if (tile.type === 'treasure') {
         emoji = '💎';
         label = tile.cleared ? 'Cleared' : 'Treasure';
         cellStyle = styles.treasureCell;
-        labelColor = tile.cleared ? '#10B981' : '#FBBF24';
+        labelColor = tile.cleared ? CLEARED_COLOR : '#F5CF4A'; // treasureGold
       } else if (tile.type === 'gamble') {
         emoji = '❓';
         label = tile.cleared ? 'Cleared' : '???';
         cellStyle = styles.gambleCell;
-        labelColor = tile.cleared ? '#10B981' : '#8B5CF6';
+        labelColor = tile.cleared ? CLEARED_COLOR : '#A98EE0'; // mysteryViolet
       } else if (tile.type === 'boss') {
         emoji = '💀';
         label = tile.cleared ? 'Cleared' : 'Boss';
         cellStyle = styles.bossCell;
-        labelColor = tile.cleared ? '#10B981' : '#EF4444';
+        labelColor = tile.cleared ? CLEARED_COLOR : '#DD7A86'; // boss accent
       }
     }
 
@@ -582,81 +593,105 @@ export default function DungeonMapScreen({ navigation }) {
         <Defs>
           <RadialGradient id="zoneGlow" cx="50%" cy="50%" r="50%">
             <Stop offset="0%" stopColor={zTheme.accent} stopOpacity="0.06" />
-            <Stop offset="100%" stopColor={zTheme.bg} stopOpacity="0" stopColor="transparent" />
+            <Stop offset="100%" stopColor={zTheme.bg} stopOpacity="0" />
           </RadialGradient>
         </Defs>
         <Rect width="100%" height="100%" fill={zTheme.bg} />
         <Rect width="100%" height="100%" fill="url(#zoneGlow)" />
       </Svg>
 
-      {/* ── HUD ────────────────────────────────────────────────────── */}
+      {/* ── HUD card ─────────────────────────────────────────────── */}
       <View style={styles.hud}>
+        {/* Zone-tinted gradient background */}
         <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
-          <Rect width="100%" height="100%" fill="rgba(0,0,0,0.4)" />
+          <Defs>
+            <LinearGradient id="hudBg" x1="0" y1="0" x2="0" y2="1">
+              <Stop offset="0%" stopColor={zTheme.accent} stopOpacity="0.14" />
+              <Stop offset="100%" stopColor="#000000" stopOpacity="0.42" />
+            </LinearGradient>
+          </Defs>
+          <Rect width="100%" height="100%" fill="rgba(0,0,0,0.52)" rx={14} />
+          <Rect width="100%" height="100%" fill="url(#hudBg)" rx={14} />
+          {/* inner border */}
+          <Rect x="1" y="1" width="99%" height="98%" rx={13} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="1" />
         </Svg>
+
         <View style={styles.hudInner}>
-          <View style={styles.hudRow}>
-            <Text style={styles.zoneTitle}>🏰 {zone.name}</Text>
-            <View style={styles.hudStats}>
-              <Text style={styles.hudStatText}>💰 {currentRun.lootCollected.gold}g</Text>
-              <Text style={styles.hudStatText}>
-                🗺️ {currentRun.roomsCleared}/{currentRun.totalRooms}
-              </Text>
+          {/* ── Zone identity + stat chips ── */}
+          <View style={styles.hudTopRow}>
+            <View style={styles.zoneNameBlock}>
+              <Text style={styles.zoneEyebrow}>CURRENT ZONE</Text>
+              <View style={styles.zoneTitleRow}>
+                <Text style={styles.zoneIconText}>{ZONE_ICONS[currentRun.zoneId] || '🏰'}</Text>
+                <Text style={[styles.zoneTitle, { color: zTheme.accent }]}>{zone.name}</Text>
+              </View>
+            </View>
+
+            <View style={styles.hudChipsGroup}>
+              <View style={[styles.hudChip, styles.hudChipGold]}>
+                <Text style={styles.hudChipTextGold}>💰 {currentRun.lootCollected.gold}g</Text>
+              </View>
+              <View style={[styles.hudChip, {
+                borderColor: zTheme.accent + '55',
+                backgroundColor: zTheme.accent + '18',
+              }]}>
+                <Text style={[styles.hudChipTextRooms, { color: zTheme.accent }]}>
+                  🗺️ {currentRun.roomsCleared}/{currentRun.totalRooms}
+                </Text>
+              </View>
             </View>
           </View>
 
+          {/* ── HP bar ── */}
           <View style={styles.hpContainer}>
-            <View style={styles.hpLabelContainer}>
-              <Text style={styles.hpLabel}>❤️ Mochi HP</Text>
-              <Text style={styles.hpValue}>
-                {hero.hp}/{effectiveStats.maxHp}
-              </Text>
-            </View>
-            <View style={styles.hpBarTrack}>
-              <View
-                style={[
-                  styles.hpBarFill,
-                  { width: `${Math.min((hero.hp / effectiveStats.maxHp) * 100, 100)}%` },
-                ]}
-              />
-            </View>
+            <ResourceBar
+              variant="heroHp"
+              label="HP"
+              current={hero.hp}
+              max={effectiveStats.maxHp}
+            />
           </View>
 
-          {/* Temporary run buffs list */}
+          {/* ── Run buffs (horizontal scroll) ── */}
           {Object.values(currentRun.runBuffs).some((val) => val > 0) && (
-            <View style={styles.buffsRow}>
-              <Text style={styles.buffsTitle}>Run Buffs: </Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.buffsRow}
+            >
+              <Text style={styles.buffsTitle}>Buffs</Text>
               {currentRun.runBuffs.attackBonus > 0 && (
                 <View style={styles.buffBadge}>
-                  <Text style={styles.buffBadgeText}>ATK +{currentRun.runBuffs.attackBonus}</Text>
+                  <Text style={styles.buffBadgeText}>⚔️ ATK +{currentRun.runBuffs.attackBonus}</Text>
                 </View>
               )}
               {currentRun.runBuffs.critBonus > 0 && (
                 <View style={styles.buffBadge}>
-                  <Text style={styles.buffBadgeText}>CRIT +{Math.round(currentRun.runBuffs.critBonus * 100)}%</Text>
+                  <Text style={styles.buffBadgeText}>🎯 CRIT +{Math.round(currentRun.runBuffs.critBonus * 100)}%</Text>
                 </View>
               )}
               {currentRun.runBuffs.dodgeBonus > 0 && (
                 <View style={styles.buffBadge}>
-                  <Text style={styles.buffBadgeText}>DODGE +{Math.round(currentRun.runBuffs.dodgeBonus * 100)}%</Text>
+                  <Text style={styles.buffBadgeText}>💨 DODGE +{Math.round(currentRun.runBuffs.dodgeBonus * 100)}%</Text>
                 </View>
               )}
               {currentRun.runBuffs.defenceBonus > 0 && (
                 <View style={styles.buffBadge}>
-                  <Text style={styles.buffBadgeText}>DEF +{currentRun.runBuffs.defenceBonus}</Text>
+                  <Text style={styles.buffBadgeText}>🛡️ DEF +{currentRun.runBuffs.defenceBonus}</Text>
                 </View>
               )}
               {currentRun.runBuffs.maxHpBonus > 0 && (
                 <View style={styles.buffBadge}>
-                  <Text style={styles.buffBadgeText}>HP +{currentRun.runBuffs.maxHpBonus}</Text>
+                  <Text style={styles.buffBadgeText}>♥ HP +{currentRun.runBuffs.maxHpBonus}</Text>
                 </View>
               )}
-            </View>
+            </ScrollView>
           )}
         </View>
-      </View>
 
-      <View style={styles.divider} />
+        {/* Zone accent bottom line */}
+        <View style={[styles.hudAccentLine, { backgroundColor: zTheme.accent }]} />
+      </View>
 
       {/* ── Grid Center ────────────────────────────────────────────── */}
       <View style={styles.gridSection}>
@@ -665,21 +700,20 @@ export default function DungeonMapScreen({ navigation }) {
 
       {/* ── Action Buttons Row ────────────────────────────────────────── */}
       <View style={styles.actionButtonsRow}>
-        <TouchableOpacity
-          style={[styles.actionMapBtn, styles.bagButton]}
+        <Button
+          title="Run Bag"
+          icon="🎒"
+          variant="secondary"
           onPress={() => setActiveModal('bag')}
-          activeOpacity={0.7}
-        >
-          <Text style={styles.actionMapBtnText}>🎒 Run Bag</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.actionMapBtn, styles.fleeButton]}
+          style={{ flex: 1 }}
+        />
+        <Button
+          title="Flee Dungeon"
+          icon="🏳️"
+          variant="danger"
           onPress={() => setActiveModal('flee')}
-          activeOpacity={0.7}
-        >
-          <Text style={styles.actionMapBtnText}>🏳️ Flee Dungeon</Text>
-        </TouchableOpacity>
+          style={{ flex: 1 }}
+        />
       </View>
 
       {/* ── Footer Info ────────────────────────────────────────────── */}
@@ -699,7 +733,7 @@ export default function DungeonMapScreen({ navigation }) {
               <Defs>
                 <RadialGradient id="restGlow" cx="50%" cy="0%" r="60%">
                   <Stop offset="0%" stopColor="#10B981" stopOpacity="0.08" />
-                  <Stop offset="100%" stopColor="#111317" stopOpacity="0" stopColor="transparent" />
+                  <Stop offset="100%" stopColor="#111317" stopOpacity="0" />
                 </RadialGradient>
               </Defs>
               <Rect width="100%" height="100%" fill="#111317" rx={16} />
@@ -720,8 +754,8 @@ export default function DungeonMapScreen({ navigation }) {
                   activeOpacity={0.8}
                 >
                   <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
-                    <Rect width="100%" height="100%" fill="rgba(239, 68, 68, 0.03)" rx={12} />
-                    <Rect x="1" y="1" width="98%" height="98%" rx={11} fill="none" stroke="rgba(239, 68, 68, 0.25)" strokeWidth={1.2} />
+                    <Rect width="100%" height="100%" fill="rgba(63, 181, 110, 0.04)" rx={12} />
+                    <Rect x="1" y="1" width="98%" height="98%" rx={11} fill="none" stroke="rgba(63, 181, 110, 0.28)" strokeWidth={1.2} />
                   </Svg>
                   <View style={styles.choiceCardInner}>
                     <Text style={styles.modalBtnEmoji}>❤️</Text>
@@ -765,7 +799,7 @@ export default function DungeonMapScreen({ navigation }) {
               <Defs>
                 <RadialGradient id="treasureGlow" cx="50%" cy="0%" r="60%">
                   <Stop offset="0%" stopColor="#FBBF24" stopOpacity="0.08" />
-                  <Stop offset="100%" stopColor="#111317" stopOpacity="0" stopColor="transparent" />
+                  <Stop offset="100%" stopColor="#111317" stopOpacity="0" />
                 </RadialGradient>
               </Defs>
               <Rect width="100%" height="100%" fill="#111317" rx={16} />
@@ -784,18 +818,12 @@ export default function DungeonMapScreen({ navigation }) {
                 {renderLootItems(modalData?.materials)}
               </View>
 
-              <TouchableOpacity style={[styles.confirmBtn, theme.SHADOWS.glowSuccess]} onPress={handleCloseTreasure} activeOpacity={0.8}>
-                <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
-                  <Defs>
-                    <LinearGradient id="claimBtnGrad" x1="0" y1="0" x2="1" y2="0">
-                      <Stop offset="0%" stopColor="#10B981" />
-                      <Stop offset="100%" stopColor="#059669" />
-                    </LinearGradient>
-                  </Defs>
-                  <Rect width="100%" height="100%" fill="url(#claimBtnGrad)" rx={8} />
-                </Svg>
-                <Text style={styles.confirmBtnText}>Claim Rewards</Text>
-              </TouchableOpacity>
+              <Button
+                title="Claim Rewards"
+                variant="primary"
+                onPress={handleCloseTreasure}
+                style={{ width: '100%', marginTop: 8 }}
+              />
             </View>
           </View>
         </View>
@@ -811,7 +839,7 @@ export default function DungeonMapScreen({ navigation }) {
               <Defs>
                 <RadialGradient id="gambleGlow" cx="50%" cy="0%" r="60%">
                   <Stop offset="0%" stopColor="#8B5CF6" stopOpacity="0.08" />
-                  <Stop offset="100%" stopColor="#111317" stopOpacity="0" stopColor="transparent" />
+                  <Stop offset="100%" stopColor="#111317" stopOpacity="0" />
                 </RadialGradient>
               </Defs>
               <Rect width="100%" height="100%" fill="#111317" rx={16} />
@@ -867,26 +895,12 @@ export default function DungeonMapScreen({ navigation }) {
                 </View>
               )}
 
-              <TouchableOpacity
-                style={[styles.confirmBtn, modalData?.outcome === 'trap' && !modalData.survived && { backgroundColor: theme.COLORS.danger }]}
+              <Button
+                title={modalData?.outcome === 'elite' ? 'Prepare for Battle' : 'Continue'}
+                variant={modalData?.outcome === 'trap' && !modalData.survived ? 'danger' : 'primary'}
                 onPress={handleCloseGamble}
-                activeOpacity={0.8}
-              >
-                {!modalData?.survived && modalData?.outcome === 'trap' ? null : (
-                  <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
-                    <Defs>
-                      <LinearGradient id="gambleBtnGrad" x1="0" y1="0" x2="1" y2="0">
-                        <Stop offset="0%" stopColor="#FBBF24" />
-                        <Stop offset="100%" stopColor="#D4A754" />
-                      </LinearGradient>
-                    </Defs>
-                    <Rect width="100%" height="100%" fill="url(#gambleBtnGrad)" rx={8} />
-                  </Svg>
-                )}
-                <Text style={styles.confirmBtnText}>
-                  {modalData?.outcome === 'elite' ? 'Prepare for Battle' : 'Continue'}
-                </Text>
-              </TouchableOpacity>
+                style={{ width: '100%', marginTop: 8 }}
+              />
             </View>
           </View>
         </View>
@@ -927,9 +941,12 @@ export default function DungeonMapScreen({ navigation }) {
                 Mochi wakes up back at camp, fully recovered but empty-handed.
               </Text>
 
-              <TouchableOpacity style={[styles.confirmBtn, { backgroundColor: theme.COLORS.danger }]} onPress={handleCloseDeath} activeOpacity={0.8}>
-                <Text style={[styles.confirmBtnText, { color: '#FFF' }]}>Return to Camp</Text>
-              </TouchableOpacity>
+              <Button
+                title="Return to Camp"
+                variant="danger"
+                onPress={handleCloseDeath}
+                style={{ width: '100%', marginTop: 8 }}
+              />
             </View>
           </View>
         </View>
@@ -986,21 +1003,18 @@ export default function DungeonMapScreen({ navigation }) {
               </View>
 
               <View style={styles.fleeBtnRow}>
-                <TouchableOpacity
-                  style={[styles.modalActionBtn, styles.fleeConfirmBtn]}
+                <Button
+                  title="Flee & Escape"
+                  variant="danger"
                   onPress={handleConfirmFlee}
-                  activeOpacity={0.8}
-                >
-                  <Text style={styles.fleeConfirmBtnText}>Flee & Escape</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={[styles.modalActionBtn, styles.fleeCancelBtn]}
+                  style={{ flex: 1 }}
+                />
+                <Button
+                  title="Stay & Fight"
+                  variant="secondary"
                   onPress={() => setActiveModal(null)}
-                  activeOpacity={0.8}
-                >
-                  <Text style={styles.fleeCancelBtnText}>Stay & Fight</Text>
-                </TouchableOpacity>
+                  style={{ flex: 1 }}
+                />
               </View>
             </View>
           </View>
@@ -1017,7 +1031,7 @@ export default function DungeonMapScreen({ navigation }) {
               <Defs>
                 <RadialGradient id="bagGlow" cx="50%" cy="0%" r="60%">
                   <Stop offset="0%" stopColor="#D4A754" stopOpacity="0.08" />
-                  <Stop offset="100%" stopColor="#111317" stopOpacity="0" stopColor="transparent" />
+                  <Stop offset="100%" stopColor="#111317" stopOpacity="0" />
                 </RadialGradient>
               </Defs>
               <Rect width="100%" height="100%" fill="#111317" rx={16} />
@@ -1052,24 +1066,25 @@ export default function DungeonMapScreen({ navigation }) {
                           </View>
                         </View>
 
-                        <TouchableOpacity
-                          style={[styles.bagItemUseBtn, !isUsable && styles.bagItemUseBtnDisabled]}
+                        <Button
+                          title={isUsable ? 'Use' : 'Info'}
+                          variant={isUsable ? 'primary' : 'disabled'}
                           onPress={() => handleUseItemOnMap(item)}
-                          activeOpacity={0.7}
-                        >
-                          <Text style={[styles.bagItemUseBtnText, !isUsable && styles.bagItemUseBtnTextDisabled]}>
-                            {isUsable ? 'Use' : 'Info'}
-                          </Text>
-                        </TouchableOpacity>
+                          style={{ paddingHorizontal: 16, paddingVertical: 6, minHeight: 0 }}
+                          textStyle={{ fontSize: 12 }}
+                        />
                       </View>
                     );
                   })
                 )}
               </ScrollView>
 
-              <TouchableOpacity style={styles.closeBagBtn} onPress={() => setActiveModal(null)} activeOpacity={0.8}>
-                <Text style={styles.closeBagBtnText}>Close Bag</Text>
-              </TouchableOpacity>
+              <Button
+                title="Close Bag"
+                variant="secondary"
+                onPress={() => setActiveModal(null)}
+                style={{ width: '100%', marginTop: 10 }}
+              />
             </View>
           </View>
         </View>
@@ -1087,98 +1102,115 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.04)',
   },
 
-  // HUD Styles
+  // ── HUD card ──────────────────────────────────────────────────
   hud: {
-    backgroundColor: 'transparent',
     position: 'relative',
     overflow: 'hidden',
+    marginHorizontal: 14,
+    marginTop: 10,
+    borderRadius: theme.BORDER_RADIUS.card,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.06)',
   },
   hudInner: {
-    padding: theme.SPACING.md,
+    paddingHorizontal: 14,
+    paddingTop: 14,
+    paddingBottom: 10,
     zIndex: 2,
+    gap: 10,
   },
-  hudRow: {
+
+  // Zone identity row
+  hudTopRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: theme.SPACING.sm,
+  },
+  zoneNameBlock: {
+    flex: 1,
+    marginRight: 10,
+  },
+  zoneEyebrow: {
+    ...theme.FONTS.label,
+    fontSize: 9,
+    color: 'rgba(207,224,238,0.45)',
+    marginBottom: 3,
+  },
+  zoneTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  zoneIconText: {
+    fontSize: 18,
   },
   zoneTitle: {
-    fontFamily: 'System',
-    fontWeight: 'bold',
-    fontSize: 20,
-    color: '#F8FAFC',
-    letterSpacing: 0.5,
+    ...theme.FONTS.heading,
+    fontSize: 17,
+    fontWeight: '600',
   },
-  hudStats: {
+
+  // Stat chips
+  hudChipsGroup: {
     flexDirection: 'row',
-    gap: 16,
+    gap: 6,
+    alignItems: 'center',
   },
-  hudStatText: {
-    fontFamily: 'System',
-    fontSize: 15,
-    color: '#D4A754',
-    fontWeight: 'bold',
+  hudChip: {
+    borderRadius: theme.BORDER_RADIUS.pill,
+    borderWidth: 1,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
   },
+  hudChipGold: {
+    backgroundColor: 'rgba(232,167,58,0.12)',
+    borderColor: 'rgba(232,167,58,0.35)',
+  },
+  hudChipTextGold: {
+    ...theme.FONTS.label,
+    fontSize: 11,
+    color: theme.COLORS.candleGold,
+  },
+  hudChipTextRooms: {
+    ...theme.FONTS.label,
+    fontSize: 11,
+  },
+
+  // HP bar
   hpContainer: {
     width: '100%',
   },
-  hpLabelContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 4,
-  },
-  hpLabel: {
-    fontFamily: 'System',
-    fontSize: 12,
-    color: '#707F94',
-    fontWeight: '600',
-  },
-  hpValue: {
-    fontFamily: 'System',
-    fontSize: 12,
-    color: '#F8FAFC',
-    fontWeight: 'bold',
-  },
-  hpBarTrack: {
-    height: 10,
-    backgroundColor: 'rgba(255,255,255,0.06)',
-    borderRadius: 5,
-    overflow: 'hidden',
-  },
-  hpBarFill: {
-    height: '100%',
-    backgroundColor: '#EF4444',
-    borderRadius: 5,
-  },
 
-  // Run buffs HUD
+  // Run buffs
   buffsRow: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
     alignItems: 'center',
-    marginTop: theme.SPACING.sm,
     gap: 6,
+    paddingBottom: 2,
   },
   buffsTitle: {
-    fontFamily: 'System',
-    fontSize: 10,
-    color: '#707F94',
-    fontWeight: 'bold',
+    ...theme.FONTS.label,
+    fontSize: 9,
+    color: 'rgba(207,224,238,0.45)',
   },
   buffBadge: {
-    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+    backgroundColor: 'rgba(92,196,137,0.12)',
     borderWidth: 1,
-    borderColor: 'rgba(16, 185, 129, 0.25)',
-    borderRadius: 6,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
+    borderColor: 'rgba(92,196,137,0.3)',
+    borderRadius: theme.BORDER_RADIUS.pill,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
   },
   buffBadgeText: {
-    fontFamily: 'System',
-    color: '#10B981',
-    fontWeight: 'bold',
+    ...theme.FONTS.label,
+    color: '#5CC489',
     fontSize: 9,
+  },
+
+  // Zone accent bottom line
+  hudAccentLine: {
+    height: 2,
+    opacity: 0.45,
   },
 
   // Grid Styles
@@ -1229,111 +1261,46 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
 
-  // Tile states colors
+  // Room tile colors — exact values from the design system
   fogCell: {
-    backgroundColor: 'rgba(7, 7, 10, 0.95)',
-    borderColor: 'rgba(255, 255, 255, 0.03)',
+    backgroundColor: '#15191F',
+    borderColor: '#252A32',
   },
-  fogLabel: {
-    fontFamily: 'System',
-    fontSize: 8,
-    color: 'rgba(255,255,255,0.15)',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-
   startCell: {
-    backgroundColor: 'rgba(59, 130, 246, 0.08)',
-    borderColor: 'rgba(59, 130, 246, 0.25)',
+    backgroundColor: '#10243A',
+    borderColor: '#1D3A5E',
   },
-  startLabel: {
-    fontFamily: 'System',
-    fontSize: 8,
-    color: '#3B82F6',
-    fontWeight: 'bold',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-
   combatCell: {
-    backgroundColor: 'rgba(239, 68, 68, 0.06)',
-    borderColor: 'rgba(239, 68, 68, 0.2)',
+    backgroundColor: '#10243A',
+    borderColor: '#1D3A5E',
   },
-  combatLabel: {
-    fontFamily: 'System',
-    fontSize: 8,
-    color: '#EF4444',
-    fontWeight: 'bold',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-
   restCell: {
-    backgroundColor: 'rgba(16, 185, 129, 0.06)',
-    borderColor: 'rgba(16, 185, 129, 0.2)',
+    backgroundColor: '#10301F',
+    borderColor: '#1D4A32',
   },
-  restLabel: {
-    fontFamily: 'System',
-    fontSize: 8,
-    color: '#10B981',
-    fontWeight: 'bold',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-
   treasureCell: {
-    backgroundColor: 'rgba(251, 191, 36, 0.06)',
-    borderColor: 'rgba(251, 191, 36, 0.2)',
+    backgroundColor: '#2A2410',
+    borderColor: '#57431A',
   },
-  treasureLabel: {
-    fontFamily: 'System',
-    fontSize: 8,
-    color: '#FBBF24',
-    fontWeight: 'bold',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-
   gambleCell: {
-    backgroundColor: 'rgba(139, 92, 246, 0.06)',
-    borderColor: 'rgba(139, 92, 246, 0.2)',
+    backgroundColor: '#241A2E',
+    borderColor: '#3D2A5E',
   },
-  gambleLabel: {
-    fontFamily: 'System',
-    fontSize: 8,
-    color: '#8B5CF6',
-    fontWeight: 'bold',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-
   bossCell: {
-    backgroundColor: 'rgba(239, 68, 68, 0.12)',
-    borderColor: 'rgba(239, 68, 68, 0.45)',
+    backgroundColor: '#3A1A22',
+    borderColor: '#6A2535',
   },
-  bossLabel: {
-    fontFamily: 'System',
-    fontSize: 8,
-    color: '#EF4444',
-    fontWeight: '900',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-
   currentCell: {
-    borderColor: '#D4A754',
+    borderColor: '#F5CF4A', // treasureGold — matches design system "current tile" spec
     borderWidth: 2,
-    backgroundColor: 'rgba(212, 167, 84, 0.08)',
+    backgroundColor: 'rgba(245, 207, 74, 0.06)',
   },
   clearedCell: {
     opacity: 0.55,
   },
   cellLabel: {
+    ...theme.FONTS.label,
     fontSize: 8,
-    fontFamily: 'System',
-    fontWeight: 'bold',
-    letterSpacing: 0.5,
-    textTransform: 'uppercase',
     marginTop: 1,
     textAlign: 'center',
   },
@@ -1345,7 +1312,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.3)',
   },
   footerText: {
-    fontFamily: 'System',
+    ...theme.FONTS.body,
     fontSize: 11,
     color: '#707F94',
     textAlign: 'center',
@@ -1372,20 +1339,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   modalTitle: {
-    fontFamily: 'System',
-    fontWeight: 'bold',
+    ...theme.FONTS.display,
     fontSize: 20,
     color: '#F8FAFC',
     textAlign: 'center',
     marginBottom: 6,
-    letterSpacing: 0.5,
   },
   modalSubtitle: {
-    fontFamily: 'System',
+    ...theme.FONTS.body,
     color: '#707F94',
     textAlign: 'center',
     fontSize: 13,
-    lineHeight: 18,
     marginBottom: 18,
   },
 
@@ -1412,18 +1376,16 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   modalBtnTitle: {
-    fontFamily: 'System',
+    ...theme.FONTS.heading,
     color: '#F8FAFC',
-    fontWeight: 'bold',
     fontSize: 13,
   },
   modalBtnDesc: {
-    fontFamily: 'System',
+    ...theme.FONTS.body,
     fontSize: 10,
     color: '#707F94',
     marginTop: 4,
     textAlign: 'center',
-    lineHeight: 13,
   },
 
   // Treasure & Gamble outcomes
@@ -1439,14 +1401,13 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   lootGoldText: {
-    fontFamily: 'System',
-    color: '#FBBF24',
+    ...theme.FONTS.heading,
+    color: '#F5CF7A', // warmGlow
     fontSize: 18,
-    fontWeight: 'bold',
   },
   lootItemText: {
-    fontFamily: 'System',
-    color: '#E2E8F0',
+    ...theme.FONTS.body,
+    color: '#F3E2BD', // parchment
     fontSize: 13,
   },
   confirmBtn: {
@@ -1479,44 +1440,38 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   outcomeTitle: {
-    fontFamily: 'System',
+    ...theme.FONTS.display,
     fontSize: 18,
     color: '#F8FAFC',
-    fontWeight: 'bold',
     marginBottom: 4,
   },
   outcomeFlavor: {
-    fontFamily: 'System',
+    ...theme.FONTS.body,
     color: '#D4A754',
     fontStyle: 'italic',
     textAlign: 'center',
     fontSize: 13,
-    lineHeight: 16,
     marginBottom: 8,
   },
   trapDamageText: {
-    fontFamily: 'System',
+    ...theme.FONTS.heading,
     color: '#EF4444',
     fontSize: 18,
-    fontWeight: 'bold',
     textAlign: 'center',
     marginBottom: 8,
   },
   outcomeSubText: {
-    fontFamily: 'System',
+    ...theme.FONTS.body,
     fontSize: 12,
     color: '#707F94',
     textAlign: 'center',
-    lineHeight: 17,
   },
   eliteWarningText: {
-    fontFamily: 'System',
+    ...theme.FONTS.heading,
     fontSize: 11,
     color: '#EF4444',
     textAlign: 'center',
-    fontWeight: 'bold',
     marginTop: 8,
-    lineHeight: 15,
   },
 
   // Death overlay lost loot

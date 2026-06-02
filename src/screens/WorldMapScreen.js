@@ -326,11 +326,7 @@ const renderStatusBadge = (unlocked, isCleared) => {
       </View>
     );
   }
-  return (
-    <View style={[styles.statusBadge, styles.statusBadgeUnexplored]}>
-      <Text style={styles.statusBadgeTextUnexplored}>⚔️ UNEXPLORED</Text>
-    </View>
-  );
+  return null;
 };
 
 export default function WorldMapScreen({ navigation }) {
@@ -440,7 +436,7 @@ export default function WorldMapScreen({ navigation }) {
                   {renderStatusBadge(unlocked, isCleared)}
                   {unlocked && (
                     <View style={styles.runsBadge}>
-                      <Text style={styles.runsBadgeText}>🏆 Runs Completed: {runsCount}</Text>
+                      <Text style={styles.runsBadgeText}>⚔️ Runs Completed: {runsCount}</Text>
                     </View>
                   )}
                 </View>
@@ -500,7 +496,7 @@ export default function WorldMapScreen({ navigation }) {
             <ScrollView style={styles.itemList} showsVerticalScrollIndicator={false}>
               {state.hero.inventory.consumables.length === 0 || !state.hero.inventory.consumables.some(c => c.quantity > 0) ? (
                 <Text style={styles.emptyText}>
-                  No items in inventory.{'\n'}Buy some from the camp shop!
+                  No items in inventory.{'\n'}Buy some from the Town Hall!
                 </Text>
               ) : (
                 state.hero.inventory.consumables
@@ -609,11 +605,9 @@ const styles = StyleSheet.create({
   statusBadge:      { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6, borderWidth: 1 },
   statusBadgeLocked:     { backgroundColor: 'rgba(255,255,255,0.02)', borderColor: 'rgba(255,255,255,0.06)' },
   statusBadgeCleared:    { backgroundColor: 'rgba(16, 185, 129, 0.08)', borderColor: 'rgba(16, 185, 129, 0.22)' },
-  statusBadgeUnexplored: { backgroundColor: 'rgba(212, 167, 84, 0.08)', borderColor: 'rgba(212, 167, 84, 0.22)' },
   
   statusBadgeTextLocked:     { ...theme.FONTS.tiny, color: theme.COLORS.textDim, fontWeight: 'bold', fontSize: 11 },
   statusBadgeTextCleared:    { ...theme.FONTS.tiny, color: theme.COLORS.success, fontWeight: 'bold', fontSize: 11 },
-  statusBadgeTextUnexplored: { ...theme.FONTS.tiny, color: theme.COLORS.primary, fontWeight: 'bold', fontSize: 11 },
   
   runsBadge:        { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6, borderWidth: 1, backgroundColor: 'rgba(251, 191, 36, 0.06)', borderColor: 'rgba(251, 191, 36, 0.18)' },
   runsBadgeText:    { ...theme.FONTS.tiny, color: theme.COLORS.gold, fontWeight: 'bold', fontSize: 11 },

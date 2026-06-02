@@ -137,10 +137,31 @@ export const CAMP_MONASTERY = require('../../assets/sprites/Tiny Swords (Free Pa
  * Elite enemies at runtime have "elite_" prepended — strip it to find the base sprite.
  *
  * @param {Object} enemy – in-combat enemy object ({ id, isBoss })
- * @returns {{ idle: Object, attack: Object }}
+ * @returns {{ idle: Object, attack: Object, platformOffsetFactor: number }}
  */
 export function getEnemySprite(enemy) {
-  if (!enemy) return FALLBACK_ENEMY_SPRITE;
-  const baseId = (enemy.id || '').replace(/^elite_/, '');
-  return ENEMY_SPRITES[baseId] || FALLBACK_ENEMY_SPRITE;
+  if (!enemy) return { ...FALLBACK_ENEMY_SPRITE, platformOffsetFactor: 0.25 };
+  const baseId = (enemy.id || '').replace(/^elite_/, '').toLowerCase();
+  const spriteDef = ENEMY_SPRITES[baseId] || FALLBACK_ENEMY_SPRITE;
+
+  // Custom offset factors based on the asset class template from Tiny Swords
+  let platformOffsetFactor = 0.25; // Default (Warrior class)
+  
+  if (baseId.includes('rat') || baseId.includes('thorn') || baseId.includes('eel')) {
+    platformOffsetFactor = 0.28; // Archer class
+  } else if (
+    baseId.includes('slime') || 
+    baseId.includes('puffer') || 
+    baseId.includes('sailor') || 
+    baseId.includes('root')
+  ) {
+    platformOffsetFactor = 0.26; // Monk class
+  } else if (baseId.includes('frog') || baseId.includes('vine') || baseId.includes('bomb')) {
+    platformOffsetFactor = 0.22; // Pawn class
+  }
+
+  return {
+    ...spriteDef,
+    platformOffsetFactor,
+  };
 }
