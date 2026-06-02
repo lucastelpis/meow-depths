@@ -32,6 +32,8 @@ import { HERO_SPRITE, CAMP_CASTLE } from '../constants/sprites';
 import { SKILLS } from '../data/skills';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const BANNER_WIDTH = SCREEN_WIDTH - 32;
+const BANNER_HEIGHT = BANNER_WIDTH * (1024 / 4128);
 
 // ─── Nav button metadata ────────────────────────────────────────────────────
 const NAV_ITEMS = [
@@ -136,6 +138,15 @@ export default function CampScreen({ navigation }) {
         contentContainerStyle={styles.scroll}
         showsVerticalScrollIndicator={false}
       >
+        {/* ═══════════════════════════════════════════════════════════════════
+            TOP BANNER
+            ═══════════════════════════════════════════════════════════════════ */}
+        <Image
+          source={require('../../assets/top_banner.png')}
+          style={[styles.hubBanner, theme.SHADOWS.cardShadow]}
+          resizeMode="cover"
+        />
+
         {/* ═══════════════════════════════════════════════════════════════════
             HERO CARD — Premium Split Layout (Cozy & Compact)
             ═══════════════════════════════════════════════════════════════════ */}
@@ -243,8 +254,8 @@ export default function CampScreen({ navigation }) {
               </Text>
               <Text style={[styles.dailyRewardSub, hasClaimedToday() && styles.dailyRewardSubClaimed]}>
                 {hasClaimedToday()
-                  ? "You already claimed your daily reward, come back tomorrow for more!"
-                  : `Potions and gold scaling with Level ${hero.level}`}
+                  ? "You've already collected today's goods."
+                  : "Click to collect your daily bonus!"}
               </Text>
             </View>
             {!hasClaimedToday() && <Text style={styles.dailyRewardArrow}>›</Text>}
@@ -336,6 +347,17 @@ const styles = StyleSheet.create({
   cardBorderOverlay: {
     ...StyleSheet.absoluteFillObject,
     pointerEvents: 'none',
+  },
+
+  /* ═══ Top Banner ═════════════════════════════════════════════════════════ */
+  hubBanner: {
+    width: BANNER_WIDTH,
+    height: BANNER_HEIGHT,
+    borderRadius: 16,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(232, 167, 58, 0.3)',
+    overflow: 'hidden',
   },
 
   /* ═══ Hero Card ══════════════════════════════════════════════════════════ */
