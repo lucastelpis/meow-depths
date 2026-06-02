@@ -26,6 +26,7 @@ import ShopScreen from './src/screens/ShopScreen';
 import SkillTreeScreen from './src/screens/SkillTreeScreen';
 import InventoryScreen from './src/screens/InventoryScreen';
 import DungeonMapScreen from './src/screens/DungeonMapScreen';
+import DungeonFloorScreen from './src/screens/DungeonFloorScreen';
 
 // Create the stack navigator
 const Stack = createStackNavigator();
@@ -63,6 +64,9 @@ export default function App() {
 
             {/* World Map — zone selection */}
             <Stack.Screen name="WorldMap" component={WorldMapScreen} />
+
+            {/* Dungeon Floor Map — floor selection within a zone */}
+            <Stack.Screen name="DungeonFloor" component={DungeonFloorScreen} />
 
             {/* Combat — the main gameplay screen */}
             <Stack.Screen

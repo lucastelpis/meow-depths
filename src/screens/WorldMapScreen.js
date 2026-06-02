@@ -2,14 +2,13 @@
  * WorldMapScreen.js — Zone Selection + Pre-Run Loadout Picker (Redesigned Premium UI)
  */
 
-import React, { useState } from 'react';
+import React from 'react';
 import {
   View,
   Text,
   TouchableOpacity,
   ScrollView,
   StyleSheet,
-  Modal,
   Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -29,10 +28,8 @@ import Svg, {
 import theme from '../constants/theme';
 import { useGame } from '../state/gameState';
 import { ZONES } from '../data/zones';
-import { CONSUMABLES } from '../data/gear';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const MAX_SLOTS = 5;
 
 // Define specific gradient colors for each zone for rich visual aesthetics
 const ZONE_GRADIENTS = {
@@ -56,13 +53,6 @@ const ZONE_GRADIENTS = {
   },
 };
 
-const CONSUMABLE_ICONS = {
-  health_potion: '🧪',
-  mega_potion: '💊',
-  antidote: '🌿',
-  smoke_vial: '💨',
-  mystery_chest: '🎁',
-};
 
 // ── SVG Zone Illustration Renderers ──────────────────────────────────────────
 const renderZoneSVG = (zoneId, unlocked, grad) => {
@@ -330,56 +320,13 @@ const renderStatusBadge = (unlocked, isCleared) => {
 };
 
 export default function WorldMapScreen({ navigation }) {
-  const { state, dispatch } = useGame();
+  const { state } = useGame();
   const zoneList = Object.values(ZONES);
-
-  // ── Loadout modal state ────────────────────────────────────────────────────
-  const [modalZone, setModalZone]       = useState(null);   // zone selected for run
-  const [loadout, setLoadout]           = useState({});     // { itemId: count }
-
-  const totalPacked = Object.values(loadout).reduce((s, n) => s + n, 0);
-  const slotsLeft   = MAX_SLOTS - totalPacked;
 
   // ── Zone unlock helper ─────────────────────────────────────────────────────
   const isZoneUnlocked = (zone) => {
     if (!zone.unlockCondition) return true;
     return !!state.progress[zone.unlockCondition];
-  };
-
-  // ── Open loadout picker ────────────────────────────────────────────────────
-  const openLoadout = (zone) => {
-    setLoadout({});
-    setModalZone(zone);
-  };
-
-  // ── Add / remove one item from the loadout ─────────────────────────────────
-  const addItem = (itemId) => {
-    if (totalPacked >= MAX_SLOTS) return;
-    const owned   = state.hero.inventory.consumables.find(c => c.id === itemId)?.quantity || 0;
-    const current = loadout[itemId] || 0;
-    if (current >= owned) return;
-    setLoadout(prev => ({ ...prev, [itemId]: current + 1 }));
-  };
-
-  const removeItem = (itemId) => {
-    const current = loadout[itemId] || 0;
-    if (current <= 0) return;
-    setLoadout(prev => {
-      const next = { ...prev, [itemId]: current - 1 };
-      if (next[itemId] === 0) delete next[itemId];
-      return next;
-    });
-  };
-
-  // ── Confirm loadout and enter the dungeon ──────────────────────────────────
-  const handleEnterDungeon = () => {
-    const carried = [];
-    for (const [id, count] of Object.entries(loadout)) {
-      for (let i = 0; i < count; i++) carried.push(id);
-    }
-    setModalZone(null);
-    dispatch({ type: 'START_RUN', payload: { zoneId: modalZone.id, consumables: carried } });
-    navigation.navigate('DungeonMap');
   };
 
   return (
@@ -396,9 +343,12 @@ export default function WorldMapScreen({ navigation }) {
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
         {/* ── Zone Cards ─────────────────────────────────────────────────── */}
         {zoneList.map((zone) => {
-          const unlocked      = isZoneUnlocked(zone);
-          const isCleared     = !!state.progress[`${zone.id}Cleared`];
-          const runsCount     = (state.progress.runsCompleted && state.progress.runsCompleted[zone.id]) || 0;
+          const unlocked        = isZoneUnlocked(zone);
+          const isCleared       = !!state.progress[`${zone.id}Cleared`];
+          const runsCount       = (state.progress.runsCompleted && state.progress.runsCompleted[zone.id]) || 0;
+          const floorsCleared   = (state.progress.floorsCleared && state.progress.floorsCleared[zone.id]) || 0;
+          const floorCount      = zone.floorCount || 10;
+          const nextFloor       = Math.min(floorsCleared + 1, floorCount);
           const grad = ZONE_GRADIENTS[zone.id] || { start: '#171725', end: '#0B0B12', border: 'rgba(255,255,255,0.05)', accent: theme.COLORS.primary };
 
           return (
@@ -436,7 +386,14 @@ export default function WorldMapScreen({ navigation }) {
                   {renderStatusBadge(unlocked, isCleared)}
                   {unlocked && (
                     <View style={styles.runsBadge}>
-                      <Text style={styles.runsBadgeText}>⚔️ Runs Completed: {runsCount}</Text>
+                      <Text style={styles.runsBadgeText}>⚔️ Runs: {runsCount}</Text>
+                    </View>
+                  )}
+                  {unlocked && (
+                    <View style={[styles.runsBadge, { borderColor: `${grad.accent}40`, backgroundColor: `${grad.accent}12` }]}>
+                      <Text style={[styles.runsBadgeText, { color: grad.accent }]}>
+                        🗺️ Floor {isCleared ? floorCount : nextFloor}/{floorCount}
+                      </Text>
                     </View>
                   )}
                 </View>
@@ -449,10 +406,14 @@ export default function WorldMapScreen({ navigation }) {
                   style={[styles.beginButton, !unlocked && styles.beginButtonDisabled, unlocked && { backgroundColor: grad.accent }]}
                   activeOpacity={0.8}
                   disabled={!unlocked}
-                  onPress={() => openLoadout(zone)}
+                  onPress={() => navigation.navigate('DungeonFloor', { zoneId: zone.id })}
                 >
                   <Text style={[styles.beginButtonText, !unlocked && styles.beginButtonTextDisabled]}>
-                    {unlocked ? '⚔️  Begin Run' : '🔒  Locked'}
+                    {unlocked
+                      ? isCleared
+                        ? '🗺️  View Floors'
+                        : `🗺️  Enter — Floor ${nextFloor}`
+                      : '🔒  Locked'}
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -461,104 +422,6 @@ export default function WorldMapScreen({ navigation }) {
         })}
       </ScrollView>
 
-      {/* ══════════════════════════════════════════════════════════════════════
-          Loadout Picker Modal (Slide-up Glass Sheet)
-      ══════════════════════════════════════════════════════════════════════ */}
-      <Modal
-        visible={!!modalZone}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setModalZone(null)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalSheet, theme.SHADOWS.cardShadow]}>
-            
-            {/* Grabber indicator */}
-            <View style={styles.modalGrabber} />
-
-            {/* Title + slot counter */}
-            <Text style={styles.modalTitle}>🎒 Pack Supplies</Text>
-            <Text style={styles.modalSubtitle}>
-              {modalZone?.name} · {totalPacked}/{MAX_SLOTS} items carried
-            </Text>
-
-            {/* Slot Pips */}
-            <View style={styles.slotPips}>
-              {Array.from({ length: MAX_SLOTS }).map((_, i) => (
-                <View
-                  key={i}
-                  style={[styles.pip, i < totalPacked && styles.pipFilled]}
-                />
-              ))}
-            </View>
-
-            {/* Item list */}
-            <ScrollView style={styles.itemList} showsVerticalScrollIndicator={false}>
-              {state.hero.inventory.consumables.length === 0 || !state.hero.inventory.consumables.some(c => c.quantity > 0) ? (
-                <Text style={styles.emptyText}>
-                  No items in inventory.{'\n'}Buy some from the Town Hall!
-                </Text>
-              ) : (
-                state.hero.inventory.consumables
-                  .filter(entry => entry.quantity > 0)
-                  .map(entry => {
-                    const def     = CONSUMABLES.find(c => c.id === entry.id);
-                    const packed  = loadout[entry.id] || 0;
-                    const canAdd  = totalPacked < MAX_SLOTS && packed < entry.quantity;
-                    const canRemove = packed > 0;
-                    const icon    = CONSUMABLE_ICONS[entry.id] || '🧪';
-
-                    return (
-                      <View key={entry.id} style={styles.itemRow}>
-                        <View style={styles.itemIconBox}>
-                          <Text style={styles.itemRowIcon}>{icon}</Text>
-                        </View>
-
-                        <View style={styles.itemInfo}>
-                          <Text style={styles.itemName}>{def?.name || entry.id}</Text>
-                          <Text style={styles.itemDesc} numberOfLines={1}>{def?.description || ''}</Text>
-                          <Text style={styles.itemOwned}>Inventory: {entry.quantity}</Text>
-                        </View>
-
-                        <View style={styles.itemControls}>
-                          <TouchableOpacity
-                            style={[styles.counterBtn, !canRemove && styles.counterBtnDisabled]}
-                            onPress={() => removeItem(entry.id)}
-                            disabled={!canRemove}
-                          >
-                            <Text style={styles.counterBtnText}>−</Text>
-                          </TouchableOpacity>
-
-                          <Text style={styles.packedCount}>{packed}</Text>
-
-                          <TouchableOpacity
-                            style={[styles.counterBtn, !canAdd && styles.counterBtnDisabled]}
-                            onPress={() => addItem(entry.id)}
-                            disabled={!canAdd}
-                          >
-                            <Text style={styles.counterBtnText}>+</Text>
-                          </TouchableOpacity>
-                        </View>
-                      </View>
-                    );
-                  })
-              )}
-            </ScrollView>
-
-            {/* Action buttons */}
-            <TouchableOpacity style={styles.enterBtn} onPress={handleEnterDungeon}>
-              <Text style={styles.enterBtnText}>
-                ⚔️  Enter Dungeon{totalPacked === 0 ? ' (No Items)' : ` (${totalPacked}/${MAX_SLOTS} Items)`}
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.cancelBtn} onPress={() => setModalZone(null)}>
-              <Text style={styles.cancelBtnText}>← Back to Map</Text>
-            </TouchableOpacity>
-
-          </View>
-        </View>
-      </Modal>
     </SafeAreaView>
   );
 }
@@ -619,65 +482,4 @@ const styles = StyleSheet.create({
   beginButtonText:         { ...theme.FONTS.body, color: '#07070A', fontWeight: 'bold', letterSpacing: 0.5, fontSize: 16 },
   beginButtonTextDisabled: { color: theme.COLORS.textDim },
 
-  // ── Modal ──────────────────────────────────────────────────────────────────
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.82)', justifyContent: 'flex-end' },
-  modalSheet: {
-    backgroundColor: '#0E0E18',
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
-    borderTopWidth: 1.5,
-    borderColor: 'rgba(212, 167, 84, 0.3)',
-    paddingHorizontal: theme.SPACING.md,
-    paddingTop: theme.SPACING.sm,
-    paddingBottom: theme.SPACING.xl,
-    maxHeight: '85%',
-  },
-  modalGrabber: {
-    width: 48,
-    height: 5,
-    borderRadius: 2.5,
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    alignSelf: 'center',
-    marginBottom: 16,
-  },
-  modalTitle:    { ...theme.FONTS.title, color: theme.COLORS.textBright, textAlign: 'center', marginBottom: 4 },
-  modalSubtitle: { ...theme.FONTS.small, color: theme.COLORS.primary, textAlign: 'center', marginBottom: theme.SPACING.md, fontWeight: 'bold' },
-
-  // Slot pips
-  slotPips:  { flexDirection: 'row', justifyContent: 'center', gap: 10, marginBottom: theme.SPACING.md },
-  pip:       { width: 32, height: 6, borderRadius: 3, backgroundColor: 'rgba(255,255,255,0.06)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' },
-  pipFilled: { backgroundColor: theme.COLORS.primary, borderColor: theme.COLORS.primary, shadowColor: theme.COLORS.primary, shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.5, shadowRadius: 4 },
-
-  // Item rows
-  itemList:  { maxHeight: 320, marginBottom: theme.SPACING.md },
-  itemRow:   { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255, 255, 255, 0.015)', borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.04)', borderRadius: 14, padding: theme.SPACING.sm, marginBottom: theme.SPACING.sm },
-  itemIconBox: {
-    width: 40,
-    height: 40,
-    borderRadius: 10,
-    backgroundColor: 'rgba(255,255,255,0.03)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 10,
-  },
-  itemRowIcon: { fontSize: 20 },
-  itemInfo:  { flex: 1 },
-  itemName:  { ...theme.FONTS.body, color: theme.COLORS.textBright, fontWeight: 'bold' },
-  itemDesc:  { ...theme.FONTS.tiny, color: theme.COLORS.textDim, marginTop: 2, marginRight: 8 },
-  itemOwned: { ...theme.FONTS.tiny, color: theme.COLORS.primary, marginTop: 2, fontWeight: 'bold' },
-
-  // +/- controls
-  itemControls:       { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  counterBtn:         { width: 34, height: 34, borderRadius: 17, backgroundColor: 'rgba(212, 167, 84, 0.12)', borderWidth: 1, borderColor: 'rgba(212, 167, 84, 0.25)', alignItems: 'center', justifyContent: 'center' },
-  counterBtnDisabled: { backgroundColor: 'rgba(255,255,255,0.02)', borderColor: 'rgba(255,255,255,0.04)' },
-  counterBtnText:     { ...theme.FONTS.heading, color: theme.COLORS.primary, fontSize: 18 },
-  packedCount:        { ...theme.FONTS.body, color: theme.COLORS.textBright, width: 22, textAlign: 'center', fontWeight: 'bold' },
-
-  emptyText: { ...theme.FONTS.body, color: theme.COLORS.textDim, textAlign: 'center', padding: theme.SPACING.lg, fontStyle: 'italic' },
-
-  // Buttons
-  enterBtn:      { backgroundColor: theme.COLORS.success, borderRadius: 14, paddingVertical: 14, alignItems: 'center', marginBottom: theme.SPACING.sm, shadowColor: theme.COLORS.success, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 6 },
-  enterBtnText:  { ...theme.FONTS.body, color: '#07070A', fontWeight: 'bold', letterSpacing: 0.5 },
-  cancelBtn:     { alignItems: 'center', paddingVertical: theme.SPACING.sm },
-  cancelBtnText: { ...theme.FONTS.body, color: theme.COLORS.textDim, fontWeight: 'bold' },
 });

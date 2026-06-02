@@ -7,7 +7,7 @@
  * Redesigned with dynamic, zone-specific background and neon glowing themes.
  */
 
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import {
   View,
   Text,
@@ -35,6 +35,7 @@ import Svg, {
 
 import theme from '../constants/theme';
 import { useGame } from '../state/gameState';
+import { useFocusEffect } from '@react-navigation/native';
 import { ZONES } from '../data/zones';
 import { MATERIALS, CONSUMABLES } from '../data/gear';
 import { calculateEffectiveStats } from '../logic/progressionEngine';
@@ -283,6 +284,21 @@ export default function DungeonMapScreen({ navigation }) {
     ).start();
   }, [pulseAnim]);
 
+  // Show floor-complete modal whenever the screen is focused and all tiles are cleared
+  useFocusEffect(
+    useCallback(() => {
+      if (currentRun.active && currentRun.roomsCleared >= currentRun.totalRooms) {
+        setActiveModal('floorComplete');
+      }
+    }, [currentRun.active, currentRun.roomsCleared, currentRun.totalRooms])
+  );
+
+  const handleFloorComplete = () => {
+    setActiveModal(null);
+    dispatch({ type: 'END_RUN', payload: { outcome: 'win' } });
+    navigation.navigate('Camp');
+  };
+
   // Safety check
   if (!currentRun.active || !currentRun.zoneId) {
     return null;
@@ -306,19 +322,28 @@ export default function DungeonMapScreen({ navigation }) {
 
   const getTileIndex = (x, y) => y * gridWidth + x;
 
+  // Boss on floor 10 is locked until every other tile is cleared
+  const isBossLocked = (tile) =>
+    tile.type === 'boss' && currentRun.roomsCleared < currentRun.totalRooms - 1;
+
   const handleTileTap = (tile) => {
     if (!isAdjacent(tile.x, tile.y)) return;
+
+    if (isBossLocked(tile)) {
+      Alert.alert('Boss Sealed', 'Clear all other rooms on this floor before facing the boss!');
+      return;
+    }
 
     dispatch({ type: 'MOVE_PLAYER', payload: { x: tile.x, y: tile.y } });
 
     if (!tile.cleared && tile.type !== 'start') {
-      resolveRoom(tile.type, tile.x, tile.y);
+      resolveRoom(tile.type, tile.x, tile.y, tile.battleRating);
     }
   };
 
-  const resolveRoom = (type, x, y) => {
+  const resolveRoom = (type, _x, _y, battleRating = 1) => {
     if (type === 'combat') {
-      navigation.navigate('Combat', { roomType: 'combat' });
+      navigation.navigate('Combat', { roomType: 'combat', battleRating });
     } else if (type === 'boss') {
       navigation.navigate('Combat', { roomType: 'boss' });
     } else if (type === 'rest') {
@@ -462,6 +487,7 @@ export default function DungeonMapScreen({ navigation }) {
 
     const adjacent = isAdjacent(x, y);
     const isFog = !tile.revealed;
+    const bossLocked = isBossLocked(tile);
 
     let emoji = '🔒';
     let label = 'Lock';
@@ -469,6 +495,10 @@ export default function DungeonMapScreen({ navigation }) {
     let labelColor = 'rgba(255, 255, 255, 0.25)';
 
     const CLEARED_COLOR = '#5CC489'; // buffMint
+
+    // Star badge config for combat tiles
+    const STAR_COLORS = { 1: '#5A9FE0', 2: '#F08A4A', 3: '#D8483F' };
+    const STAR_LABELS = { 1: '★☆☆', 2: '★★☆', 3: '★★★' };
 
     if (tile.type === 'start') {
       emoji = '🏠';
@@ -497,10 +527,10 @@ export default function DungeonMapScreen({ navigation }) {
         cellStyle = styles.gambleCell;
         labelColor = tile.cleared ? CLEARED_COLOR : '#A98EE0'; // mysteryViolet
       } else if (tile.type === 'boss') {
-        emoji = '💀';
-        label = tile.cleared ? 'Cleared' : 'Boss';
-        cellStyle = styles.bossCell;
-        labelColor = tile.cleared ? CLEARED_COLOR : '#DD7A86'; // boss accent
+        emoji = bossLocked ? '🔒' : '💀';
+        label = tile.cleared ? 'Cleared' : bossLocked ? 'Sealed' : 'Boss';
+        cellStyle = bossLocked ? styles.bossLockedCell : styles.bossCell;
+        labelColor = tile.cleared ? CLEARED_COLOR : bossLocked ? 'rgba(255,255,255,0.3)' : '#DD7A86';
       }
     }
 
@@ -536,6 +566,12 @@ export default function DungeonMapScreen({ navigation }) {
             <Text style={[styles.cellLabel, { color: labelColor }]} numberOfLines={1}>
               {label}
             </Text>
+            {/* Star badge for combat tiles (only when revealed and not cleared) */}
+            {tile.type === 'combat' && !isFog && !tile.cleared && tile.battleRating && (
+              <Text style={[styles.starBadge, { color: STAR_COLORS[tile.battleRating] }]}>
+                {STAR_LABELS[tile.battleRating]}
+              </Text>
+            )}
           </View>
         )}
 
@@ -625,6 +661,9 @@ export default function DungeonMapScreen({ navigation }) {
                 <Text style={styles.zoneIconText}>{ZONE_ICONS[currentRun.zoneId] || '🏰'}</Text>
                 <Text style={[styles.zoneTitle, { color: zTheme.accent }]}>{zone.name}</Text>
               </View>
+              <Text style={[styles.floorLabel, { color: zTheme.accent }]}>
+                Floor {currentRun.floorNumber || 1} / {zone.floorCount || 10}
+              </Text>
             </View>
 
             <View style={styles.hudChipsGroup}>
@@ -1022,7 +1061,57 @@ export default function DungeonMapScreen({ navigation }) {
       </Modal>
 
       {/* ════════════════════════════════════════════════════════════════
-          6. RUN BAG / ITEMS MODAL
+          6. FLOOR COMPLETE MODAL
+      ════════════════════════════════════════════════════════════════ */}
+      <Modal visible={activeModal === 'floorComplete'} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+            <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
+              <Defs>
+                <RadialGradient id="floorCompleteGlow" cx="50%" cy="0%" r="60%">
+                  <Stop offset="0%" stopColor="#FBBF24" stopOpacity="0.10" />
+                  <Stop offset="100%" stopColor="#0E0F14" stopOpacity="0" />
+                </RadialGradient>
+              </Defs>
+              <Rect width="100%" height="100%" fill="#0E0F14" rx={16} />
+              <Rect width="100%" height="100%" fill="url(#floorCompleteGlow)" rx={16} />
+              <Rect x="1" y="1" width="98%" height="98%" rx={15} fill="none" stroke="rgba(251,191,36,0.2)" strokeWidth={1} />
+            </Svg>
+
+            <View style={styles.modalCardInner}>
+              <Text style={styles.floorCompleteTitle}>
+                {currentRun.floorNumber === 10 ? '⚔️ Zone Cleared!' : `🎉 Floor ${currentRun.floorNumber} Cleared!`}
+              </Text>
+              <Text style={styles.modalSubtitle}>
+                {currentRun.floorNumber === 10
+                  ? 'You have conquered the entire zone. The dungeon trembles before Mochi!'
+                  : 'Every room on this floor has been explored. Return to camp and prepare for the next descent.'}
+              </Text>
+
+              <View style={styles.lootRewardBox}>
+                <Text style={styles.floorLootTitle}>Loot Collected This Run:</Text>
+                {currentRun.lootCollected.gold > 0 && (
+                  <Text style={styles.lootGoldText}>💰 +{currentRun.lootCollected.gold} Gold</Text>
+                )}
+                {Object.keys(currentRun.lootCollected.materials).length > 0
+                  ? renderLootItems(currentRun.lootCollected.materials)
+                  : <Text style={styles.noLostLootText}>No materials collected.</Text>
+                }
+              </View>
+
+              <Button
+                title="Return to Camp"
+                variant="primary"
+                onPress={handleFloorComplete}
+                style={{ width: '100%', marginTop: 12 }}
+              />
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* ════════════════════════════════════════════════════════════════
+          7. RUN BAG / ITEMS MODAL
       ════════════════════════════════════════════════════════════════ */}
       <Modal visible={activeModal === 'bag'} transparent animationType="fade">
         <View style={styles.modalOverlay}>
@@ -1733,5 +1822,45 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
+  },
+
+  // Floor number label in HUD
+  floorLabel: {
+    ...theme.FONTS.label,
+    fontSize: 9,
+    marginTop: 2,
+    opacity: 0.75,
+  },
+
+  // Star badge on combat tiles
+  starBadge: {
+    fontFamily: 'System',
+    fontSize: 8,
+    fontWeight: '900',
+    marginTop: 1,
+    letterSpacing: 1,
+  },
+
+  // Boss tile — locked state (all other tiles must be cleared first)
+  bossLockedCell: {
+    backgroundColor: 'rgba(30,10,10,0.6)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,68,68,0.12)',
+    opacity: 0.5,
+  },
+
+  // Floor-complete modal
+  floorCompleteTitle: {
+    ...theme.FONTS.display,
+    fontSize: 22,
+    color: '#F5CF4A',
+    textAlign: 'center',
+    marginBottom: 6,
+  },
+  floorLootTitle: {
+    ...theme.FONTS.label,
+    fontSize: 9,
+    color: 'rgba(207,224,238,0.5)',
+    marginBottom: 6,
   },
 });

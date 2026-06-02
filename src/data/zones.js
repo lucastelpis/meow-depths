@@ -10,7 +10,7 @@
  *   description     – flavour text shown on the map screen
  *   minLevel        – recommended minimum player level
  *   maxLevel        – recommended maximum player level
- *   floors          – total dungeon floors before reaching the boss
+ *   floorCount      – total floors before zone is cleared (always 10)
  *   backgroundColor – hex colour used for the dungeon backdrop
  *   enemies         – array of common enemy ids that spawn here
  *   bossId          – the zone boss enemy id
@@ -29,9 +29,7 @@ export const ZONES = {
       'Damp tunnels crawling with rats and worse. The stench alone could kill you.',
     minLevel: 1,
     maxLevel: 5,
-    floors: 5,
-    gridWidth: 4,
-    gridHeight: 4,
+    floorCount: 10,
     backgroundColor: '#0F0F1A',
     enemies: ['sewer_rat', 'slimeling', 'cockroach_knight', 'plague_frog'],
     bossId: 'king_rat',
@@ -45,9 +43,7 @@ export const ZONES = {
       'An overgrown ruin where roots move on their own and fungi glow with malice.',
     minLevel: 6,
     maxLevel: 12,
-    floors: 7,
-    gridWidth: 4,
-    gridHeight: 5,
+    floorCount: 10,
     backgroundColor: '#0A1A0A',
     enemies: ['thorn_sprite', 'giant_beetle', 'mushroom_puffer', 'vine_lurker'],
     bossId: 'rootmother',
@@ -61,15 +57,31 @@ export const ZONES = {
       'Salt-crusted wharves haunted by drowned things. The tide never goes out.',
     minLevel: 13,
     maxLevel: 20,
-    floors: 10,
-    gridWidth: 5,
-    gridHeight: 5,
+    floorCount: 10,
     backgroundColor: '#0A0F1A',
     enemies: ['barnacle_crab', 'sea_witch_eel', 'drowned_sailor', 'pufferfish_bomb'],
     bossId: 'captain_moray',
     unlockCondition: 'zone2Cleared', // Requires Zone 2 boss defeated
   },
 };
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Grid Size — same scale for all zones, grows with floor depth
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Returns the grid dimensions for a given floor number.
+ * All zones share the same scaling table.
+ *
+ * @param {number} floorNumber – 1-indexed floor (1–10)
+ * @returns {{ gridWidth: number, gridHeight: number }}
+ */
+export function getGridSizeForFloor(floorNumber) {
+  if (floorNumber <= 3) return { gridWidth: 3, gridHeight: 3 };
+  if (floorNumber <= 6) return { gridWidth: 3, gridHeight: 4 };
+  if (floorNumber <= 9) return { gridWidth: 4, gridHeight: 4 };
+  return { gridWidth: 4, gridHeight: 5 }; // floor 10 (boss floor)
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Encounter Composition Probabilities

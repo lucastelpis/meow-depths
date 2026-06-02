@@ -247,7 +247,7 @@ function addStatusEffects(effectsList, newEffects) {
 export default function CombatScreen() {
   const navigation = useNavigation();
   const route = useRoute();
-  const { roomType } = route.params || { roomType: 'combat' };
+  const { roomType, battleRating = 1 } = route.params || { roomType: 'combat', battleRating: 1 };
   const { state, dispatch } = useGame();
 
   // ── Local combat state ───────────────────────────────────────────────────
@@ -358,20 +358,72 @@ export default function CombatScreen() {
         taggedEnemies = [elite];
       }
     } else {
-      // Normal combat: 80% two common enemies, 20% three common enemies
-      const roll = Math.random();
-      const count = roll < 0.8 ? 2 : 3;
-      for (let i = 0; i < count; i++) {
-        const template = randomPick(pool);
-        if (template) {
-          taggedEnemies.push({
-            ...template,
-            uid: template.id + '_' + i,
-            type: 'common',
-            maxHp: template.hp,
-            effects: [],
-            intent: randomPick(template.moves || []),
-          });
+      // Tier-based encounter from battleRating (1★ / 2★ / 3★)
+      if (battleRating === 1) {
+        // 1★ — 2 or 3 common enemies
+        const count = Math.random() < 0.5 ? 2 : 3;
+        for (let i = 0; i < count; i++) {
+          const template = randomPick(pool);
+          if (template) {
+            taggedEnemies.push({
+              ...template,
+              uid: template.id + '_' + i,
+              type: 'common',
+              maxHp: template.hp,
+              effects: [],
+              intent: randomPick(template.moves || []),
+            });
+          }
+        }
+      } else if (battleRating === 2) {
+        // 2★ — 3 or 4 enemies, 1–2 of which are elite
+        const totalCount = Math.random() < 0.5 ? 3 : 4;
+        const eliteCount = totalCount === 3 ? 1 : (Math.random() < 0.5 ? 1 : 2);
+        for (let i = 0; i < totalCount; i++) {
+          const template = randomPick(pool);
+          if (!template) continue;
+          const isElite = i < eliteCount;
+          if (isElite) {
+            taggedEnemies.push({
+              ...template,
+              uid: template.id + '_elite_' + i,
+              type: 'elite',
+              name: `Elite ${template.name}`,
+              hp: Math.floor(template.hp * 1.4),
+              maxHp: Math.floor(template.hp * 1.4),
+              attack: Math.floor(template.attack * 1.3),
+              effects: [],
+              intent: randomPick(template.moves || []),
+            });
+          } else {
+            taggedEnemies.push({
+              ...template,
+              uid: template.id + '_' + i,
+              type: 'common',
+              maxHp: template.hp,
+              effects: [],
+              intent: randomPick(template.moves || []),
+            });
+          }
+        }
+      } else {
+        // 3★ — 3 or 4 all-elite enemies
+        const count = Math.random() < 0.5 ? 3 : 4;
+        for (let i = 0; i < count; i++) {
+          const template = randomPick(pool);
+          if (template) {
+            taggedEnemies.push({
+              ...template,
+              uid: template.id + '_elite_' + i,
+              type: 'elite',
+              name: `Elite ${template.name}`,
+              hp: Math.floor(template.hp * 1.4),
+              maxHp: Math.floor(template.hp * 1.4),
+              attack: Math.floor(template.attack * 1.3),
+              effects: [],
+              intent: randomPick(template.moves || []),
+            });
+          }
         }
       }
     }
@@ -957,14 +1009,12 @@ export default function CombatScreen() {
     dispatch({ type: 'CLEAR_CURRENT_TILE' });
 
     if (roomType === 'boss') {
-      // Boss defeated — zone cleared!
+      // Mark the zone as cleared, then return to the dungeon map.
+      // DungeonMapScreen detects all tiles cleared and handles END_RUN + navigation to Camp.
       dispatch({ type: 'CLEAR_ZONE', payload: { zoneId: state.currentRun.zoneId } });
-      dispatch({ type: 'END_RUN', payload: { outcome: 'win' } });
-      navigation.navigate('Camp');
-    } else {
-      // Regular / Elite combat complete — return to the dungeon map
-      navigation.navigate('DungeonMap');
     }
+    // Always return to the dungeon map — floor-complete detection lives there
+    navigation.navigate('DungeonMap');
   };
 
   const handleDefeatReturn = () => {

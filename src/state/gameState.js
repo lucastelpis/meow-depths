@@ -39,7 +39,7 @@ import React, {
 } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { generateDungeonGrid } from '../logic/dungeonGenerator';
-import { ZONES } from '../data/zones';
+import { ZONES, getGridSizeForFloor } from '../data/zones';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -113,12 +113,13 @@ const initialState = {
   currentRun: {
     active: false,            // true while a dungeon run is in progress
     zoneId: null,             // e.g. 'zone1'
-    gridWidth: 4,
-    gridHeight: 4,
+    floorNumber: 1,           // which floor of the zone (1–10)
+    gridWidth: 3,
+    gridHeight: 3,
     tiles: [],                // flat array, access by index = y * gridWidth + x
-    playerPos: { x: 0, y: 3 },
+    playerPos: { x: 0, y: 2 },
     roomsCleared: 0,
-    totalRooms: 16,
+    totalRooms: 9,
     consumables: [],          // consumables brought into this run (array of item ID strings)
     lootCollected: { materials: {}, gold: 0 }, // loot accumulated during the run
     runBuffs: {               // run-only buffs from rest rooms
@@ -306,15 +307,15 @@ function gameReducer(state, action) {
 
     // -----------------------------------------------------------------------
     // START_RUN — begin a new dungeon run (grid-based map)
-    // Payload: { zoneId: string, consumables: [] }
+    // Payload: { zoneId: string, floorNumber: number, consumables: [] }
     // -----------------------------------------------------------------------
     case 'START_RUN': {
-      const { zoneId, consumables } = action.payload;
+      const { zoneId, floorNumber = 1, consumables } = action.payload;
       const zone = ZONES[zoneId];
       if (!zone) return state;
 
-      const { gridWidth, gridHeight } = zone;
-      const grid = generateDungeonGrid(gridWidth, gridHeight, zoneId);
+      const { gridWidth, gridHeight } = getGridSizeForFloor(floorNumber);
+      const grid = generateDungeonGrid(gridWidth, gridHeight, zoneId, floorNumber);
 
       // Flatten grid tiles
       const flatTiles = [];
@@ -369,6 +370,7 @@ function gameReducer(state, action) {
         currentRun: {
           active: true,
           zoneId,
+          floorNumber,
           gridWidth,
           gridHeight,
           tiles: flatTiles,
@@ -561,13 +563,20 @@ function gameReducer(state, action) {
       // Restores Mochi's HP to full when outside of the Dungeon
       const finalHp = state.hero.maxHp;
 
-      // Handle Runs Completed Counter
+      // Track completed runs and advance floorsCleared on win
       const zoneId = state.currentRun.zoneId;
+      const completedFloor = state.currentRun.floorNumber || 1;
       const currentProgress = state.progress || {};
       const currentRunsCompleted = currentProgress.runsCompleted || { zone1: 0, zone2: 0, zone3: 0 };
       const newRunsCompleted = { ...currentRunsCompleted };
+      const currentFloorsCleared = currentProgress.floorsCleared || { zone1: 0, zone2: 0, zone3: 0 };
+      const newFloorsCleared = { ...currentFloorsCleared };
       if (outcome === 'win' && zoneId) {
         newRunsCompleted[zoneId] = (newRunsCompleted[zoneId] || 0) + 1;
+        // Only advance if this floor hasn't been cleared before (prevent re-farming advancement)
+        if (completedFloor > (newFloorsCleared[zoneId] || 0)) {
+          newFloorsCleared[zoneId] = completedFloor;
+        }
       }
 
       return {
@@ -584,17 +593,19 @@ function gameReducer(state, action) {
         },
         progress: {
           ...state.progress,
-          runsCompleted: newRunsCompleted
+          runsCompleted: newRunsCompleted,
+          floorsCleared: newFloorsCleared,
         },
         currentRun: {
           active: false,
           zoneId: null,
-          gridWidth: 4,
-          gridHeight: 4,
+          floorNumber: 1,
+          gridWidth: 3,
+          gridHeight: 3,
           tiles: [],
-          playerPos: { x: 0, y: 3 },
+          playerPos: { x: 0, y: 2 },
           roomsCleared: 0,
-          totalRooms: 16,
+          totalRooms: 9,
           consumables: [],
           lootCollected: { materials: {}, gold: 0 },
           runBuffs: {
