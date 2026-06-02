@@ -92,18 +92,17 @@ export function checkLevelUp(hero) {
   let currentAttack = hero.attack;
   let currentDef    = hero.defence;
   let currentSP     = hero.skillPoints;
+  let currentStatPoints = hero.statPoints || 0;
   const messages    = [];
 
   // Keep leveling up as long as XP exceeds the next level's threshold
   while (hero.xp >= getXpForLevel(currentLevel + 1)) {
     currentLevel  += 1;
-    currentMaxHp  += 8;   // +8 HP per level
-    currentAttack += 2;   // +2 Attack per level
-    currentDef    += 1;   // +1 Defence per level
     currentSP     += 1;   // +1 Skill Point per level
+    currentStatPoints += 3; // +3 Stat Points per level
     levelsGained  += 1;
 
-    messages.push(`🎉 Level up! Mochi is now level ${currentLevel}!`);
+    messages.push(`🎉 Level up! Mochi is now level ${currentLevel}! Gained +1 Skill Point and +3 Stat Points.`);
   }
 
   return {
@@ -113,6 +112,7 @@ export function checkLevelUp(hero) {
     newAttack:      currentAttack,
     newDefence:     currentDef,
     newSkillPoints: currentSP,
+    newStatPoints:  currentStatPoints,
     messages,
   };
 }

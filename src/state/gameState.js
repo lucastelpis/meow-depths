@@ -71,6 +71,7 @@ const initialState = {
     dodge: 0.05,              // 5 % base dodge chance
     gold: 100,                // start with some gold for first potions
     skillPoints: 0,           // earned 1 per level-up, spent on skills
+    statPoints: 0,            // 3 stat points per level-up, allocated manually
     unlockedSkills: [],       // array of skill IDs the hero has learned
     equippedSkills: [null, null], // two active skill slots for combat
 
@@ -387,6 +388,7 @@ function gameReducer(state, action) {
             attack: state.hero.attack,
             defence: state.hero.defence,
             skillPoints: state.hero.skillPoints,
+            statPoints: state.hero.statPoints || 0,
           },
           runBuffs: {
             attackBonus: 0,
@@ -567,6 +569,7 @@ function gameReducer(state, action) {
             attack: state.currentRun.heroBackup.attack,
             defence: state.currentRun.heroBackup.defence,
             skillPoints: state.currentRun.heroBackup.skillPoints,
+            statPoints: state.currentRun.heroBackup.statPoints || 0,
           };
         }
       }
@@ -911,8 +914,37 @@ function gameReducer(state, action) {
           attack:      action.payload.newAttack,
           defence:     action.payload.newDefence,
           skillPoints: action.payload.newSkillPoints,
+          statPoints:  action.payload.newStatPoints !== undefined ? action.payload.newStatPoints : (state.hero.statPoints || 0),
           // Fully heal on level up — it feels good! 🎉
           hp:          effectiveMaxHp,
+        },
+      };
+    }
+
+    // -----------------------------------------------------------------------
+    // ALLOCATE_STAT_POINTS — manually allocate stat points to HP, ATK, DEF
+    // Payload: { maxHpInc: number, attackInc: number, defenceInc: number }
+    // -----------------------------------------------------------------------
+    case 'ALLOCATE_STAT_POINTS': {
+      const { maxHpInc = 0, attackInc = 0, defenceInc = 0 } = action.payload;
+      const totalPoints = maxHpInc + attackInc + defenceInc;
+      if (totalPoints <= 0 || state.hero.statPoints < totalPoints) {
+        return state;
+      }
+      const newMaxHp = state.hero.maxHp + (maxHpInc * 5);
+      const newAttack = state.hero.attack + (attackInc * 1);
+      const newDefence = state.hero.defence + (defenceInc * 1);
+      const newStatPoints = state.hero.statPoints - totalPoints;
+      const newHp = Math.min(newMaxHp, state.hero.hp + (maxHpInc * 5));
+      return {
+        ...state,
+        hero: {
+          ...state.hero,
+          maxHp: newMaxHp,
+          attack: newAttack,
+          defence: newDefence,
+          statPoints: newStatPoints,
+          hp: newHp,
         },
       };
     }

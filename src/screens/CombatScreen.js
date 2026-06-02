@@ -979,6 +979,7 @@ export default function CombatScreen() {
           newAttack: lvlResult.newAttack,
           newDefence: lvlResult.newDefence,
           newSkillPoints: lvlResult.newSkillPoints,
+          newStatPoints: lvlResult.newStatPoints,
         },
       });
       setLevelUpMessages(lvlResult.messages);
