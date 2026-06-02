@@ -38,7 +38,7 @@ import { useGame } from '../state/gameState';
 import { useFocusEffect } from '@react-navigation/native';
 import { ZONES } from '../data/zones';
 import { MATERIALS, CONSUMABLES } from '../data/gear';
-import { calculateEffectiveStats } from '../logic/progressionEngine';
+import { calculateEffectiveStats, getXpForLevel } from '../logic/progressionEngine';
 import Button from '../components/ui/Button';
 import ResourceBar from '../components/ui/ResourceBar';
 
@@ -232,6 +232,12 @@ export default function DungeonMapScreen({ navigation }) {
 
   // Calculate effective stats including current run buffs
   const effectiveStats = calculateEffectiveStats(hero, undefined, currentRun.runBuffs);
+
+  // Derive XP values for level progress bar
+  const xpForCurrent = getXpForLevel(hero.level);
+  const xpForNext = getXpForLevel(hero.level + 1);
+  const xpIntoLevel = hero.xp - xpForCurrent;
+  const xpNeeded = xpForNext - xpForCurrent;
 
   // Group run consumables for rendering in the bag
   const runConsumablesList = useMemo(() => {
@@ -489,6 +495,36 @@ export default function DungeonMapScreen({ navigation }) {
     const isFog = !tile.revealed;
     const bossLocked = isBossLocked(tile);
 
+    let arrowIndicator = null;
+    if (adjacent) {
+      const dx = x - playerPos.x;
+      const dy = y - playerPos.y;
+      let arrowChar = '';
+      let arrowStyle = {};
+
+      if (dx === 1 && dy === 0) {
+        arrowChar = '▶';
+        arrowStyle = { left: 5, top: '50%', transform: [{ translateY: -8 }] };
+      } else if (dx === -1 && dy === 0) {
+        arrowChar = '◀';
+        arrowStyle = { right: 5, top: '50%', transform: [{ translateY: -8 }] };
+      } else if (dx === 0 && dy === 1) {
+        arrowChar = '▼';
+        arrowStyle = { top: 5, left: '50%', transform: [{ translateX: -8 }] };
+      } else if (dx === 0 && dy === -1) {
+        arrowChar = '▲';
+        arrowStyle = { bottom: 5, left: '50%', transform: [{ translateX: -8 }] };
+      }
+
+      if (arrowChar) {
+        arrowIndicator = (
+          <View style={[styles.arrowContainer, arrowStyle]}>
+            <Text style={styles.arrowText}>{arrowChar}</Text>
+          </View>
+        );
+      }
+    }
+
     let emoji = '🔒';
     let label = 'Lock';
     let cellStyle = styles.fogCell;
@@ -552,6 +588,9 @@ export default function DungeonMapScreen({ navigation }) {
       >
         {/* Render zone-specific background SVG */}
         {renderCellSVG(currentRun.zoneId, tile, isPlayerHere, isFog)}
+
+        {/* Directional movement arrow indicator */}
+        {arrowIndicator}
 
         {isPlayerHere ? (
           <View style={styles.cellContent}>
@@ -653,42 +692,69 @@ export default function DungeonMapScreen({ navigation }) {
         </Svg>
 
         <View style={styles.hudInner}>
-          {/* ── Zone identity + stat chips ── */}
-          <View style={styles.hudTopRow}>
-            <View style={styles.zoneNameBlock}>
-              <Text style={styles.zoneEyebrow}>CURRENT ZONE</Text>
-              <View style={styles.zoneTitleRow}>
-                <Text style={styles.zoneIconText}>{ZONE_ICONS[currentRun.zoneId] || '🏰'}</Text>
-                <Text style={[styles.zoneTitle, { color: zTheme.accent }]}>{zone.name}</Text>
-              </View>
+          {/* ── Zone Brand and Progress ── */}
+          <View style={styles.hudHeaderRow}>
+            <View style={styles.zoneBadge}>
+              <Text style={styles.zoneBadgeText}>{ZONE_ICONS[currentRun.zoneId] || '🏰'}</Text>
+            </View>
+            <View style={styles.zoneMetaBlock}>
+              <Text style={styles.zoneTitle}>{zone.name}</Text>
               <Text style={[styles.floorLabel, { color: zTheme.accent }]}>
-                Floor {currentRun.floorNumber || 1} / {zone.floorCount || 10}
+                Floor {currentRun.floorNumber || 1} of {zone.floorCount || 10}
               </Text>
             </View>
+            <View style={[styles.roomsBadge, {
+              borderColor: zTheme.accent + '33',
+              backgroundColor: zTheme.accent + '12',
+            }]}>
+              <Text style={[styles.roomsBadgeText, { color: zTheme.accent }]}>
+                🗺️ {currentRun.roomsCleared}/{currentRun.totalRooms}
+              </Text>
+            </View>
+          </View>
 
-            <View style={styles.hudChipsGroup}>
-              <View style={[styles.hudChip, styles.hudChipGold]}>
-                <Text style={styles.hudChipTextGold}>💰 {currentRun.lootCollected.gold}g</Text>
+          {/* Subtle Horizontal Divider */}
+          <View style={styles.hudDivider} />
+
+          {/* ── Loot Stats (Gold & XP) ── */}
+          <View style={styles.lootStatsRow}>
+            <View style={[styles.lootStatChip, styles.lootStatChipGold]}>
+              <Text style={styles.lootStatEmoji}>💰</Text>
+              <View>
+                <Text style={styles.lootStatLabel}>Gold Collected</Text>
+                <Text style={styles.lootStatValueGold}>{currentRun.lootCollected.gold}g</Text>
               </View>
-              <View style={[styles.hudChip, {
-                borderColor: zTheme.accent + '55',
-                backgroundColor: zTheme.accent + '18',
-              }]}>
-                <Text style={[styles.hudChipTextRooms, { color: zTheme.accent }]}>
-                  🗺️ {currentRun.roomsCleared}/{currentRun.totalRooms}
-                </Text>
+            </View>
+            
+            <View style={[styles.lootStatChip, styles.lootStatChipXp]}>
+              <Text style={styles.lootStatEmoji}>✨</Text>
+              <View>
+                <Text style={styles.lootStatLabel}>XP Acquired</Text>
+                <Text style={styles.lootStatValueXp}>{currentRun.lootCollected.xp || 0} XP</Text>
               </View>
             </View>
           </View>
 
-          {/* ── HP bar ── */}
-          <View style={styles.hpContainer}>
-            <ResourceBar
-              variant="heroHp"
-              label="HP"
-              current={hero.hp}
-              max={effectiveStats.maxHp}
-            />
+          {/* ── Hero Status Row (Level, HP, XP) ── */}
+          <View style={styles.heroStatusRow}>
+            <View style={styles.levelBadge}>
+              <Text style={styles.levelLabel}>LV</Text>
+              <Text style={styles.levelValue}>{hero.level}</Text>
+            </View>
+            <View style={styles.gaugesContainer}>
+              <ResourceBar
+                variant="heroHp"
+                label="HP"
+                current={hero.hp}
+                max={effectiveStats.maxHp}
+              />
+              <ResourceBar
+                variant="xp"
+                label="XP"
+                current={xpIntoLevel}
+                max={xpNeeded}
+              />
+            </View>
           </View>
 
           {/* ── Run buffs (horizontal scroll) ── */}
@@ -964,10 +1030,15 @@ export default function DungeonMapScreen({ navigation }) {
 
               <View style={styles.deathLootLostBox}>
                 <Text style={styles.lostLootTitle}>Loot Lost in the Depths:</Text>
-                {currentRun.lootCollected.gold === 0 && Object.keys(currentRun.lootCollected.materials).length === 0 ? (
-                  <Text style={styles.noLostLootText}>No materials or gold were collected this run.</Text>
+                {currentRun.lootCollected.gold === 0 &&
+                Object.keys(currentRun.lootCollected.materials).length === 0 &&
+                (currentRun.lootCollected.xp || 0) === 0 ? (
+                  <Text style={styles.noLostLootText}>No materials, gold, or XP were collected this run.</Text>
                 ) : (
                   <>
+                    {currentRun.lootCollected.xp > 0 && (
+                      <Text style={styles.lostLootXp}>✨ {currentRun.lootCollected.xp} XP</Text>
+                    )}
                     {currentRun.lootCollected.gold > 0 && (
                       <Text style={styles.lostLootGold}>💰 {currentRun.lootCollected.gold} Gold</Text>
                     )}
@@ -1129,12 +1200,13 @@ export default function DungeonMapScreen({ navigation }) {
             </Svg>
 
             <View style={styles.modalCardInner}>
-              <Text style={styles.modalTitle}>🎒 Run Bag Supplies</Text>
+              <Text style={styles.modalTitle}>🎒 Run Bag & Loot</Text>
               <Text style={styles.modalSubtitle}>
-                Items packed for this run. Tap to use.
+                Packed supplies and collected dungeon loot.
               </Text>
 
               <ScrollView style={styles.modalBagScroll} showsVerticalScrollIndicator={false}>
+                <Text style={styles.bagSectionHeader}>🎒 Packed Supplies</Text>
                 {runConsumablesList.length === 0 ? (
                   <Text style={styles.emptyBagText}>No items remaining in your run bag.</Text>
                 ) : (
@@ -1165,6 +1237,37 @@ export default function DungeonMapScreen({ navigation }) {
                       </View>
                     );
                   })
+                )}
+
+                <View style={styles.bagDivider} />
+
+                <Text style={styles.bagSectionHeader}>💎 Loot Collected</Text>
+                {currentRun.lootCollected.gold === 0 && Object.keys(currentRun.lootCollected.materials).length === 0 ? (
+                  <Text style={styles.emptyBagText}>No gold or materials collected yet.</Text>
+                ) : (
+                  <View style={styles.bagLootBox}>
+                    {currentRun.lootCollected.gold > 0 && (
+                      <View style={styles.bagLootRow}>
+                        <Text style={styles.bagLootEmoji}>💰</Text>
+                        <Text style={styles.bagLootText}>Gold: {currentRun.lootCollected.gold}g</Text>
+                      </View>
+                    )}
+                    {Object.entries(currentRun.lootCollected.materials).map(([id, qty]) => {
+                      const def = MATERIALS[id];
+                      let emoji = '💎';
+                      if (id.startsWith('black')) emoji = '🖤';
+                      if (id.startsWith('green')) emoji = '💚';
+                      if (id.startsWith('yellow')) emoji = '💛';
+                      return (
+                        <View key={id} style={styles.bagLootRow}>
+                          <Text style={styles.bagLootEmoji}>{emoji}</Text>
+                          <Text style={styles.bagLootText}>
+                            {def?.name || id.replace(/_/g, ' ').toUpperCase()}: {qty}
+                          </Text>
+                        </View>
+                      );
+                    })}
+                  </View>
                 )}
               </ScrollView>
 
@@ -1210,64 +1313,148 @@ const styles = StyleSheet.create({
   },
 
   // Zone identity row
-  hudTopRow: {
+  hudHeaderRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
   },
-  zoneNameBlock: {
-    flex: 1,
+  zoneBadge: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
     marginRight: 10,
   },
-  zoneEyebrow: {
-    ...theme.FONTS.label,
-    fontSize: 9,
-    color: 'rgba(207,224,238,0.45)',
-    marginBottom: 3,
-  },
-  zoneTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  zoneIconText: {
+  zoneBadgeText: {
     fontSize: 18,
+  },
+  zoneMetaBlock: {
+    flex: 1,
+    justifyContent: 'center',
   },
   zoneTitle: {
     ...theme.FONTS.heading,
-    fontSize: 17,
-    fontWeight: '600',
+    fontSize: 15,
+    fontWeight: 'bold',
+    color: theme.COLORS.ghostWhite,
   },
-
-  // Stat chips
-  hudChipsGroup: {
-    flexDirection: 'row',
-    gap: 6,
-    alignItems: 'center',
+  floorLabel: {
+    ...theme.FONTS.label,
+    fontSize: 9,
+    marginTop: 1,
+    fontWeight: '500',
+    opacity: 0.8,
   },
-  hudChip: {
+  roomsBadge: {
     borderRadius: theme.BORDER_RADIUS.pill,
     borderWidth: 1,
-    paddingHorizontal: 10,
+    paddingHorizontal: 8,
     paddingVertical: 4,
+    alignSelf: 'center',
   },
-  hudChipGold: {
-    backgroundColor: 'rgba(232,167,58,0.12)',
-    borderColor: 'rgba(232,167,58,0.35)',
-  },
-  hudChipTextGold: {
+  roomsBadgeText: {
     ...theme.FONTS.label,
-    fontSize: 11,
-    color: theme.COLORS.candleGold,
-  },
-  hudChipTextRooms: {
-    ...theme.FONTS.label,
-    fontSize: 11,
+    fontSize: 10,
+    fontWeight: 'bold',
   },
 
-  // HP bar
-  hpContainer: {
-    width: '100%',
+  hudDivider: {
+    height: 1,
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    marginVertical: 2,
+  },
+
+  // Loot Stats Row
+  lootStatsRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  lootStatChip: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+    borderWidth: 1,
+    gap: 8,
+  },
+  lootStatChipGold: {
+    backgroundColor: 'rgba(232, 167, 58, 0.06)',
+    borderColor: 'rgba(232, 167, 58, 0.18)',
+  },
+  lootStatChipXp: {
+    backgroundColor: 'rgba(169, 142, 224, 0.06)',
+    borderColor: 'rgba(169, 142, 224, 0.18)',
+  },
+  lootStatEmoji: {
+    fontSize: 14,
+  },
+  lootStatLabel: {
+    fontFamily: 'System',
+    fontSize: 7.5,
+    fontWeight: 'bold',
+    color: 'rgba(255, 255, 255, 0.35)',
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+  },
+  lootStatValueGold: {
+    ...theme.FONTS.label,
+    fontSize: 12,
+    color: theme.COLORS.candleGold,
+    fontWeight: 'bold',
+    marginTop: 1,
+  },
+  lootStatValueXp: {
+    ...theme.FONTS.label,
+    fontSize: 12,
+    color: '#A98EE0',
+    fontWeight: 'bold',
+    marginTop: 1,
+  },
+
+  // Hero Status
+  heroStatusRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginTop: 2,
+  },
+  levelBadge: {
+    width: 38,
+    height: 38,
+    borderRadius: 8,
+    backgroundColor: 'rgba(232, 167, 58, 0.04)',
+    borderWidth: 1.5,
+    borderColor: 'rgba(232, 167, 58, 0.35)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: theme.COLORS.candleGold,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+  },
+  levelLabel: {
+    fontFamily: 'System',
+    fontSize: 8,
+    fontWeight: 'bold',
+    color: 'rgba(232, 167, 58, 0.65)',
+    letterSpacing: 0.5,
+    lineHeight: 10,
+  },
+  levelValue: {
+    ...theme.FONTS.heading,
+    fontSize: 15,
+    fontWeight: 'bold',
+    color: theme.COLORS.candleGold,
+    lineHeight: 18,
+  },
+  gaugesContainer: {
+    flex: 1,
+    gap: 5,
   },
 
   // Run buffs
@@ -1334,6 +1521,31 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     borderWidth: 2,
     borderRadius: 14,
+  },
+  arrowContainer: {
+    position: 'absolute',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10,
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: '#1E2330',
+    borderWidth: 1.0,
+    borderColor: '#D4A754',
+    // Shadow / Glow
+    shadowColor: '#D4A754',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.25,
+    shadowRadius: 1.2,
+    elevation: 3,
+  },
+  arrowText: {
+    fontSize: 8,
+    fontWeight: 'bold',
+    color: '#D4A754',
+    textAlign: 'center',
+    lineHeight: 12,
   },
   cellEmoji: {
     fontSize: 22,
@@ -1595,6 +1807,12 @@ const styles = StyleSheet.create({
     fontSize: 15,
     textDecorationLine: 'line-through',
   },
+  lostLootXp: {
+    fontFamily: 'System',
+    color: '#707F94',
+    fontSize: 15,
+    textDecorationLine: 'line-through',
+  },
   deathRecoverMsg: {
     fontFamily: 'System',
     fontSize: 12,
@@ -1637,9 +1855,47 @@ const styles = StyleSheet.create({
 
   // Modal Bag Styles
   modalBagScroll: {
-    maxHeight: 280,
+    maxHeight: 340,
     width: '100%',
     marginVertical: 12,
+  },
+  bagSectionHeader: {
+    fontFamily: 'System',
+    fontSize: 11,
+    fontWeight: 'bold',
+    color: '#D4A754',
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
+    marginBottom: 8,
+    marginTop: 6,
+  },
+  bagDivider: {
+    height: 1,
+    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+    marginVertical: 12,
+  },
+  bagLootBox: {
+    backgroundColor: 'rgba(255, 255, 255, 0.02)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.05)',
+    borderRadius: 12,
+    padding: 12,
+    width: '100%',
+    gap: 8,
+  },
+  bagLootRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  bagLootEmoji: {
+    fontSize: 15,
+  },
+  bagLootText: {
+    fontFamily: 'System',
+    fontSize: 12,
+    color: '#F8FAFC',
+    fontWeight: '500',
   },
   emptyBagText: {
     fontFamily: 'System',

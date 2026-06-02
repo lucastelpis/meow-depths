@@ -43,9 +43,9 @@ export default function ResourceBar({
     barConfig = {
       fillColor: theme.COLORS.candleGold,
       trackColor: '#2A2010',
-      height: 8,
+      height: 12,
       radius: 4,
-      showText: false,
+      showText: true,
     };
   }
 

@@ -121,7 +121,8 @@ const initialState = {
     roomsCleared: 0,
     totalRooms: 9,
     consumables: [],          // consumables brought into this run (array of item ID strings)
-    lootCollected: { materials: {}, gold: 0 }, // loot accumulated during the run
+    lootCollected: { materials: {}, gold: 0, xp: 0 }, // loot accumulated during the run
+    heroBackup: null,         // backup of hero stats before the run starts
     runBuffs: {               // run-only buffs from rest rooms
       attackBonus: 0,
       critBonus: 0,
@@ -378,7 +379,15 @@ function gameReducer(state, action) {
           roomsCleared: 1, // Start room is cleared
           totalRooms: gridWidth * gridHeight,
           consumables: consumables || [],
-          lootCollected: { materials: {}, gold: 0 },
+          lootCollected: { materials: {}, gold: 0, xp: 0 },
+          heroBackup: {
+            level: state.hero.level,
+            xp: state.hero.xp,
+            maxHp: state.hero.maxHp,
+            attack: state.hero.attack,
+            defence: state.hero.defence,
+            skillPoints: state.hero.skillPoints,
+          },
           runBuffs: {
             attackBonus: 0,
             critBonus: 0,
@@ -456,8 +465,9 @@ function gameReducer(state, action) {
     // Payload: { gold: number, materials: { itemId: qty } }
     // -----------------------------------------------------------------------
     case 'ADD_RUN_LOOT': {
-      const { gold, materials } = action.payload;
+      const { gold, materials, xp } = action.payload;
       const newLootGold = state.currentRun.lootCollected.gold + (gold || 0);
+      const newLootXp = (state.currentRun.lootCollected.xp || 0) + (xp || 0);
       const newLootMaterials = { ...state.currentRun.lootCollected.materials };
       for (const [id, qty] of Object.entries(materials || {})) {
         newLootMaterials[id] = (newLootMaterials[id] || 0) + qty;
@@ -468,7 +478,8 @@ function gameReducer(state, action) {
           ...state.currentRun,
           lootCollected: {
             materials: newLootMaterials,
-            gold: newLootGold
+            gold: newLootGold,
+            xp: newLootXp
           }
         }
       };
@@ -530,6 +541,7 @@ function gameReducer(state, action) {
 
       let updatedGold = state.hero.gold;
       const updatedMaterials = { ...state.hero.inventory.materials };
+      let heroStats = { ...state.hero };
 
       if (outcome === 'win') {
         updatedGold += state.currentRun.lootCollected.gold;
@@ -543,6 +555,19 @@ function gameReducer(state, action) {
           if (keptQty > 0) {
             updatedMaterials[id] = (updatedMaterials[id] || 0) + keptQty;
           }
+        }
+      } else if (outcome === 'lose') {
+        // Defeat: revert levels, XP, and base stats gained during this run
+        if (state.currentRun.heroBackup) {
+          heroStats = {
+            ...heroStats,
+            level: state.currentRun.heroBackup.level,
+            xp: state.currentRun.heroBackup.xp,
+            maxHp: state.currentRun.heroBackup.maxHp,
+            attack: state.currentRun.heroBackup.attack,
+            defence: state.currentRun.heroBackup.defence,
+            skillPoints: state.currentRun.heroBackup.skillPoints,
+          };
         }
       }
 
@@ -560,8 +585,8 @@ function gameReducer(state, action) {
         }
       }
 
-      // Restores Mochi's HP to full when outside of the Dungeon
-      const finalHp = state.hero.maxHp;
+      // Restores Mochi's HP to full when outside of the Dungeon (using updated maxHp if reverted)
+      const finalHp = heroStats.maxHp;
 
       // Track completed runs and advance floorsCleared on win
       const zoneId = state.currentRun.zoneId;
@@ -582,11 +607,11 @@ function gameReducer(state, action) {
       return {
         ...state,
         hero: {
-          ...state.hero,
+          ...heroStats,
           gold: updatedGold,
           hp: finalHp,
           inventory: {
-            ...state.hero.inventory,
+            ...heroStats.inventory,
             materials: updatedMaterials,
             consumables: updatedInventoryConsumables,
           }
@@ -607,7 +632,8 @@ function gameReducer(state, action) {
           roomsCleared: 0,
           totalRooms: 9,
           consumables: [],
-          lootCollected: { materials: {}, gold: 0 },
+          lootCollected: { materials: {}, gold: 0, xp: 0 },
+          heroBackup: null,
           runBuffs: {
             attackBonus: 0,
             critBonus: 0,

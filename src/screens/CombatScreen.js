@@ -954,10 +954,10 @@ export default function CombatScreen() {
     setLootResult(loot);
 
     // Dispatch rewards to global state (Run bag instead of permanent inventory)
-    if (loot.gold > 0 || Object.keys(loot.materials).length > 0) {
+    if (loot.gold > 0 || Object.keys(loot.materials).length > 0 || loot.xp > 0) {
       dispatch({
         type: 'ADD_RUN_LOOT',
-        payload: { gold: loot.gold, materials: loot.materials },
+        payload: { gold: loot.gold, materials: loot.materials, xp: loot.xp },
       });
     }
     if (loot.xp > 0) {
@@ -1534,10 +1534,15 @@ export default function CombatScreen() {
 
               <View style={styles.lostLootBox}>
                 <Text style={styles.lostLootTitle}>Loot Lost in the Depths:</Text>
-                {state.currentRun.lootCollected.gold === 0 && Object.keys(state.currentRun.lootCollected.materials).length === 0 ? (
-                  <Text style={styles.noLostLootText}>No materials or gold were collected this run.</Text>
+                {state.currentRun.lootCollected.gold === 0 &&
+                Object.keys(state.currentRun.lootCollected.materials).length === 0 &&
+                (state.currentRun.lootCollected.xp || 0) === 0 ? (
+                  <Text style={styles.noLostLootText}>No materials, gold, or XP were collected this run.</Text>
                 ) : (
                   <>
+                    {state.currentRun.lootCollected.xp > 0 && (
+                      <Text style={styles.lostLootXpText}>✨ {state.currentRun.lootCollected.xp} XP</Text>
+                    )}
                     {state.currentRun.lootCollected.gold > 0 && (
                       <Text style={styles.lostLootGold}>💰 {state.currentRun.lootCollected.gold} Gold</Text>
                     )}
@@ -2173,6 +2178,11 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
   },
   lostLootGold: {
+    ...theme.FONTS.body,
+    color: 'rgba(207,224,238,0.5)',
+    textDecorationLine: 'line-through',
+  },
+  lostLootXpText: {
     ...theme.FONTS.body,
     color: 'rgba(207,224,238,0.5)',
     textDecorationLine: 'line-through',
