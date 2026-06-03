@@ -185,6 +185,9 @@ const STATUS_EMOJIS = {
   stealth: '🌫️',
   counter: '⚔️',
   debuff_attack: '📉',
+  atk_reduce: '📉',
+  dodge_reduce: '📉',
+  crit_reduce: '📉',
 };
 
 const STATUS_COLORS = {
@@ -195,6 +198,9 @@ const STATUS_COLORS = {
   stealth: theme.COLORS.stealth || '#A98EE0',
   counter: '#F08A4A',
   debuff_attack: '#D8483F',
+  atk_reduce: '#D8483F',
+  dodge_reduce: '#D8483F',
+  crit_reduce: '#D8483F',
 };
 
 function consolidateEffectsArray(effectsList) {
@@ -304,6 +310,7 @@ export default function CombatScreen() {
     // 1. Resolve the current zone
     const zone = ZONES[state.currentRun.zoneId];
     if (!zone) return;
+    const floorNumber = state.currentRun.floorNumber || 1;
 
     // 2. Compute the hero's effective stats (gear + passives + set bonuses + run buffs)
     const eff = calculateEffectiveStats(state.hero, undefined, state.currentRun.runBuffs);
@@ -325,7 +332,10 @@ export default function CombatScreen() {
 
     // 4. Generate the encounter based on the room type
     let taggedEnemies = [];
-    const pool = zone.enemies.map(id => ENEMIES[id]).filter(Boolean);
+    let pool = zone.enemies.map(id => ENEMIES[id]).filter(Boolean);
+    if (floorNumber === 1) {
+      pool = pool.filter(e => e.stars === 1);
+    }
 
     if (roomType === 'boss') {
       const bossData = ENEMIES[zone.bossId];
@@ -380,7 +390,11 @@ export default function CombatScreen() {
         intent: randomPick(template.moves || []),
       });
 
-      if (battleRating === 1) {
+      if (floorNumber === 1) {
+        // Floor 1 is always exactly 1 common enemy to prevent gang-ups
+        const template = randomPick(pool);
+        if (template) taggedEnemies.push(makeCommon(template, 0));
+      } else if (battleRating === 1) {
         // 1★ — 80% chance 1 common, 20% chance 2 common
         const count = Math.random() < 0.80 ? 1 : 2;
         for (let i = 0; i < count; i++) {
@@ -1199,6 +1213,17 @@ export default function CombatScreen() {
                   <Text style={styles.enemyName} numberOfLines={1}>
                     {enemy.name}
                   </Text>
+                  <View style={{ flexDirection: 'row', marginBottom: 4, justifyContent: 'center' }}>
+                    {Array.from({ length: enemy.isBoss ? 5 : (enemy.stars || 1) }).map((_, i) => (
+                      <Text key={i} style={{ 
+                        color: enemy.isBoss ? '#F5CF4A' : '#A0AEC0', 
+                        fontSize: 10,
+                        textShadowColor: enemy.isBoss ? 'rgba(245, 207, 74, 0.5)' : 'transparent',
+                        textShadowOffset: { width: 0, height: 0 },
+                        textShadowRadius: enemy.isBoss ? 4 : 0
+                      }}>★</Text>
+                    ))}
+                  </View>
                   <View style={{ width: '100%' }}>
                     <ResourceBar variant="enemyHp" current={enemy.hp} max={enemy.maxHp} />
                   </View>

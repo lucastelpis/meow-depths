@@ -1,19 +1,32 @@
 /**
- * enemies.js — Meow Depths Enemy Bestiary
+ * enemies.js — v2 revised stats
  *
  * Every creature the player can encounter across the three dungeon zones.
  * Bosses carry `isBoss: true` and define `phaseChanges` for mid-fight events.
  */
 
+export const STAR_MULTIPLIERS = {
+  1: { hp: 1.0,  atk: 1.0  },
+  2: { hp: 1.2,  atk: 1.15 },
+  3: { hp: 1.4,  atk: 1.30 },
+  4: { hp: 1.6,  atk: 1.50 },
+  // 5★ is reserved for bosses only — bosses use their own fixed stats
+};
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Zone 1 — The Soggy Sewers (Black Crystals)
 // ─────────────────────────────────────────────────────────────────────────────
 
+// Zone 1 — skittery melee
 const sewer_rat = {
   id: 'sewer_rat',
   name: 'Sewer Rat',
-  hp: 20,
-  attack: 6,
+  stars: 1,
+  hp: 65,
+  attack: 5,
+  def: 0,
+  dodge: 0.10,
+  crit: 0.00,
   zone: 1,
   isBoss: false,
   isElite: false,
@@ -21,16 +34,21 @@ const sewer_rat = {
     { itemId: 'black_shard', chance: 0.6 },
   ],
   moves: [
-    { name: 'Gnaw', damage: 6 },
+    { name: 'Gnaw', damage: 5 },
   ],
   phaseChanges: [],
 };
 
+// Zone 1 — weak debuffer
 const slimeling = {
   id: 'slimeling',
   name: 'Slimeling',
-  hp: 28,
+  stars: 1,
+  hp: 75,
   attack: 4,
+  def: 0,
+  dodge: 0.00,
+  crit: 0.00,
   zone: 1,
   isBoss: false,
   isElite: false,
@@ -39,16 +57,21 @@ const slimeling = {
     { itemId: 'black_crystal_small', chance: 0.2 },
   ],
   moves: [
-    { name: 'Ooze Splash', damage: 4, effect: 'bleed', effectChance: 0.3 },
+    { name: 'Ooze Splash', damage: 4, effect: { type: "bleed", chance: 0.30, damage: 3, duration: 3 } },
   ],
   phaseChanges: [],
 };
 
+// Zone 1 — armored tank
 const cockroach_knight = {
   id: 'cockroach_knight',
   name: 'Cockroach Knight',
-  hp: 35,
-  attack: 8,
+  stars: 2,
+  hp: 90,
+  attack: 7,
+  def: 3,
+  dodge: 0.00,
+  crit: 0.00,
   zone: 1,
   isBoss: false,
   isElite: false,
@@ -56,16 +79,21 @@ const cockroach_knight = {
     { itemId: 'black_crystal_small', chance: 0.5 },
   ],
   moves: [
-    { name: 'Shell Bash', damage: 8 },
+    { name: 'Shell Bash', damage: 7 },
   ],
   phaseChanges: [],
 };
 
+// Zone 1 — debuff applier
 const plague_frog = {
   id: 'plague_frog',
   name: 'Plague Frog',
-  hp: 25,
+  stars: 1,
+  hp: 70,
   attack: 5,
+  def: 0,
+  dodge: 0.05,
+  crit: 0.00,
   zone: 1,
   isBoss: false,
   isElite: false,
@@ -74,17 +102,21 @@ const plague_frog = {
     { itemId: 'black_crystal_small', chance: 0.3 },
   ],
   moves: [
-    { name: 'Toxic Spit', damage: 5, effect: 'bleed', effectChance: 0.4 },
+    { name: 'Toxic Spit', damage: 5, effect: { type: "bleed", chance: 0.40, damage: 3, duration: 3 } },
   ],
   phaseChanges: [],
 };
 
-/** Boss — King Rat summons reinforcements at 50% HP */
+/** Zone 1 — Boss */
 const king_rat = {
   id: 'king_rat',
   name: 'King Rat',
-  hp: 120,
-  attack: 12,
+  stars: 5,
+  hp: 400,
+  attack: 18,
+  def: 5,
+  dodge: 0.00,
+  crit: 0.05,
   zone: 1,
   isBoss: true,
   isElite: false,
@@ -92,9 +124,14 @@ const king_rat = {
     { itemId: 'black_crystal_core', chance: 1.0 },
     { itemId: 'black_crystal_big', chance: 0.5 },
     { itemId: 'black_crystal_small', chance: 0.5 },
+    { itemId: 'gnarlcrown_shard', chance: 1.0 },
+    { itemId: 'black_shard_fire', chance: 1.0, count: 2 },
+    { itemId: 'black_shard_water', chance: 1.0, count: 2 },
+    { itemId: 'black_shard_earth', chance: 1.0, count: 2 },
+    { itemId: 'black_shard_wind', chance: 1.0, count: 2 },
   ],
   moves: [
-    { name: 'Gnaw', damage: 12 },
+    { name: 'Gnaw', damage: 18 },
   ],
   phaseChanges: [
     {
@@ -110,11 +147,16 @@ const king_rat = {
 // Zone 2 — The Twisted Garden (Green Crystals)
 // ─────────────────────────────────────────────────────────────────────────────
 
+// Zone 2 — fast attacker
 const thorn_sprite = {
   id: 'thorn_sprite',
   name: 'Thorn Sprite',
-  hp: 45,
-  attack: 14,
+  stars: 2,
+  hp: 130,
+  attack: 12,
+  def: 0,
+  dodge: 0.15,
+  crit: 0.00,
   zone: 2,
   isBoss: false,
   isElite: false,
@@ -122,16 +164,21 @@ const thorn_sprite = {
     { itemId: 'green_shard', chance: 0.6 },
   ],
   moves: [
-    { name: 'Thorn Jab', damage: 14 },
+    { name: 'Thorn Jab', damage: 12 },
   ],
   phaseChanges: [],
 };
 
+// Zone 2 — high DEF tank
 const giant_beetle = {
   id: 'giant_beetle',
   name: 'Giant Beetle',
-  hp: 65,
-  attack: 12,
+  stars: 2,
+  hp: 160,
+  attack: 10,
+  def: 6,
+  dodge: 0.00,
+  crit: 0.00,
   zone: 2,
   isBoss: false,
   isElite: false,
@@ -139,16 +186,21 @@ const giant_beetle = {
     { itemId: 'green_crystal_small', chance: 0.5 },
   ],
   moves: [
-    { name: 'Crush', damage: 12 },
+    { name: 'Crush', damage: 10 },
   ],
   phaseChanges: [],
 };
 
+// Zone 2 — ATK debuffer
 const mushroom_puffer = {
   id: 'mushroom_puffer',
   name: 'Mushroom Puffer',
-  hp: 40,
-  attack: 10,
+  stars: 1,
+  hp: 135,
+  attack: 9,
+  def: 0,
+  dodge: 0.00,
+  crit: 0.00,
   zone: 2,
   isBoss: false,
   isElite: false,
@@ -157,16 +209,21 @@ const mushroom_puffer = {
     { itemId: 'green_crystal_small', chance: 0.2 },
   ],
   moves: [
-    { name: 'Spore Cloud', damage: 10, effect: 'random_debuff', effectChance: 0.5 },
+    { name: 'Spore Cloud', damage: 9, effect: { type: "atk_reduce", chance: 0.50, value: 0.20, duration: 2 } },
   ],
   phaseChanges: [],
 };
 
+// Zone 2 — ambush predator
 const vine_lurker = {
   id: 'vine_lurker',
   name: 'Vine Lurker',
-  hp: 55,
-  attack: 16,
+  stars: 2,
+  hp: 150,
+  attack: 13,
+  def: 2,
+  dodge: 0.00,
+  crit: 0.10,
   zone: 2,
   isBoss: false,
   isElite: false,
@@ -175,17 +232,21 @@ const vine_lurker = {
     { itemId: 'green_crystal_small', chance: 0.3 },
   ],
   moves: [
-    { name: 'Constrict', damage: 16, effect: 'dodge_reduce', effectChance: 1.0 },
+    { name: 'Constrict', damage: 13, effect: { type: "dodge_reduce", chance: 1.0, value: 0.15, duration: 2 } },
   ],
   phaseChanges: [],
 };
 
-/** Boss — Rootmother entangles the player at 60% HP, forcing a skipped turn */
+/** Zone 2 — Boss */
 const rootmother = {
   id: 'rootmother',
   name: 'Rootmother',
-  hp: 280,
-  attack: 20,
+  stars: 5,
+  hp: 600,
+  attack: 25,
+  def: 8,
+  dodge: 0.00,
+  crit: 0.05,
   zone: 2,
   isBoss: true,
   isElite: false,
@@ -193,9 +254,14 @@ const rootmother = {
     { itemId: 'green_crystal_core', chance: 1.0 },
     { itemId: 'green_crystal_big', chance: 0.5 },
     { itemId: 'green_crystal_small', chance: 0.5 },
+    { itemId: 'rootmother_heart', chance: 1.0 },
+    { itemId: 'green_crystal_fire', chance: 1.0, count: 2 },
+    { itemId: 'green_crystal_water', chance: 1.0, count: 2 },
+    { itemId: 'green_crystal_earth', chance: 1.0, count: 2 },
+    { itemId: 'green_crystal_wind', chance: 1.0, count: 2 },
   ],
   moves: [
-    { name: 'Root Slam', damage: 20 },
+    { name: 'Root Slam', damage: 25 },
   ],
   phaseChanges: [
     {
@@ -210,11 +276,16 @@ const rootmother = {
 // Zone 3 — The Sunken Docks (Yellow Crystals)
 // ─────────────────────────────────────────────────────────────────────────────
 
+// Zone 3 — armored melee
 const barnacle_crab = {
   id: 'barnacle_crab',
   name: 'Barnacle Crab',
-  hp: 80,
-  attack: 18,
+  stars: 3,
+  hp: 240,
+  attack: 16,
+  def: 5,
+  dodge: 0.00,
+  crit: 0.00,
   zone: 3,
   isBoss: false,
   isElite: false,
@@ -222,16 +293,21 @@ const barnacle_crab = {
     { itemId: 'yellow_shard', chance: 0.6 },
   ],
   moves: [
-    { name: 'Claw Snap', damage: 18 },
+    { name: 'Claw Snap', damage: 16 },
   ],
   phaseChanges: [],
 };
 
+// Zone 3 — unpredictable mage
 const sea_witch_eel = {
   id: 'sea_witch_eel',
   name: 'Sea Witch Eel',
-  hp: 65,
-  attack: 22,
+  stars: 3,
+  hp: 200,
+  attack: 20,
+  def: 2,
+  dodge: 0.10,
+  crit: 0.15,
   zone: 3,
   isBoss: false,
   isElite: false,
@@ -239,16 +315,21 @@ const sea_witch_eel = {
     { itemId: 'yellow_crystal_small', chance: 0.5 },
   ],
   moves: [
-    { name: 'Hex', damage: 22, effect: 'crit_reduce', effectChance: 1.0 },
+    { name: 'Hex', damage: 20, effect: { type: "crit_reduce", chance: 1.0, value: 0.15, duration: 2 } },
   ],
   phaseChanges: [],
 };
 
+// Zone 3 — ethereal stunner
 const drowned_sailor = {
   id: 'drowned_sailor',
   name: 'Drowned Sailor',
-  hp: 70,
-  attack: 20,
+  stars: 3,
+  hp: 220,
+  attack: 17,
+  def: 3,
+  dodge: 0.05,
+  crit: 0.00,
   zone: 3,
   isBoss: false,
   isElite: false,
@@ -257,17 +338,24 @@ const drowned_sailor = {
     { itemId: 'yellow_crystal_small', chance: 0.3 },
   ],
   moves: [
-    { name: 'Haunt', damage: 20, effect: 'stun', effectChance: 0.3 },
+    { name: 'Haunt', damage: 17, effect: { type: "stun", chance: 0.30 } },
   ],
   phaseChanges: [],
 };
 
-/** The Pufferfish Bomb self-destructs on its only move — high risk, high reward */
+/** Zone 3 — The Pufferfish Bomb gets ONE attack total. When it takes its turn,
+    it deals 25 damage to the player AND immediately dies (removed from combat).
+    Killing it before it acts prevents the self-destruct damage entirely.
+    This creates a tactical decision: kill it first or let it self-destruct. */
 const pufferfish_bomb = {
   id: 'pufferfish_bomb',
   name: 'Pufferfish Bomb',
-  hp: 50,
-  attack: 28,
+  stars: 3,
+  hp: 180,
+  attack: 25,
+  def: 0,
+  dodge: 0.00,
+  crit: 0.00,
   zone: 3,
   isBoss: false,
   isElite: false,
@@ -276,20 +364,21 @@ const pufferfish_bomb = {
     { itemId: 'yellow_crystal_small', chance: 0.2 },
   ],
   moves: [
-    { name: 'Explode', damage: 28, effect: 'self_destruct', effectChance: 1.0 },
+    { name: 'Explode', damage: 25, effect: { type: "self_destruct", chance: 1.0 } },
   ],
   phaseChanges: [],
 };
 
-/**
- * Boss — Captain Moray deploys an anchor.
- * While the anchor is alive (80 HP), the captain reforms at 50 HP when killed.
- */
+/** Zone 3 — Boss */
 const captain_moray = {
   id: 'captain_moray',
   name: 'Captain Moray',
-  hp: 400,
-  attack: 25,
+  stars: 5,
+  hp: 900,
+  attack: 30,
+  def: 10,
+  dodge: 0.00,
+  crit: 0.08,
   zone: 3,
   isBoss: true,
   isElite: false,
@@ -297,14 +386,19 @@ const captain_moray = {
     { itemId: 'yellow_crystal_core', chance: 1.0 },
     { itemId: 'yellow_crystal_big', chance: 0.5 },
     { itemId: 'yellow_crystal_small', chance: 0.5 },
+    { itemId: 'morays_fang', chance: 1.0 },
+    { itemId: 'yellow_crystal_fire', chance: 1.0, count: 2 },
+    { itemId: 'yellow_crystal_water', chance: 1.0, count: 2 },
+    { itemId: 'yellow_crystal_earth', chance: 1.0, count: 2 },
+    { itemId: 'yellow_crystal_wind', chance: 1.0, count: 2 },
   ],
   moves: [
-    { name: 'Cutlass Sweep', damage: 25 },
+    { name: 'Cutlass Sweep', damage: 30 },
   ],
   phaseChanges: [
     {
       action: 'anchor',
-      anchorHp: 80,
+      anchorHp: 200,
       description: 'While anchor alive, reforms at 50 HP when killed',
     },
   ],
@@ -315,19 +409,16 @@ const captain_moray = {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const ENEMIES = {
-  // Zone 1
   sewer_rat,
   slimeling,
   cockroach_knight,
   plague_frog,
   king_rat,
-  // Zone 2
   thorn_sprite,
   giant_beetle,
   mushroom_puffer,
   vine_lurker,
   rootmother,
-  // Zone 3
   barnacle_crab,
   sea_witch_eel,
   drowned_sailor,

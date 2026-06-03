@@ -59,7 +59,7 @@ export function calculateDrops(enemy) {
     const roll = Math.random(); // 0.0 – 1.0
     if (roll < drop.chance) {
       // The player wins this material!
-      materials.push({ itemId: drop.itemId, quantity: 1 });
+      materials.push({ itemId: drop.itemId, quantity: drop.count || 1 });
     }
     // Otherwise the material doesn't drop this time — better luck next fight.
   }

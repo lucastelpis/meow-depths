@@ -80,8 +80,8 @@ const initialState = {
 
     // -- Equipment & Inventory -----------------------------------------------
     gear: {
-      weapon:  null,          // equipped weapon gear ID (or null)
-      armor:   null,          // equipped armor gear ID
+      weapon:  'toy_sword',          // equipped weapon gear ID (or null)
+      armor:   'cardboard_armor',          // equipped armor gear ID
       trinket: null,          // equipped trinket gear ID
     },
     inventory: {
@@ -89,7 +89,7 @@ const initialState = {
       consumables: [          // array of { id, quantity }
         { id: 'health_potion', quantity: 3 }, // start with 3 potions
       ],
-      craftedGear: [],        // array of gear IDs the hero has crafted
+      craftedGear: ['toy_sword', 'cardboard_armor'],        // array of gear IDs the hero has crafted
     },
   },
 
@@ -1025,6 +1025,20 @@ export function GameProvider({ children }) {
         // Merge saved state with initialState to handle any new fields
         // that were added after the save was created (forward-compatibility).
         const merged = deepMerge(initialState, savedState);
+        
+        // Ensure starter gear is present in inventory.craftedGear if equipped
+        if (merged.hero?.inventory) {
+          if (!merged.hero.inventory.craftedGear) {
+            merged.hero.inventory.craftedGear = [];
+          }
+          if (merged.hero.gear?.weapon === 'toy_sword' && !merged.hero.inventory.craftedGear.includes('toy_sword')) {
+            merged.hero.inventory.craftedGear.push('toy_sword');
+          }
+          if (merged.hero.gear?.armor === 'cardboard_armor' && !merged.hero.inventory.craftedGear.includes('cardboard_armor')) {
+            merged.hero.inventory.craftedGear.push('cardboard_armor');
+          }
+        }
+
         dispatch({ type: 'SET_STATE', payload: merged });
       }
       // Mark loading as complete so auto-save can begin

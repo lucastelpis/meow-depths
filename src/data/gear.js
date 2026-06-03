@@ -61,6 +61,28 @@ export const SET_BONUSES = {
 // Zone 1 Gear — The Soggy Sewers
 // ─────────────────────────────────────────────────────────────────────────────
 
+const toy_sword = {
+  id: 'toy_sword',
+  name: 'Toy Sword',
+  type: 'weapon',
+  zone: 1,
+  materials: [],
+  stats: { attack: 3 },
+  setId: null,
+  specialEffect: null,
+};
+
+const cardboard_armor = {
+  id: 'cardboard_armor',
+  name: 'Cardboard Armor',
+  type: 'armor',
+  zone: 1,
+  materials: [],
+  stats: { maxHp: 10, defence: 1 },
+  setId: null,
+  specialEffect: null,
+};
+
 const sewer_shiv = {
   id: 'sewer_shiv',
   name: 'Sewer Shiv',
@@ -364,6 +386,9 @@ export const CONSUMABLES = [
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const GEAR = {
+  // Starter gear
+  toy_sword,
+  cardboard_armor,
   // Zone 1
   sewer_shiv,
   rat_hide_vest,

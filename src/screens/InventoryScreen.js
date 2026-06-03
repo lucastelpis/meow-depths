@@ -360,7 +360,7 @@ export default function InventoryScreen() {
                   <Text style={styles.slotEmpty}>Empty</Text>
                 ) : (
                   <>
-                    <Text style={styles.slotName} numberOfLines={1}>{gearDef.name}</Text>
+                    <Text style={styles.slotName} numberOfLines={2}>{gearDef.name}</Text>
                     <Text style={styles.slotStats} numberOfLines={2}>{statSummary(gearDef)}</Text>
                     <TouchableOpacity
                       style={styles.unequipBtn}

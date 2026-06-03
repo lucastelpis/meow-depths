@@ -83,20 +83,35 @@ export function calculateDamage(attacker, target, options = {}) {
   // -- Step 1: Base damage starts from the attacker's attack stat -----------
   let baseDamage = attacker.attack;
 
+  // Apply atk_reduce debuff on attacker
+  const atkReduce = attacker.effects?.find(e => e.type === 'atk_reduce');
+  if (atkReduce && atkReduce.value) {
+    baseDamage = baseDamage * (1 - atkReduce.value);
+  }
+
   // If a skill multiplier was provided (e.g. 1.6× for Power Slash), apply it
   if (options.multiplier) {
     baseDamage = Math.floor(baseDamage * options.multiplier);
+  } else {
+    baseDamage = Math.floor(baseDamage);
   }
 
   // -- Step 2: Critical hit check ------------------------------------------
   // A crit happens if we roll below the attacker's critChance, or if we
   // explicitly force a crit (e.g. attacking from stealth).
   const critRoll = Math.random();                       // 0.0 – 1.0
-  const critChance = attacker.critChance || 0.05;       // default 5 %
+  let critChance = attacker.critChance || 0.05;       // default 5 %
+  
+  // Apply crit_reduce debuff on attacker
+  const critReduce = attacker.effects?.find(e => e.type === 'crit_reduce');
+  if (critReduce && critReduce.value) {
+    critChance = Math.max(0, critChance - critReduce.value);
+  }
+
   const isCrit = options.forceCrit || critRoll < critChance;
 
   if (isCrit) {
-    baseDamage = Math.floor(baseDamage * CRIT_MULTIPLIER);
+    baseDamage = Math.floor(baseDamage * (options.critMultiplier || CRIT_MULTIPLIER));
   }
 
   // -- Step 2b: Stealth bonus -----------------------------------------------
@@ -107,7 +122,7 @@ export function calculateDamage(attacker, target, options = {}) {
 
   // -- Step 3: Subtract target's defence ------------------------------------
   // Defence reduces damage 1-for-1, but damage can never go below 1.
-  let finalDamage = Math.max(1, baseDamage - (target.defence || 0));
+  let finalDamage = Math.max(1, baseDamage - (target.defence || target.def || 0));
 
   // -- Step 4: Guard reduction ----------------------------------------------
   // If the target is currently guarding, reduce damage by the guard %.
@@ -159,7 +174,12 @@ export function checkDodge(target) {
  * @returns {boolean}
  */
 export function checkHeroDodge(heroState) {
-  return checkDodge(heroState);
+  let dodgeChance = heroState.dodge || 0;
+  const dodgeReduce = heroState.effects?.find(e => e.type === 'dodge_reduce');
+  if (dodgeReduce && dodgeReduce.value) {
+    dodgeChance = Math.max(0, dodgeChance - dodgeReduce.value);
+  }
+  return Math.random() < dodgeChance;
 }
 
 // ============================================================================
@@ -603,12 +623,13 @@ export function executeEnemyTurn(enemy, enemyState, target, targetState) {
   // correctly (crit, defence reduction, guard) without an extra multiplier.
   const enemyAsAttacker = {
     attack: move.damage,
-    critChance: 0.05, // enemies have a fixed 5 % crit chance
+    critChance: enemy.crit || 0,
+    effects: enemyState.effects,
   };
 
   // Check if hero has an active guard
   const heroGuard = targetState.effects?.find(e => e.type === 'guard');
-  const damageOptions = {};
+  const damageOptions = { critMultiplier: 1.5 };
   if (heroGuard) {
     damageOptions.guardAmount = heroGuard.reduction || 0;
   }
@@ -618,25 +639,48 @@ export function executeEnemyTurn(enemy, enemyState, target, targetState) {
   // -- Roll for status effects (bleed, stun) --------------------------------
   const appliedEffects = [];
 
-  if (move.effect && move.effect !== 'self_destruct' && move.effectChance > 0) {
-    if (Math.random() < move.effectChance) {
-      if (move.effect === 'bleed') {
+  const effectDef = move.effect;
+  const isSelfDestruct = effectDef === 'self_destruct' || effectDef?.type === 'self_destruct';
+
+  if (effectDef && !isSelfDestruct) {
+    const effectChance = typeof effectDef === 'object' ? effectDef.chance : (move.effectChance || 0);
+
+    if (effectChance > 0 && Math.random() < effectChance) {
+      if (effectDef.type === 'bleed' || effectDef === 'bleed') {
         appliedEffects.push({
           type: 'bleed',
-          damage: Math.max(2, Math.floor(enemy.attack * 0.25)),  // 25 % of enemy attack
-          duration: 3,  // ticks for 3 turns
+          damage: effectDef.damage || Math.max(2, Math.floor(enemy.attack * 0.25)),
+          duration: effectDef.duration || 3,
         });
-      } else if (move.effect === 'stun') {
+      } else if (effectDef.type === 'stun' || effectDef === 'stun') {
         appliedEffects.push({
           type: 'stun',
-          duration: 1,
+          duration: effectDef.duration || 1,
+        });
+      } else if (effectDef.type === 'atk_reduce') {
+        appliedEffects.push({
+          type: 'atk_reduce',
+          value: effectDef.value,
+          duration: effectDef.duration,
+        });
+      } else if (effectDef.type === 'dodge_reduce') {
+        appliedEffects.push({
+          type: 'dodge_reduce',
+          value: effectDef.value,
+          duration: effectDef.duration,
+        });
+      } else if (effectDef.type === 'crit_reduce') {
+        appliedEffects.push({
+          type: 'crit_reduce',
+          value: effectDef.value,
+          duration: effectDef.duration,
         });
       }
     }
   }
 
   // -- Self-destruct (Pufferfish) -------------------------------------------
-  const selfDestruct = move.effect === 'self_destruct';
+  const selfDestruct = isSelfDestruct;
 
   // -- Build log ------------------------------------------------------------
   let log = `${enemy.name} uses ${move.name} for ${dmgResult.damage} damage`;
@@ -740,6 +784,22 @@ export function processStatusEffects(entityState) {
         }
         break;
 
+      case 'atk_reduce':
+      case 'dodge_reduce':
+      case 'crit_reduce':
+      case 'debuff_attack':
+        effect.duration -= 1;
+        if (effect.duration <= 0) {
+          const names = {
+            atk_reduce: 'Attack debuff',
+            dodge_reduce: 'Dodge debuff',
+            crit_reduce: 'Crit debuff',
+            debuff_attack: 'Attack debuff'
+          };
+          logParts.push(`${names[effect.type]} fades`);
+        }
+        break;
+
       default:
         // Unknown effect — just decrement so it eventually expires
         effect.duration -= 1;
@@ -800,7 +860,13 @@ export function generateEncounter(zone, floorNumber, totalFloors) {
   // -- Normal floor: roll for encounter type --------------------------------
   const roll = Math.random();
   // zone.enemies is an array of ID strings — resolve them to enemy objects
-  const pool = zone.enemies.map(id => ENEMIES[id]).filter(Boolean);
+  let pool = zone.enemies.map(id => ENEMIES[id]).filter(Boolean);
+
+  // Floor 1 spawn adjustment: always spawn a single common enemy to avoid gang-ups on naked players
+  if (floorNumber === 1) {
+    pool = pool.filter(e => e.stars === 1);
+    return [makeCommonEnemy(randomPick(pool))];
+  }
 
   if (roll < ENCOUNTER_CHANCES.twoEnemies) {
     // 60 % — TWO random common enemies
