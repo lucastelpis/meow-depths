@@ -72,6 +72,9 @@ const initialState = {
     gold: 100,                // start with some gold for first potions
     skillPoints: 0,           // earned 1 per level-up, spent on skills
     statPoints: 0,            // 3 stat points per level-up, allocated manually
+    strength: 10,             // core attribute
+    agility: 10,              // core attribute
+    vitality: 10,             // core attribute
     unlockedSkills: [],       // array of skill IDs the hero has learned
     equippedSkills: [null, null], // two active skill slots for combat
 
@@ -389,6 +392,9 @@ function gameReducer(state, action) {
             defence: state.hero.defence,
             skillPoints: state.hero.skillPoints,
             statPoints: state.hero.statPoints || 0,
+            strength: state.hero.strength || 10,
+            agility: state.hero.agility || 10,
+            vitality: state.hero.vitality || 10,
           },
           runBuffs: {
             attackBonus: 0,
@@ -570,6 +576,9 @@ function gameReducer(state, action) {
             defence: state.currentRun.heroBackup.defence,
             skillPoints: state.currentRun.heroBackup.skillPoints,
             statPoints: state.currentRun.heroBackup.statPoints || 0,
+            strength: state.currentRun.heroBackup.strength || 10,
+            agility: state.currentRun.heroBackup.agility || 10,
+            vitality: state.currentRun.heroBackup.vitality || 10,
           };
         }
       }
@@ -922,27 +931,40 @@ function gameReducer(state, action) {
     }
 
     // -----------------------------------------------------------------------
-    // ALLOCATE_STAT_POINTS — manually allocate stat points to HP, ATK, DEF
-    // Payload: { maxHpInc: number, attackInc: number, defenceInc: number }
+    // ALLOCATE_STAT_POINTS — manually allocate stat points to STR, AGI, VIT
+    // Payload: { strInc: number, agiInc: number, vitInc: number }
     // -----------------------------------------------------------------------
     case 'ALLOCATE_STAT_POINTS': {
-      const { maxHpInc = 0, attackInc = 0, defenceInc = 0 } = action.payload;
-      const totalPoints = maxHpInc + attackInc + defenceInc;
+      const { strInc = 0, agiInc = 0, vitInc = 0 } = action.payload;
+      const totalPoints = strInc + agiInc + vitInc;
       if (totalPoints <= 0 || state.hero.statPoints < totalPoints) {
         return state;
       }
-      const newMaxHp = state.hero.maxHp + (maxHpInc * 5);
-      const newAttack = state.hero.attack + (attackInc * 1);
-      const newDefence = state.hero.defence + (defenceInc * 1);
+      const newStr = (state.hero.strength || 10) + strInc;
+      const newAgi = (state.hero.agility || 10) + agiInc;
+      const newVit = (state.hero.vitality || 10) + vitInc;
+
+      const newMaxHp = state.hero.maxHp + (vitInc * 3);
+      const newAttack = state.hero.attack + (strInc * 1);
+      const newDefence = state.hero.defence + (vitInc * 1);
+      const newCritChance = state.hero.critChance + (agiInc * 0.005);
+      const newDodge = state.hero.dodge + (agiInc * 0.005);
+
       const newStatPoints = state.hero.statPoints - totalPoints;
-      const newHp = Math.min(newMaxHp, state.hero.hp + (maxHpInc * 5));
+      const newHp = Math.min(newMaxHp, state.hero.hp + (vitInc * 3));
+
       return {
         ...state,
         hero: {
           ...state.hero,
+          strength: newStr,
+          agility: newAgi,
+          vitality: newVit,
           maxHp: newMaxHp,
           attack: newAttack,
           defence: newDefence,
+          critChance: newCritChance,
+          dodge: newDodge,
           statPoints: newStatPoints,
           hp: newHp,
         },

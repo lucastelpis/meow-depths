@@ -52,57 +52,65 @@ export default function CampScreen({ navigation }) {
 
   // ── State for Stat Allocation Modal ───────────────────────────────────────
   const [showStatModal, setShowStatModal] = React.useState(false);
-  const [tempHpAlloc, setTempHpAlloc] = React.useState(0);
-  const [tempAttackAlloc, setTempAttackAlloc] = React.useState(0);
-  const [tempDefenceAlloc, setTempDefenceAlloc] = React.useState(0);
+  const [tempStrAlloc, setTempStrAlloc] = React.useState(0);
+  const [tempAgiAlloc, setTempAgiAlloc] = React.useState(0);
+  const [tempVitAlloc, setTempVitAlloc] = React.useState(0);
 
-  const remainingPoints = (hero.statPoints || 0) - (tempHpAlloc + tempAttackAlloc + tempDefenceAlloc);
-  const previewMaxHp = hero.maxHp + tempHpAlloc * 5;
-  const previewAttack = hero.attack + tempAttackAlloc * 1;
-  const previewDefence = hero.defence + tempDefenceAlloc * 1;
+  const remainingPoints = (hero.statPoints || 0) - (tempStrAlloc + tempAgiAlloc + tempVitAlloc);
+  const previewStr = (hero.strength || 10) + tempStrAlloc;
+  const previewAgi = (hero.agility || 10) + tempAgiAlloc;
+  const previewVit = (hero.vitality || 10) + tempVitAlloc;
+
+  const previewMaxHp = hero.maxHp + tempVitAlloc * 3;
+  const previewAttack = hero.attack + tempStrAlloc * 1;
+  const previewDefence = hero.defence + tempVitAlloc * 1;
+  const previewCritChance = hero.critChance + tempAgiAlloc * 0.005;
+  const previewDodge = hero.dodge + tempAgiAlloc * 0.005;
+
+  const showControls = (hero.statPoints || 0) > 0;
 
   const adjustStat = (statType, amount) => {
-    if (statType === 'hp') {
+    if (statType === 'str') {
       if (amount > 0 && remainingPoints > 0) {
-        setTempHpAlloc(prev => prev + 1);
-      } else if (amount < 0 && tempHpAlloc > 0) {
-        setTempHpAlloc(prev => prev - 1);
+        setTempStrAlloc(prev => prev + 1);
+      } else if (amount < 0 && tempStrAlloc > 0) {
+        setTempStrAlloc(prev => prev - 1);
       }
-    } else if (statType === 'attack') {
+    } else if (statType === 'agi') {
       if (amount > 0 && remainingPoints > 0) {
-        setTempAttackAlloc(prev => prev + 1);
-      } else if (amount < 0 && tempAttackAlloc > 0) {
-        setTempAttackAlloc(prev => prev - 1);
+        setTempAgiAlloc(prev => prev + 1);
+      } else if (amount < 0 && tempAgiAlloc > 0) {
+        setTempAgiAlloc(prev => prev - 1);
       }
-    } else if (statType === 'defence') {
+    } else if (statType === 'vit') {
       if (amount > 0 && remainingPoints > 0) {
-        setTempDefenceAlloc(prev => prev + 1);
-      } else if (amount < 0 && tempDefenceAlloc > 0) {
-        setTempDefenceAlloc(prev => prev - 1);
+        setTempVitAlloc(prev => prev + 1);
+      } else if (amount < 0 && tempVitAlloc > 0) {
+        setTempVitAlloc(prev => prev - 1);
       }
     }
   };
 
   const handleConfirmAllocation = () => {
-    if (tempHpAlloc + tempAttackAlloc + tempDefenceAlloc === 0) {
+    if (tempStrAlloc + tempAgiAlloc + tempVitAlloc === 0) {
       setShowStatModal(false);
       return;
     }
     dispatch({
       type: 'ALLOCATE_STAT_POINTS',
       payload: {
-        maxHpInc: tempHpAlloc,
-        attackInc: tempAttackAlloc,
-        defenceInc: tempDefenceAlloc,
+        strInc: tempStrAlloc,
+        agiInc: tempAgiAlloc,
+        vitInc: tempVitAlloc,
       },
     });
     setShowStatModal(false);
   };
 
   const handleOpenStatModal = () => {
-    setTempHpAlloc(0);
-    setTempAttackAlloc(0);
-    setTempDefenceAlloc(0);
+    setTempStrAlloc(0);
+    setTempAgiAlloc(0);
+    setTempVitAlloc(0);
     setShowStatModal(true);
   };
 
@@ -516,117 +524,181 @@ export default function CampScreen({ navigation }) {
                 </Text>
               </View>
 
-              {/* STAT ROWS */}
-              <View style={styles.statRowsContainer}>
-                {/* Max HP Row */}
-                <View style={styles.statRow}>
-                  <View style={styles.statInfoCol}>
-                    <Text style={styles.statLabelText}>❤️ Max HP</Text>
-                    <Text style={styles.statSubText}>+5 per point</Text>
-                  </View>
-                  <View style={styles.statValueCol}>
-                    <Text style={styles.statValueText}>
-                      {hero.maxHp}
-                      {tempHpAlloc > 0 && (
-                        <Text style={styles.statPreviewText}> ➔ {previewMaxHp} (+{tempHpAlloc * 5})</Text>
-                      )}
-                    </Text>
-                  </View>
-                  {hero.statPoints > 0 && (
-                    <View style={styles.statControlsCol}>
+              {/* CORE ATTRIBUTES GRID */}
+              <View style={styles.attributeGrid}>
+                {/* Strength Card */}
+                <View style={[styles.attributeCard, { borderColor: 'rgba(212, 167, 84, 0.25)' }]}>
+                  <Text style={[styles.attributeLabel, { color: '#F9D99A' }]}>💪 STR</Text>
+                  <Text style={styles.attributeValue}>
+                    {hero.strength || 10}
+                    {tempStrAlloc > 0 && <Text style={styles.attributeValueHighlight}> ➔ {previewStr}</Text>}
+                  </Text>
+                  
+                  {showControls && (
+                    <View style={styles.attributeControls}>
                       <TouchableOpacity
-                        style={[styles.controlBtn, tempHpAlloc === 0 && styles.controlBtnDisabled]}
-                        disabled={tempHpAlloc === 0}
-                        onPress={() => adjustStat('hp', -1)}
+                        style={[styles.attrControlBtn, tempStrAlloc === 0 && styles.attrControlBtnDisabled]}
+                        disabled={tempStrAlloc === 0}
+                        onPress={() => adjustStat('str', -1)}
                       >
-                        <Text style={styles.controlBtnText}>-</Text>
+                        <Text style={styles.attrControlBtnText}>-</Text>
                       </TouchableOpacity>
-                      <View style={styles.allocatedPill}>
-                        <Text style={styles.allocatedPillText}>{tempHpAlloc}</Text>
-                      </View>
+                      <Text style={styles.attrAllocatedText}>{tempStrAlloc}</Text>
                       <TouchableOpacity
-                        style={[styles.controlBtn, remainingPoints === 0 && styles.controlBtnDisabled]}
+                        style={[styles.attrControlBtn, remainingPoints === 0 && styles.attrControlBtnDisabled]}
                         disabled={remainingPoints === 0}
-                        onPress={() => adjustStat('hp', 1)}
+                        onPress={() => adjustStat('str', 1)}
                       >
-                        <Text style={styles.controlBtnText}>+</Text>
+                        <Text style={styles.attrControlBtnText}>+</Text>
                       </TouchableOpacity>
                     </View>
                   )}
+                  <Text style={styles.attributeSubLabel}>+1 ATK/pt</Text>
+                </View>
+
+                {/* Agility Card */}
+                <View style={[styles.attributeCard, { borderColor: 'rgba(6, 182, 212, 0.25)' }]}>
+                  <Text style={[styles.attributeLabel, { color: '#06B6D4' }]}>🏃 AGI</Text>
+                  <Text style={styles.attributeValue}>
+                    {hero.agility || 10}
+                    {tempAgiAlloc > 0 && <Text style={styles.attributeValueHighlight}> ➔ {previewAgi}</Text>}
+                  </Text>
+                  
+                  {showControls && (
+                    <View style={styles.attributeControls}>
+                      <TouchableOpacity
+                        style={[styles.attrControlBtn, tempAgiAlloc === 0 && styles.attrControlBtnDisabled]}
+                        disabled={tempAgiAlloc === 0}
+                        onPress={() => adjustStat('agi', -1)}
+                      >
+                        <Text style={styles.attrControlBtnText}>-</Text>
+                      </TouchableOpacity>
+                      <Text style={styles.attrAllocatedText}>{tempAgiAlloc}</Text>
+                      <TouchableOpacity
+                        style={[styles.attrControlBtn, remainingPoints === 0 && styles.attrControlBtnDisabled]}
+                        disabled={remainingPoints === 0}
+                        onPress={() => adjustStat('agi', 1)}
+                      >
+                        <Text style={styles.attrControlBtnText}>+</Text>
+                      </TouchableOpacity>
+                    </View>
+                  )}
+                  <Text style={styles.attributeSubLabel}>+0.5% CRT/DDG</Text>
+                </View>
+
+                {/* Vitality Card */}
+                <View style={[styles.attributeCard, { borderColor: 'rgba(92, 196, 137, 0.25)' }]}>
+                  <Text style={[styles.attributeLabel, { color: '#5CC489' }]}>💚 VIT</Text>
+                  <Text style={styles.attributeValue}>
+                    {hero.vitality || 10}
+                    {tempVitAlloc > 0 && <Text style={styles.attributeValueHighlight}> ➔ {previewVit}</Text>}
+                  </Text>
+                  
+                  {showControls && (
+                    <View style={styles.attributeControls}>
+                      <TouchableOpacity
+                        style={[styles.attrControlBtn, tempVitAlloc === 0 && styles.attrControlBtnDisabled]}
+                        disabled={tempVitAlloc === 0}
+                        onPress={() => adjustStat('vit', -1)}
+                      >
+                        <Text style={styles.attrControlBtnText}>-</Text>
+                      </TouchableOpacity>
+                      <Text style={styles.attrAllocatedText}>{tempVitAlloc}</Text>
+                      <TouchableOpacity
+                        style={[styles.attrControlBtn, remainingPoints === 0 && styles.attrControlBtnDisabled]}
+                        disabled={remainingPoints === 0}
+                        onPress={() => adjustStat('vit', 1)}
+                      >
+                        <Text style={styles.attrControlBtnText}>+</Text>
+                      </TouchableOpacity>
+                    </View>
+                  )}
+                  <Text style={styles.attributeSubLabel}>+3 HP, +1 DEF</Text>
+                </View>
+              </View>
+
+              {/* SECONDARY STAT BREAKDOWN TABLE */}
+              <View style={styles.breakdownTable}>
+                {/* Table Headers */}
+                <View style={styles.tableHeaderRow}>
+                  <Text style={[styles.headerLabel, styles.headerColStat]}>Stat Breakdown</Text>
+                  <Text style={[styles.headerLabel, styles.headerColCurrent]}>Current</Text>
+                  <Text style={[styles.headerLabel, styles.headerColNew]}>New</Text>
                 </View>
 
                 {/* Attack Row */}
-                <View style={styles.statRow}>
-                  <View style={styles.statInfoCol}>
-                    <Text style={styles.statLabelText}>⚔️ Attack</Text>
-                    <Text style={styles.statSubText}>+1 per point</Text>
+                <View style={styles.tableRow}>
+                  <View style={styles.colStat}>
+                    <Text style={styles.statEmoji}>⚔️</Text>
+                    <Text style={styles.statLabel}>Attack</Text>
                   </View>
-                  <View style={styles.statValueCol}>
-                    <Text style={styles.statValueText}>
-                      {hero.attack}
-                      {tempAttackAlloc > 0 && (
-                        <Text style={styles.statPreviewText}> ➔ {previewAttack} (+{tempAttackAlloc})</Text>
-                      )}
-                    </Text>
-                  </View>
-                  {hero.statPoints > 0 && (
-                    <View style={styles.statControlsCol}>
-                      <TouchableOpacity
-                        style={[styles.controlBtn, tempAttackAlloc === 0 && styles.controlBtnDisabled]}
-                        disabled={tempAttackAlloc === 0}
-                        onPress={() => adjustStat('attack', -1)}
-                      >
-                        <Text style={styles.controlBtnText}>-</Text>
-                      </TouchableOpacity>
-                      <View style={styles.allocatedPill}>
-                        <Text style={styles.allocatedPillText}>{tempAttackAlloc}</Text>
-                      </View>
-                      <TouchableOpacity
-                        style={[styles.controlBtn, remainingPoints === 0 && styles.controlBtnDisabled]}
-                        disabled={remainingPoints === 0}
-                        onPress={() => adjustStat('attack', 1)}
-                      >
-                        <Text style={styles.controlBtnText}>+</Text>
-                      </TouchableOpacity>
-                    </View>
-                  )}
+                  <Text style={styles.colCurrent}>{hero.attack}</Text>
+                  <Text style={[
+                    styles.colNew, 
+                    tempStrAlloc > 0 ? styles.colNewHighlighted : styles.colNewMuted
+                  ]}>
+                    {tempStrAlloc > 0 ? previewAttack : '—'}
+                  </Text>
                 </View>
 
-                {/* Defence Row */}
-                <View style={styles.statRow}>
-                  <View style={styles.statInfoCol}>
-                    <Text style={styles.statLabelText}>🛡️ Defence</Text>
-                    <Text style={styles.statSubText}>+1 per point</Text>
+                {/* Defense Row */}
+                <View style={styles.tableRow}>
+                  <View style={styles.colStat}>
+                    <Text style={styles.statEmoji}>🛡️</Text>
+                    <Text style={styles.statLabel}>Defense</Text>
                   </View>
-                  <View style={styles.statValueCol}>
-                    <Text style={styles.statValueText}>
-                      {hero.defence}
-                      {tempDefenceAlloc > 0 && (
-                        <Text style={styles.statPreviewText}> ➔ {previewDefence} (+{tempDefenceAlloc})</Text>
-                      )}
-                    </Text>
+                  <Text style={styles.colCurrent}>{hero.defence}</Text>
+                  <Text style={[
+                    styles.colNew, 
+                    tempVitAlloc > 0 ? styles.colNewHighlighted : styles.colNewMuted
+                  ]}>
+                    {tempVitAlloc > 0 ? previewDefence : '—'}
+                  </Text>
+                </View>
+
+                {/* HP Row */}
+                <View style={styles.tableRow}>
+                  <View style={styles.colStat}>
+                    <Text style={styles.statEmoji}>❤️</Text>
+                    <Text style={styles.statLabel}>Max HP</Text>
                   </View>
-                  {hero.statPoints > 0 && (
-                    <View style={styles.statControlsCol}>
-                      <TouchableOpacity
-                        style={[styles.controlBtn, tempDefenceAlloc === 0 && styles.controlBtnDisabled]}
-                        disabled={tempDefenceAlloc === 0}
-                        onPress={() => adjustStat('defence', -1)}
-                      >
-                        <Text style={styles.controlBtnText}>-</Text>
-                      </TouchableOpacity>
-                      <View style={styles.allocatedPill}>
-                        <Text style={styles.allocatedPillText}>{tempDefenceAlloc}</Text>
-                      </View>
-                      <TouchableOpacity
-                        style={[styles.controlBtn, remainingPoints === 0 && styles.controlBtnDisabled]}
-                        disabled={remainingPoints === 0}
-                        onPress={() => adjustStat('defence', 1)}
-                      >
-                        <Text style={styles.controlBtnText}>+</Text>
-                      </TouchableOpacity>
-                    </View>
-                  )}
+                  <Text style={styles.colCurrent}>{hero.maxHp}</Text>
+                  <Text style={[
+                    styles.colNew, 
+                    tempVitAlloc > 0 ? styles.colNewHighlighted : styles.colNewMuted
+                  ]}>
+                    {tempVitAlloc > 0 ? previewMaxHp : '—'}
+                  </Text>
+                </View>
+
+                {/* Crit Row */}
+                <View style={styles.tableRow}>
+                  <View style={styles.colStat}>
+                    <Text style={styles.statEmoji}>💥</Text>
+                    <Text style={styles.statLabel}>Crit Chance</Text>
+                  </View>
+                  <Text style={styles.colCurrent}>{Math.round(hero.critChance * 1000) / 10}%</Text>
+                  <Text style={[
+                    styles.colNew, 
+                    tempAgiAlloc > 0 ? styles.colNewHighlighted : styles.colNewMuted
+                  ]}>
+                    {tempAgiAlloc > 0 ? `${Math.round(previewCritChance * 1000) / 10}%` : '—'}
+                  </Text>
+                </View>
+
+                {/* Dodge Row */}
+                <View style={[styles.tableRow, { borderBottomWidth: 0 }]}>
+                  <View style={styles.colStat}>
+                    <Text style={styles.statEmoji}>💨</Text>
+                    <Text style={styles.statLabel}>Dodge Chance</Text>
+                  </View>
+                  <Text style={styles.colCurrent}>{Math.round(hero.dodge * 1000) / 10}%</Text>
+                  <Text style={[
+                    styles.colNew, 
+                    tempAgiAlloc > 0 ? styles.colNewHighlighted : styles.colNewMuted
+                  ]}>
+                    {tempAgiAlloc > 0 ? `${Math.round(previewDodge * 1000) / 10}%` : '—'}
+                  </Text>
                 </View>
               </View>
 
@@ -636,9 +708,9 @@ export default function CampScreen({ navigation }) {
                   <TouchableOpacity
                     style={[
                       styles.confirmBtn,
-                      (tempHpAlloc + tempAttackAlloc + tempDefenceAlloc === 0) && styles.confirmBtnDisabled
+                      (tempStrAlloc + tempAgiAlloc + tempVitAlloc === 0) && styles.confirmBtnDisabled
                     ]}
-                    disabled={tempHpAlloc + tempAttackAlloc + tempDefenceAlloc === 0}
+                    disabled={tempStrAlloc + tempAgiAlloc + tempVitAlloc === 0}
                     onPress={handleConfirmAllocation}
                     activeOpacity={0.8}
                   >
@@ -649,11 +721,11 @@ export default function CampScreen({ navigation }) {
                           <Stop offset="100%" stopColor="#D4A754" />
                         </LinearGradient>
                       </Defs>
-                      <Rect width="100%" height="100%" fill={(tempHpAlloc + tempAttackAlloc + tempDefenceAlloc === 0) ? "#333" : "url(#confirmBtnGrad)"} rx={10} />
+                      <Rect width="100%" height="100%" fill={(tempStrAlloc + tempAgiAlloc + tempVitAlloc === 0) ? "#333" : "url(#confirmBtnGrad)"} rx={10} />
                     </Svg>
                     <Text style={[
                       styles.confirmBtnText,
-                      (tempHpAlloc + tempAttackAlloc + tempDefenceAlloc === 0) && { color: '#666' }
+                      (tempStrAlloc + tempAgiAlloc + tempVitAlloc === 0) && { color: '#666' }
                     ]}>
                       Confirm Allocation
                     </Text>
@@ -1119,83 +1191,161 @@ const styles = StyleSheet.create({
     color: '#D4A754',
     fontWeight: 'bold',
   },
-  statRowsContainer: {
-    gap: 14,
-    marginBottom: 24,
-  },
-  statRow: {
+  attributeGrid: {
     flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.015)',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.04)',
-    padding: 12,
-  },
-  statInfoCol: {
-    flex: 1.2,
-  },
-  statLabelText: {
-    fontFamily: 'System',
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: '#F8FAFC',
-  },
-  statSubText: {
-    fontFamily: 'System',
-    fontSize: 10,
-    color: '#707F94',
-    marginTop: 2,
-  },
-  statValueCol: {
-    flex: 1.5,
-    justifyContent: 'center',
-  },
-  statValueText: {
-    fontFamily: 'System',
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: '#F8FAFC',
-  },
-  statPreviewText: {
-    color: '#D4A754',
-  },
-  statControlsCol: {
-    flexDirection: 'row',
-    alignItems: 'center',
     gap: 8,
+    marginBottom: 20,
   },
-  controlBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 8,
-    backgroundColor: 'rgba(212, 167, 84, 0.1)',
+  attributeCard: {
+    flex: 1,
+    backgroundColor: 'rgba(255, 255, 255, 0.02)',
+    borderRadius: 14,
     borderWidth: 1,
-    borderColor: 'rgba(212, 167, 84, 0.25)',
+    borderColor: 'rgba(255, 255, 255, 0.05)',
+    paddingVertical: 12,
+    paddingHorizontal: 6,
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    minHeight: 105,
+  },
+  attributeLabel: {
+    fontFamily: 'System',
+    fontSize: 11,
+    fontWeight: 'bold',
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+  },
+  attributeValue: {
+    fontFamily: 'System',
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#F8FAFC',
+    marginVertical: 4,
+  },
+  attributeValueHighlight: {
+    color: '#D4A754',
+    fontWeight: 'bold',
+  },
+  attributeControls: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    marginVertical: 4,
+  },
+  attrControlBtn: {
+    width: 22,
+    height: 22,
+    borderRadius: 6,
+    backgroundColor: 'rgba(212, 167, 84, 0.15)',
+    borderWidth: 1,
+    borderColor: 'rgba(212, 167, 84, 0.3)',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  controlBtnDisabled: {
-    backgroundColor: 'rgba(255, 255, 255, 0.015)',
-    borderColor: 'rgba(255, 255, 255, 0.04)',
-    opacity: 0.3,
+  attrControlBtnDisabled: {
+    opacity: 0.2,
+    backgroundColor: 'rgba(255, 255, 255, 0.02)',
+    borderColor: 'rgba(255, 255, 255, 0.08)',
   },
-  controlBtnText: {
+  attrControlBtnText: {
     fontFamily: 'System',
-    fontSize: 18,
     color: '#D4A754',
+    fontSize: 14,
     fontWeight: 'bold',
     marginTop: -2,
   },
-  allocatedPill: {
-    width: 24,
+  attrAllocatedText: {
+    fontFamily: 'System',
+    color: '#F8FAFC',
+    fontSize: 12,
+    fontWeight: 'bold',
+    minWidth: 14,
+    textAlign: 'center',
+  },
+  attributeSubLabel: {
+    fontFamily: 'System',
+    fontSize: 9,
+    color: '#64748B',
+    marginTop: 2,
+    textAlign: 'center',
+  },
+  breakdownTable: {
+    backgroundColor: 'rgba(255, 255, 255, 0.02)',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.04)',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    marginBottom: 20,
+  },
+  tableHeaderRow: {
+    flexDirection: 'row',
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255, 255, 255, 0.08)',
+    marginBottom: 4,
+  },
+  tableRow: {
+    flexDirection: 'row',
+    paddingVertical: 10,
+    alignItems: 'center',
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255, 255, 255, 0.03)',
+  },
+  colStat: {
+    flex: 2.2,
+    flexDirection: 'row',
     alignItems: 'center',
   },
-  allocatedPillText: {
+  colCurrent: {
+    flex: 1,
+    textAlign: 'right',
     fontFamily: 'System',
-    fontSize: 14,
-    color: '#F8FAFC',
+    fontSize: 13,
+    color: '#94A3B8',
+  },
+  colNew: {
+    flex: 1,
+    textAlign: 'right',
+    fontFamily: 'System',
+    fontSize: 13,
     fontWeight: 'bold',
+  },
+  colNewHighlighted: {
+    color: '#D4A754',
+  },
+  colNewMuted: {
+    color: '#94A3B8',
+  },
+  headerLabel: {
+    fontFamily: 'System',
+    fontSize: 10,
+    color: '#64748B',
+    fontWeight: 'bold',
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+  },
+  headerColStat: {
+    flex: 2.2,
+  },
+  headerColCurrent: {
+    flex: 1,
+    textAlign: 'right',
+  },
+  headerColNew: {
+    flex: 1,
+    textAlign: 'right',
+  },
+  statEmoji: {
+    fontSize: 14,
+    marginRight: 6,
+  },
+  statLabel: {
+    fontFamily: 'System',
+    fontSize: 13,
+    color: '#E2E8F0',
+    fontWeight: '500',
   },
   modalActions: {
     marginTop: 8,

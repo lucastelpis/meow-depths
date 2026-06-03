@@ -358,72 +358,89 @@ export default function CombatScreen() {
         taggedEnemies = [elite];
       }
     } else {
-      // Tier-based encounter from battleRating (1★ / 2★ / 3★)
+      // Tier-based encounter from battleRating (1★ to 5★)
+      const makeCommon = (template, i) => ({
+        ...template,
+        uid: template.id + '_' + i,
+        type: 'common',
+        maxHp: template.hp,
+        effects: [],
+        intent: randomPick(template.moves || []),
+      });
+
+      const makeElite = (template, i) => ({
+        ...template,
+        uid: template.id + '_elite_' + i,
+        type: 'elite',
+        name: `Elite ${template.name}`,
+        hp: Math.floor(template.hp * 1.4),
+        maxHp: Math.floor(template.hp * 1.4),
+        attack: Math.floor(template.attack * 1.3),
+        effects: [],
+        intent: randomPick(template.moves || []),
+      });
+
       if (battleRating === 1) {
-        // 1★ — 2 or 3 common enemies
-        const count = Math.random() < 0.5 ? 2 : 3;
+        // 1★ — 80% chance 1 common, 20% chance 2 common
+        const count = Math.random() < 0.80 ? 1 : 2;
         for (let i = 0; i < count; i++) {
           const template = randomPick(pool);
-          if (template) {
-            taggedEnemies.push({
-              ...template,
-              uid: template.id + '_' + i,
-              type: 'common',
-              maxHp: template.hp,
-              effects: [],
-              intent: randomPick(template.moves || []),
-            });
-          }
+          if (template) taggedEnemies.push(makeCommon(template, i));
         }
       } else if (battleRating === 2) {
-        // 2★ — 3 or 4 enemies, 1–2 of which are elite
-        const totalCount = Math.random() < 0.5 ? 3 : 4;
-        const eliteCount = totalCount === 3 ? 1 : (Math.random() < 0.5 ? 1 : 2);
-        for (let i = 0; i < totalCount; i++) {
+        // 2★ — 60% chance 2 common, 40% chance 1 common
+        const count = Math.random() < 0.60 ? 2 : 1;
+        for (let i = 0; i < count; i++) {
           const template = randomPick(pool);
-          if (!template) continue;
-          const isElite = i < eliteCount;
-          if (isElite) {
-            taggedEnemies.push({
-              ...template,
-              uid: template.id + '_elite_' + i,
-              type: 'elite',
-              name: `Elite ${template.name}`,
-              hp: Math.floor(template.hp * 1.4),
-              maxHp: Math.floor(template.hp * 1.4),
-              attack: Math.floor(template.attack * 1.3),
-              effects: [],
-              intent: randomPick(template.moves || []),
-            });
-          } else {
-            taggedEnemies.push({
-              ...template,
-              uid: template.id + '_' + i,
-              type: 'common',
-              maxHp: template.hp,
-              effects: [],
-              intent: randomPick(template.moves || []),
-            });
+          if (template) taggedEnemies.push(makeCommon(template, i));
+        }
+      } else if (battleRating === 3) {
+        // 3★ — 60% chance 2 common, 15% chance 3 common, 25% chance 1 elite
+        const roll = Math.random();
+        if (roll < 0.60) {
+          for (let i = 0; i < 2; i++) {
+            const template = randomPick(pool);
+            if (template) taggedEnemies.push(makeCommon(template, i));
+          }
+        } else if (roll < 0.75) {
+          for (let i = 0; i < 3; i++) {
+            const template = randomPick(pool);
+            if (template) taggedEnemies.push(makeCommon(template, i));
+          }
+        } else {
+          const template = randomPick(pool);
+          if (template) taggedEnemies.push(makeElite(template, 0));
+        }
+      } else if (battleRating === 4) {
+        // 4★ — 50% chance 1 elite + 2 common, 30% chance 2 elite, 20% chance 4 common
+        const roll = Math.random();
+        if (roll < 0.50) {
+          // 1 elite + 2 common
+          const eliteTemplate = randomPick(pool);
+          if (eliteTemplate) taggedEnemies.push(makeElite(eliteTemplate, 0));
+          for (let i = 1; i <= 2; i++) {
+            const template = randomPick(pool);
+            if (template) taggedEnemies.push(makeCommon(template, i));
+          }
+        } else if (roll < 0.80) {
+          // 2 elite
+          for (let i = 0; i < 2; i++) {
+            const template = randomPick(pool);
+            if (template) taggedEnemies.push(makeElite(template, i));
+          }
+        } else {
+          // 4 common
+          for (let i = 0; i < 4; i++) {
+            const template = randomPick(pool);
+            if (template) taggedEnemies.push(makeCommon(template, i));
           }
         }
       } else {
-        // 3★ — 3 or 4 all-elite enemies
-        const count = Math.random() < 0.5 ? 3 : 4;
+        // 5★ — 50% chance 3 elite, 50% chance 4 elite
+        const count = Math.random() < 0.50 ? 3 : 4;
         for (let i = 0; i < count; i++) {
           const template = randomPick(pool);
-          if (template) {
-            taggedEnemies.push({
-              ...template,
-              uid: template.id + '_elite_' + i,
-              type: 'elite',
-              name: `Elite ${template.name}`,
-              hp: Math.floor(template.hp * 1.4),
-              maxHp: Math.floor(template.hp * 1.4),
-              attack: Math.floor(template.attack * 1.3),
-              effects: [],
-              intent: randomPick(template.moves || []),
-            });
-          }
+          if (template) taggedEnemies.push(makeElite(template, i));
         }
       }
     }

@@ -17,28 +17,35 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
- * Returns cumulative probability thresholds for [1★, 2★, 3★] on a given floor.
+ * Returns cumulative probability thresholds for [1★, 2★, 3★, 4★] on a given floor.
  * Roll Math.random() against these to pick a rating.
  *
  * @param {number} floorNumber
- * @returns {{ star1: number, star2: number }} cumulative thresholds
+ * @returns {{ star1: number, star2: number, star3: number, star4: number }} cumulative thresholds
  *   roll < star1  → 1★
  *   roll < star2  → 2★
- *   else          → 3★
+ *   roll < star3  → 3★
+ *   roll < star4  → 4★
+ *   else          → 5★
  */
 function getBattleRatingThresholds(floorNumber) {
-  if (floorNumber <= 3) return { star1: 0.70, star2: 1.00 }; // 70% 1★ / 30% 2★
-  if (floorNumber <= 6) return { star1: 0.20, star2: 0.70 }; // 20% 1★ / 50% 2★ / 30% 3★
-  if (floorNumber <= 9) return { star1: 0.00, star2: 0.40 }; // 40% 2★ / 60% 3★
-  return { star1: 0.00, star2: 0.00 };                       // floor 10: all 3★
+  if (floorNumber === 1) return { star1: 1.00, star2: 1.00, star3: 1.00, star4: 1.00 }; // 100% 1★
+  if (floorNumber === 2) return { star1: 0.70, star2: 1.00, star3: 1.00, star4: 1.00 }; // 70% 1★ / 30% 2★
+  if (floorNumber === 3) return { star1: 0.30, star2: 0.90, star3: 1.00, star4: 1.00 }; // 30% 1★ / 60% 2★ / 10% 3★
+  if (floorNumber <= 5)  return { star1: 0.00, star2: 0.30, star3: 0.90, star4: 1.00 }; // 30% 2★ / 60% 3★ / 10% 4★
+  if (floorNumber <= 7)  return { star1: 0.00, star2: 0.00, star3: 0.20, star4: 0.80 }; // 20% 3★ / 60% 4★ / 20% 5★
+  if (floorNumber <= 9)  return { star1: 0.00, star2: 0.00, star3: 0.00, star4: 0.30 }; // 30% 4★ / 70% 5★
+  return { star1: 0.00, star2: 0.00, star3: 0.00, star4: 0.00 };                       // floor 10: all 5★
 }
 
 function rollBattleRating(floorNumber) {
-  const { star1, star2 } = getBattleRatingThresholds(floorNumber);
+  const { star1, star2, star3, star4 } = getBattleRatingThresholds(floorNumber);
   const roll = Math.random();
   if (roll < star1) return 1;
   if (roll < star2) return 2;
-  return 3;
+  if (roll < star3) return 3;
+  if (roll < star4) return 4;
+  return 5;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

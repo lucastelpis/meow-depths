@@ -284,6 +284,18 @@ export default function InventoryScreen() {
         </View>
       </View>
 
+      {/* ── Core Attributes ── */}
+      <View style={styles.statsSection}>
+        <Text style={styles.subSectionTitle}>💪 Core Attributes</Text>
+        <View style={styles.statsGrid}>
+          <StatCard label="STR"   value={hero.strength || 10}              emoji="💪" color="#F5CF4A" />
+          <StatCard label="AGI"   value={hero.agility || 10}               emoji="🏃" color="#06B6D4" />
+          <StatCard label="VIT"   value={hero.vitality || 10}              emoji="💚" color="#5CC489" />
+          <View style={{ flex: 1 }} />
+          <View style={{ flex: 1 }} />
+        </View>
+      </View>
+
       {/* ── Active Set Bonuses ── */}
       {activeSets.length > 0 && (
         <View style={styles.statsSection}>

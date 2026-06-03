@@ -533,8 +533,20 @@ export default function DungeonMapScreen({ navigation }) {
     const CLEARED_COLOR = '#5CC489'; // buffMint
 
     // Star badge config for combat tiles
-    const STAR_COLORS = { 1: '#5A9FE0', 2: '#F08A4A', 3: '#D8483F' };
-    const STAR_LABELS = { 1: '★☆☆', 2: '★★☆', 3: '★★★' };
+    const STAR_COLORS = { 
+      1: '#4ade80', // Green (Very Easy)
+      2: '#5A9FE0', // Blue (Easy)
+      3: '#F5CF4A', // Yellow (Normal)
+      4: '#f97316', // Orange (Hard)
+      5: '#ef4444'  // Red (Nightmare)
+    };
+    const STAR_LABELS = { 
+      1: '★☆☆☆☆', 
+      2: '★★☆☆☆', 
+      3: '★★★☆☆', 
+      4: '★★★★☆', 
+      5: '★★★★★' 
+    };
 
     if (tile.type === 'start') {
       emoji = '🏠';
@@ -607,7 +619,11 @@ export default function DungeonMapScreen({ navigation }) {
             </Text>
             {/* Star badge for combat tiles (only when revealed and not cleared) */}
             {tile.type === 'combat' && !isFog && !tile.cleared && tile.battleRating && (
-              <Text style={[styles.starBadge, { color: STAR_COLORS[tile.battleRating] }]}>
+              <Text 
+                style={[styles.starBadge, { color: STAR_COLORS[tile.battleRating] }]}
+                numberOfLines={1}
+                adjustsFontSizeToFit={true}
+              >
                 {STAR_LABELS[tile.battleRating]}
               </Text>
             )}
