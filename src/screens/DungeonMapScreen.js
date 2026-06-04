@@ -46,8 +46,10 @@ import ResourceBar from '../components/ui/ResourceBar';
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 const CONSUMABLE_ICONS = {
-  health_potion: '🧪',
-  mega_potion: '💊',
+  potion: '🧪',
+  super_potion: '🧪',
+  mega_potion: '🧪',
+  ultra_potion: '🧪',
   antidote: '🌿',
   smoke_vial: '💨',
   mystery_chest: '🎁',
@@ -258,7 +260,7 @@ export default function DungeonMapScreen({ navigation }) {
   }, [currentRun.consumables]);
 
   const handleUseItemOnMap = (item) => {
-    if (item.id === 'health_potion' || item.id === 'mega_potion') {
+    if (['potion', 'super_potion', 'mega_potion', 'ultra_potion'].includes(item.id)) {
       if (hero.hp >= effectiveStats.maxHp) {
         Alert.alert('Full Health', 'Mochi is already at full health!');
         return;
@@ -1228,7 +1230,7 @@ export default function DungeonMapScreen({ navigation }) {
                 ) : (
                   runConsumablesList.map((item) => {
                     const icon = CONSUMABLE_ICONS[item.id] || '🧪';
-                    const isUsable = item.id === 'health_potion' || item.id === 'mega_potion';
+                    const isUsable = ['potion', 'super_potion', 'mega_potion', 'ultra_potion'].includes(item.id);
 
                     return (
                       <View key={item.id} style={styles.bagItemRow}>

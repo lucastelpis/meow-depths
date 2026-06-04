@@ -40,8 +40,10 @@ const ZONE_LABELS = {
 };
 
 const CONSUMABLE_ICONS = {
-  health_potion: '🧪',
-  mega_potion: '💊',
+  potion: '🧪',
+  super_potion: '🧪',
+  mega_potion: '🧪',
+  ultra_potion: '🧪',
   antidote: '🌿',
   smoke_vial: '💨',
   mystery_chest: '🎁',
@@ -92,7 +94,7 @@ function formatStats(stats) {
     .map(([key, value]) => {
       const label = STAT_LABELS[key] || key;
       if (typeof value === 'boolean') return `✓ ${label}`;
-      if (value > 0 && value <= 1) return `${Math.round(value * 100)}% ${label}`;
+      if (value > 0 && value < 1) return `${Math.round(value * 100)}% ${label}`;
       return `+${value} ${label}`;
     })
     .join(', ');
@@ -154,9 +156,11 @@ export default function ShopScreen() {
 
   // ── Can the player craft a specific gear piece? ────────────────────────────
   const canCraft = (gearDef) => {
-    return gearDef.materials.every(
+    const materialsOk = gearDef.materials.every(
       ({ itemId, qty }) => (ownedMaterials[itemId] || 0) >= qty,
     );
+    const goldOk = !gearDef.goldCost || hero.gold >= gearDef.goldCost;
+    return materialsOk && goldOk;
   };
 
   // ── Supplies: purchase handler ─────────────────────────────────────────────
@@ -177,10 +181,12 @@ export default function ShopScreen() {
     gearDef.materials.forEach(({ itemId, qty }) => {
       materialCosts[itemId] = qty;
     });
+    const goldCost = gearDef.goldCost || 0;
+    const goldLine = goldCost > 0 ? `\n💰 Cost: ${goldCost} gold` : '';
 
     Alert.alert(
       'Forge Equipment',
-      `Craft "${gearDef.name}" using your crystals?`,
+      `Craft "${gearDef.name}" using your crystals?${goldLine}`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -191,7 +197,7 @@ export default function ShopScreen() {
               payload: {
                 gearId: gearDef.id,
                 materials: materialCosts,
-                goldCost: 0,
+                goldCost,
               },
             });
           },
@@ -316,7 +322,7 @@ export default function ShopScreen() {
             </View>
 
             <View style={styles.listContainer}>
-              {CONSUMABLES.map((item) => {
+              {CONSUMABLES.filter(item => !item.minLevel || hero.level >= item.minLevel).map((item) => {
                 const owned = consumableCounts[item.id] || 0;
                 const icon = CONSUMABLE_ICONS[item.id] || '🧪';
 
@@ -508,6 +514,24 @@ export default function ShopScreen() {
                                   </View>
                                 );
                               })}
+                              {/* Gold cost chip */}
+                              {gear.goldCost > 0 && (() => {
+                                const hasGold = hero.gold >= gear.goldCost;
+                                return (
+                                  <View
+                                    style={[
+                                      styles.materialReqChip,
+                                      hasGold ? styles.matEnough : styles.matShort,
+                                    ]}
+                                  >
+                                    <Text style={styles.materialReqEmoji}>💰</Text>
+                                    <Text style={[styles.materialReqText, hasGold ? styles.matTextEnough : styles.matTextShort]}>
+                                      Gold: {hero.gold}/{gear.goldCost}
+                                    </Text>
+                                    <Text style={styles.checkIndicator}>{hasGold ? ' ✓' : ' ✗'}</Text>
+                                  </View>
+                                );
+                              })()}
                             </View>
 
                             {/* Forge Action Button */}

@@ -40,6 +40,8 @@ import React, {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { generateDungeonGrid } from '../logic/dungeonGenerator';
 import { ZONES, getGridSizeForFloor } from '../data/zones';
+import { calculateEffectiveStats } from '../logic/progressionEngine';
+import { GEAR, CONSUMABLES } from '../data/gear';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -87,7 +89,7 @@ const initialState = {
     inventory: {
       materials: {},          // { itemId: quantity } — crafting components
       consumables: [          // array of { id, quantity }
-        { id: 'health_potion', quantity: 3 }, // start with 3 potions
+        { id: 'potion', quantity: 3 }, // start with 3 potions
       ],
       craftedGear: ['toy_sword', 'cardboard_armor'],        // array of gear IDs the hero has crafted
     },
@@ -239,17 +241,23 @@ function gameReducer(state, action) {
     // EQUIP_GEAR — put a gear piece in its slot
     // Payload: { slot: 'weapon'|'armor'|'trinket', gearId: string }
     // -----------------------------------------------------------------------
-    case 'EQUIP_GEAR':
+    case 'EQUIP_GEAR': {
+      const { slot, gearId } = action.payload;
+      const oldGearId = state.hero.gear[slot];
+      const oldMaxHpBonus = (oldGearId && GEAR[oldGearId]?.stats?.maxHp) || 0;
+      const newMaxHpBonus = (gearId && GEAR[gearId]?.stats?.maxHp) || 0;
+      const maxHpDelta = newMaxHpBonus - oldMaxHpBonus;
+      const updatedHero = {
+        ...state.hero,
+        gear: { ...state.hero.gear, [slot]: gearId },
+      };
+      const newEffectiveMaxHp = calculateEffectiveStats(updatedHero).maxHp;
+      const newHp = Math.min(newEffectiveMaxHp, state.hero.hp + maxHpDelta);
       return {
         ...state,
-        hero: {
-          ...state.hero,
-          gear: {
-            ...state.hero.gear,
-            [action.payload.slot]: action.payload.gearId,
-          },
-        },
+        hero: { ...updatedHero, hp: newHp },
       };
+    }
 
     // -----------------------------------------------------------------------
     // CRAFT_GEAR — spend materials + gold, add gear to inventory
@@ -360,7 +368,7 @@ function gameReducer(state, action) {
       }).filter(c => c.quantity > 0);
 
       // Ensure HP is restored to full upon entering the run
-      const fullHp = state.hero.maxHp;
+      const fullHp = calculateEffectiveStats(state.hero).maxHp;
 
       return {
         ...state,
@@ -504,7 +512,8 @@ function gameReducer(state, action) {
 
       let updatedHp = state.hero.hp;
       if (type === 'maxHpBonus') {
-        updatedHp = Math.min(state.hero.maxHp + currentRunBuffs.maxHpBonus, state.hero.hp + value);
+        const effectiveMaxHp = calculateEffectiveStats(state.hero, undefined, currentRunBuffs).maxHp;
+        updatedHp = Math.min(effectiveMaxHp, state.hero.hp + value);
       }
 
       return {
@@ -526,7 +535,7 @@ function gameReducer(state, action) {
     // -----------------------------------------------------------------------
     case 'UPDATE_RUN_AFTER_COMBAT': {
       const { hp, consumables } = action.payload;
-      const effectiveMaxHp = state.hero.maxHp + (state.currentRun.runBuffs?.maxHpBonus || 0);
+      const effectiveMaxHp = calculateEffectiveStats(state.hero, undefined, state.currentRun.runBuffs).maxHp;
       return {
         ...state,
         hero: {
@@ -598,7 +607,7 @@ function gameReducer(state, action) {
       }
 
       // Restores Mochi's HP to full when outside of the Dungeon (using updated maxHp if reverted)
-      const finalHp = heroStats.maxHp;
+      const finalHp = calculateEffectiveStats(heroStats).maxHp;
 
       // Track completed runs and advance floorsCleared on win
       const zoneId = state.currentRun.zoneId;
@@ -669,15 +678,12 @@ function gameReducer(state, action) {
       const newRunConsumables = [...state.currentRun.consumables];
       newRunConsumables.splice(index, 1);
 
-      const effectiveMaxHp = state.hero.maxHp + (state.currentRun.runBuffs?.maxHpBonus || 0);
+      const effectiveMaxHp = calculateEffectiveStats(state.hero, undefined, state.currentRun.runBuffs).maxHp;
       let updatedHp = state.hero.hp;
 
-      if (consumableId === 'health_potion') {
-        const healAmt = Math.floor(effectiveMaxHp * 0.3);
-        updatedHp = Math.min(effectiveMaxHp, updatedHp + healAmt);
-      } else if (consumableId === 'mega_potion') {
-        const healAmt = Math.floor(effectiveMaxHp * 0.6);
-        updatedHp = Math.min(effectiveMaxHp, updatedHp + healAmt);
+      const consumableDef = CONSUMABLES.find(c => c.id === consumableId);
+      if (consumableDef?.effect?.type === 'heal') {
+        updatedHp = Math.min(effectiveMaxHp, updatedHp + (consumableDef.effect.amount || 0));
       }
 
       return {
@@ -879,9 +885,11 @@ function gameReducer(state, action) {
     // Payload: { amount: number }
     // -----------------------------------------------------------------------
     case 'HEAL': {
-      const effectiveMaxHp = state.currentRun.active
-        ? state.hero.maxHp + (state.currentRun.runBuffs?.maxHpBonus || 0)
-        : state.hero.maxHp;
+      const effectiveMaxHp = calculateEffectiveStats(
+        state.hero,
+        undefined,
+        state.currentRun.active ? state.currentRun.runBuffs : null
+      ).maxHp;
       return {
         ...state,
         hero: {
@@ -911,9 +919,12 @@ function gameReducer(state, action) {
     // Payload: { newLevel, newMaxHp, newAttack, newDefence, newSkillPoints }
     // -----------------------------------------------------------------------
     case 'LEVEL_UP': {
-      const effectiveMaxHp = state.currentRun.active
-        ? action.payload.newMaxHp + (state.currentRun.runBuffs?.maxHpBonus || 0)
-        : action.payload.newMaxHp;
+      const tempHero = { ...state.hero, maxHp: action.payload.newMaxHp };
+      const effectiveMaxHp = calculateEffectiveStats(
+        tempHero,
+        undefined,
+        state.currentRun.active ? state.currentRun.runBuffs : null
+      ).maxHp;
       return {
         ...state,
         hero: {
@@ -951,7 +962,9 @@ function gameReducer(state, action) {
       const newDodge = state.hero.dodge + (agiInc * 0.005);
 
       const newStatPoints = state.hero.statPoints - totalPoints;
-      const newHp = Math.min(newMaxHp, state.hero.hp + (vitInc * 3));
+      const tempHero = { ...state.hero, maxHp: newMaxHp };
+      const effectiveMaxHp = calculateEffectiveStats(tempHero).maxHp;
+      const newHp = Math.min(effectiveMaxHp, state.hero.hp + (vitInc * 3));
 
       return {
         ...state,
@@ -1037,6 +1050,12 @@ export function GameProvider({ children }) {
           if (merged.hero.gear?.armor === 'cardboard_armor' && !merged.hero.inventory.craftedGear.includes('cardboard_armor')) {
             merged.hero.inventory.craftedGear.push('cardboard_armor');
           }
+        }
+
+        // If hero was at full base HP when saved, restore to full effective HP
+        // (gear bonuses aren't baked into hero.maxHp, only into effectiveStats).
+        if (merged.hero && merged.hero.hp === merged.hero.maxHp) {
+          merged.hero.hp = calculateEffectiveStats(merged.hero).maxHp;
         }
 
         dispatch({ type: 'SET_STATE', payload: merged });

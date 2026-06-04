@@ -27,7 +27,7 @@ import Svg, { Defs, LinearGradient, RadialGradient, Stop, Rect, Circle } from 'r
 // ── Project imports ──────────────────────────────────────────────────────────
 import theme from '../constants/theme';
 import { useGame } from '../state/gameState';
-import { getXpForLevel } from '../logic/progressionEngine';
+import { getXpForLevel, calculateEffectiveStats } from '../logic/progressionEngine';
 import AnimatedSprite from '../components/AnimatedSprite';
 import Button from '../components/ui/Button';
 import ResourceBar from '../components/ui/ResourceBar';
@@ -61,7 +61,10 @@ export default function CampScreen({ navigation }) {
   const previewAgi = (hero.agility || 10) + tempAgiAlloc;
   const previewVit = (hero.vitality || 10) + tempVitAlloc;
 
-  const previewMaxHp = hero.maxHp + tempVitAlloc * 3;
+  const effectiveStats = calculateEffectiveStats(hero);
+  const effectiveMaxHp = effectiveStats.maxHp;
+
+const previewMaxHp = effectiveMaxHp + tempVitAlloc * 3;
   const previewAttack = hero.attack + tempStrAlloc * 1;
   const previewDefence = hero.defence + tempVitAlloc * 1;
   const previewCritChance = hero.critChance + tempAgiAlloc * 0.005;
@@ -119,8 +122,6 @@ export default function CampScreen({ navigation }) {
   const xpForNext      = getXpForLevel(hero.level + 1);
   const xpIntoLevel    = hero.xp - xpForCurrent;
   const xpNeeded       = xpForNext - xpForCurrent;
-  const xpProgress     = xpNeeded > 0 ? xpIntoLevel / xpNeeded : 1;
-  const hpProgress     = hero.maxHp > 0 ? hero.hp / hero.maxHp : 1;
 
   // Calculate Mochi's primary path for cozy visual title
   const primaryPath = React.useMemo(() => {
@@ -219,8 +220,8 @@ export default function CampScreen({ navigation }) {
     const megaPotionQty = lvl >= 3 ? 1 : 0;
     
     const consumablesReward = {};
-    if (healthPotionQty > 0) consumablesReward['health_potion'] = healthPotionQty;
-    if (megaPotionQty > 0) consumablesReward['mega_potion'] = megaPotionQty;
+    if (healthPotionQty > 0) consumablesReward['potion'] = healthPotionQty;
+    if (megaPotionQty > 0) consumablesReward['super_potion'] = megaPotionQty;
 
     // Dispatch state update
     dispatch({
@@ -322,7 +323,7 @@ export default function CampScreen({ navigation }) {
                 variant="heroHp"
                 label="HP"
                 current={hero.hp}
-                max={hero.maxHp}
+                max={effectiveMaxHp}
               />
 
               {/* XP Bar */}
@@ -662,7 +663,7 @@ export default function CampScreen({ navigation }) {
                     <Text style={styles.statEmoji}>❤️</Text>
                     <Text style={styles.statLabel}>Max HP</Text>
                   </View>
-                  <Text style={styles.colCurrent}>{hero.maxHp}</Text>
+                  <Text style={styles.colCurrent}>{effectiveMaxHp}</Text>
                   <Text style={[
                     styles.colNew, 
                     tempVitAlloc > 0 ? styles.colNewHighlighted : styles.colNewMuted

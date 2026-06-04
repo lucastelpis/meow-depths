@@ -116,3 +116,29 @@ export const XP_VALUES = {
   elite: 50,
   boss: 200,
 };
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Floor Material Pools — which materials can drop on each floor range
+//
+// Lookup: find the first entry where floorNumber <= maxFloor.
+// If none matches (floor 10, boss), returns null → all drops pass through.
+// ─────────────────────────────────────────────────────────────────────────────
+
+export const FLOOR_MATERIAL_POOLS = {
+  zone1: [
+    { maxFloor: 3, allowed: ['black_shard'] },
+    { maxFloor: 6, allowed: ['black_shard', 'black_crystal_small'] },
+    { maxFloor: 9, allowed: ['black_crystal_small', 'black_crystal_big'] },
+    // floor 10 (boss) → no entry → null → unfiltered
+  ],
+  zone2: [
+    { maxFloor: 3, allowed: ['green_shard'] },
+    { maxFloor: 6, allowed: ['green_shard', 'green_crystal_small'] },
+    { maxFloor: 9, allowed: ['green_crystal_small', 'green_crystal_big'] },
+  ],
+  zone3: [
+    { maxFloor: 3, allowed: ['yellow_shard'] },
+    { maxFloor: 6, allowed: ['yellow_shard', 'yellow_crystal_small'] },
+    { maxFloor: 9, allowed: ['yellow_crystal_small', 'yellow_crystal_big'] },
+  ],
+};

@@ -35,7 +35,7 @@
 // Imports — we pull enemy data and zone info from our data layer.
 // ---------------------------------------------------------------------------
 import { ZONES, ENCOUNTER_CHANCES } from '../data/zones';
-import { ENEMIES } from '../data/enemies';
+import { ENEMIES, STAR_MULTIPLIERS } from '../data/enemies';
 
 // ---------------------------------------------------------------------------
 // CONSTANTS — tweak these to balance the game
@@ -64,7 +64,7 @@ const GEAR_STUN_DURATION = 1;
  * Steps:
  *   1. Start with the attacker's base attack stat.
  *   2. Roll for a crit — if successful, multiply by CRIT_MULTIPLIER (175 %).
- *   3. Subtract the target's defence (minimum damage is always 1).
+ *   3. Apply target's defence (diminishing returns percentage, minimum damage is 1).
  *   4. If the target is guarding, reduce damage by the guard's reduction %.
  *   5. If the target has a death mark, INCREASE damage by 50 %.
  *
@@ -120,9 +120,16 @@ export function calculateDamage(attacker, target, options = {}) {
     baseDamage = Math.floor(baseDamage * (1 + options.stealthBonus));
   }
 
-  // -- Step 3: Subtract target's defence ------------------------------------
-  // Defence reduces damage 1-for-1, but damage can never go below 1.
-  let finalDamage = Math.max(1, baseDamage - (target.defence || target.def || 0));
+  // -- Step 3: Apply target's defence (diminishing returns percentage) ------
+  // Defence reduces damage on a diminishing returns curve, minimum damage is 1.
+  let defVal = target.defence || target.def || 0;
+  const defBuff = target.effects?.find(e => e.type === 'def_buff');
+  if (defBuff && defBuff.value) {
+    defVal += defBuff.value;
+  }
+  const effectiveDef = Math.max(0, defVal - 1); // DEF 1 = 0% reduction baseline
+  const reduction = effectiveDef / (effectiveDef + 15);
+  let finalDamage = Math.max(1, Math.floor(baseDamage * (1 - reduction)));
 
   // -- Step 4: Guard reduction ----------------------------------------------
   // If the target is currently guarding, reduce damage by the guard %.
@@ -606,6 +613,38 @@ export function executeEnemyTurn(enemy, enemyState, target, targetState) {
     };
   }
 
+  // -- Fortify self (Cockroach Knight buff) -----------------------------------
+  if (move.effect === 'fortify_self') {
+    const baseDef = enemyState.def || enemy.def || 0;
+    const buffVal = Math.round(baseDef * 0.5);
+    const defBuffEffect = {
+      type: 'def_buff',
+      value: buffVal,
+      duration: 2,
+    };
+    return {
+      damage: 0,
+      effects: [defBuffEffect],
+      log: `${enemy.name} uses ${move.name} and increases their DEF by +${buffVal}!`,
+      selfDestruct: false,
+      appliedToSelf: true,
+    };
+  }
+
+  // -- Summon Rats (King Rat move) ------------------------------------------
+  if (move.effect === 'summon_rats') {
+    return {
+      damage: 0,
+      effects: [],
+      log: `${enemy.name} uses ${move.name} and summons 2 Sewer Rats!`,
+      selfDestruct: false,
+      summon: {
+        enemyId: 'sewer_rat',
+        count: 2,
+      }
+    };
+  }
+
   // -- Hero dodge check -----------------------------------------------------
   const isDodged = checkHeroDodge(targetState);
   if (isDodged) {
@@ -619,10 +658,16 @@ export function executeEnemyTurn(enemy, enemyState, target, targetState) {
 
   // -- Calculate damage -----------------------------------------------------
   // move.damage is the flat damage value the move deals (e.g. 12 for Gnaw).
-  // We use it directly as the attacker's attack stat so calculateDamage works
-  // correctly (crit, defence reduction, guard) without an extra multiplier.
+  // If undefined, calculate it dynamically using the enemy's attack stat and move.multiplier.
+  let atkVal = move.damage;
+  if (atkVal === undefined) {
+    const baseAtk = enemyState.attack || enemy.attack || 5;
+    const mult = move.multiplier !== undefined ? move.multiplier : 1.0;
+    atkVal = Math.floor(baseAtk * mult);
+  }
+
   const enemyAsAttacker = {
-    attack: move.damage,
+    attack: atkVal,
     critChance: enemy.crit || 0,
     effects: enemyState.effects,
   };
@@ -691,11 +736,28 @@ export function executeEnemyTurn(enemy, enemyState, target, targetState) {
   if (selfDestruct) log += ` ${enemy.name} self-destructs!`;
   log += '.';
 
+  let healVal = 0;
+  if (move.effect === 'vampiric_bite') {
+    healVal = dmgResult.damage;
+    if (healVal > 0) {
+      log += ' King Rat leeches life!';
+    }
+  }
+
+  // Set cooldown if applicable
+  if (move.cooldown && move.cooldown > 0) {
+    if (!enemyState.cooldowns) {
+      enemyState.cooldowns = {};
+    }
+    enemyState.cooldowns[move.name] = move.cooldown;
+  }
+
   return {
     damage: dmgResult.damage,
     effects: appliedEffects,
     log,
     selfDestruct,
+    heal: healVal,
   };
 }
 
@@ -725,6 +787,15 @@ export function executeEnemyTurn(enemy, enemyState, target, targetState) {
  * }}
  */
 export function processStatusEffects(entityState) {
+  // Decrement enemy move cooldowns if present
+  if (entityState.cooldowns) {
+    for (const moveName of Object.keys(entityState.cooldowns)) {
+      if (entityState.cooldowns[moveName] > 0) {
+        entityState.cooldowns[moveName] -= 1;
+      }
+    }
+  }
+
   // If there are no active effects, bail out early
   if (!entityState.effects || entityState.effects.length === 0) {
     return { damage: 0, expiredEffects: [], log: '' };
@@ -797,6 +868,13 @@ export function processStatusEffects(entityState) {
             debuff_attack: 'Attack debuff'
           };
           logParts.push(`${names[effect.type]} fades`);
+        }
+        break;
+
+      case 'def_buff':
+        effect.duration -= 1;
+        if (effect.duration <= 0) {
+          logParts.push('Defense buff fades');
         }
         break;
 
@@ -875,13 +953,15 @@ export function generateEncounter(zone, floorNumber, totalFloors) {
       makeCommonEnemy(randomPick(pool)),
     ];
   } else if (roll < ENCOUNTER_CHANCES.twoEnemies + ENCOUNTER_CHANCES.oneElite) {
-    // 25 % — ONE elite enemy (beefed-up common)
+    // 25 % — ONE elite enemy (star-scaled, then +30 % elite bonus on top)
     const elite = deepCloneEnemy(randomPick(pool));
+    const starMult = STAR_MULTIPLIERS[elite.stars] || 1.0;
     elite.type   = 'elite';
     elite.name   = `Elite ${elite.name}`;
-    elite.hp     = Math.floor(elite.hp * 1.3);     // +30 % HP
-    elite.maxHp  = Math.floor(elite.hp);            // track maxHp
-    elite.attack = Math.floor(elite.attack * 1.3);  // +30 % Attack
+    elite.hp     = Math.ceil(elite.hp          * starMult * 1.3);
+    elite.attack = Math.ceil(elite.attack      * starMult * 1.3);
+    elite.def    = Math.max(1, Math.ceil((elite.def || 0) * starMult * 1.3));
+    elite.maxHp  = elite.hp;
     return [elite];
   } else {
     // 15 % — THREE random common enemies
@@ -893,11 +973,15 @@ export function generateEncounter(zone, floorNumber, totalFloors) {
   }
 }
 
-/** Clone a common enemy and set its type and maxHp */
+/** Clone a common enemy, apply its star multiplier, and set type/maxHp */
 function makeCommonEnemy(template) {
   const enemy = deepCloneEnemy(template);
-  enemy.type = 'common';
-  enemy.maxHp = enemy.hp;
+  const mult = STAR_MULTIPLIERS[enemy.stars] || 1.0;
+  enemy.type   = 'common';
+  enemy.hp     = Math.ceil(enemy.hp     * mult);
+  enemy.attack = Math.ceil(enemy.attack * mult);
+  enemy.def    = Math.max(1, Math.ceil((enemy.def || 0) * mult));
+  enemy.maxHp  = enemy.hp;
   return enemy;
 }
 
@@ -923,7 +1007,7 @@ export function useConsumable(consumable, heroState) {
   switch (effectDef.type) {
     // -- Health Potion -------------------------------------------------------
     case 'heal': {
-      const healAmount = Math.floor((heroState.maxHp || 50) * (effectDef.percentMaxHp || 0.4));
+      const healAmount = effectDef.amount || 50;
       const actualHeal = Math.min(healAmount, (heroState.maxHp || 50) - (heroState.hp || 0));
 
       return {
@@ -974,6 +1058,101 @@ export function useConsumable(consumable, heroState) {
  * Deep-clone an enemy object so we can safely mutate HP, effects, etc.
  * Uses JSON parse/stringify — simple and sufficient for plain data objects.
  */
+/**
+ * Select the best available move for an enemy based on star rating,
+ * cooldowns, and damage prioritization.
+ *
+ * @param {Object} enemyState - Clone of the enemy template in combat.
+ * @returns {Object} Selected move definition.
+ */
+export function selectEnemyMove(enemyState, allEnemies = []) {
+  if (!enemyState) return null;
+
+  // 1. Initialise cooldowns if not present
+  if (!enemyState.cooldowns) {
+    enemyState.cooldowns = {};
+  }
+
+  // ── Special Boss AI: King Rat ──────────────────────────────────────────────
+  if (enemyState.id === 'king_rat') {
+    const moves = enemyState.moves || [];
+    const summonMove = moves.find(m => m.name === 'Summon Rats');
+    const vampBiteMove = moves.find(m => m.name === 'Vampiric Bite');
+    const savageBiteMove = moves.find(m => m.name === 'Savage Bite');
+    const gnawMove = moves.find(m => m.name === 'Gnaw');
+
+    // Rule 1: If alone on the field, roll 50% — if success, use Summon Rats
+    const allies = allEnemies.filter(e => e.uid !== enemyState.uid && e.hp > 0);
+    const isAlone = allies.length === 0;
+    if (isAlone && summonMove) {
+      if (Math.random() < 0.50) {
+        return summonMove;
+      }
+    }
+
+    // Rule 2: If below 50% HP and Vampiric Bite is off cooldown, use Vampiric Bite
+    const hpPercent = enemyState.hp !== undefined ? (enemyState.hp / (enemyState.maxHp || 400)) : 1.0;
+    const vampCooldown = enemyState.cooldowns['Vampiric Bite'] || 0;
+    if (hpPercent < 0.50 && vampCooldown === 0 && vampBiteMove) {
+      return vampBiteMove;
+    }
+
+    // Rule 3: If Savage Bite is off cooldown, use Savage Bite
+    const savageCooldown = enemyState.cooldowns['Savage Bite'] || 0;
+    if (savageCooldown === 0 && savageBiteMove) {
+      return savageBiteMove;
+    }
+
+    // Rule 4: Otherwise use Gnaw
+    if (gnawMove) {
+      return gnawMove;
+    }
+  }
+
+  // 2. Filter moves by star rating and active cooldowns
+  const currentStars = enemyState.stars || 1;
+  const availableMoves = (enemyState.moves || []).filter((move) => {
+    const minStars = move.minStars || 1;
+    const onCooldown = (enemyState.cooldowns?.[move.name] || 0) > 0;
+    return currentStars >= minStars && !onCooldown;
+  });
+
+  // 3. Fallback: if all moves are on cooldown, fall back to star-filtered moves
+  let pool = availableMoves;
+  if (pool.length === 0) {
+    pool = (enemyState.moves || []).filter((move) => {
+      const minStars = move.minStars || 1;
+      return currentStars >= minStars;
+    });
+  }
+
+  if (pool.length === 0) {
+    return (enemyState.moves && enemyState.moves[0]) || null;
+  }
+
+  // 4. Prioritize moves: use custom priority if defined, otherwise fall back to expected damage
+  const getExpectedDamage = (move) => {
+    if (move.damage !== undefined) return move.damage;
+    if (move.multiplier !== undefined) {
+      return (enemyState.attack || 5) * move.multiplier;
+    }
+    return enemyState.attack || 5;
+  };
+
+  const getMovePriority = (move) => {
+    if (move.priority !== undefined) return move.priority;
+    return getExpectedDamage(move);
+  };
+
+  // Sort descending by priority
+  pool.sort((a, b) => getMovePriority(b) - getMovePriority(a));
+
+  // Select randomly among the ones tied for highest priority
+  const maxPriority = getMovePriority(pool[0]);
+  const bestMoves = pool.filter(m => getMovePriority(m) === maxPriority);
+  return randomPick(bestMoves);
+}
+
 function deepCloneEnemy(enemy) {
   return JSON.parse(JSON.stringify(enemy));
 }

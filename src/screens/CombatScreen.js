@@ -45,7 +45,7 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 import { ZONES }        from '../data/zones';
-import { ENEMIES }      from '../data/enemies';
+import { ENEMIES, STAR_MULTIPLIERS }      from '../data/enemies';
 import { SKILLS }       from '../data/skills';
 import { CONSUMABLES }  from '../data/gear';
 import AnimatedSprite   from '../components/AnimatedSprite';
@@ -59,6 +59,7 @@ import {
   processStatusEffects,
   useConsumable,
   executeSkill,
+  selectEnemyMove,
 } from '../logic/combatEngine';
 import { calculateEncounterLoot } from '../logic/lootEngine';
 import { calculateEffectiveStats, checkLevelUp } from '../logic/progressionEngine';
@@ -180,6 +181,7 @@ function getTargetsForSkill(skillDef, selectedIdx, allEnemies) {
 const STATUS_EMOJIS = {
   bleed: '🩸',
   guard: '🛡️',
+  def_buff: '🛡️',
   stun: '😵‍💫',
   deathMark: '💀',
   stealth: '🌫️',
@@ -193,6 +195,7 @@ const STATUS_EMOJIS = {
 const STATUS_COLORS = {
   bleed: theme.COLORS.bleed || '#D8483F',
   guard: theme.COLORS.guard || '#5A9FE0',
+  def_buff: theme.COLORS.guard || '#5A9FE0',
   stun: theme.COLORS.stun || '#F5CF4A',
   deathMark: '#7A2F8F',
   stealth: theme.COLORS.stealth || '#A98EE0',
@@ -211,11 +214,17 @@ function consolidateEffectsArray(effectsList) {
       groups[eff.type] = { ...eff, stacks: eff.stacks || 1 };
     } else {
       const existing = groups[eff.type];
-      existing.duration = Math.max(existing.duration, eff.duration);
-      if (eff.damage !== undefined) {
-        existing.damage = (existing.damage || 0) + eff.damage;
+      if (eff.type === 'atk_reduce' || eff.type === 'dodge_reduce' || eff.type === 'crit_reduce' || eff.type === 'def_buff') {
+        existing.duration = eff.duration;
+        existing.value = eff.value;
+        existing.stacks = 1;
+      } else {
+        existing.duration = Math.max(existing.duration, eff.duration);
+        if (eff.damage !== undefined) {
+          existing.damage = (existing.damage || 0) + eff.damage;
+        }
+        existing.stacks = (existing.stacks || 1) + (eff.stacks || 1);
       }
-      existing.stacks = (existing.stacks || 1) + (eff.stacks || 1);
     }
   });
   return Object.values(groups);
@@ -231,11 +240,17 @@ function addStatusEffects(effectsList, newEffects) {
     const existingIndex = list.findIndex(e => e.type === newEffect.type);
     if (existingIndex > -1) {
       const existing = { ...list[existingIndex] };
-      existing.duration = newEffect.duration;
-      if (newEffect.damage !== undefined) {
-        existing.damage = (existing.damage || 0) + newEffect.damage;
+      if (newEffect.type === 'atk_reduce' || newEffect.type === 'dodge_reduce' || newEffect.type === 'crit_reduce' || newEffect.type === 'def_buff') {
+        existing.duration = newEffect.duration;
+        existing.value = newEffect.value;
+        existing.stacks = 1;
+      } else {
+        existing.duration = newEffect.duration;
+        if (newEffect.damage !== undefined) {
+          existing.damage = (existing.damage || 0) + newEffect.damage;
+        }
+        existing.stacks = (existing.stacks || 1) + (newEffect.stacks || 1);
       }
-      existing.stacks = (existing.stacks || 1) + (newEffect.stacks || 1);
       list[existingIndex] = existing;
     } else {
       list.push({
@@ -347,8 +362,9 @@ export default function CombatScreen() {
           isBoss: true,
           maxHp: bossData.hp,
           effects: [],
-          intent: randomPick(bossData.moves || []),
+          cooldowns: {},
         };
+        boss.intent = selectEnemyMove(boss);
         taggedEnemies = [boss];
       }
     } else if (roomType === 'elite') {
@@ -363,32 +379,41 @@ export default function CombatScreen() {
           maxHp: Math.floor(template.hp * 1.4),
           attack: Math.floor(template.attack * 1.3),  // +30% Attack
           effects: [],
-          intent: randomPick(template.moves || []),
+          cooldowns: {},
         };
+        elite.intent = selectEnemyMove(elite);
         taggedEnemies = [elite];
       }
     } else {
       // Tier-based encounter from battleRating (1★ to 5★)
-      const makeCommon = (template, i) => ({
-        ...template,
-        uid: template.id + '_' + i,
-        type: 'common',
-        maxHp: template.hp,
-        effects: [],
-        intent: randomPick(template.moves || []),
-      });
+      const makeCommon = (template, i) => {
+        const common = {
+          ...template,
+          uid: template.id + '_' + i,
+          type: 'common',
+          maxHp: template.hp,
+          effects: [],
+          cooldowns: {},
+        };
+        common.intent = selectEnemyMove(common);
+        return common;
+      };
 
-      const makeElite = (template, i) => ({
-        ...template,
-        uid: template.id + '_elite_' + i,
-        type: 'elite',
-        name: `Elite ${template.name}`,
-        hp: Math.floor(template.hp * 1.4),
-        maxHp: Math.floor(template.hp * 1.4),
-        attack: Math.floor(template.attack * 1.3),
-        effects: [],
-        intent: randomPick(template.moves || []),
-      });
+      const makeElite = (template, i) => {
+        const eliteObj = {
+          ...template,
+          uid: template.id + '_elite_' + i,
+          type: 'elite',
+          name: `Elite ${template.name}`,
+          hp: Math.floor(template.hp * 1.4),
+          maxHp: Math.floor(template.hp * 1.4),
+          attack: Math.floor(template.attack * 1.3),
+          effects: [],
+          cooldowns: {},
+        };
+        eliteObj.intent = selectEnemyMove(eliteObj);
+        return eliteObj;
+      };
 
       if (floorNumber === 1) {
         // Floor 1 is always exactly 1 common enemy to prevent gang-ups
@@ -458,6 +483,13 @@ export default function CombatScreen() {
         }
       }
     }
+    
+    // Assign intents with awareness of other enemies on the field
+    taggedEnemies = taggedEnemies.map(enemy => ({
+      ...enemy,
+      intent: selectEnemyMove(enemy, taggedEnemies),
+    }));
+
     setEnemies(taggedEnemies);
 
     // 5. Initialise cooldowns for equipped skills
@@ -468,7 +500,7 @@ export default function CombatScreen() {
     setCooldowns(initCooldowns);
 
     // 6. Consumables — currentRun.consumables is an array of ID strings
-    //    (e.g. ['health_potion', 'health_potion', 'antidote']). Group them
+    //    (e.g. ['potion', 'potion', 'antidote']). Group them
     //    into { id, quantity } objects for the in-combat item UI.
     const consumableIds = state.currentRun.consumables || [];
     const consumableMap = {};
@@ -493,7 +525,7 @@ export default function CombatScreen() {
   const refreshIntents = useCallback((currentEnemies) => {
     return currentEnemies.map((e) => ({
       ...e,
-      intent: randomPick(e.moves || []),
+      intent: selectEnemyMove(e, currentEnemies),
     }));
   }, []);
 
@@ -798,6 +830,10 @@ export default function CombatScreen() {
         updatedHero,
       );
 
+      // ── COOLDOWN FIX: executeEnemyTurn mutates enemy.cooldowns in-place.
+      // Write the updated cooldowns back into the array so they persist.
+      updatedEnemies[i] = { ...enemy, cooldowns: { ...(enemy.cooldowns || {}) } };
+
       // Trigger this enemy's attack animation if they are not stunned
       const enemyUid = enemy.uid;
       let animDuration = 500; // default delay if stunned or no animation plays
@@ -835,6 +871,47 @@ export default function CombatScreen() {
         }
       }
 
+      // Apply healing (e.g. Vampiric Bite life-steal)
+      if (turnResult.heal && turnResult.heal > 0) {
+        updatedEnemies = updatedEnemies.map((e, idx) => {
+          if (idx !== i) return e;
+          return {
+            ...e,
+            hp: Math.min(e.maxHp, e.hp + turnResult.heal),
+          };
+        });
+      }
+
+      // Handle summons (e.g. Summon Rats)
+      if (turnResult.summon) {
+        const { enemyId, count } = turnResult.summon;
+        const baseEnemy = ENEMIES[enemyId];
+        if (baseEnemy) {
+          const floorNumber = state.currentRun.floorNumber || 1;
+          const ratStars = Math.max(1, Math.min(4, Math.floor((floorNumber - 1) / 3) + 1));
+          const mult = STAR_MULTIPLIERS[ratStars] || 1.0;
+
+          for (let k = 0; k < count; k++) {
+            if (updatedEnemies.length >= 4) break;
+
+            const newRat = {
+              ...baseEnemy,
+              uid: `${enemyId}_summoned_${Date.now()}_${k}_${Math.floor(Math.random() * 1000)}`,
+              type: 'common',
+              stars: ratStars,
+              hp: Math.ceil(baseEnemy.hp * mult),
+              maxHp: Math.ceil(baseEnemy.hp * mult),
+              attack: Math.ceil(baseEnemy.attack * mult),
+              def: Math.max(1, Math.ceil((baseEnemy.def || 0) * mult)),
+              effects: [],
+              cooldowns: {},
+            };
+            newRat.intent = selectEnemyMove(newRat, [...updatedEnemies, newRat]);
+            updatedEnemies.push(newRat);
+          }
+        }
+      }
+
       // Handle self-destruct (Pufferfish)
       if (turnResult.selfDestruct) {
         defeatedEnemiesRef.current.push(updatedEnemies[i]);
@@ -844,6 +921,7 @@ export default function CombatScreen() {
 
       // Flush HP bar update to screen immediately after each enemy acts
       setHeroState({ ...updatedHero });
+      setEnemies([...updatedEnemies]);
 
       // Pause for the exact duration of the attack animation (or stun message) to finish
       await delay(animDuration + 100);
@@ -860,11 +938,13 @@ export default function CombatScreen() {
     updatedEnemies = updatedEnemies.map((e) => {
       const res = processStatusEffects(e);
       if (res.log) addLog(`${e.name}: ${res.log}`);
+      // Return a new object that includes the mutated cooldowns from processStatusEffects
+      const updated = { ...e, cooldowns: { ...(e.cooldowns || {}) } };
       if (res.damage > 0) {
         statusLogFired = true;
-        return { ...e, hp: Math.max(0, e.hp - res.damage) };
+        return { ...updated, hp: Math.max(0, e.hp - res.damage) };
       }
-      return { ...e };
+      return updated;
     });
 
     // Flush status-effect results to screen
@@ -981,7 +1061,11 @@ export default function CombatScreen() {
   // VICTORY — calculate loot, dispatch to global state
   // =========================================================================
   const handleVictory = () => {
-    const loot = calculateEncounterLoot(defeatedEnemiesRef.current);
+    const loot = calculateEncounterLoot(
+      defeatedEnemiesRef.current,
+      state.currentRun.zoneId,
+      state.currentRun.floorNumber,
+    );
     setLootResult(loot);
 
     // Dispatch rewards to global state (Run bag instead of permanent inventory)

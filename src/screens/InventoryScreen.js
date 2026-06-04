@@ -44,8 +44,10 @@ const GEAR_TYPE_ICON = {
 
 // ─── Consumable icons ─────────────────────────────────────────────────────────
 const CONSUMABLE_ICONS = {
-  health_potion: '🧪',
-  mega_potion:   '💊',
+  potion:        '🧪',
+  super_potion:  '🧪',
+  mega_potion:   '🧪',
+  ultra_potion:  '🧪',
   antidote:      '🌿',
   smoke_vial:    '💨',
   mystery_chest: '🎁',

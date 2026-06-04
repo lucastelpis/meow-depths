@@ -5,12 +5,13 @@
  * Bosses carry `isBoss: true` and define `phaseChanges` for mid-fight events.
  */
 
+// Applied to both HP and ATK at encounter generation time.
+// 5★ bosses are excluded — their stats are fixed in the definition.
 export const STAR_MULTIPLIERS = {
-  1: { hp: 1.0,  atk: 1.0  },
-  2: { hp: 1.2,  atk: 1.15 },
-  3: { hp: 1.4,  atk: 1.30 },
-  4: { hp: 1.6,  atk: 1.50 },
-  // 5★ is reserved for bosses only — bosses use their own fixed stats
+  1: 1.00,
+  2: 1.25,
+  3: 1.50,
+  4: 2.00,
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -31,10 +32,17 @@ const sewer_rat = {
   isBoss: false,
   isElite: false,
   drops: [
-    { itemId: 'black_shard', chance: 0.6 },
+    { itemId: 'black_shard', chance: 0.85, count: 2 },
   ],
   moves: [
-    { name: 'Gnaw', damage: 5 },
+    { name: 'Gnaw', damage: 5, minStars: 1 },
+    {
+      name: 'Lunge',
+      multiplier: 1.4,
+      effect: { type: "bleed", chance: 0.50, damage: 3, duration: 3 },
+      minStars: 3,
+      cooldown: 3,
+    },
   ],
   phaseChanges: [],
 };
@@ -53,11 +61,22 @@ const slimeling = {
   isBoss: false,
   isElite: false,
   drops: [
-    { itemId: 'black_shard', chance: 0.5 },
-    { itemId: 'black_crystal_small', chance: 0.2 },
+    { itemId: 'black_shard', chance: 0.80, count: 2 },
+    { itemId: 'black_crystal_small', chance: 0.35 },
   ],
   moves: [
-    { name: 'Ooze Splash', damage: 4, effect: { type: "bleed", chance: 0.30, damage: 3, duration: 3 } },
+    {
+      name: 'Ooze Splash',
+      multiplier: 1.0,
+      minStars: 1,
+    },
+    {
+      name: 'Engulf',
+      multiplier: 1.2,
+      effect: { type: 'atk_reduce', chance: 1.0, value: 0.20, duration: 2 },
+      minStars: 3,
+      cooldown: 3,
+    },
   ],
   phaseChanges: [],
 };
@@ -76,10 +95,30 @@ const cockroach_knight = {
   isBoss: false,
   isElite: false,
   drops: [
-    { itemId: 'black_crystal_small', chance: 0.5 },
+    { itemId: 'black_shard', chance: 0.75, count: 2 },
+    { itemId: 'black_crystal_small', chance: 0.55 },
   ],
   moves: [
-    { name: 'Shell Bash', damage: 7 },
+    {
+      name: 'Shell Bash',
+      multiplier: 1.0,
+      minStars: 1,
+      priority: 1,
+    },
+    {
+      name: 'Fortify',
+      effect: 'fortify_self',
+      minStars: 2,
+      cooldown: 4,
+      priority: 3,
+    },
+    {
+      name: 'Carapace Slam',
+      multiplier: 1.6,
+      minStars: 3,
+      cooldown: 3,
+      priority: 2,
+    },
   ],
   phaseChanges: [],
 };
@@ -98,11 +137,24 @@ const plague_frog = {
   isBoss: false,
   isElite: false,
   drops: [
-    { itemId: 'black_shard', chance: 0.4 },
-    { itemId: 'black_crystal_small', chance: 0.3 },
+    { itemId: 'black_shard', chance: 0.75, count: 2 },
+    { itemId: 'black_crystal_small', chance: 0.45 },
   ],
   moves: [
-    { name: 'Toxic Spit', damage: 5, effect: { type: "bleed", chance: 0.40, damage: 3, duration: 3 } },
+    {
+      name: 'Hop',
+      multiplier: 1.0,
+      minStars: 1,
+      priority: 1,
+    },
+    {
+      name: 'Tongue Grab',
+      multiplier: 1.3,
+      effect: { type: 'stun', chance: 0.30, duration: 1 },
+      minStars: 3,
+      cooldown: 3,
+      priority: 2,
+    },
   ],
   phaseChanges: [],
 };
@@ -121,9 +173,9 @@ const king_rat = {
   isBoss: true,
   isElite: false,
   drops: [
-    { itemId: 'black_crystal_core', chance: 1.0 },
-    { itemId: 'black_crystal_big', chance: 0.5 },
-    { itemId: 'black_crystal_small', chance: 0.5 },
+    { itemId: 'black_crystal_core', chance: 1.0, count: 2 },
+    { itemId: 'black_crystal_big', chance: 1.0, count: 3 },
+    { itemId: 'black_crystal_small', chance: 1.0, count: 4 },
     { itemId: 'gnarlcrown_shard', chance: 1.0 },
     { itemId: 'black_shard_fire', chance: 1.0, count: 2 },
     { itemId: 'black_shard_water', chance: 1.0, count: 2 },
@@ -131,16 +183,31 @@ const king_rat = {
     { itemId: 'black_shard_wind', chance: 1.0, count: 2 },
   ],
   moves: [
-    { name: 'Gnaw', damage: 18 },
-  ],
-  phaseChanges: [
     {
-      hpPercent: 0.5,
-      action: 'summon',
-      summonId: 'sewer_rat',
-      summonCount: 2,
+      name: 'Gnaw',
+      multiplier: 1.0,
+      minStars: 1,
+    },
+    {
+      name: 'Savage Bite',
+      multiplier: 1.7,
+      minStars: 1,
+      cooldown: 3,
+    },
+    {
+      name: 'Vampiric Bite',
+      multiplier: 1.3,
+      effect: 'vampiric_bite',
+      minStars: 1,
+      cooldown: 5,
+    },
+    {
+      name: 'Summon Rats',
+      effect: 'summon_rats',
+      minStars: 1,
     },
   ],
+  phaseChanges: [],
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -161,7 +228,7 @@ const thorn_sprite = {
   isBoss: false,
   isElite: false,
   drops: [
-    { itemId: 'green_shard', chance: 0.6 },
+    { itemId: 'green_shard', chance: 0.85, count: 2 },
   ],
   moves: [
     { name: 'Thorn Jab', damage: 12 },
@@ -183,7 +250,8 @@ const giant_beetle = {
   isBoss: false,
   isElite: false,
   drops: [
-    { itemId: 'green_crystal_small', chance: 0.5 },
+    { itemId: 'green_shard', chance: 0.75, count: 2 },
+    { itemId: 'green_crystal_small', chance: 0.55 },
   ],
   moves: [
     { name: 'Crush', damage: 10 },
@@ -205,8 +273,8 @@ const mushroom_puffer = {
   isBoss: false,
   isElite: false,
   drops: [
-    { itemId: 'green_shard', chance: 0.5 },
-    { itemId: 'green_crystal_small', chance: 0.2 },
+    { itemId: 'green_shard', chance: 0.80, count: 2 },
+    { itemId: 'green_crystal_small', chance: 0.35 },
   ],
   moves: [
     { name: 'Spore Cloud', damage: 9, effect: { type: "atk_reduce", chance: 0.50, value: 0.20, duration: 2 } },
@@ -228,8 +296,8 @@ const vine_lurker = {
   isBoss: false,
   isElite: false,
   drops: [
-    { itemId: 'green_shard', chance: 0.4 },
-    { itemId: 'green_crystal_small', chance: 0.3 },
+    { itemId: 'green_shard', chance: 0.75, count: 2 },
+    { itemId: 'green_crystal_small', chance: 0.45 },
   ],
   moves: [
     { name: 'Constrict', damage: 13, effect: { type: "dodge_reduce", chance: 1.0, value: 0.15, duration: 2 } },
@@ -251,9 +319,9 @@ const rootmother = {
   isBoss: true,
   isElite: false,
   drops: [
-    { itemId: 'green_crystal_core', chance: 1.0 },
-    { itemId: 'green_crystal_big', chance: 0.5 },
-    { itemId: 'green_crystal_small', chance: 0.5 },
+    { itemId: 'green_crystal_core', chance: 1.0, count: 2 },
+    { itemId: 'green_crystal_big', chance: 1.0, count: 3 },
+    { itemId: 'green_crystal_small', chance: 1.0, count: 4 },
     { itemId: 'rootmother_heart', chance: 1.0 },
     { itemId: 'green_crystal_fire', chance: 1.0, count: 2 },
     { itemId: 'green_crystal_water', chance: 1.0, count: 2 },
@@ -290,7 +358,7 @@ const barnacle_crab = {
   isBoss: false,
   isElite: false,
   drops: [
-    { itemId: 'yellow_shard', chance: 0.6 },
+    { itemId: 'yellow_shard', chance: 0.85, count: 2 },
   ],
   moves: [
     { name: 'Claw Snap', damage: 16 },
@@ -312,7 +380,8 @@ const sea_witch_eel = {
   isBoss: false,
   isElite: false,
   drops: [
-    { itemId: 'yellow_crystal_small', chance: 0.5 },
+    { itemId: 'yellow_shard', chance: 0.75, count: 2 },
+    { itemId: 'yellow_crystal_small', chance: 0.55 },
   ],
   moves: [
     { name: 'Hex', damage: 20, effect: { type: "crit_reduce", chance: 1.0, value: 0.15, duration: 2 } },
@@ -334,8 +403,8 @@ const drowned_sailor = {
   isBoss: false,
   isElite: false,
   drops: [
-    { itemId: 'yellow_shard', chance: 0.4 },
-    { itemId: 'yellow_crystal_small', chance: 0.3 },
+    { itemId: 'yellow_shard', chance: 0.75, count: 2 },
+    { itemId: 'yellow_crystal_small', chance: 0.45 },
   ],
   moves: [
     { name: 'Haunt', damage: 17, effect: { type: "stun", chance: 0.30 } },
@@ -360,8 +429,8 @@ const pufferfish_bomb = {
   isBoss: false,
   isElite: false,
   drops: [
-    { itemId: 'yellow_shard', chance: 0.5 },
-    { itemId: 'yellow_crystal_small', chance: 0.2 },
+    { itemId: 'yellow_shard', chance: 0.80, count: 2 },
+    { itemId: 'yellow_crystal_small', chance: 0.35 },
   ],
   moves: [
     { name: 'Explode', damage: 25, effect: { type: "self_destruct", chance: 1.0 } },
@@ -383,9 +452,9 @@ const captain_moray = {
   isBoss: true,
   isElite: false,
   drops: [
-    { itemId: 'yellow_crystal_core', chance: 1.0 },
-    { itemId: 'yellow_crystal_big', chance: 0.5 },
-    { itemId: 'yellow_crystal_small', chance: 0.5 },
+    { itemId: 'yellow_crystal_core', chance: 1.0, count: 2 },
+    { itemId: 'yellow_crystal_big', chance: 1.0, count: 3 },
+    { itemId: 'yellow_crystal_small', chance: 1.0, count: 4 },
     { itemId: 'morays_fang', chance: 1.0 },
     { itemId: 'yellow_crystal_fire', chance: 1.0, count: 2 },
     { itemId: 'yellow_crystal_water', chance: 1.0, count: 2 },

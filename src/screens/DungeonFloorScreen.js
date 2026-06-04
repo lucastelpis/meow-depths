@@ -127,8 +127,10 @@ const FLOOR_FLAVORS = [
 
 const MAX_SLOTS = 5;
 const CONSUMABLE_ICONS = {
-  health_potion: '🧪',
-  mega_potion:   '💊',
+  potion:        '🧪',
+  super_potion:  '🧪',
+  mega_potion:   '🧪',
+  ultra_potion:  '🧪',
   antidote:      '🌿',
   smoke_vial:    '💨',
   mystery_chest: '🎁',

@@ -22,7 +22,7 @@
 // ---------------------------------------------------------------------------
 // Imports
 // ---------------------------------------------------------------------------
-import { GOLD_DROPS, XP_VALUES } from '../data/zones';
+import { GOLD_DROPS, XP_VALUES, FLOOR_MATERIAL_POOLS } from '../data/zones';
 
 // ============================================================================
 // 1) calculateDrops — roll for loot from one defeated enemy
@@ -47,21 +47,26 @@ import { GOLD_DROPS, XP_VALUES } from '../data/zones';
  *   xp: number
  * }}
  */
-export function calculateDrops(enemy) {
+export function calculateDrops(enemy, zoneId, floorNumber) {
+  // -- Resolve allowed material pool for this floor --------------------------
+  const pool = zoneId && floorNumber != null
+    ? (FLOOR_MATERIAL_POOLS[zoneId] || []).find(entry => floorNumber <= entry.maxFloor)
+    : null;
+  const allowedSet = pool ? new Set(pool.allowed) : null;
+
   // -- Roll for material drops ------------------------------------------------
   const materials = [];
 
-  // `enemy.drops` is an array like:
-  //   [{ itemId: 'crab_shell', chance: 0.6 }, { itemId: 'coral_shard', chance: 0.3 }]
   const drops = enemy.drops || [];
 
   for (const drop of drops) {
-    const roll = Math.random(); // 0.0 – 1.0
+    // Skip materials not in this floor's pool (allowedSet null = boss floor, allow all)
+    if (allowedSet && !allowedSet.has(drop.itemId)) continue;
+
+    const roll = Math.random();
     if (roll < drop.chance) {
-      // The player wins this material!
       materials.push({ itemId: drop.itemId, quantity: drop.count || 1 });
     }
-    // Otherwise the material doesn't drop this time — better luck next fight.
   }
 
   // -- Calculate gold based on enemy tier ------------------------------------
@@ -144,9 +149,9 @@ export function mergeLoot(lootArray) {
  *   const loot = calculateEncounterLoot([coralCrab1, coralCrab2]);
  *   // loot = { materials: { crab_shell: 2 }, gold: 22, xp: 40 }
  */
-export function calculateEncounterLoot(enemies) {
+export function calculateEncounterLoot(enemies, zoneId, floorNumber) {
   // Step 1: Roll drops for every enemy individually
-  const individualLoot = enemies.map(enemy => calculateDrops(enemy));
+  const individualLoot = enemies.map(enemy => calculateDrops(enemy, zoneId, floorNumber));
 
   // Step 2: Merge all individual results into one bag
   return mergeLoot(individualLoot);

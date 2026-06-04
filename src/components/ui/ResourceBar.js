@@ -11,6 +11,8 @@ export default function ResourceBar({
   hideText = false,
 }) {
   const animatedWidth = useRef(new Animated.Value(0)).current;
+  const flashAnim = useRef(new Animated.Value(0)).current;
+  const prevCurrentRef = useRef(current);
 
   // Calculate percentage safely
   const percentage = max > 0 ? Math.min(Math.max((current / max) * 100, 0), 100) : 0;
@@ -22,6 +24,18 @@ export default function ResourceBar({
       useNativeDriver: false,
     }).start();
   }, [percentage]);
+
+  useEffect(() => {
+    if (variant === 'enemyHp' && current > prevCurrentRef.current) {
+      flashAnim.setValue(1);
+      Animated.timing(flashAnim, {
+        toValue: 0,
+        duration: 750,
+        useNativeDriver: false,
+      }).start();
+    }
+    prevCurrentRef.current = current;
+  }, [current, variant]);
 
   let barConfig = {
     fillColor: theme.COLORS.healthGreen,
@@ -49,6 +63,13 @@ export default function ResourceBar({
     };
   }
 
+  const fillColor = variant === 'enemyHp'
+    ? flashAnim.interpolate({
+        inputRange: [0, 1],
+        outputRange: [theme.COLORS.damageRed, '#2ECC71'],
+      })
+    : barConfig.fillColor;
+
   const widthStyle = {
     width: animatedWidth.interpolate({
       inputRange: [0, 100],
@@ -74,7 +95,7 @@ export default function ResourceBar({
             styles.fill,
             widthStyle,
             {
-              backgroundColor: barConfig.fillColor,
+              backgroundColor: fillColor,
               borderRadius: barConfig.radius,
             },
           ]}
