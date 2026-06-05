@@ -1,12 +1,17 @@
 /**
- * SkillTreeScreen.js — Meow Depths Skill Tree (Redesigned Premium UI)
+ * SkillTreeScreen.js — Element-based Skill Tree
  *
- * Displays three class paths (Iron Paw, Stonefur, Shadow Claw) via a premium tab bar.
- * Renders the skill tree as a beautiful SVG constellation path with glowing nodes and
- * connections, and a slide-up detail panel for learning and equipping skills.
+ * Layout per element:
+ *   - Element tabs at top (Fire active, others greyed)
+ *   - Stance card (always-on innate, scales with level)
+ *   - Two-column skill grid:
+ *       Left  — Active skills (T1 active → T2A, T2B side by side)
+ *       Right — Passive skills (T1 passive, standalone)
+ *   - Skill card states: locked / available / unlocked / maxed / equipped
+ *   - Tap card → detail modal (unlock, star-up, equip)
  */
 
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -19,427 +24,592 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
-import Svg, { Defs, LinearGradient, RadialGradient, Stop, Rect, Line, Circle } from 'react-native-svg';
+import Svg, { Defs, LinearGradient, RadialGradient, Stop, Rect, Path } from 'react-native-svg';
 
-import theme from '../constants/theme';
 import { useGame } from '../state/gameState';
-import { SKILLS, getSkillsByPath } from '../data/skills';
-import { canUnlockSkill } from '../logic/progressionEngine';
+import { SKILLS, ELEMENT_SKILLS, canUnlockElementSkill, canStarUpSkill, getSkillCost } from '../data/skills';
+import { STANCES, getStanceBonus } from '../logic/progressionEngine';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
-// ─── Path metadata ──────────────────────────────────────────────────────────
-const PATHS = [
-  { key: 'ironPaw',    label: 'Iron Paw',    icon: '🐾', color: '#EF4444' },
-  { key: 'stonefur',   label: 'Stonefur',    icon: '🪨', color: '#06B6D4' },
-  { key: 'shadowClaw', label: 'Shadow Claw', icon: '🌙', color: '#A855F7' },
+// ─── Element metadata ─────────────────────────────────────────────────────────
+
+const ELEMENTS = [
+  { id: 'fire',  label: 'Fire',  icon: '🔥', color: '#FF6B35', available: true  },
+  { id: 'water', label: 'Water', icon: '💧', color: '#3B9EFF', available: false },
+  { id: 'earth', label: 'Earth', icon: '⛰️', color: '#8B6914', available: false },
+  { id: 'wind',  label: 'Wind',  icon: '🌪️', color: '#5CC4B8', available: false },
 ];
 
-const PATH_DESCRIPTIONS = {
-  ironPaw: 'Offensive powerhouse with high damage output, critical strikes, and self-sustain.',
-  stonefur: 'Sturdy defender focused on damage reduction, countering attacks, and stunning enemies.',
-  shadowClaw: 'Agile assassin utilizing stealth, guaranteed critical hits, and bleed damage stacks.',
+const ELEMENT_COLORS = {
+  fire:  '#FF6B35',
+  water: '#3B9EFF',
+  earth: '#8B6914',
+  wind:  '#5CC4B8',
 };
 
-const SKILL_EMOJIS = {
-  iron_slash: '⚔️',
-  steady_paws: '🐾',
-  rally: '❤️',
-  power_strike: '💥',
-  veteran: '🛡️',
-  sharp_mind: '🧠',
-  guard_stance: '🛡️',
-  iron_hide: '🪵',
-  retaliate: '⚡',
-  thick_fur: '🧥',
-  unbreakable: '🧱',
-  titan_slam: '🔨',
-  vanish: '💨',
-  serrated_claws: '🔪',
-  death_mark: '🎯',
-  sharp_eyes: '👁️',
-  toxic_claws: '🧪',
-  phantom_step: '👣',
-};
-
-function getSkillStatus(skill, unlockedSkills, skillPoints) {
-  if (unlockedSkills.includes(skill.id)) return 'unlocked';
-
-  if (skill.branch) {
-    const otherBranch = skill.branch === 'a' ? 'b' : 'a';
-    const conflicting = Object.values(SKILLS).find(
-      s => s.path === skill.path && s.tier === skill.tier && s.branch === otherBranch,
-    );
-    if (conflicting && unlockedSkills.includes(conflicting.id)) return 'blocked';
-  }
-
-  const result = canUnlockSkill(skill.id, unlockedSkills, skillPoints, SKILLS);
-  if (result.canUnlock) return 'available';
-
-  const potentialResult = canUnlockSkill(skill.id, unlockedSkills, 1, SKILLS);
-  if (potentialResult.canUnlock) return 'no_points';
-
-  return 'locked';
+// Stars display
+function Stars({ count, max = 5, color = '#FFD700' }) {
+  return (
+    <View style={{ flexDirection: 'row', gap: 2, marginTop: 4 }}>
+      {Array.from({ length: max }, (_, i) => (
+        <Text key={i} style={{ color: i < count ? color : 'rgba(255,255,255,0.12)', fontSize: 11 }}>
+          ★
+        </Text>
+      ))}
+    </View>
+  );
 }
+
+// ─── Stat Labels & Formatters ──────────────────────────────────────────────────
+
+const SKILL_STAT_LABELS = {
+  damageMultiplier: 'Base Damage',
+  burnDamage: 'Burn Damage / Turn',
+  burnDuration: 'Burn Duration',
+  burnTickBonus: 'Burn Damage Bonus',
+  spreadPercent: 'Splash Damage',
+  spreadBurnChance: 'Splash Burn Chance',
+  counterBurnDamage: 'Counter Damage / Turn',
+  counterBurnDuration: 'Counter Duration',
+  guardDuration: 'Guard Duration',
+};
+
+const formatSkillStatValue = (key, value) => {
+  if (key === 'damageMultiplier') {
+    return `${Math.round(value * 100)}% ATK`;
+  }
+  if (key === 'spreadPercent' || key === 'spreadBurnChance') {
+    return `${Math.round(value * 100)}%`;
+  }
+  if (key === 'burnDuration' || key === 'counterBurnDuration' || key === 'guardDuration') {
+    return `${value} ${value === 1 ? 'turn' : 'turns'}`;
+  }
+  return value;
+};
+
+// ─── Main component ──────────────────────────────────────────────────────────
 
 export default function SkillTreeScreen() {
   const navigation = useNavigation();
   const { state, dispatch } = useGame();
-  const { skillPoints, unlockedSkills, equippedSkills } = state.hero;
+  const { hero } = state;
+  const { skillPoints = 0, unlockedSkills = {}, equippedSkills = [null, null], element, level } = hero;
 
-  const [selectedPath, setSelectedPath] = useState('ironPaw');
   const [selectedSkill, setSelectedSkill] = useState(null);
+  const elementColor = ELEMENT_COLORS[element] || '#D4A754';
+  const stanceBonus  = getStanceBonus(element, level);
+  const stance       = STANCES[element];
 
-  // ── Pre-compute path data ────────────────────────────────────────────────
-  const pathData = useMemo(
-    () =>
-      PATHS.map(p => ({
-        ...p,
-        skills: getSkillsByPath(p.key),
-      })),
-    [],
-  );
+  // The player's element tab is always shown first; others visible but locked
+  const activeTabElement = element || 'fire';
+  const [viewingElement, setViewingElement] = useState(activeTabElement);
 
-  const selectedPathData = useMemo(() => {
-    return pathData.find(p => p.key === selectedPath);
-  }, [pathData, selectedPath]);
+  // Skills for the currently viewed element
+  const elementSkillIds = ELEMENT_SKILLS[viewingElement] || [];
 
-  // Organise skills into exact structure: [T1, T2, [T3A, T3B], [T4A, T4B]]
-  const treeNodes = useMemo(() => {
-    if (!selectedPathData) return { t1: null, t2: null, t3_a: null, t3_b: null, t4_a: null, t4_b: null };
-    const skills = selectedPathData.skills;
+  // Group skill IDs by tier dynamically
+  const tiers = [];
+  const maxTier = Math.max(...elementSkillIds.map(id => SKILLS[id]?.tier || 1), 2);
+  for (let t = 1; t <= maxTier; t++) {
+    const tierIds = elementSkillIds.filter(id => SKILLS[id]?.tier === t);
+    if (tierIds.length > 0) {
+      tiers.push(tierIds);
+    }
+  }
+
+  // Layout calculations
+  const TREE_WIDTH = SCREEN_WIDTH - 32; // 16 padding on each side
+  const CARD_GAP = 16;
+  const CARD_HEIGHT = 120;
+  const ROW_GAP = 60;
+  const numTiers = tiers.length;
+  const TREE_HEIGHT = numTiers > 0 ? numTiers * CARD_HEIGHT + (numTiers - 1) * ROW_GAP : 0;
+
+  // ── Skill state helpers ───────────────────────────────────────────────────
+
+  const getEntry = useCallback((skillId) => unlockedSkills[skillId] || null, [unlockedSkills]);
+  const getStars = useCallback((skillId) => getEntry(skillId)?.stars || 0, [getEntry]);
+  const isEquipped = useCallback((skillId) => equippedSkills.includes(skillId), [equippedSkills]);
+
+  const getCardState = useCallback((skillId) => {
+    if (!skillId) return 'hidden';
+    const entry = getEntry(skillId);
+    if (entry) {
+      if (entry.stars >= 5) return 'maxed';
+      return 'unlocked';
+    }
+    const { can } = canUnlockElementSkill(skillId, hero);
+    return can ? 'available' : 'locked';
+  }, [getEntry, hero]);
+
+  // Calculate coordinates for SVG lines
+  const getSkillCoordinates = useCallback((skillId) => {
+    let rIndex = -1;
+    let cIndex = -1;
+    let numColumns = 0;
     
-    return {
-      t1: skills.find(s => s.tier === 1),
-      t2: skills.find(s => s.tier === 2),
-      t3_a: skills.find(s => s.tier === 3 && s.branch === 'a'),
-      t3_b: skills.find(s => s.tier === 3 && s.branch === 'b'),
-      t4_a: skills.find(s => s.tier === 4 && s.branch === 'a'),
-      t4_b: skills.find(s => s.tier === 4 && s.branch === 'b'),
-    };
-  }, [selectedPathData]);
-
-  const { t1, t2, t3_a, t3_b, t4_a, t4_b } = treeNodes;
-
-  const tabProgress = useMemo(() => {
-    const counts = {};
-    pathData.forEach(p => {
-      const unlockedCount = p.skills.filter(s => unlockedSkills.includes(s.id)).length;
-      counts[p.key] = `${unlockedCount}/${p.skills.length}`;
-    });
-    return counts;
-  }, [pathData, unlockedSkills]);
-
-  // Constellation Connectors Logic (solid only if target skill is unlocked/chosen)
-  const connectionStatuses = useMemo(() => {
-    return {
-      t1_t2: t2 ? unlockedSkills.includes(t2.id) : false,
-      t2_t3a: t3_a ? unlockedSkills.includes(t3_a.id) : false,
-      t2_t3b: t3_b ? unlockedSkills.includes(t3_b.id) : false,
-      t3a_t4a: t4_a ? unlockedSkills.includes(t4_a.id) : false,
-      t3b_t4b: t4_b ? unlockedSkills.includes(t4_b.id) : false,
-    };
-  }, [t2, t3_a, t3_b, t4_a, t4_b, unlockedSkills]);
-
-  const prereqInfo = useMemo(() => {
-    if (!selectedSkill) return null;
-    if (!selectedSkill.requires) return { met: true, text: 'No Prerequisite' };
-
-    const prereqSkill = SKILLS[selectedSkill.requires];
-    const met = unlockedSkills.includes(selectedSkill.requires);
-    return {
-      met,
-      text: `Requires "${prereqSkill?.name || selectedSkill.requires}"`,
-    };
-  }, [selectedSkill, unlockedSkills]);
-
-  const conflictInfo = useMemo(() => {
-    if (!selectedSkill || !selectedSkill.branch) return null;
-    const otherBranch = selectedSkill.branch === 'a' ? 'b' : 'a';
-    const conflicting = Object.values(SKILLS).find(
-      s => s.path === selectedSkill.path && s.tier === selectedSkill.tier && s.branch === otherBranch
-    );
-    if (!conflicting) return null;
+    for (let r = 0; r < tiers.length; r++) {
+      const colIdx = tiers[r].indexOf(skillId);
+      if (colIdx !== -1) {
+        rIndex = r;
+        cIndex = colIdx;
+        numColumns = tiers[r].length;
+        break;
+      }
+    }
     
-    const chosen = unlockedSkills.includes(conflicting.id);
-    return {
-      chosen,
-      text: `Mutually exclusive with "${conflicting.name}"`,
-    };
-  }, [selectedSkill, unlockedSkills]);
+    if (rIndex === -1) return null;
+    
+    const cardWidth = (TREE_WIDTH - (numColumns - 1) * CARD_GAP) / numColumns;
+    const x = cIndex * (cardWidth + CARD_GAP) + cardWidth / 2;
+    const yTop = rIndex * (CARD_HEIGHT + ROW_GAP);
+    const yBottom = yTop + CARD_HEIGHT;
+    
+    return { x, yTop, yBottom };
+  }, [tiers, TREE_WIDTH]);
 
-  // Handlers
-  const handleLearnSkill = useCallback(() => {
+  // ── Handlers ──────────────────────────────────────────────────────────────
+
+  const handleUnlock = useCallback(() => {
     if (!selectedSkill) return;
-    dispatch({ type: 'UNLOCK_SKILL', payload: { skillId: selectedSkill.id, cost: 1 } });
+    const cost = getSkillCost(selectedSkill);
+    dispatch({ type: 'UNLOCK_SKILL', payload: { skillId: selectedSkill.id, cost } });
+    setSelectedSkill(null);
   }, [selectedSkill, dispatch]);
 
-  const handleEquipSkill = useCallback((slotIndex) => {
+  const handleStarUp = useCallback(() => {
     if (!selectedSkill) return;
-    dispatch({
-      type: 'EQUIP_SKILL',
-      payload: { slotIndex, skillId: selectedSkill.id },
-    });
+    const cost = getSkillCost(selectedSkill);
+    dispatch({ type: 'STAR_UP_SKILL', payload: { skillId: selectedSkill.id, cost } });
+    setSelectedSkill(null);
   }, [selectedSkill, dispatch]);
 
-  const slot1Label = useMemo(() => {
-    return equippedSkills[0] ? SKILLS[equippedSkills[0]]?.name || 'Skill 1' : 'Empty';
-  }, [equippedSkills]);
+  const handleEquip = useCallback((slotIndex) => {
+    if (!selectedSkill) return;
+    dispatch({ type: 'EQUIP_SKILL', payload: { slotIndex, skillId: selectedSkill.id } });
+    setSelectedSkill(null);
+  }, [selectedSkill, dispatch]);
 
-  const slot2Label = useMemo(() => {
-    return equippedSkills[1] ? SKILLS[equippedSkills[1]]?.name || 'Skill 2' : 'Empty';
-  }, [equippedSkills]);
+  const handleUnequip = useCallback((slotIndex) => {
+    dispatch({ type: 'EQUIP_SKILL', payload: { slotIndex, skillId: null } });
+  }, [dispatch]);
 
-  const selectedSkillStatus = useMemo(() => {
-    if (!selectedSkill) return null;
-    return getSkillStatus(selectedSkill, unlockedSkills, skillPoints);
-  }, [selectedSkill, unlockedSkills, skillPoints]);
+  // ── Render SVG Connector Lines ────────────────────────────────────────────
 
-  // Absolute coordinate offsets inside our tree container (340 width, 520 height)
-  const renderSkillNode = (skill, cx, cy) => {
+  const renderSVGConnectors = () => {
+    const paths = [];
+    
+    elementSkillIds.forEach(childId => {
+      const childSkill = SKILLS[childId];
+      if (childSkill && childSkill.unlockedBy) {
+        const parentId = childSkill.unlockedBy;
+        const parentCoords = getSkillCoordinates(parentId);
+        const childCoords = getSkillCoordinates(childId);
+        
+        if (parentCoords && childCoords) {
+          const x1 = parentCoords.x;
+          const y1 = parentCoords.yBottom;
+          const x2 = childCoords.x;
+          const y2 = childCoords.yTop;
+          
+          const midY = y1 + (y2 - y1) / 2;
+          const pathData = `M ${x1} ${y1} C ${x1} ${midY}, ${x2} ${midY}, ${x2} ${y2}`;
+          
+          const parentStars = getStars(parentId);
+          const isPathUnlocked = parentStars >= 5;
+          const elColor = ELEMENT_COLORS[viewingElement] || '#D4A754';
+          
+          const strokeColor = isPathUnlocked ? elColor : 'rgba(255,255,255,0.06)';
+          const glowColor = isPathUnlocked ? `${elColor}33` : 'transparent';
+          
+          paths.push(
+            <React.Fragment key={`${parentId}->${childId}`}>
+              {isPathUnlocked && (
+                <Path
+                  d={pathData}
+                  fill="none"
+                  stroke={glowColor}
+                  strokeWidth={6}
+                  strokeLinecap="round"
+                />
+              )}
+              <Path
+                d={pathData}
+                fill="none"
+                stroke={strokeColor}
+                strokeWidth={2}
+                strokeLinecap="round"
+              />
+            </React.Fragment>
+          );
+        }
+      }
+    });
+    
+    return paths;
+  };
+
+  // ── Skill card renderer ───────────────────────────────────────────────────
+
+  const renderSkillCard = (skillId, cardStyle) => {
+    if (!skillId) return null;
+    const skill = SKILLS[skillId];
     if (!skill) return null;
-    const status = getSkillStatus(skill, unlockedSkills, skillPoints);
-    const isEquipped = equippedSkills.includes(skill.id);
-    const emoji = SKILL_EMOJIS[skill.id] || '✨';
 
-    // Status visual styles
-    let borderColor = 'rgba(255,255,255,0.06)';
-    let glowColor = 'transparent';
+    const cardState = getCardState(skillId);
+    const stars = getStars(skillId);
+    const equipped = isEquipped(skillId);
+    const elColor = ELEMENT_COLORS[viewingElement] || '#D4A754';
+
+    let borderColor = 'rgba(255,255,255,0.12)';
     let opacity = 1;
-    let badgeText = '';
-    let badgeColor = '#707F94';
-
-    if (isEquipped) {
-      borderColor = '#D4A754';
-      glowColor = 'rgba(212, 167, 84, 0.4)';
-    } else if (status === 'unlocked') {
-      borderColor = '#10B981';
-      glowColor = 'rgba(16, 185, 129, 0.15)';
-    } else if (status === 'available') {
-      borderColor = '#FFC107';
-      glowColor = 'rgba(255, 193, 7, 0.2)';
-    } else if (status === 'no_points') {
-      borderColor = '#FF6B35';
-      glowColor = 'rgba(255, 107, 53, 0.1)';
-    } else {
-      borderColor = 'rgba(255,255,255,0.03)';
-      opacity = 0.4;
+    let cardBg = 'rgba(25, 27, 36, 0.95)'; // Lighter slate grey for better contrast
+    let nameColor = 'rgba(255, 255, 255, 0.55)'; // Brighter locked text
+    
+    if (cardState === 'locked') {
+      borderColor = 'rgba(255,255,255,0.06)';
+      opacity = 0.65; // Brighter opacity
+    } else if (cardState === 'available') {
+      borderColor = '#FFC107'; // Bright gold border
+      nameColor = '#FFC107';
+    } else if (cardState === 'maxed') {
+      borderColor = '#FFD700'; // Gold border for maxed
+      nameColor = '#FFFFFF';
+    } else { // Unlocked / Equipped
+      borderColor = equipped ? elColor : `${elColor}90`;
+      nameColor = '#FFFFFF';
     }
 
-    return (
-      <View key={skill.id} style={[styles.nodeWrapper, { left: cx - 35, top: cy - 35, opacity }]}>
-        <TouchableOpacity
-          style={[
-            styles.nodeCircle,
-            { borderColor, shadowColor: borderColor },
-            isEquipped && styles.nodeCircleEquipped,
-          ]}
-          onPress={() => setSelectedSkill(skill)}
-          activeOpacity={0.8}
-        >
-          {/* Node SVG Glow background */}
-          <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
-            <Defs>
-              <RadialGradient id={`nodeGlow_${skill.id}`} cx="50%" cy="50%" r="50%">
-                <Stop offset="0%" stopColor={borderColor} stopOpacity="0.25" />
-                <Stop offset="100%" stopColor="#0B0B12" stopOpacity="0" stopColor="transparent" />
-              </RadialGradient>
-            </Defs>
-            <Rect width="100%" height="100%" fill={`url(#nodeGlow_${skill.id})`} rx={35} />
-          </Svg>
-          <Text style={styles.nodeEmoji}>{emoji}</Text>
-          {isEquipped && (
-            <View style={styles.equippedDot} />
-          )}
-        </TouchableOpacity>
+    const typeBadgeColor = skill.type === 'active' ? '#FF5555' : '#00F0D0';
+    const typeBadgeBg = skill.type === 'active' ? 'rgba(255, 85, 85, 0.15)' : 'rgba(0, 240, 208, 0.15)';
+    const typeBadgeBorder = skill.type === 'active' ? 'rgba(255, 85, 85, 0.35)' : 'rgba(0, 240, 208, 0.35)';
 
-        {/* Node Name underneath */}
-        <View style={styles.nodeNameWrapper}>
-          <Text style={[styles.nodeNameText, isEquipped && { color: '#D4A754', fontWeight: 'bold' }]} numberOfLines={1}>
-            {skill.name}
-          </Text>
-          <Text style={styles.nodeTypeText}>
-            {skill.type === 'active' ? 'ACT' : 'PAS'}
-          </Text>
+    const renderCardBackground = () => {
+      let gradColor = 'transparent';
+      let fillOpacity = 0;
+      
+      if (equipped) {
+        gradColor = elColor;
+        fillOpacity = 0.22;
+      } else if (cardState === 'maxed') {
+        gradColor = '#FFD700';
+        fillOpacity = 0.18;
+      } else if (cardState === 'available') {
+        gradColor = '#FFC107';
+        fillOpacity = 0.14;
+      } else if (cardState === 'unlocked') {
+        gradColor = elColor;
+        fillOpacity = 0.10;
+      }
+
+      return (
+        <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
+          <Defs>
+            <RadialGradient id={`rg_${skillId}`} cx="50%" cy="50%" rx="70%" ry="70%">
+              <Stop offset="0%" stopColor={gradColor} stopOpacity={fillOpacity} />
+              <Stop offset="100%" stopColor="transparent" stopOpacity="0" />
+            </RadialGradient>
+          </Defs>
+          <Rect width="100%" height="100%" fill={`url(#rg_${skillId})`} rx={12} />
+        </Svg>
+      );
+    };
+
+    return (
+      <TouchableOpacity
+        key={skillId}
+        style={[styles.skillCard, cardStyle, { borderColor, opacity, backgroundColor: cardBg }]}
+        onPress={() => (viewingElement === element) && setSelectedSkill(skill)}
+        activeOpacity={0.8}
+        disabled={viewingElement !== element}
+      >
+        {renderCardBackground()}
+
+        <View style={styles.cardHeader}>
+          <Text style={styles.cardIcon}>{skill.icon || '✨'}</Text>
+          <View style={styles.cardBadgeRow}>
+            <View style={[styles.typeBadge, { backgroundColor: typeBadgeBg, borderColor: typeBadgeBorder }]}>
+              <Text style={[styles.typeBadgeText, { color: typeBadgeColor }]}>
+                {skill.type === 'active' ? 'ACTIVE' : 'PASSIVE'}
+              </Text>
+            </View>
+            {equipped && (
+              <View style={[styles.equippedBadge, { backgroundColor: `${elColor}25`, borderColor: elColor }]}>
+                <Text style={[styles.equippedBadgeText, { color: elColor }]}>EQUIPPED</Text>
+              </View>
+            )}
+          </View>
         </View>
-      </View>
+
+        <Text style={[styles.cardName, { color: nameColor }]} numberOfLines={1}>
+          {skill.name}
+        </Text>
+
+        {stars > 0 ? (
+          <Stars count={stars} color={cardState === 'maxed' ? '#FFD700' : elColor} />
+        ) : (
+          <Text style={[styles.cardLockText, cardState === 'available' && { color: '#FFC107', fontWeight: 'bold' }]}>
+            {cardState === 'available' ? `✨ ${getSkillCost(skill)} SP` : '🔒 Locked'}
+          </Text>
+        )}
+
+        {skill.type === 'active' && skill.cooldown > 0 && (
+          <Text style={styles.cardCooldown}>⏳ {skill.cooldown}-Turn CD</Text>
+        )}
+      </TouchableOpacity>
     );
   };
 
+  // ── Selected skill modal content ──────────────────────────────────────────
+
+  const selectedCardState = selectedSkill ? getCardState(selectedSkill.id) : null;
+  const selectedStars     = selectedSkill ? getStars(selectedSkill.id) : 0;
+  const selectedEquipped  = selectedSkill ? isEquipped(selectedSkill.id) : false;
+  const equippedSlot      = selectedSkill ? equippedSkills.indexOf(selectedSkill.id) : -1;
+
+  const unlockCheck = selectedSkill ? canUnlockElementSkill(selectedSkill.id, hero) : null;
+  const starUpCheck = selectedSkill ? canStarUpSkill(selectedSkill.id, hero) : null;
+
+  const currentStarData = selectedSkill && selectedStars > 0
+    ? selectedSkill.stars[selectedStars]
+    : null;
+  const nextStarData = selectedSkill && selectedStars < 5
+    ? selectedSkill.stars[selectedStars + 1] || selectedSkill.stars[5]
+    : null;
+
   return (
     <SafeAreaView style={styles.container}>
-      {/* Top ambient glow background */}
       <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
         <Defs>
-          <RadialGradient id="topGlow" cx="50%" cy="0%" rx="80%" ry="45%">
-            <Stop offset="0%" stopColor="#A855F7" stopOpacity="0.05" />
-            <Stop offset="100%" stopColor="#07070A" stopOpacity="0" stopColor="transparent" />
+          <RadialGradient id="bg" cx="50%" cy="0%" rx="80%" ry="65%">
+            <Stop offset="0%" stopColor={elementColor} stopOpacity="0.18" />
+            <Stop offset="100%" stopColor="#0E0F14" stopOpacity="0" />
           </RadialGradient>
         </Defs>
-        <Rect width="100%" height="100%" fill="#07070A" />
-        <Rect width="100%" height="100%" fill="url(#topGlow)" />
+        <Rect width="100%" height="100%" fill="#0E0F14" />
+        <Rect width="100%" height="100%" fill="url(#bg)" />
       </Svg>
 
       {/* ── Header ─────────────────────────────────────────────────────── */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn} activeOpacity={0.7}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
           <Text style={styles.backText}>← Hub</Text>
         </TouchableOpacity>
-        <Text style={styles.title}>🌟 Skills</Text>
-        <View style={styles.spBadgeContainer}>
-          <Text style={styles.skillPointsBadge}>SP: {skillPoints}</Text>
+        <Text style={styles.title}>Skill Tree</Text>
+        <View style={[styles.spBadge, { borderColor: '#FFC107', backgroundColor: 'rgba(255, 193, 7, 0.12)' }]}>
+          <Text style={[styles.spText, { color: '#FFC107' }]}>✨ {skillPoints} SP</Text>
         </View>
       </View>
 
-      {/* ── Path Tab Bar ───────────────────────────────────────────────── */}
-      <View style={styles.tabBarContainer}>
-        <View style={styles.tabBar}>
-          {PATHS.map(({ key, label, icon, color }) => {
-            const isActive = selectedPath === key;
-            return (
-              <TouchableOpacity
-                key={key}
-                style={[styles.tabButton, isActive && { backgroundColor: 'rgba(255,255,255,0.03)' }]}
-                activeOpacity={0.8}
-                onPress={() => setSelectedPath(key)}
-              >
-                {isActive && (
-                  <View style={StyleSheet.absoluteFill}>
-                    <Svg width="100%" height="100%">
-                      <Defs>
-                        <LinearGradient id={`tabGrad_${key}`} x1="0" y1="0" x2="1" y2="0">
-                          <Stop offset="0%" stopColor={`${color}15`} />
-                          <Stop offset="100%" stopColor="transparent" />
-                        </LinearGradient>
-                      </Defs>
-                      <Rect width="100%" height="100%" fill={`url(#tabGrad_${key})`} rx={10} />
-                      <Rect width="100%" height="100%" fill="none" stroke={`${color}40`} strokeWidth={1} rx={10} />
-                    </Svg>
-                  </View>
-                )}
-                <Text style={[styles.tabIcon, isActive && { opacity: 1 }]}>{icon}</Text>
-                <Text style={[styles.tabLabel, isActive && { color: '#F8FAFC', fontWeight: '800' }]}>{label}</Text>
-                <Text style={[styles.tabProgressText, isActive && { color }]}>
-                  {tabProgress[key]}
+      {/* ── Element tabs ───────────────────────────────────────────────── */}
+      <View style={styles.tabs}>
+        {ELEMENTS.map((el) => {
+          const isOwned   = el.id === element;
+          const isViewing = el.id === viewingElement;
+          
+          let tabTextColor = 'rgba(255,255,255,0.35)';
+          if (isViewing) {
+            tabTextColor = ELEMENT_COLORS[el.id] || '#D4A754';
+          } else if (isOwned) {
+            tabTextColor = 'rgba(255,255,255,0.85)';
+          }
+
+          return (
+            <TouchableOpacity
+              key={el.id}
+              style={styles.tab}
+              onPress={() => setViewingElement(el.id)}
+            >
+              <Text style={[styles.tabIcon, !isOwned && { opacity: 0.35 }]}>{el.icon}</Text>
+              <Text style={[styles.tabLabel, { color: tabTextColor }]}>
+                {el.label}
+              </Text>
+              {isViewing ? (
+                <View style={[styles.tabIndicator, { backgroundColor: ELEMENT_COLORS[el.id] || '#D4A754' }]} />
+              ) : (
+                <View style={[styles.tabIndicator, { backgroundColor: 'transparent' }]} />
+              )}
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* ── Stance card ──────────────────────────────────────────────── */}
+        {stance && viewingElement === element && (
+          <View style={[styles.stanceCard, { borderColor: `${elementColor}60` }]}>
+            <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
+              <Defs>
+                <LinearGradient id="stanceGrad" x1="0" y1="0" x2="1" y2="0">
+                  <Stop offset="0%" stopColor={`${elementColor}22`} />
+                  <Stop offset="100%" stopColor="transparent" stopOpacity={0} />
+                </LinearGradient>
+              </Defs>
+              <Rect width="100%" height="100%" fill="url(#stanceGrad)" rx={12} />
+            </Svg>
+            <View style={styles.stanceInner}>
+              <View style={styles.stanceLeft}>
+                <Text style={styles.stanceLabel}>INNATE · ALWAYS ACTIVE</Text>
+                <Text style={[styles.stanceName, { color: elementColor }]}>
+                  {ELEMENTS.find(e => e.id === element)?.icon} {stance.name}
                 </Text>
-              </TouchableOpacity>
+                <Text style={styles.stanceDesc}>{stance.description}</Text>
+              </View>
+              <View style={styles.stanceRight}>
+                {stanceBonus.atkPercent !== undefined && (
+                  <Text style={[styles.stanceStat, { color: elementColor }]}>
+                    +{Math.round(stanceBonus.atkPercent * 100)}% ATK
+                  </Text>
+                )}
+                {stanceBonus.burnTickBonus !== undefined && (
+                  <Text style={[styles.stanceStat, { color: elementColor }]}>
+                    +{stanceBonus.burnTickBonus} burn/tick
+                  </Text>
+                )}
+              </View>
+            </View>
+          </View>
+        )}
+
+        {/* Placeholder notice for non-owned elements */}
+        {viewingElement !== element && (
+          <View style={styles.placeholderBanner}>
+            <Text style={styles.placeholderText}>
+              You chose {ELEMENTS.find(e => e.id === element)?.label || 'another element'}.
+              These skills are not available in your current run.
+            </Text>
+          </View>
+        )}
+
+        {/* ── Dynamic Skill Tree Grid ─────────────────────────────────── */}
+        <View style={[styles.treeContainer, { height: TREE_HEIGHT }]}>
+          {/* SVG Connectors behind cards */}
+          <Svg style={StyleSheet.absoluteFill} width={TREE_WIDTH} height={TREE_HEIGHT}>
+            {renderSVGConnectors()}
+          </Svg>
+
+          {tiers.map((rowSkillIds, rIndex) => {
+            const M = rowSkillIds.length;
+            const cardWidth = (TREE_WIDTH - (M - 1) * CARD_GAP) / M;
+            const yTop = rIndex * (CARD_HEIGHT + ROW_GAP);
+            
+            return (
+              <View
+                key={rIndex}
+                style={[
+                  styles.treeRow,
+                  {
+                    top: yTop,
+                    position: 'absolute',
+                    left: 0,
+                    width: TREE_WIDTH,
+                    height: CARD_HEIGHT,
+                  }
+                ]}
+              >
+                {rowSkillIds.map((skillId) => {
+                  return renderSkillCard(skillId, { width: cardWidth, height: CARD_HEIGHT });
+                })}
+              </View>
             );
           })}
         </View>
-      </View>
 
-      {/* ── Vertical ScrollView ─────────────────────────────────────────── */}
-      <ScrollView
-        style={styles.treeScroll}
-        contentContainerStyle={styles.treeScrollContent}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Selected Path Intro Card */}
-        <View style={styles.introCard}>
-          <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
-            <Rect width="100%" height="100%" fill="rgba(255,255,255,0.015)" rx={14} />
-            <Rect x="1" y="1" width="98%" height="98%" rx={13} fill="none" stroke="rgba(255,255,255,0.04)" strokeWidth={1} />
-          </Svg>
-          <View style={styles.introCardInner}>
-            <Text style={styles.introTitle}>
-              {selectedPathData?.icon} {selectedPathData?.label} Path
-            </Text>
-            <Text style={styles.introDesc}>
-              {PATH_DESCRIPTIONS[selectedPath]}
-            </Text>
+        {/* Equipped skills summary */}
+        <View style={styles.equippedSummary}>
+          <Text style={styles.equippedSummaryLabel}>EQUIPPED SKILLS</Text>
+          <View style={styles.equippedRow}>
+            {[0, 1].map((slotIdx) => {
+              const skillId = equippedSkills[slotIdx];
+              const sk = skillId ? SKILLS[skillId] : null;
+              return (
+                <View key={slotIdx} style={styles.equippedSlotWrapper}>
+                  <TouchableOpacity
+                    style={[
+                      styles.equippedSocketCircle,
+                      sk ? { borderColor: elementColor, backgroundColor: 'rgba(25, 27, 36, 0.95)' } : styles.equippedSocketEmpty
+                    ]}
+                    onPress={() => {
+                      if (sk && viewingElement === element) {
+                        setSelectedSkill(sk);
+                      }
+                    }}
+                    activeOpacity={0.8}
+                    disabled={!sk || viewingElement !== element}
+                  >
+                    {sk ? (
+                      <>
+                        <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
+                          <Defs>
+                            <RadialGradient id={`esg_${slotIdx}`} cx="50%" cy="50%" rx="50%" ry="50%">
+                              <Stop offset="0%" stopColor={elementColor} stopOpacity="0.3" />
+                              <Stop offset="100%" stopColor="transparent" stopOpacity="0" />
+                            </RadialGradient>
+                          </Defs>
+                          <Rect width="100%" height="100%" fill={`url(#esg_${slotIdx})`} rx={40} />
+                        </Svg>
+                        <Text style={styles.equippedSlotIcon}>{sk.icon || '✨'}</Text>
+                      </>
+                    ) : (
+                      <View style={styles.emptyIconContainer}>
+                        {slotIdx === 0 ? (
+                          // Crossed Swords outline
+                          <Svg width={30} height={30} viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.22)" strokeWidth={1.5}>
+                            <Path d="M4 20l16-16M5 15l4 4M20 20L4 4M19 15l-4 4" strokeLinecap="round" />
+                          </Svg>
+                        ) : (
+                          // Shield outline
+                          <Svg width={28} height={28} viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.22)" strokeWidth={1.5}>
+                            <Path d="M12 3C12 3 5 5 5 11C5 16.5 12 21 12 21C12 21 19 16.5 19 11C19 5 12 3 12 3Z" strokeLinecap="round" strokeLinejoin="round" />
+                          </Svg>
+                        )}
+                      </View>
+                    )}
+                  </TouchableOpacity>
+                  <Text style={styles.equippedSlotLabel}>Slot {slotIdx + 1}</Text>
+                  <Text style={[styles.equippedSlotName, { color: sk ? '#FFFFFF' : 'rgba(255,255,255,0.3)' }]} numberOfLines={1}>
+                    {sk ? sk.name : 'Empty'}
+                  </Text>
+                  {sk && (
+                    <Text style={styles.equippedSlotType}>
+                      {sk.type === 'passive' ? 'Passive' : 'Active'}
+                    </Text>
+                  )}
+                </View>
+              );
+            })}
           </View>
         </View>
 
-        {/* Tree Container (Constellation Canvas) */}
-        <View style={styles.treeContainer}>
-          {/* SVG Constellation Lines */}
-          <Svg width={340} height={520} style={StyleSheet.absoluteFill}>
-            <Defs>
-              <LinearGradient id="glowingLineGrad" x1="0" y1="0" x2="0" y2="1">
-                <Stop offset="0%" stopColor="#F9D99A" />
-                <Stop offset="100%" stopColor="#D4A754" />
-              </LinearGradient>
-            </Defs>
-
-            {/* Line T1 -> T2 */}
-            <Line
-              x1={170} y1={60}
-              x2={170} y2={190}
-              stroke={connectionStatuses.t1_t2 ? "url(#glowingLineGrad)" : "rgba(255,255,255,0.08)"}
-              strokeWidth={connectionStatuses.t1_t2 ? 2.5 : 1.5}
-              strokeDasharray={connectionStatuses.t1_t2 ? undefined : "4 4"}
-            />
-            
-            {/* Line T2 -> T3_A */}
-            <Line
-              x1={170} y1={190}
-              x2={80} y2={320}
-              stroke={connectionStatuses.t2_t3a ? "url(#glowingLineGrad)" : "rgba(255,255,255,0.08)"}
-              strokeWidth={connectionStatuses.t2_t3a ? 2.5 : 1.5}
-              strokeDasharray={connectionStatuses.t2_t3a ? undefined : "4 4"}
-            />
-            
-            {/* Line T2 -> T3_B */}
-            <Line
-              x1={170} y1={190}
-              x2={260} y2={320}
-              stroke={connectionStatuses.t2_t3b ? "url(#glowingLineGrad)" : "rgba(255,255,255,0.08)"}
-              strokeWidth={connectionStatuses.t2_t3b ? 2.5 : 1.5}
-              strokeDasharray={connectionStatuses.t2_t3b ? undefined : "4 4"}
-            />
-
-            {/* Line T3_A -> T4_A */}
-            <Line
-              x1={80} y1={320}
-              x2={80} y2={450}
-              stroke={connectionStatuses.t3a_t4a ? "url(#glowingLineGrad)" : "rgba(255,255,255,0.08)"}
-              strokeWidth={connectionStatuses.t3a_t4a ? 2.5 : 1.5}
-              strokeDasharray={connectionStatuses.t3a_t4a ? undefined : "4 4"}
-            />
-
-            {/* Line T3_B -> T4_B */}
-            <Line
-              x1={260} y1={320}
-              x2={260} y2={450}
-              stroke={connectionStatuses.t3b_t4b ? "url(#glowingLineGrad)" : "rgba(255,255,255,0.08)"}
-              strokeWidth={connectionStatuses.t3b_t4b ? 2.5 : 1.5}
-              strokeDasharray={connectionStatuses.t3b_t4b ? undefined : "4 4"}
-            />
-          </Svg>
-
-          {/* Render Nodes Absolute Over SVG Lines */}
-          {renderSkillNode(t1, 170, 60)}
-          {renderSkillNode(t2, 170, 190)}
-          {renderSkillNode(t3_a, 80, 320)}
-          {renderSkillNode(t3_b, 260, 320)}
-          {renderSkillNode(t4_a, 80, 450)}
-          {renderSkillNode(t4_b, 260, 450)}
-        </View>
+        <View style={{ height: 60 }} />
       </ScrollView>
 
-      {/* ─── Detail Drawer Modal ────────────────────────────────────────── */}
+      {/* ── Skill detail modal ─────────────────────────────────────────── */}
       <Modal
         visible={selectedSkill !== null}
         transparent
         animationType="fade"
         onRequestClose={() => setSelectedSkill(null)}
       >
-        <Pressable
-          style={styles.modalBackdrop}
-          onPress={() => setSelectedSkill(null)}
-        >
+        <Pressable style={styles.modalBackdrop} onPress={() => setSelectedSkill(null)}>
           <Pressable style={styles.modalCard}>
-            {/* Modal Ambient Glow */}
             <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
               <Defs>
-                <RadialGradient id="modalCardGlow" cx="50%" cy="0%" rx="80%" ry="50%">
-                  <Stop offset="0%" stopColor="#D4A754" stopOpacity="0.08" />
-                  <Stop offset="100%" stopColor="#14161C" stopOpacity="0" stopColor="transparent" />
+                <RadialGradient id="modalGlow" cx="50%" cy="0%" rx="80%" ry="50%">
+                  <Stop offset="0%" stopColor={elementColor} stopOpacity="0.15" />
+                  <Stop offset="100%" stopColor="#1C1E26" stopOpacity="0" />
                 </RadialGradient>
               </Defs>
-              <Rect width="100%" height="100%" fill="#14161C" rx={20} />
-              <Rect width="100%" height="100%" fill="url(#modalCardGlow)" rx={20} />
-              <Rect x="1" y="1" width="98%" height="98%" rx={19} fill="none" stroke="rgba(212, 167, 84, 0.15)" strokeWidth={1} />
+              <Rect width="100%" height="100%" fill="#1C1E26" rx={20} />
+              <Rect width="100%" height="100%" fill="url(#modalGlow)" rx={20} />
+              <Rect x="1" y="1" width="98%" height="98%" rx={19} fill="none"
+                stroke={`${elementColor}50`} strokeWidth={1}
+              />
             </Svg>
 
             {selectedSkill && (
@@ -448,170 +618,156 @@ export default function SkillTreeScreen() {
                 contentContainerStyle={styles.modalInner}
                 showsVerticalScrollIndicator={false}
               >
-                {/* Close Button */}
-                <TouchableOpacity
-                  style={styles.modalCloseBtn}
-                  onPress={() => setSelectedSkill(null)}
-                  activeOpacity={0.7}
-                >
+                <TouchableOpacity style={styles.modalCloseBtn} onPress={() => setSelectedSkill(null)}>
                   <Text style={styles.modalCloseText}>✕</Text>
                 </TouchableOpacity>
 
-                {/* Path Tag */}
-                <Text style={styles.modalPathTag}>
-                  {selectedPathData?.label.toUpperCase()} PATH • TIER {selectedSkill.tier}
-                </Text>
-
-                {/* Skill Title Section */}
+                {/* Title row */}
                 <View style={styles.modalTitleRow}>
-                  <View style={styles.modalEmojiWrapper}>
-                    <Text style={styles.modalEmoji}>
-                      {SKILL_EMOJIS[selectedSkill.id] || '✨'}
+                  <Text style={styles.modalBigIcon}>{selectedSkill.icon || '✨'}</Text>
+                  <View style={styles.modalTitleRight}>
+                    <Text style={[styles.modalSkillName, { color: '#FFFFFF' }]}>
+                      {selectedSkill.name}
                     </Text>
-                  </View>
-                  <View style={styles.modalTitleTextContainer}>
-                    <Text style={styles.modalSkillName}>{selectedSkill.name}</Text>
-                    <View style={styles.modalBadgeRow}>
-                      <View style={[styles.typeBadge, selectedSkill.type === 'active' ? styles.badgeActive : styles.badgePassive]}>
-                        <Text style={styles.typeBadgeText}>
+                    <View style={styles.modalBadges}>
+                      <View style={[styles.typeBadge, {
+                        backgroundColor: selectedSkill.type === 'active' ? 'rgba(255, 85, 85, 0.15)' : 'rgba(0, 240, 208, 0.15)',
+                        borderColor: selectedSkill.type === 'active' ? 'rgba(255, 85, 85, 0.35)' : 'rgba(0, 240, 208, 0.35)',
+                        borderWidth: 1,
+                        borderRadius: 6,
+                        paddingHorizontal: 6,
+                        paddingVertical: 3,
+                      }]}>
+                        <Text style={[styles.typeBadgeText, { color: selectedSkill.type === 'active' ? '#FF5555' : '#00F0D0' }]}>
                           {selectedSkill.type === 'active' ? 'Active' : 'Passive'}
                         </Text>
                       </View>
+                      <Text style={styles.modalTier}>Tier {selectedSkill.tier}</Text>
                       {selectedSkill.cooldown > 0 && (
-                        <Text style={styles.modalCooldown}>
-                          ⏳ {selectedSkill.cooldown} turn CD
-                        </Text>
+                        <Text style={styles.modalCD}>⏳ {selectedSkill.cooldown}-Turn Cooldown</Text>
                       )}
                     </View>
+                    {selectedStars > 0 && (
+                      <Stars count={selectedStars} color={elementColor} />
+                    )}
                   </View>
                 </View>
 
-                {/* Description */}
                 <Text style={styles.modalDesc}>{selectedSkill.description}</Text>
 
-                {/* Prerequisites & Conflict Box */}
-                <View style={styles.modalInfoBox}>
-                  {prereqInfo && (
-                    <View style={styles.modalInfoLine}>
-                      <Text style={[styles.modalInfoBullet, prereqInfo.met ? styles.bulletGreen : styles.bulletRed]}>
-                        {prereqInfo.met ? '✓' : '✗'}
+                {/* Current stats */}
+                {currentStarData && (
+                  <View style={styles.modalStatBox}>
+                    <Text style={styles.modalStatLabel}>★{selectedStars} CURRENT STATS</Text>
+                    {Object.entries(currentStarData).map(([k, v]) => (
+                      <Text key={k} style={styles.modalStatLine}>
+                        {SKILL_STAT_LABELS[k] || k}: <Text style={{ color: '#FFFFFF', fontWeight: 'bold' }}>{formatSkillStatValue(k, v)}</Text>
                       </Text>
-                      <Text style={[styles.modalInfoText, prereqInfo.met ? styles.textMet : styles.textUnmet]}>
-                        {prereqInfo.text} {prereqInfo.met ? '(Unlocked)' : '(Locked)'}
-                      </Text>
-                    </View>
-                  )}
+                    ))}
+                  </View>
+                )}
 
-                  {conflictInfo && (
-                    <View style={styles.modalInfoLine}>
-                      <Text style={[styles.modalInfoBullet, conflictInfo.chosen ? styles.bulletRed : styles.bulletGreen]}>
-                        {conflictInfo.chosen ? '⚠️' : '✓'}
+                {/* Next star preview */}
+                {nextStarData && selectedStars < 5 && (
+                  <View style={[styles.modalStatBox, { borderColor: `${elementColor}40` }]}>
+                    <Text style={styles.modalStatLabel}>★{selectedStars + 1} NEXT STAR</Text>
+                    {Object.entries(nextStarData).map(([k, v]) => (
+                      <Text key={k} style={styles.modalStatLine}>
+                        {SKILL_STAT_LABELS[k] || k}: <Text style={{ color: '#FFFFFF', fontWeight: 'bold' }}>{formatSkillStatValue(k, v)}</Text>
                       </Text>
-                      <Text style={[styles.modalInfoText, conflictInfo.chosen ? styles.textConflict : styles.textNoConflict]}>
-                        {conflictInfo.text} {conflictInfo.chosen ? '(Chose other branch)' : '(Available)'}
-                      </Text>
-                    </View>
-                  )}
+                    ))}
+                  </View>
+                )}
 
-                  {selectedSkillStatus !== 'unlocked' && (
-                    <View style={styles.modalInfoLine}>
-                      <Text style={[styles.modalInfoBullet, skillPoints >= 1 ? styles.bulletGreen : styles.bulletRed]}>
-                        {skillPoints >= 1 ? '✓' : '✗'}
-                      </Text>
-                      <Text style={[styles.modalInfoText, skillPoints >= 1 ? styles.textMet : styles.textUnmet]}>
-                        Costs 1 Skill Point (You have {skillPoints})
-                      </Text>
-                    </View>
-                  )}
-                </View>
+                {/* Unlock requirement info */}
+                {selectedCardState === 'locked' && unlockCheck && (
+                  <View style={styles.modalInfoBox}>
+                    <Text style={styles.modalInfoText}>🔒 {unlockCheck.reason}</Text>
+                  </View>
+                )}
 
-                {/* Actions Section */}
+                {/* Actions */}
                 <View style={styles.modalActions}>
-                  {/* LEARN BUTTON */}
-                  {selectedSkillStatus === 'available' && (
-                    <TouchableOpacity
-                      style={styles.learnBtn}
-                      activeOpacity={0.8}
-                      onPress={handleLearnSkill}
-                    >
+                  {/* UNLOCK */}
+                  {selectedCardState === 'available' && (
+                    <TouchableOpacity style={[styles.primaryBtn, { shadowColor: elementColor }]} onPress={handleUnlock}>
                       <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
                         <Defs>
-                          <LinearGradient id="learnBtnGrad" x1="0" y1="0" x2="1" y2="0">
-                            <Stop offset="0%" stopColor="#F9D99A" />
-                            <Stop offset="100%" stopColor="#D4A754" />
+                          <LinearGradient id="btnGrad" x1="0" y1="0" x2="1" y2="0">
+                            <Stop offset="0%" stopColor={elementColor} />
+                            <Stop offset="100%" stopColor={`${elementColor}99`} />
                           </LinearGradient>
                         </Defs>
-                        <Rect width="100%" height="100%" fill="url(#learnBtnGrad)" rx={10} />
+                        <Rect width="100%" height="100%" fill="url(#btnGrad)" rx={10} />
                       </Svg>
-                      <Text style={styles.learnBtnText}>Learn Skill 🌟</Text>
+                      <Text style={styles.primaryBtnText}>
+                        Unlock ({getSkillCost(selectedSkill)} SP) 🌟
+                      </Text>
                     </TouchableOpacity>
                   )}
 
-                  {/* NO POINTS BUTTON */}
-                  {selectedSkillStatus === 'no_points' && (
-                    <View style={[styles.actionBtnDisabled, styles.noPointsBtn]}>
-                      <Text style={styles.disabledBtnText}>Requires Skill Point</Text>
+                  {/* STAR UP */}
+                  {(selectedCardState === 'unlocked') && starUpCheck?.can && (
+                    <TouchableOpacity style={[styles.primaryBtn, { shadowColor: elementColor }]} onPress={handleStarUp}>
+                      <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
+                        <Defs>
+                          <LinearGradient id="starBtnGrad" x1="0" y1="0" x2="1" y2="0">
+                            <Stop offset="0%" stopColor={elementColor} />
+                            <Stop offset="100%" stopColor={`${elementColor}80`} />
+                          </LinearGradient>
+                        </Defs>
+                        <Rect width="100%" height="100%" fill="url(#starBtnGrad)" rx={10} />
+                      </Svg>
+                      <Text style={styles.primaryBtnText}>
+                        ★ Star Up ({getSkillCost(selectedSkill)} SP) → ★{selectedStars + 1}
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+
+                  {/* STAR UP — not enough SP */}
+                  {selectedCardState === 'unlocked' && !starUpCheck?.can && selectedStars < 5 && (
+                    <View style={styles.disabledBtn}>
+                      <Text style={styles.disabledBtnText}>{starUpCheck?.reason}</Text>
                     </View>
                   )}
 
-                  {/* LOCKED BUTTON */}
-                  {selectedSkillStatus === 'locked' && (
-                    <View style={styles.actionBtnDisabled}>
-                      <Text style={styles.disabledBtnText}>Locked</Text>
+                  {/* MAXED */}
+                  {selectedCardState === 'maxed' && (
+                    <View style={[styles.disabledBtn, { borderColor: '#FFD70080' }]}>
+                      <Text style={[styles.disabledBtnText, { color: '#FFD700' }]}>★★★★★ MAX STAR</Text>
                     </View>
                   )}
 
-                  {/* BLOCKED BUTTON */}
-                  {selectedSkillStatus === 'blocked' && (
-                    <View style={[styles.actionBtnDisabled, styles.blockedBtn]}>
-                      <Text style={styles.disabledBtnText}>Blocked by other branch</Text>
-                    </View>
-                  )}
-
-                  {/* EQUIPPING ACTIONS FOR UNLOCKED ACTIVE SKILLS */}
-                  {selectedSkillStatus === 'unlocked' && (
-                    <View style={styles.unlockedBox}>
-                      <Text style={styles.unlockedLabel}>✓ Skill Learned</Text>
-
-                      {selectedSkill.type === 'active' ? (
-                        <View style={styles.equipRowContainer}>
-                          <Text style={styles.equipPromptText}>Assign to Combat Slot:</Text>
-                          <View style={styles.equipRow}>
-                            <TouchableOpacity
-                              style={[
-                                styles.equipBtn,
-                                state.hero.equippedSkills[0] === selectedSkill.id && styles.equipBtnCurrent,
-                              ]}
-                              onPress={() => handleEquipSkill(0)}
-                            >
-                              <Text style={styles.equipBtnText} numberOfLines={1}>
-                                Slot 1
-                              </Text>
-                              <Text style={styles.equipBtnSubtext} numberOfLines={1}>
-                                ({slot1Label})
-                              </Text>
-                            </TouchableOpacity>
-
-                            <TouchableOpacity
-                              style={[
-                                styles.equipBtn,
-                                state.hero.equippedSkills[1] === selectedSkill.id && styles.equipBtnCurrent,
-                              ]}
-                              onPress={() => handleEquipSkill(1)}
-                            >
-                              <Text style={styles.equipBtnText} numberOfLines={1}>
-                                Slot 2
-                              </Text>
-                              <Text style={styles.equipBtnSubtext} numberOfLines={1}>
-                                ({slot2Label})
-                              </Text>
-                            </TouchableOpacity>
-                          </View>
-                        </View>
+                  {/* EQUIP (unlocked or maxed) */}
+                  {(selectedCardState === 'unlocked' || selectedCardState === 'maxed') && (
+                    <View style={styles.equipSection}>
+                      {selectedEquipped ? (
+                        <>
+                          <Text style={[styles.equippedLabel, { color: elementColor }]}>
+                            ✓ Equipped in Slot {equippedSlot + 1}
+                          </Text>
+                          <TouchableOpacity
+                            style={styles.unequipBtn}
+                            onPress={() => handleUnequip(equippedSlot)}
+                          >
+                            <Text style={styles.unequipBtnText}>Unequip</Text>
+                          </TouchableOpacity>
+                        </>
                       ) : (
-                        <Text style={styles.passiveActiveLabel}>
-                          Passive skills are always active.
-                        </Text>
+                        <>
+                          <Text style={styles.equipPrompt}>Assign skill to slot:</Text>
+                          <View style={styles.equipRow}>
+                            {[0, 1].map((si) => {
+                              const occupant = equippedSkills[si] ? SKILLS[equippedSkills[si]]?.name : 'Empty';
+                              return (
+                                <TouchableOpacity key={si} style={styles.equipSlotBtn} onPress={() => handleEquip(si)}>
+                                  <Text style={styles.equipSlotBtnText}>Slot {si + 1}</Text>
+                                  <Text style={styles.equipSlotSub} numberOfLines={1}>({occupant})</Text>
+                                </TouchableOpacity>
+                              );
+                            })}
+                          </View>
+                        </>
                       )}
                     </View>
                   )}
@@ -626,461 +782,224 @@ export default function SkillTreeScreen() {
 }
 
 // ─── Styles ──────────────────────────────────────────────────────────────────
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#07070A',
-  },
-  treeScroll: {
-    flex: 1,
-  },
-  treeScrollContent: {
-    paddingVertical: 16,
-    paddingBottom: 80,
-  },
 
-  /* ── Header ──────────────────────────────────────────────── */
+const styles = StyleSheet.create({
+  container:    { flex: 1, backgroundColor: '#0E0F14' },
+  scroll:       { flex: 1 },
+  scrollContent:{ paddingHorizontal: 16, paddingTop: 12, paddingBottom: 80 },
+
+  /* Header */
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.04)',
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingHorizontal: 16, paddingVertical: 14,
+    borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.06)',
   },
   backBtn: {
-    width: 70,
+    paddingHorizontal: 12,
     paddingVertical: 6,
-  },
-  backText: {
-    color: '#D4A754',
-    fontFamily: 'System',
-    fontWeight: 'bold',
-    fontSize: 16,
-    letterSpacing: 0.5,
-  },
-  title: {
-    fontFamily: 'System',
-    fontWeight: 'bold',
-    fontSize: 20,
-    color: '#F8FAFC',
-    textAlign: 'center',
-    letterSpacing: 0.8,
-  },
-  spBadgeContainer: {
-    backgroundColor: 'rgba(212, 167, 84, 0.12)',
     borderRadius: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
+    backgroundColor: 'rgba(255,255,255,0.05)',
     borderWidth: 1,
-    borderColor: 'rgba(212, 167, 84, 0.3)',
-    width: 70,
-    alignItems: 'center',
+    borderColor: 'rgba(255,255,255,0.1)',
   },
-  skillPointsBadge: {
-    fontFamily: 'System',
-    color: '#D4A754',
-    fontWeight: 'bold',
-    fontSize: 12,
+  backText: { color: 'rgba(255,255,255,0.85)', fontWeight: 'bold', fontSize: 13 },
+  title:    { fontWeight: '900', fontSize: 18, color: '#FFFFFF', letterSpacing: 1, textTransform: 'uppercase' },
+  spBadge: {
+    paddingHorizontal: 12, paddingVertical: 6,
+    borderRadius: 12, borderWidth: 1.5,
+    shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.35, shadowRadius: 6, elevation: 3,
   },
+  spText: { fontWeight: '950', fontSize: 12, letterSpacing: 0.5 },
 
-  /* ── Tab Bar ─────────────────────────────────────────────── */
-  tabBarContainer: {
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    backgroundColor: 'rgba(0, 0, 0, 0.2)',
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.04)',
-  },
-  tabBar: {
+  /* Tabs */
+  tabs: {
     flexDirection: 'row',
-    backgroundColor: 'rgba(255, 255, 255, 0.015)',
-    borderRadius: 14,
-    padding: 4,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.04)',
+    borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.08)',
   },
-  tabButton: {
-    flex: 1,
-    flexDirection: 'column',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 10,
-    position: 'relative',
-    overflow: 'hidden',
-    height: 60,
+  tab: {
+    flex: 1, alignItems: 'center', paddingVertical: 10,
+    gap: 2,
   },
-  tabIcon: {
-    fontSize: 16,
-    opacity: 0.4,
-  },
-  tabLabel: {
-    fontFamily: 'System',
-    fontSize: 10,
-    fontWeight: '600',
-    color: '#707F94',
-    marginTop: 2,
-  },
-  tabProgressText: {
-    fontFamily: 'System',
-    fontSize: 9,
-    fontWeight: 'bold',
-    marginTop: 1,
-  },
-
-  /* ── Intro Card ──────────────────────────────────────────── */
-  introCard: {
-    marginHorizontal: 16,
-    borderRadius: 14,
-    marginBottom: 20,
-    overflow: 'hidden',
-    minHeight: 70,
-  },
-  introCardInner: {
-    padding: 14,
-    zIndex: 2,
-  },
-  introTitle: {
-    fontFamily: 'System',
-    fontSize: 15,
-    fontWeight: 'bold',
-    color: '#D4A754',
-    marginBottom: 4,
-  },
-  introDesc: {
-    fontFamily: 'System',
-    fontSize: 12,
-    color: 'rgba(255, 255, 255, 0.65)',
-    lineHeight: 16,
-  },
-
-  /* ── Tree Constellation Layout ───────────────────────────── */
-  treeContainer: {
-    alignSelf: 'center',
-    width: 340,
-    height: 520,
-    position: 'relative',
-  },
-  nodeWrapper: {
-    position: 'absolute',
-    width: 70,
-    height: 120,
-    alignItems: 'center',
-    zIndex: 5,
-  },
-  nodeCircle: {
-    width: 70,
-    height: 70,
-    borderRadius: 35,
-    backgroundColor: '#0A0A0F',
-    borderWidth: 1.5,
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.15,
-    shadowRadius: 6,
-    elevation: 3,
-  },
-  nodeCircleEquipped: {
-    borderWidth: 2,
-    shadowOpacity: 0.4,
-    shadowRadius: 10,
-    elevation: 6,
-  },
-  nodeEmoji: {
-    fontSize: 24,
-    zIndex: 2,
-  },
-  equippedDot: {
-    position: 'absolute',
-    bottom: 6,
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: '#D4A754',
-    zIndex: 3,
-  },
-  nodeNameWrapper: {
+  tabIcon:  { fontSize: 18 },
+  tabLabel: { fontSize: 9.5, fontWeight: '900', letterSpacing: 0.8 },
+  tabIndicator: {
+    width: 24,
+    height: 3,
+    borderRadius: 1.5,
     marginTop: 6,
-    alignItems: 'center',
-    width: 90,
-  },
-  nodeNameText: {
-    fontFamily: 'System',
-    fontSize: 10,
-    fontWeight: '600',
-    color: '#F8FAFC',
-    textAlign: 'center',
-  },
-  nodeTypeText: {
-    fontFamily: 'System',
-    fontSize: 8,
-    color: '#707F94',
-    fontWeight: 'bold',
-    textTransform: 'uppercase',
-    marginTop: 1,
-    letterSpacing: 0.5,
   },
 
-  /* ─── Detail Drawer Modal ────────────────────────────────────────── */
-  modalBackdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.75)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 24,
-  },
-  modalCard: {
-    width: '100%',
-    maxWidth: 340,
-    borderRadius: 20,
-    overflow: 'hidden',
-    elevation: 8,
-  },
-  modalInner: {
-    padding: 20,
-    zIndex: 2,
-  },
-  modalCloseBtn: {
-    position: 'absolute',
-    top: 12,
-    right: 16,
-    padding: 6,
-    zIndex: 10,
-  },
-  modalCloseText: {
-    fontSize: 16,
-    color: '#707F94',
-    fontWeight: 'bold',
-  },
-  modalPathTag: {
-    fontFamily: 'System',
-    fontSize: 9,
-    color: '#707F94',
-    letterSpacing: 1.5,
-    fontWeight: '900',
-    marginBottom: 6,
-  },
-  modalTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 14,
-  },
-  modalEmojiWrapper: {
-    width: 48,
-    height: 48,
-    borderRadius: 10,
-    backgroundColor: 'rgba(255,255,255,0.03)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
-  },
-  modalEmoji: {
-    fontSize: 28,
-  },
-  modalTitleTextContainer: {
-    flex: 1,
-  },
-  modalSkillName: {
-    fontFamily: 'System',
-    color: '#F8FAFC',
-    fontWeight: 'bold',
-    fontSize: 18,
-    marginBottom: 4,
-  },
-  modalBadgeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  typeBadge: {
-    borderRadius: 4,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-  },
-  badgeActive: {
-    backgroundColor: 'rgba(255, 107, 53, 0.15)',
-  },
-  badgePassive: {
-    backgroundColor: 'rgba(6, 182, 212, 0.15)',
-  },
-  typeBadgeText: {
-    fontFamily: 'System',
-    fontSize: 8,
-    color: '#F8FAFC',
-    fontWeight: '900',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  modalCooldown: {
-    fontFamily: 'System',
-    fontSize: 9,
-    color: '#FF6B35',
-    fontWeight: 'bold',
-  },
-  modalDesc: {
-    fontFamily: 'System',
-    fontSize: 13,
-    color: 'rgba(255, 255, 255, 0.7)',
-    lineHeight: 18,
+  /* Stance card */
+  stanceCard: {
+    borderRadius: 12, borderWidth: 1.5, overflow: 'hidden',
+    backgroundColor: 'rgba(25, 27, 36, 0.95)',
     marginBottom: 16,
   },
-  modalInfoBox: {
-    backgroundColor: 'rgba(0, 0, 0, 0.25)',
-    borderRadius: 10,
-    padding: 12,
-    marginBottom: 18,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.04)',
+  stanceInner: {
+    flexDirection: 'row', padding: 14, gap: 12,
   },
-  modalInfoLine: {
+  stanceLeft:  { flex: 1 },
+  stanceRight: { alignItems: 'flex-end', justifyContent: 'center', gap: 4 },
+  stanceLabel: {
+    fontSize: 8.5, fontWeight: '900', letterSpacing: 2,
+    color: 'rgba(255,255,255,0.45)', marginBottom: 4,
+  },
+  stanceName:  { fontSize: 15, fontWeight: '900', marginBottom: 4 },
+  stanceDesc:  { fontSize: 11, color: 'rgba(255,255,255,0.75)', lineHeight: 15 },
+  stanceStat:  { fontSize: 14, fontWeight: 'bold' },
+
+  placeholderBanner: {
+    backgroundColor: 'rgba(25, 27, 36, 0.95)',
+    borderRadius: 10, padding: 12,
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)',
+    marginBottom: 16,
+  },
+  placeholderText: { fontSize: 12, color: 'rgba(255,255,255,0.5)', textAlign: 'center', lineHeight: 17 },
+
+  /* Skill Tree Grid */
+  treeContainer: {
+    width: '100%',
+    position: 'relative',
+    marginVertical: 10,
+  },
+  treeRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 6,
-  },
-  modalInfoBullet: {
-    fontSize: 12,
-    fontWeight: 'bold',
-    width: 20,
-    textAlign: 'center',
-    marginRight: 6,
-  },
-  bulletGreen: {
-    color: '#10B981',
-  },
-  bulletRed: {
-    color: '#FF4444',
-  },
-  modalInfoText: {
-    fontFamily: 'System',
-    fontSize: 11,
-    flex: 1,
-  },
-  textMet: {
-    color: '#F8FAFC',
-  },
-  textUnmet: {
-    color: '#707F94',
-  },
-  textConflict: {
-    color: '#FF4444',
-    fontWeight: 'bold',
-  },
-  textNoConflict: {
-    color: '#707F94',
+    justifyContent: 'space-between',
   },
 
-  /* Modal Actions Buttons */
-  modalActions: {
-    width: '100%',
-  },
-  learnBtn: {
+  /* Skill cards */
+  skillCard: {
+    borderRadius: 12, borderWidth: 1.5,
+    padding: 10, overflow: 'hidden',
     position: 'relative',
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
-    height: 46,
+    justifyContent: 'space-between',
   },
-  learnBtnText: {
-    fontFamily: 'System',
-    color: '#1A1200',
-    fontWeight: 'bold',
-    fontSize: 13,
-    zIndex: 2,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
+  cardHeader:   { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 },
+  cardIcon:     { fontSize: 22 },
+  cardBadgeRow: { flexDirection: 'row', gap: 4, alignItems: 'center', flexWrap: 'wrap', justifyContent: 'flex-end' },
+  cardName:     { fontSize: 13, fontWeight: '900', marginBottom: 2 },
+  cardLockText: { fontSize: 10, color: 'rgba(255,255,255,0.45)', marginTop: 4 },
+  cardCooldown: { fontSize: 9.5, color: '#FFA07A', fontWeight: '800', marginTop: 4 },
+
+  typeBadge:      { borderRadius: 6, paddingHorizontal: 6, paddingVertical: 3, borderWidth: 1 },
+  typeBadgeText:  { fontSize: 7.5, fontWeight: '900', letterSpacing: 0.8, textTransform: 'uppercase' },
+  equippedBadge:  { borderRadius: 4, paddingHorizontal: 5, paddingVertical: 2, borderWidth: 1 },
+  equippedBadgeText: { fontSize: 7, fontWeight: '900', letterSpacing: 0.5 },
+
+  /* Equipped summary */
+  equippedSummary: {
+    marginTop: 24,
+    paddingTop: 20,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255,255,255,0.06)',
   },
-  actionBtnDisabled: {
-    backgroundColor: 'rgba(255, 255, 255, 0.02)',
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.05)',
-    height: 46,
-  },
-  noPointsBtn: {
-    borderColor: 'rgba(255, 107, 53, 0.2)',
-    backgroundColor: 'rgba(255, 107, 53, 0.02)',
-  },
-  blockedBtn: {
-    borderColor: 'rgba(255, 68, 68, 0.2)',
-    backgroundColor: 'rgba(255, 68, 68, 0.02)',
-  },
-  disabledBtnText: {
-    fontFamily: 'System',
-    fontSize: 12,
-    color: '#707F94',
-    fontWeight: 'bold',
-  },
-  unlockedBox: {
-    alignItems: 'center',
-    width: '100%',
-  },
-  unlockedLabel: {
-    fontFamily: 'System',
-    fontSize: 14,
-    color: '#10B981',
-    fontWeight: 'bold',
-    marginBottom: 12,
-  },
-  passiveActiveLabel: {
-    fontFamily: 'System',
-    fontSize: 11,
-    color: '#707F94',
+  equippedSummaryLabel: {
+    fontSize: 10.5,
+    fontWeight: '900',
+    letterSpacing: 1.5,
+    color: 'rgba(255,255,255,0.5)',
+    marginBottom: 16,
     textAlign: 'center',
-    fontStyle: 'italic',
   },
-  equipRowContainer: {
-    width: '100%',
+  equippedRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    alignItems: 'flex-start',
+  },
+  equippedSlotWrapper: {
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.015)',
-    borderRadius: 10,
-    padding: 10,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.04)',
+    width: 120,
   },
-  equipPromptText: {
-    fontFamily: 'System',
-    fontSize: 11,
-    color: '#F8FAFC',
-    fontWeight: 'bold',
+  equippedSocketCircle: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
+    overflow: 'hidden',
     marginBottom: 8,
   },
-  equipRow: {
-    flexDirection: 'row',
-    gap: 12,
-    width: '100%',
+  equippedSocketEmpty: {
+    borderColor: 'rgba(255,255,255,0.18)',
+    borderStyle: 'dashed',
+    backgroundColor: 'rgba(255,255,255,0.03)',
   },
-  equipBtn: {
-    flex: 1,
-    backgroundColor: 'rgba(255, 255, 255, 0.03)',
-    borderRadius: 8,
-    paddingVertical: 8,
-    paddingHorizontal: 4,
+  emptyIconContainer: {
     alignItems: 'center',
-    borderWidth: 1.5,
-    borderColor: 'transparent',
+    justifyContent: 'center',
+    opacity: 0.85,
   },
-  equipBtnCurrent: {
-    borderColor: '#D4A754',
-    backgroundColor: 'rgba(212, 167, 84, 0.08)',
+  equippedSlotIcon:   { fontSize: 28 },
+  equippedSlotName:   { fontSize: 12, fontWeight: '900', textAlign: 'center', maxWidth: 110 },
+  equippedSlotType:   { fontSize: 10, color: 'rgba(255,255,255,0.5)', textAlign: 'center', marginTop: 2 },
+
+  /* Modal */
+  modalBackdrop: {
+    flex: 1, backgroundColor: 'rgba(0,0,0,0.82)',
+    justifyContent: 'center', alignItems: 'center', padding: 20,
   },
-  equipBtnText: {
-    fontFamily: 'System',
-    fontSize: 11,
-    color: '#F8FAFC',
-    fontWeight: 'bold',
+  modalCard: { width: '100%', maxWidth: 360, borderRadius: 20, overflow: 'hidden', elevation: 8 },
+  modalInner: { padding: 20 },
+  modalCloseBtn: { position: 'absolute', top: 12, right: 16, padding: 6, zIndex: 10 },
+  modalCloseText: { fontSize: 16, color: '#A0AEC0', fontWeight: 'bold' },
+
+  modalTitleRow:  { flexDirection: 'row', gap: 12, marginBottom: 12, marginTop: 4, alignItems: 'flex-start' },
+  modalBigIcon:   { fontSize: 36, marginTop: 2 },
+  modalTitleRight:{ flex: 1 },
+  modalSkillName: { fontSize: 20, fontWeight: '900', marginBottom: 6 },
+  modalBadges:    { flexDirection: 'row', gap: 6, alignItems: 'center', flexWrap: 'wrap', marginBottom: 6 },
+  modalTier:      { fontSize: 9.5, color: 'rgba(255,255,255,0.5)', fontWeight: '800', letterSpacing: 0.5 },
+  modalCD:        { fontSize: 9.5, color: '#FFA07A', fontWeight: 'bold' },
+
+  modalDesc: { fontSize: 13.5, color: 'rgba(255,255,255,0.8)', lineHeight: 18, marginBottom: 14 },
+
+  modalStatBox: {
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    borderRadius: 10, padding: 10, marginBottom: 10,
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)',
   },
-  equipBtnSubtext: {
-    fontFamily: 'System',
-    fontSize: 8,
-    color: '#707F94',
-    marginTop: 2,
+  modalStatLabel: { fontSize: 8.5, fontWeight: '900', color: 'rgba(255,255,255,0.45)', letterSpacing: 1.5, marginBottom: 6 },
+  modalStatLine:  { fontSize: 11.5, color: 'rgba(255,255,255,0.75)', marginBottom: 2 },
+
+  modalInfoBox: {
+    backgroundColor: 'rgba(255,100,0,0.08)',
+    borderRadius: 8, padding: 10, marginBottom: 12,
+    borderWidth: 1, borderColor: 'rgba(255,100,0,0.25)',
   },
+  modalInfoText: { fontSize: 12, color: '#FFA07A', fontWeight: '500' },
+
+  modalActions: { gap: 10, marginTop: 6 },
+  primaryBtn: {
+    height: 48, borderRadius: 10,
+    alignItems: 'center', justifyContent: 'center', overflow: 'hidden',
+    shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.4, shadowRadius: 10, elevation: 4,
+  },
+  primaryBtnText: { fontSize: 13.5, fontWeight: '950', color: '#fff', zIndex: 2, letterSpacing: 0.3 },
+
+  disabledBtn: {
+    height: 44, borderRadius: 10, alignItems: 'center', justifyContent: 'center',
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)',
+    backgroundColor: 'rgba(255,255,255,0.04)',
+  },
+  disabledBtnText: { fontSize: 12, color: '#A0AEC0', fontWeight: 'bold' },
+
+  equipSection:  { gap: 8 },
+  equippedLabel: { fontSize: 13, fontWeight: 'bold', textAlign: 'center' },
+  unequipBtn: {
+    height: 40, borderRadius: 8, alignItems: 'center', justifyContent: 'center',
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.15)',
+    backgroundColor: 'rgba(255,255,255,0.05)',
+  },
+  unequipBtnText: { fontSize: 12.5, color: 'rgba(255,255,255,0.75)', fontWeight: 'bold' },
+  equipPrompt:    { fontSize: 11, color: 'rgba(255,255,255,0.65)', textAlign: 'center' },
+  equipRow:       { flexDirection: 'row', gap: 10 },
+  equipSlotBtn: {
+    flex: 1, height: 52, borderRadius: 8, alignItems: 'center', justifyContent: 'center',
+    borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.18)',
+    backgroundColor: 'rgba(255,255,255,0.05)', gap: 2,
+  },
+  equipSlotBtnText: { fontSize: 12.5, color: '#FFFFFF', fontWeight: 'bold' },
+  equipSlotSub:     { fontSize: 9.5, color: '#A0AEC0' },
 });

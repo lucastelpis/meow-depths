@@ -77,7 +77,8 @@ const initialState = {
     strength: 10,             // core attribute
     agility: 10,              // core attribute
     vitality: 10,             // core attribute
-    unlockedSkills: [],       // array of skill IDs the hero has learned
+    element: null,            // 'fire' | 'water' | 'earth' | 'wind' | null (set on first launch)
+    unlockedSkills: {},       // { skillId: { stars: number } }
     equippedSkills: [null, null], // two active skill slots for combat
 
     // -- Equipment & Inventory -----------------------------------------------
@@ -289,18 +290,59 @@ function gameReducer(state, action) {
     }
 
     // -----------------------------------------------------------------------
-    // UNLOCK_SKILL — learn a new skill
+    // SELECT_ELEMENT — set the hero's element and name on first launch
+    // Payload: { element: string, name: string }
+    // -----------------------------------------------------------------------
+    case 'SELECT_ELEMENT':
+      return {
+        ...state,
+        hero: {
+          ...state.hero,
+          name: action.payload.name || state.hero.name,
+          element: action.payload.element,
+        },
+      };
+
+    // -----------------------------------------------------------------------
+    // UNLOCK_SKILL — learn a new element skill at ★1
     // Payload: { skillId: string, cost: number }
     // -----------------------------------------------------------------------
-    case 'UNLOCK_SKILL':
+    case 'UNLOCK_SKILL': {
+      const unlocked = typeof state.hero.unlockedSkills === 'object' && !Array.isArray(state.hero.unlockedSkills)
+        ? state.hero.unlockedSkills
+        : {};
       return {
         ...state,
         hero: {
           ...state.hero,
           skillPoints: state.hero.skillPoints - (action.payload.cost || 1),
-          unlockedSkills: [...state.hero.unlockedSkills, action.payload.skillId],
+          unlockedSkills: {
+            ...unlocked,
+            [action.payload.skillId]: { stars: 1 },
+          },
         },
       };
+    }
+
+    // -----------------------------------------------------------------------
+    // STAR_UP_SKILL — increase a skill's star level
+    // Payload: { skillId: string, cost: number }
+    // -----------------------------------------------------------------------
+    case 'STAR_UP_SKILL': {
+      const existing = (state.hero.unlockedSkills || {})[action.payload.skillId];
+      if (!existing) return state;
+      return {
+        ...state,
+        hero: {
+          ...state.hero,
+          skillPoints: state.hero.skillPoints - (action.payload.cost || 1),
+          unlockedSkills: {
+            ...state.hero.unlockedSkills,
+            [action.payload.skillId]: { ...existing, stars: (existing.stars || 1) + 1 },
+          },
+        },
+      };
+    }
 
     // -----------------------------------------------------------------------
     // EQUIP_SKILL — assign a skill to a combat slot
@@ -1056,6 +1098,11 @@ export function GameProvider({ children }) {
         // (gear bonuses aren't baked into hero.maxHp, only into effectiveStats).
         if (merged.hero && merged.hero.hp === merged.hero.maxHp) {
           merged.hero.hp = calculateEffectiveStats(merged.hero).maxHp;
+        }
+
+        // Migrate unlockedSkills from old array format to new object format.
+        if (merged.hero && Array.isArray(merged.hero.unlockedSkills)) {
+          merged.hero.unlockedSkills = {};
         }
 
         dispatch({ type: 'SET_STATE', payload: merged });

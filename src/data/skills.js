@@ -1,338 +1,448 @@
 /**
- * skills.js — Meow Depths Skill Trees
+ * skills.js — Element-based skill system
  *
- * Three class paths, each with 4 tiers.  Tiers 3-4 branch into "a" / "b"
- * sub-paths that are mutually exclusive within a single playthrough.
+ * Four elements: fire, water, earth, wind.
+ * Each element has:
+ *   - Tier 1 Active  (core attack / utility)
+ *   - Tier 1 Passive (always-on enhancement when equipped)
+ *   - Tier 2 Active A (unlocked from T1 Active at ★5 + level 15)
+ *   - Tier 2 Active B (same unlock requirement as T2A)
  *
- * Shape reference:
- *   id          – unique key (matches the SKILLS map key)
- *   name        – display name
- *   path        – 'ironPaw' | 'stonefur' | 'shadowClaw'
- *   tier        – 1-4 (determines unlock order & skill-point cost)
- *   type        – 'active' (has cooldown) | 'passive' (always on)
- *   description – player-facing tooltip
- *   cooldown    – turns between uses (active skills only, 0 for passives)
- *   effect      – machine-readable effect descriptor
- *   branch      – 'a' | 'b' for tier 3-4 choices, null for tiers 1-2
- *   requires    – skill id that must be learned first, or null
+ * stars map: { 1: {...}, 2: {...}, 3: {...}, 4: {...}, 5: {...} }
+ * unlockedBy: null for T1, parent skill id for T2
  */
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Iron Paw — Offensive / self-sustain melee path
+// FIRE
 // ─────────────────────────────────────────────────────────────────────────────
 
-const iron_slash = {
-  id: 'iron_slash',
-  name: 'Iron Slash',
-  path: 'ironPaw',
+const fire_slash = {
+  id: 'fire_slash',
+  name: 'Fire Slash',
+  element: 'fire',
   tier: 1,
   type: 'active',
-  description: '120% attack damage to one enemy',
-  cooldown: 2,
-  effect: { type: 'damage', multiplier: 1.2, target: 'single' },
-  branch: null,
-  requires: null,
-};
-
-const steady_paws = {
-  id: 'steady_paws',
-  name: 'Steady Paws',
-  path: 'ironPaw',
-  tier: 2,
-  type: 'passive',
-  description: '+10% crit chance',
-  cooldown: 0,
-  effect: { type: 'stat_boost', stat: 'critChance', value: 0.10 },
-  branch: null,
-  requires: 'iron_slash',
-};
-
-/* ── Tier 3 branch ─────────────────────── */
-
-const rally = {
-  id: 'rally',
-  name: 'Rally',
-  path: 'ironPaw',
-  tier: 3,
-  type: 'active',
-  description: 'Heal 15% of max HP',
-  cooldown: 4,
-  effect: { type: 'heal', percentMaxHp: 0.15 },
-  branch: 'a',
-  requires: 'steady_paws',
-};
-
-const power_strike = {
-  id: 'power_strike',
-  name: 'Power Strike',
-  path: 'ironPaw',
-  tier: 3,
-  type: 'active',
-  description: '160% damage to one enemy',
+  targetType: 'single',
   cooldown: 3,
-  effect: { type: 'damage', multiplier: 1.6, target: 'single' },
-  branch: 'b',
-  requires: 'steady_paws',
-};
-
-/* ── Tier 4 branch ─────────────────────── */
-
-const veteran = {
-  id: 'veteran',
-  name: 'Veteran',
-  path: 'ironPaw',
-  tier: 4,
-  type: 'passive',
-  description: '+20 max HP, +3 defence',
-  cooldown: 0,
-  effect: {
-    type: 'multi_stat_boost',
-    boosts: [
-      { stat: 'maxHp', value: 20 },
-      { stat: 'defence', value: 3 },
-    ],
+  unlockedBy: null,
+  icon: '🔥',
+  description: 'Deals fire damage and applies guaranteed burn.',
+  stars: {
+    1: { damageMultiplier: 1.20, burnDamage: 2, burnDuration: 3 },
+    2: { damageMultiplier: 1.40, burnDamage: 2, burnDuration: 3 },
+    3: { damageMultiplier: 1.60, burnDamage: 3, burnDuration: 3 },
+    4: { damageMultiplier: 1.80, burnDamage: 3, burnDuration: 4 },
+    5: { damageMultiplier: 2.00, burnDamage: 4, burnDuration: 4 },
   },
-  branch: 'a',
-  requires: 'rally',
 };
 
-const sharp_mind = {
-  id: 'sharp_mind',
-  name: 'Sharp Mind',
-  path: 'ironPaw',
-  tier: 4,
+const smoldering = {
+  id: 'smoldering',
+  name: 'Smoldering',
+  element: 'fire',
+  tier: 1,
   type: 'passive',
-  description: 'Reduce all cooldowns by 1 turn',
+  targetType: 'passive',
   cooldown: 0,
-  effect: { type: 'cooldown_reduction', value: 1 },
-  branch: 'b',
-  requires: 'power_strike',
+  unlockedBy: null,
+  icon: '🌡️',
+  description: 'All burn damage ticks for more.',
+  stars: {
+    1: { burnTickBonus: 1 },
+    2: { burnTickBonus: 2 },
+    3: { burnTickBonus: 3 },
+    4: { burnTickBonus: 4 },
+    5: { burnTickBonus: 5 },
+  },
+};
+
+const fire_burst = {
+  id: 'fire_burst',
+  name: 'Fire Burst',
+  element: 'fire',
+  tier: 2,
+  type: 'active',
+  targetType: 'single_with_spread',
+  cooldown: 4,
+  unlockedBy: 'fire_slash',
+  icon: '💥',
+  description: 'Explosive AOE — full hit on target, 40% splash + 30% burn on adjacent.',
+  stars: {
+    1: { damageMultiplier: 1.50, burnDamage: 4, burnDuration: 4, spreadPercent: 0.40, spreadBurnChance: 0.30 },
+    2: { damageMultiplier: 1.60, burnDamage: 4, burnDuration: 4, spreadPercent: 0.40, spreadBurnChance: 0.30 },
+    3: { damageMultiplier: 1.70, burnDamage: 5, burnDuration: 4, spreadPercent: 0.40, spreadBurnChance: 0.30 },
+    4: { damageMultiplier: 1.85, burnDamage: 5, burnDuration: 5, spreadPercent: 0.40, spreadBurnChance: 0.30 },
+    5: { damageMultiplier: 2.00, burnDamage: 6, burnDuration: 5, spreadPercent: 0.40, spreadBurnChance: 0.30 },
+  },
+};
+
+const flame_guard = {
+  id: 'flame_guard',
+  name: 'Flame Guard',
+  element: 'fire',
+  tier: 2,
+  type: 'active',
+  targetType: 'self',
+  cooldown: 4,
+  unlockedBy: 'fire_slash',
+  icon: '🛡️',
+  description: 'For several turns, every enemy hit burns you counter-burns them.',
+  stars: {
+    1: { counterBurnDamage: 2, counterBurnDuration: 3, guardDuration: 3 },
+    2: { counterBurnDamage: 3, counterBurnDuration: 3, guardDuration: 3 },
+    3: { counterBurnDamage: 4, counterBurnDuration: 3, guardDuration: 3 },
+    4: { counterBurnDamage: 5, counterBurnDuration: 3, guardDuration: 3 },
+    5: { counterBurnDamage: 6, counterBurnDuration: 3, guardDuration: 3 },
+  },
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Stonefur — Defensive / counter-attack path
+// WATER — placeholder (mirrors Fire structure, same stats for now)
 // ─────────────────────────────────────────────────────────────────────────────
 
-const guard_stance = {
-  id: 'guard_stance',
-  name: 'Guard Stance',
-  path: 'stonefur',
+const water_strike = {
+  id: 'water_strike',
+  name: 'Water Strike',
+  element: 'water',
   tier: 1,
   type: 'active',
-  description: 'Reduce incoming damage by 50% for 1 turn',
+  targetType: 'single',
   cooldown: 3,
-  effect: { type: 'guard', damageReduction: 0.5, duration: 1 },
-  branch: null,
-  requires: null,
+  unlockedBy: null,
+  icon: '💧',
+  description: 'Deals water damage and applies a healing tide.',
+  stars: {
+    1: { damageMultiplier: 1.20, burnDamage: 2, burnDuration: 3 },
+    2: { damageMultiplier: 1.40, burnDamage: 2, burnDuration: 3 },
+    3: { damageMultiplier: 1.60, burnDamage: 3, burnDuration: 3 },
+    4: { damageMultiplier: 1.80, burnDamage: 3, burnDuration: 4 },
+    5: { damageMultiplier: 2.00, burnDamage: 4, burnDuration: 4 },
+  },
 };
 
-const iron_hide = {
-  id: 'iron_hide',
-  name: 'Iron Hide',
-  path: 'stonefur',
+const flowing = {
+  id: 'flowing',
+  name: 'Flowing',
+  element: 'water',
+  tier: 1,
+  type: 'passive',
+  targetType: 'passive',
+  cooldown: 0,
+  unlockedBy: null,
+  icon: '🌊',
+  description: 'Sustains vitality passively over time.',
+  stars: {
+    1: { burnTickBonus: 1 },
+    2: { burnTickBonus: 2 },
+    3: { burnTickBonus: 3 },
+    4: { burnTickBonus: 4 },
+    5: { burnTickBonus: 5 },
+  },
+};
+
+const tidal_wave = {
+  id: 'tidal_wave',
+  name: 'Tidal Wave',
+  element: 'water',
   tier: 2,
-  type: 'passive',
-  description: '+30 max HP, +5 defence',
-  cooldown: 0,
-  effect: {
-    type: 'multi_stat_boost',
-    boosts: [
-      { stat: 'maxHp', value: 30 },
-      { stat: 'defence', value: 5 },
-    ],
-  },
-  branch: null,
-  requires: 'guard_stance',
-};
-
-/* ── Tier 3 branch ─────────────────────── */
-
-const retaliate = {
-  id: 'retaliate',
-  name: 'Retaliate',
-  path: 'stonefur',
-  tier: 3,
   type: 'active',
-  description: 'Counter next attack for 150% of damage received',
+  targetType: 'single_with_spread',
   cooldown: 4,
-  effect: { type: 'counter', multiplier: 1.5, duration: 1 },
-  branch: 'a',
-  requires: 'iron_hide',
-};
-
-const thick_fur = {
-  id: 'thick_fur',
-  name: 'Thick Fur',
-  path: 'stonefur',
-  tier: 3,
-  type: 'passive',
-  description: 'Reduce all incoming damage by 3 flat',
-  cooldown: 0,
-  effect: { type: 'flat_damage_reduction', value: 3 },
-  branch: 'b',
-  requires: 'iron_hide',
-};
-
-/* ── Tier 4 branch ─────────────────────── */
-
-const unbreakable = {
-  id: 'unbreakable',
-  name: 'Unbreakable',
-  path: 'stonefur',
-  tier: 4,
-  type: 'passive',
-  description: 'When HP drops below 20%, gain +50% defence for 2 turns',
-  cooldown: 0,
-  effect: {
-    type: 'threshold_buff',
-    hpPercent: 0.2,
-    stat: 'defence',
-    multiplier: 0.5,
-    duration: 2,
+  unlockedBy: 'water_strike',
+  icon: '🌊',
+  description: 'Crashing wave hits primary target and splashes adjacent enemies.',
+  stars: {
+    1: { damageMultiplier: 1.50, burnDamage: 4, burnDuration: 4, spreadPercent: 0.40, spreadBurnChance: 0.30 },
+    2: { damageMultiplier: 1.60, burnDamage: 4, burnDuration: 4, spreadPercent: 0.40, spreadBurnChance: 0.30 },
+    3: { damageMultiplier: 1.70, burnDamage: 5, burnDuration: 4, spreadPercent: 0.40, spreadBurnChance: 0.30 },
+    4: { damageMultiplier: 1.85, burnDamage: 5, burnDuration: 5, spreadPercent: 0.40, spreadBurnChance: 0.30 },
+    5: { damageMultiplier: 2.00, burnDamage: 6, burnDuration: 5, spreadPercent: 0.40, spreadBurnChance: 0.30 },
   },
-  branch: 'a',
-  requires: 'retaliate',
 };
 
-const titan_slam = {
-  id: 'titan_slam',
-  name: 'Titan Slam',
-  path: 'stonefur',
-  tier: 4,
+const water_shield = {
+  id: 'water_shield',
+  name: 'Water Shield',
+  element: 'water',
+  tier: 2,
   type: 'active',
-  description: '200% damage, stuns enemy for 1 turn',
-  cooldown: 5,
-  effect: { type: 'damage_stun', multiplier: 2.0, stunDuration: 1, target: 'single' },
-  branch: 'b',
-  requires: 'thick_fur',
+  targetType: 'self',
+  cooldown: 4,
+  unlockedBy: 'water_strike',
+  icon: '🫧',
+  description: 'A protective bubble that heals over time.',
+  stars: {
+    1: { counterBurnDamage: 2, counterBurnDuration: 3, guardDuration: 3 },
+    2: { counterBurnDamage: 3, counterBurnDuration: 3, guardDuration: 3 },
+    3: { counterBurnDamage: 4, counterBurnDuration: 3, guardDuration: 3 },
+    4: { counterBurnDamage: 5, counterBurnDuration: 3, guardDuration: 3 },
+    5: { counterBurnDamage: 6, counterBurnDuration: 3, guardDuration: 3 },
+  },
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Shadow Claw — Stealth / bleed / crit-focused path
+// EARTH — placeholder (mirrors Fire structure)
 // ─────────────────────────────────────────────────────────────────────────────
 
-const vanish = {
-  id: 'vanish',
-  name: 'Vanish',
-  path: 'shadowClaw',
+const earth_slam = {
+  id: 'earth_slam',
+  name: 'Earth Slam',
+  element: 'earth',
   tier: 1,
   type: 'active',
-  description: 'Enter stealth, next attack guaranteed crit +50% damage',
-  cooldown: 4,
-  effect: { type: 'stealth', bonusDamage: 0.5, duration: 999 },
-  branch: null,
-  requires: null,
+  targetType: 'single',
+  cooldown: 3,
+  unlockedBy: null,
+  icon: '🪨',
+  description: 'Smashes the enemy with the force of stone.',
+  stars: {
+    1: { damageMultiplier: 1.20, burnDamage: 2, burnDuration: 3 },
+    2: { damageMultiplier: 1.40, burnDamage: 2, burnDuration: 3 },
+    3: { damageMultiplier: 1.60, burnDamage: 3, burnDuration: 3 },
+    4: { damageMultiplier: 1.80, burnDamage: 3, burnDuration: 4 },
+    5: { damageMultiplier: 2.00, burnDamage: 4, burnDuration: 4 },
+  },
 };
 
-const serrated_claws = {
-  id: 'serrated_claws',
-  name: 'Serrated Claws',
-  path: 'shadowClaw',
+const bedrock = {
+  id: 'bedrock',
+  name: 'Bedrock',
+  element: 'earth',
+  tier: 1,
+  type: 'passive',
+  targetType: 'passive',
+  cooldown: 0,
+  unlockedBy: null,
+  icon: '⛰️',
+  description: 'Unyielding stone skin reduces all incoming damage.',
+  stars: {
+    1: { burnTickBonus: 1 },
+    2: { burnTickBonus: 2 },
+    3: { burnTickBonus: 3 },
+    4: { burnTickBonus: 4 },
+    5: { burnTickBonus: 5 },
+  },
+};
+
+const rockslide = {
+  id: 'rockslide',
+  name: 'Rockslide',
+  element: 'earth',
   tier: 2,
-  type: 'passive',
-  description: '25% chance to inflict Bleed (3 dmg/turn for 3 turns)',
-  cooldown: 0,
-  effect: { type: 'bleed_on_hit', chance: 0.25, damage: 3, duration: 3 },
-  branch: null,
-  requires: 'vanish',
-};
-
-/* ── Tier 3 branch ─────────────────────── */
-
-const death_mark = {
-  id: 'death_mark',
-  name: 'Death Mark',
-  path: 'shadowClaw',
-  tier: 3,
   type: 'active',
-  description: 'Target takes +50% damage for 3 turns',
+  targetType: 'single_with_spread',
   cooldown: 4,
-  effect: { type: 'death_mark', damageIncrease: 0.5, duration: 3, target: 'single' },
-  branch: 'a',
-  requires: 'serrated_claws',
+  unlockedBy: 'earth_slam',
+  icon: '🏔️',
+  description: 'Triggers an avalanche that buries nearby enemies.',
+  stars: {
+    1: { damageMultiplier: 1.50, burnDamage: 4, burnDuration: 4, spreadPercent: 0.40, spreadBurnChance: 0.30 },
+    2: { damageMultiplier: 1.60, burnDamage: 4, burnDuration: 4, spreadPercent: 0.40, spreadBurnChance: 0.30 },
+    3: { damageMultiplier: 1.70, burnDamage: 5, burnDuration: 4, spreadPercent: 0.40, spreadBurnChance: 0.30 },
+    4: { damageMultiplier: 1.85, burnDamage: 5, burnDuration: 5, spreadPercent: 0.40, spreadBurnChance: 0.30 },
+    5: { damageMultiplier: 2.00, burnDamage: 6, burnDuration: 5, spreadPercent: 0.40, spreadBurnChance: 0.30 },
+  },
 };
 
-const sharp_eyes = {
-  id: 'sharp_eyes',
-  name: 'Sharp Eyes',
-  path: 'shadowClaw',
-  tier: 3,
-  type: 'passive',
-  description: '+25% crit chance',
-  cooldown: 0,
-  effect: { type: 'stat_boost', stat: 'critChance', value: 0.25 },
-  branch: 'b',
-  requires: 'serrated_claws',
-};
-
-/* ── Tier 4 branch ─────────────────────── */
-
-const toxic_claws = {
-  id: 'toxic_claws',
-  name: 'Toxic Claws',
-  path: 'shadowClaw',
-  tier: 4,
-  type: 'passive',
-  description: 'Bleed deals 1 extra damage per stack',
-  cooldown: 0,
-  effect: { type: 'bleed_boost', extraDamage: 1 },
-  branch: 'a',
-  requires: 'death_mark',
-};
-
-const phantom_step = {
-  id: 'phantom_step',
-  name: 'Phantom Step',
-  path: 'shadowClaw',
-  tier: 4,
-  type: 'passive',
-  description: 'After dodging, next attack is guaranteed crit',
-  cooldown: 0,
-  effect: { type: 'dodge_crit', description: 'After dodging, next attack is guaranteed crit' },
-  branch: 'b',
-  requires: 'sharp_eyes',
+const stone_wall = {
+  id: 'stone_wall',
+  name: 'Stone Wall',
+  element: 'earth',
+  tier: 2,
+  type: 'active',
+  targetType: 'self',
+  cooldown: 4,
+  unlockedBy: 'earth_slam',
+  icon: '🧱',
+  description: 'Erects an earthen barrier that absorbs damage.',
+  stars: {
+    1: { counterBurnDamage: 2, counterBurnDuration: 3, guardDuration: 3 },
+    2: { counterBurnDamage: 3, counterBurnDuration: 3, guardDuration: 3 },
+    3: { counterBurnDamage: 4, counterBurnDuration: 3, guardDuration: 3 },
+    4: { counterBurnDamage: 5, counterBurnDuration: 3, guardDuration: 3 },
+    5: { counterBurnDamage: 6, counterBurnDuration: 3, guardDuration: 3 },
+  },
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Aggregated map — keyed by skill id for O(1) lookup
+// WIND — placeholder (mirrors Fire structure)
+// ─────────────────────────────────────────────────────────────────────────────
+
+const wind_slash = {
+  id: 'wind_slash',
+  name: 'Wind Slash',
+  element: 'wind',
+  tier: 1,
+  type: 'active',
+  targetType: 'single',
+  cooldown: 3,
+  unlockedBy: null,
+  icon: '🌪️',
+  description: 'A razor-sharp gust that slices with precision.',
+  stars: {
+    1: { damageMultiplier: 1.20, burnDamage: 2, burnDuration: 3 },
+    2: { damageMultiplier: 1.40, burnDamage: 2, burnDuration: 3 },
+    3: { damageMultiplier: 1.60, burnDamage: 3, burnDuration: 3 },
+    4: { damageMultiplier: 1.80, burnDamage: 3, burnDuration: 4 },
+    5: { damageMultiplier: 2.00, burnDamage: 4, burnDuration: 4 },
+  },
+};
+
+const swift_step = {
+  id: 'swift_step',
+  name: 'Swift Step',
+  element: 'wind',
+  tier: 1,
+  type: 'passive',
+  targetType: 'passive',
+  cooldown: 0,
+  unlockedBy: null,
+  icon: '💨',
+  description: 'Heightened agility improves evasion at all times.',
+  stars: {
+    1: { burnTickBonus: 1 },
+    2: { burnTickBonus: 2 },
+    3: { burnTickBonus: 3 },
+    4: { burnTickBonus: 4 },
+    5: { burnTickBonus: 5 },
+  },
+};
+
+const cyclone = {
+  id: 'cyclone',
+  name: 'Cyclone',
+  element: 'wind',
+  tier: 2,
+  type: 'active',
+  targetType: 'single_with_spread',
+  cooldown: 4,
+  unlockedBy: 'wind_slash',
+  icon: '🌀',
+  description: 'A spiraling vortex that tears through all enemies.',
+  stars: {
+    1: { damageMultiplier: 1.50, burnDamage: 4, burnDuration: 4, spreadPercent: 0.40, spreadBurnChance: 0.30 },
+    2: { damageMultiplier: 1.60, burnDamage: 4, burnDuration: 4, spreadPercent: 0.40, spreadBurnChance: 0.30 },
+    3: { damageMultiplier: 1.70, burnDamage: 5, burnDuration: 4, spreadPercent: 0.40, spreadBurnChance: 0.30 },
+    4: { damageMultiplier: 1.85, burnDamage: 5, burnDuration: 5, spreadPercent: 0.40, spreadBurnChance: 0.30 },
+    5: { damageMultiplier: 2.00, burnDamage: 6, burnDuration: 5, spreadPercent: 0.40, spreadBurnChance: 0.30 },
+  },
+};
+
+const wind_veil = {
+  id: 'wind_veil',
+  name: 'Wind Veil',
+  element: 'wind',
+  tier: 2,
+  type: 'active',
+  targetType: 'self',
+  cooldown: 4,
+  unlockedBy: 'wind_slash',
+  icon: '🌬️',
+  description: 'Wraps Mochi in a gust that deflects incoming blows.',
+  stars: {
+    1: { counterBurnDamage: 2, counterBurnDuration: 3, guardDuration: 3 },
+    2: { counterBurnDamage: 3, counterBurnDuration: 3, guardDuration: 3 },
+    3: { counterBurnDamage: 4, counterBurnDuration: 3, guardDuration: 3 },
+    4: { counterBurnDamage: 5, counterBurnDuration: 3, guardDuration: 3 },
+    5: { counterBurnDamage: 6, counterBurnDuration: 3, guardDuration: 3 },
+  },
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Aggregated maps
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const SKILLS = {
-  // Iron Paw
-  iron_slash,
-  steady_paws,
-  rally,
-  power_strike,
-  veteran,
-  sharp_mind,
-  // Stonefur
-  guard_stance,
-  iron_hide,
-  retaliate,
-  thick_fur,
-  unbreakable,
-  titan_slam,
-  // Shadow Claw
-  vanish,
-  serrated_claws,
-  death_mark,
-  sharp_eyes,
-  toxic_claws,
-  phantom_step,
+  // Fire
+  fire_slash,
+  smoldering,
+  fire_burst,
+  flame_guard,
+  // Water
+  water_strike,
+  flowing,
+  tidal_wave,
+  water_shield,
+  // Earth
+  earth_slam,
+  bedrock,
+  rockslide,
+  stone_wall,
+  // Wind
+  wind_slash,
+  swift_step,
+  cyclone,
+  wind_veil,
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Helper — returns an array of skill definitions for a given class path
-// ─────────────────────────────────────────────────────────────────────────────
+// Per-element ordered list: [T1 active, T1 passive, T2A, T2B]
+export const ELEMENT_SKILLS = {
+  fire:  ['fire_slash', 'smoldering', 'fire_burst', 'flame_guard'],
+  water: ['water_strike', 'flowing', 'tidal_wave', 'water_shield'],
+  earth: ['earth_slam', 'bedrock', 'rockslide', 'stone_wall'],
+  wind:  ['wind_slash', 'swift_step', 'cyclone', 'wind_veil'],
+};
+
+// Tier 1 active skill per element (the parent that unlocks T2 skills)
+export const ELEMENT_T1_ACTIVE = {
+  fire: 'fire_slash',
+  water: 'water_strike',
+  earth: 'earth_slam',
+  wind: 'wind_slash',
+};
 
 /**
- * @param {'ironPaw'|'stonefur'|'shadowClaw'} pathName
- * @returns {Array} skills belonging to that path, sorted by tier
+ * SP cost to unlock or star-up a skill.
  */
-export function getSkillsByPath(pathName) {
-  return Object.values(SKILLS)
-    .filter((skill) => skill.path === pathName)
-    .sort((a, b) => a.tier - b.tier);
+export function getSkillCost(skill) {
+  return skill.tier === 1 ? 1 : 2;
+}
+
+/**
+ * Returns whether the hero can unlock a skill.
+ * T1: hero.level >= 2
+ * T2: hero.level >= 15 AND parent T1 active is at stars 5
+ */
+export function canUnlockElementSkill(skillId, hero) {
+  const skill = SKILLS[skillId];
+  if (!skill) return { can: false, reason: 'Unknown skill.' };
+  if (hero.unlockedSkills[skillId]) return { can: false, reason: 'Already unlocked.' };
+
+  const cost = getSkillCost(skill);
+  if ((hero.skillPoints || 0) < cost) {
+    return { can: false, reason: `Need ${cost} SP (have ${hero.skillPoints || 0}).` };
+  }
+
+  if (skill.tier === 1) {
+    if (hero.level < 2) return { can: false, reason: 'Requires level 2.' };
+    return { can: true };
+  }
+
+  // Tier 2
+  if (hero.level < 15) return { can: false, reason: 'Requires level 15.' };
+  const parentEntry = hero.unlockedSkills[skill.unlockedBy];
+  if (!parentEntry || parentEntry.stars < 5) {
+    const parentSkill = SKILLS[skill.unlockedBy];
+    return { can: false, reason: `Requires ${parentSkill?.name || skill.unlockedBy} at ★5.` };
+  }
+  return { can: true };
+}
+
+/**
+ * Returns whether the hero can star up a skill.
+ */
+export function canStarUpSkill(skillId, hero) {
+  const skill = SKILLS[skillId];
+  if (!skill) return { can: false, reason: 'Unknown skill.' };
+  const entry = hero.unlockedSkills[skillId];
+  if (!entry) return { can: false, reason: 'Skill not unlocked.' };
+  if (entry.stars >= 5) return { can: false, reason: 'Already at max star.' };
+
+  const cost = getSkillCost(skill);
+  if ((hero.skillPoints || 0) < cost) {
+    return { can: false, reason: `Need ${cost} SP (have ${hero.skillPoints || 0}).` };
+  }
+  return { can: true };
 }
 
 export default SKILLS;

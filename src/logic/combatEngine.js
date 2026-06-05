@@ -577,6 +577,17 @@ export function executeSkill(skill, attacker, targets, attackerState) {
  * }}
  */
 export function executeEnemyTurn(enemy, enemyState, target, targetState) {
+  // -- Failsafe: check if enemy is dead --------------------------------------
+  if (enemyState.hp <= 0) {
+    return {
+      damage: 0,
+      effects: [],
+      log: `${enemy.name} is already defeated and cannot act!`,
+      selfDestruct: false,
+      isSkipped: true,
+    };
+  }
+
   // -- Is the enemy stunned? If so, they skip their turn. -------------------
   const isStunned = enemyState.effects?.some(e => e.type === 'stun');
   if (isStunned) {
@@ -590,9 +601,15 @@ export function executeEnemyTurn(enemy, enemyState, target, targetState) {
   }
 
   // -- Pick a random move from the enemy's move list ------------------------
-  const moves = enemy.moves || [];
+  const moves = (enemy.moves || []).filter(Boolean);
   if (moves.length === 0) {
-    return { damage: 0, effects: [], log: `${enemy.name} does nothing.`, selfDestruct: false };
+    return {
+      damage: 0,
+      effects: [],
+      log: `${enemy.name} does nothing.`,
+      selfDestruct: false,
+      isSkipped: true,
+    };
   }
 
   const move = moves[Math.floor(Math.random() * moves.length)];
@@ -808,6 +825,13 @@ export function processStatusEffects(entityState) {
   // Walk through each effect and apply / tick it
   for (const effect of entityState.effects) {
     switch (effect.type) {
+      // -- Burn: deal damage then decrement duration ------------------------
+      case 'burn':
+        totalDamage += effect.damage;
+        logParts.push(`Burn deals ${effect.damage} damage`);
+        effect.duration -= 1;
+        break;
+
       // -- Bleed: deal damage then decrement duration -----------------------
       case 'bleed':
         totalDamage += effect.damage;
@@ -902,7 +926,144 @@ export function processStatusEffects(entityState) {
 }
 
 // ============================================================================
-// 8) generateEncounter — decide what enemies appear on a given floor
+// 8) Burn system — Option C stacking, tick, and bonus calculation
+// ============================================================================
+
+/**
+ * Merge a new burn onto an entity that may already have one.
+ * Option C: sum damage, keep longest duration.
+ *
+ * @param {Object[]} effects   - entity's current effects array (mutated in place)
+ * @param {number}   damage    - burn damage per tick (already includes all bonuses)
+ * @param {number}   duration  - burn duration in turns
+ */
+export function applyBurn(effects, damage, duration) {
+  const existing = effects.find(e => e.type === 'burn');
+  if (existing) {
+    existing.damage   = existing.damage + damage;      // stack damage
+    existing.duration = Math.max(existing.duration, duration); // keep longest
+  } else {
+    effects.push({ type: 'burn', damage, duration });
+  }
+}
+
+/**
+ * Calculate total burn damage per tick including stance and Smoldering bonuses.
+ * All bonus values are pre-computed in CombatScreen and passed in as burnBonus.
+ *
+ * @param {number} baseDamage  - skill's base burn damage
+ * @param {number} burnBonus   - total bonus from stance + Smoldering passive
+ */
+export function calculateBurnDamage(baseDamage, burnBonus) {
+  return baseDamage + (burnBonus || 0);
+}
+
+// ============================================================================
+// 9) Element skill execution — Fire Slash, Fire Burst, Flame Guard
+// ============================================================================
+
+/**
+ * Execute Fire Slash: damage + guaranteed burn on single target.
+ *
+ * @param {Object}   skillDef    - full skill definition from SKILLS
+ * @param {number}   stars       - current star level
+ * @param {Object}   heroState   - hero combat state
+ * @param {Object}   target      - single enemy object (mutated in place)
+ * @param {number}   burnBonus   - precomputed stance + Smoldering bonus
+ */
+export function executeFireSlash(skillDef, stars, heroState, target, burnBonus) {
+  const starData = skillDef.stars[stars];
+  const { damage, isCrit } = calculateDamage(
+    heroState,
+    target,
+    { multiplier: starData.damageMultiplier },
+  );
+
+  const burnDmg = calculateBurnDamage(starData.burnDamage, burnBonus);
+  applyBurn(target.effects || (target.effects = []), burnDmg, starData.burnDuration);
+
+  const critText = isCrit ? ' (CRIT!)' : '';
+  return {
+    damage,
+    targetUid: target.uid || target.id,
+    log: `🔥 Fire Slash hits ${target.name} for ${damage}${critText} and applies burn (${burnDmg}/turn for ${starData.burnDuration} turns)!`,
+  };
+}
+
+/**
+ * Execute Fire Burst: damage + burn on primary + spread to adjacent enemies.
+ *
+ * @param {Object}   skillDef   - full skill definition
+ * @param {number}   stars      - current star level
+ * @param {Object}   heroState  - hero combat state
+ * @param {Object[]} enemies    - full living enemies array
+ * @param {number}   targetIdx  - index of primary target in enemies
+ * @param {number}   burnBonus  - precomputed burn bonus
+ */
+export function executeFireBurst(skillDef, stars, heroState, enemies, targetIdx, burnBonus) {
+  const starData = skillDef.stars[stars];
+  const results = [];
+  const logParts = [];
+
+  // Primary target
+  const primary = enemies[targetIdx];
+  if (primary) {
+    const { damage, isCrit } = calculateDamage(
+      heroState,
+      primary,
+      { multiplier: starData.damageMultiplier },
+    );
+    const burnDmg = calculateBurnDamage(starData.burnDamage, burnBonus);
+    applyBurn(primary.effects || (primary.effects = []), burnDmg, starData.burnDuration);
+    results.push({ damage, targetUid: primary.uid || primary.id });
+    logParts.push(`${primary.name} takes ${damage}${isCrit ? ' (CRIT!)' : ''} + burn`);
+  }
+
+  // Adjacent enemies (index ±1)
+  for (const adjIdx of [targetIdx - 1, targetIdx + 1]) {
+    if (adjIdx < 0 || adjIdx >= enemies.length) continue;
+    const adj = enemies[adjIdx];
+    if (!adj || adj.hp <= 0) continue;
+
+    const rawDmg = Math.floor((heroState.attack || 10) * starData.damageMultiplier * starData.spreadPercent);
+    const effectiveDef = Math.max(0, (adj.def || adj.defence || 0) - 1);
+    const reduction = effectiveDef / (effectiveDef + 15);
+    const spreadDmg = Math.max(1, Math.floor(rawDmg * (1 - reduction)));
+
+    results.push({ damage: spreadDmg, targetUid: adj.uid || adj.id });
+    logParts.push(`${adj.name} splashed for ${spreadDmg}`);
+
+    if (Math.random() < starData.spreadBurnChance) {
+      const burnDmg = calculateBurnDamage(starData.burnDamage, burnBonus);
+      applyBurn(adj.effects || (adj.effects = []), burnDmg, starData.burnDuration);
+      logParts[logParts.length - 1] += ' + burn';
+    }
+  }
+
+  return {
+    results,
+    log: `💥 Fire Burst! ${logParts.join(', ')}!`,
+  };
+}
+
+/**
+ * Execute Flame Guard: applies counter-burn aura to the hero for N turns.
+ * Returns the flame guard state to merge into heroState.
+ */
+export function executeFlameGuard(skillDef, stars, burnBonus) {
+  const starData = skillDef.stars[stars];
+  const burnDmg = calculateBurnDamage(starData.counterBurnDamage, burnBonus);
+  return {
+    flameGuardActive: true,
+    flameGuardTurnsRemaining: starData.guardDuration,
+    flameGuardBurnDamage: burnDmg,
+    flameGuardBurnDuration: starData.counterBurnDuration,
+    log: `🛡️ Flame Guard active for ${starData.guardDuration} turns! Attackers burn for ${burnDmg}/turn!`,
+  };
+}
+
+// ============================================================================
+// 10) generateEncounter — decide what enemies appear on a given floor
 // ============================================================================
 /**
  * Generate an array of enemy objects for a specific floor in a zone.

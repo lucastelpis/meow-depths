@@ -6,7 +6,9 @@
  *   2. GameProvider (global state context)
  *   3. All screen routes
  *
- * The player starts at the CampScreen and navigates between screens.
+ * On first launch (hero.element === null) the ElementSelectionScreen is shown
+ * instead of the normal navigator. Once an element is chosen, the Camp screen
+ * becomes the root and the intro never appears again.
  */
 
 import React from 'react';
@@ -16,7 +18,7 @@ import { createStackNavigator } from '@react-navigation/stack';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 // Global state provider
-import { GameProvider } from './src/state/gameState';
+import { GameProvider, useGame } from './src/state/gameState';
 
 // Screens
 import CampScreen from './src/screens/CampScreen';
@@ -27,76 +29,60 @@ import SkillTreeScreen from './src/screens/SkillTreeScreen';
 import InventoryScreen from './src/screens/InventoryScreen';
 import DungeonMapScreen from './src/screens/DungeonMapScreen';
 import DungeonFloorScreen from './src/screens/DungeonFloorScreen';
+import ElementSelectionScreen from './src/screens/ElementSelectionScreen';
 
-// Create the stack navigator
 const Stack = createStackNavigator();
 
 /**
- * Main App component.
- *
- * Wraps everything in:
- *   - SafeAreaProvider (handles notches and safe areas on different phones)
- *   - GameProvider (makes game state available everywhere via useGame())
- *   - NavigationContainer (React Navigation's root container)
- *   - Stack.Navigator (manages screen transitions)
+ * Inner navigator — rendered inside GameProvider so it can read game state.
+ * Shows the ElementSelectionScreen until the player has chosen an element.
  */
+function AppNavigator() {
+  const { state } = useGame();
+  const hasElement = !!(state?.hero?.element);
+
+  if (!hasElement) {
+    return <ElementSelectionScreen />;
+  }
+
+  return (
+    <NavigationContainer>
+      <StatusBar barStyle="light-content" backgroundColor="#000" />
+
+      <Stack.Navigator
+        initialRouteName="Camp"
+        screenOptions={{
+          headerShown: false,
+          cardStyle: { backgroundColor: '#0D0D0D' },
+          gestureEnabled: true,
+        }}
+      >
+        <Stack.Screen name="Camp" component={CampScreen} />
+        <Stack.Screen name="WorldMap" component={WorldMapScreen} />
+        <Stack.Screen name="DungeonFloor" component={DungeonFloorScreen} />
+        <Stack.Screen
+          name="Combat"
+          component={CombatScreen}
+          options={{ gestureEnabled: false }}
+        />
+        <Stack.Screen
+          name="DungeonMap"
+          component={DungeonMapScreen}
+          options={{ gestureEnabled: false }}
+        />
+        <Stack.Screen name="Shop" component={ShopScreen} />
+        <Stack.Screen name="SkillTree" component={SkillTreeScreen} />
+        <Stack.Screen name="Inventory" component={InventoryScreen} />
+      </Stack.Navigator>
+    </NavigationContainer>
+  );
+}
+
 export default function App() {
   return (
     <SafeAreaProvider>
       <GameProvider>
-        <NavigationContainer>
-          {/* Hide the status bar for full-screen immersion */}
-          <StatusBar barStyle="light-content" backgroundColor="#000" />
-
-          <Stack.Navigator
-            initialRouteName="Camp"
-            screenOptions={{
-              // Hide the default header — each screen has its own custom header
-              headerShown: false,
-              // Use a dark background to prevent white flashes during transitions
-              cardStyle: { backgroundColor: '#0D0D0D' },
-              // Smooth slide transition
-              gestureEnabled: true,
-            }}
-          >
-            {/* Camp — the home base hub */}
-            <Stack.Screen name="Camp" component={CampScreen} />
-
-            {/* World Map — zone selection */}
-            <Stack.Screen name="WorldMap" component={WorldMapScreen} />
-
-            {/* Dungeon Floor Map — floor selection within a zone */}
-            <Stack.Screen name="DungeonFloor" component={DungeonFloorScreen} />
-
-            {/* Combat — the main gameplay screen */}
-            <Stack.Screen
-              name="Combat"
-              component={CombatScreen}
-              options={{
-                // Prevent going back during combat (use the in-game buttons)
-                gestureEnabled: false,
-              }}
-            />
-
-            {/* Dungeon Map — the explorable map screen */}
-            <Stack.Screen
-              name="DungeonMap"
-              component={DungeonMapScreen}
-              options={{
-                gestureEnabled: false,
-              }}
-            />
-
-            {/* Shop — purchasing supplies & equipment */}
-            <Stack.Screen name="Shop" component={ShopScreen} />
-
-            {/* Skill Tree — spending skill points */}
-            <Stack.Screen name="SkillTree" component={SkillTreeScreen} />
-
-            {/* Inventory — managing gear and consumables */}
-            <Stack.Screen name="Inventory" component={InventoryScreen} />
-          </Stack.Navigator>
-        </NavigationContainer>
+        <AppNavigator />
       </GameProvider>
     </SafeAreaProvider>
   );

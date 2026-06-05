@@ -28,6 +28,33 @@ import SKILLS from '../data/skills';
 import { GEAR, SET_BONUSES } from '../data/gear';
 
 // ============================================================================
+// STANCES — always-on elemental innates, scale with hero level
+// ============================================================================
+export const STANCES = {
+  fire: {
+    name: 'Smoldering Aura',
+    description: '+1% ATK per level. Burn ticks deal more damage.',
+    getBonus: (level) => ({
+      atkPercent: level * 0.01,
+      burnTickBonus: 1 + Math.floor(level / 5),
+    }),
+  },
+  water: { name: 'Water Stance', description: 'Coming soon.', getBonus: () => ({}) },
+  earth: { name: 'Earth Stance', description: 'Coming soon.', getBonus: () => ({}) },
+  wind:  { name: 'Wind Stance',  description: 'Coming soon.', getBonus: () => ({}) },
+};
+
+/**
+ * Returns the stance bonus object for the given element and level.
+ * Safe to call with null/undefined element — returns an empty object.
+ */
+export function getStanceBonus(element, level) {
+  const stance = STANCES[element];
+  if (!stance) return {};
+  return stance.getBonus(level || 1);
+}
+
+// ============================================================================
 // 1) getXpForLevel — XP curve / thresholds
 // ============================================================================
 /**
@@ -190,65 +217,26 @@ export function calculateEffectiveStats(hero, skillDefinitions = SKILLS, runBuff
     }
   }
 
-  // --- 2. Passive skill bonuses --------------------------------------------
-  // hero.unlockedSkills is an array of skill IDs the hero has learned.
-  const unlockedSkills = hero.unlockedSkills || [];
+  // --- 2. Passive skill bonuses (new element-based object format) -----------
+  const unlockedSkills = hero.unlockedSkills || {};
+  const unlockedEntries = Array.isArray(unlockedSkills)
+    ? [] // legacy array — no bonuses applied (migrated away on load)
+    : Object.entries(unlockedSkills);
 
-  for (const skillId of unlockedSkills) {
+  for (const [skillId] of unlockedEntries) {
     const skillDef = skillDefinitions[skillId];
     if (!skillDef || skillDef.type !== 'passive') continue;
-
-    const eff = skillDef.effect || {};
-
-    // Handle single stat boosts (e.g. steady_paws: +10% crit)
-    if (eff.type === 'stat_boost') {
-      if (eff.stat === 'critChance') critChance += eff.value;
-      if (eff.stat === 'dodge')      dodge      += eff.value;
-      if (eff.stat === 'attack')     attack     += eff.value;
-      if (eff.stat === 'defence')    defence    += eff.value;
-      if (eff.stat === 'maxHp')      maxHp      += eff.value;
-    }
-
-    // Handle multi-stat boosts (e.g. iron_hide: +30 HP, +5 defence)
-    if (eff.type === 'multi_stat_boost' && eff.boosts) {
-      for (const boost of eff.boosts) {
-        if (boost.stat === 'maxHp')      maxHp      += boost.value;
-        if (boost.stat === 'attack')     attack     += boost.value;
-        if (boost.stat === 'defence')    defence    += boost.value;
-        if (boost.stat === 'critChance') critChance += boost.value;
-        if (boost.stat === 'dodge')      dodge      += boost.value;
-      }
-    }
-
-    // Handle bleed-on-hit passives (e.g. serrated_claws)
-    if (eff.type === 'bleed_on_hit') {
-      passives.bleedOnHitChance = (passives.bleedOnHitChance || 0) + eff.chance;
-      passives.bleedDamage      = eff.damage   || 3;
-      passives.bleedDuration    = eff.duration  || 3;
-    }
-
-    // Handle flat damage reduction (thick_fur)
-    if (eff.type === 'flat_damage_reduction') {
-      passives.flatDamageReduction = (passives.flatDamageReduction || 0) + eff.value;
-    }
-
-    // Handle cooldown reduction (sharp_mind)
-    if (eff.type === 'cooldown_reduction') {
-      passives.cooldownReduction = (passives.cooldownReduction || 0) + eff.value;
-    }
-
-    // Handle bleed boost (toxic_claws)
-    if (eff.type === 'bleed_boost') {
-      passives.bleedExtraDamage = (passives.bleedExtraDamage || 0) + eff.extraDamage;
-    }
-
-    // Handle dodge-crit (phantom_step)
-    if (eff.type === 'dodge_crit') {
-      passives.dodgeCrit = true;
-    }
+    // Passive element skills have no stat boosts in calculateEffectiveStats —
+    // their burnTickBonus is read at combat time via getSmolderingBonus().
   }
 
-  // --- 3. Set bonuses ------------------------------------------------------
+  // --- 3. Stance ATK % bonus (Fire Stance: +1% ATK per level) --------------
+  const stanceBonus = getStanceBonus(hero.element, hero.level);
+  if (stanceBonus.atkPercent) {
+    attack = Math.floor(attack * (1 + stanceBonus.atkPercent));
+  }
+
+  // --- 4. Set bonuses ------------------------------------------------------
   const activeSets = getActiveSetBonuses(hero.gear);
 
   for (const setBonus of activeSets) {
@@ -260,7 +248,7 @@ export function calculateEffectiveStats(hero, skillDefinitions = SKILLS, runBuff
     if (bonus.dodge)      dodge      += bonus.dodge;
   }
 
-  // --- 4. Run-only buffs (applied on top) ----------------------------------
+  // --- 5. Run-only buffs (applied on top) ----------------------------------
   // Tracked in currentRun.runBuffs and cleared when run ends
   if (runBuffs) {
     if (runBuffs.attackBonus)  attack     += runBuffs.attackBonus;

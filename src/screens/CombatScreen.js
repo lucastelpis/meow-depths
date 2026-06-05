@@ -60,9 +60,13 @@ import {
   useConsumable,
   executeSkill,
   selectEnemyMove,
+  executeFireSlash,
+  executeFireBurst,
+  executeFlameGuard,
+  applyBurn,
 } from '../logic/combatEngine';
 import { calculateEncounterLoot } from '../logic/lootEngine';
-import { calculateEffectiveStats, checkLevelUp } from '../logic/progressionEngine';
+import { calculateEffectiveStats, checkLevelUp, getStanceBonus } from '../logic/progressionEngine';
 import { useGame }  from '../state/gameState';
 import theme        from '../constants/theme';
 
@@ -179,6 +183,7 @@ function getTargetsForSkill(skillDef, selectedIdx, allEnemies) {
 // Helper: consolidate status effects for rendering (Option 1)
 // ============================================================================
 const STATUS_EMOJIS = {
+  burn: '🔥',
   bleed: '🩸',
   guard: '🛡️',
   def_buff: '🛡️',
@@ -193,6 +198,7 @@ const STATUS_EMOJIS = {
 };
 
 const STATUS_COLORS = {
+  burn: '#FF6B35',
   bleed: theme.COLORS.bleed || '#D8483F',
   guard: theme.COLORS.guard || '#5A9FE0',
   def_buff: theme.COLORS.guard || '#5A9FE0',
@@ -332,7 +338,7 @@ export default function CombatScreen() {
 
     // 3. Build local hero combat state
     const initHero = {
-      name: 'Mochi',
+      name: state.hero.name || 'Mochi',
       hp: state.hero.hp,
       maxHp: eff.maxHp,
       attack: eff.attack,
@@ -342,6 +348,11 @@ export default function CombatScreen() {
       effects: [],
       passives: eff.passives,
       gearSpecials: eff.gearSpecials,
+      // Flame Guard state (Fire element T2B)
+      flameGuardActive: false,
+      flameGuardTurnsRemaining: 0,
+      flameGuardBurnDamage: 0,
+      flameGuardBurnDuration: 0,
     };
     setHeroState(initHero);
 
@@ -535,11 +546,11 @@ export default function CombatScreen() {
   const handleAttack = async () => {
     if (combatPhase !== 'playerTurn' || !heroState) return;
 
+    const target = enemies[selectedEnemyIndex];
+    if (!target || target.hp <= 0) return;
+
     // Lock player UI instantly
     setCombatPhase('enemyTurn');
-
-    const target = enemies[selectedEnemyIndex];
-    if (!target) return;
 
     // Play hero attack animation (auto-returns to idle via onComplete)
     setHeroAnim('attack');
@@ -607,6 +618,19 @@ export default function CombatScreen() {
   };
 
   // =========================================================================
+  // Burn bonus helper — stance + Smoldering passive combined
+  // =========================================================================
+  const getBurnBonus = () => {
+    const stanceBonus = getStanceBonus(state.hero.element, state.hero.level);
+    const stanceBurn  = stanceBonus.burnTickBonus || 0;
+    const smolderingEntry = (state.hero.unlockedSkills || {})['smoldering'];
+    const smolderingBurn  = smolderingEntry && state.hero.equippedSkills.includes('smoldering')
+      ? (SKILLS['smoldering']?.stars?.[smolderingEntry.stars]?.burnTickBonus || 0)
+      : 0;
+    return stanceBurn + smolderingBurn;
+  };
+
+  // =========================================================================
   // ACTION: Use Skill
   // =========================================================================
   const handleSkill = async (slotIndex) => {
@@ -618,78 +642,109 @@ export default function CombatScreen() {
       return;
     }
 
-    // Cooldown check
-    if ((cooldowns[skillId] || 0) > 0) {
-      addLog(`${SKILLS[skillId]?.name || 'Skill'} is on cooldown (${cooldowns[skillId]} turns).`);
+    // Passive skills have no button action
+    const skillDef = SKILLS[skillId];
+    if (!skillDef) return;
+    if (skillDef.type === 'passive') {
+      addLog(`${skillDef.name} is a passive skill — it's always active.`);
       return;
     }
 
-    const skillDef = SKILLS[skillId];
-    if (!skillDef) return;
+    // Failsafe: if skill targets enemies, check if primary target is valid and alive
+    const isTargeted = skillDef.targetType !== 'self' && skillDef.targetType !== 'passive';
+    if (isTargeted) {
+      const target = enemies[selectedEnemyIndex];
+      if (!target || target.hp <= 0) return;
+    }
+
+    // Cooldown check
+    if ((cooldowns[skillId] || 0) > 0) {
+      addLog(`${skillDef.name} is on cooldown (${cooldowns[skillId]} turns).`);
+      return;
+    }
 
     // Lock player UI instantly
     setCombatPhase('enemyTurn');
 
-    // Guard/defensive skills play the guard animation; everything else attacks
-    const isGuardSkill = skillDef.effect?.type === 'guard' || skillDef.effect?.type === 'counter';
+    const isGuardSkill = skillDef.targetType === 'self';
     setHeroAnim(isGuardSkill ? 'guard' : 'attack');
-
-    const targets = getTargetsForSkill(skillDef, selectedEnemyIndex, enemies);
-    const skillResult = executeSkill(
-      skillDef,
-      heroState,
-      targets,
-      heroState,
-    );
-    addLog(skillResult.log);
 
     // Set cooldown
     const newCooldowns = { ...cooldowns, [skillId]: skillDef.cooldown };
     setCooldowns(newCooldowns);
 
-    // Process results
-    let updatedHero = { ...heroState };
-    let updatedEnemies = [...enemies];
+    let updatedHero    = { ...heroState };
+    let updatedEnemies = enemies.map(e => ({ ...e, effects: [...(e.effects || [])] }));
+    const burnBonus    = getBurnBonus();
 
-    for (const res of skillResult.results) {
-      // Damage result — apply to the targeted enemy
-      if (res.damage !== undefined && res.target !== undefined) {
-        updatedEnemies = updatedEnemies.map((e) => {
-          if ((e.uid || e.id) !== res.target) return e;
-          const newHp = Math.max(0, e.hp - res.damage);
-          let newEffects = e.effects || [];
-          if (res.stunApplied && res.stunEffect) {
-            newEffects = addStatusEffects(newEffects, res.stunEffect);
-          }
-          return { ...e, hp: newHp, effects: newEffects };
-        });
+    // ── Element skill routing ──────────────────────────────────────────────
+    if (skillId === 'fire_slash') {
+      const target = updatedEnemies[selectedEnemyIndex];
+      if (!target) { setCombatPhase('playerTurn'); return; }
+      const stars = (state.hero.unlockedSkills[skillId]?.stars) || 1;
+      const result = executeFireSlash(skillDef, stars, updatedHero, target, burnBonus);
+      updatedEnemies = updatedEnemies.map(e =>
+        (e.uid || e.id) === result.targetUid
+          ? { ...e, hp: Math.max(0, e.hp - result.damage), effects: [...(e.effects || [])] }
+          : e
+      );
+      // burn was applied in-place on target's effects array; copy it back
+      const burnUpdated = updatedEnemies.findIndex(e => (e.uid || e.id) === result.targetUid);
+      if (burnUpdated >= 0) updatedEnemies[burnUpdated].effects = target.effects;
+      addLog(result.log);
+
+    } else if (skillId === 'fire_burst') {
+      const stars = (state.hero.unlockedSkills[skillId]?.stars) || 1;
+      const burst = executeFireBurst(skillDef, stars, updatedHero, updatedEnemies, selectedEnemyIndex, burnBonus);
+      for (const res of burst.results) {
+        updatedEnemies = updatedEnemies.map(e =>
+          (e.uid || e.id) === res.targetUid
+            ? { ...e, hp: Math.max(0, e.hp - res.damage) }
+            : e
+        );
       }
+      addLog(burst.log);
 
-      // Heal result
-      if (res.type === 'heal' && res.healAmount) {
-        updatedHero = {
-          ...updatedHero,
-          hp: Math.min(updatedHero.maxHp, updatedHero.hp + res.healAmount),
-        };
-      }
+    } else if (skillId === 'flame_guard') {
+      const stars = (state.hero.unlockedSkills[skillId]?.stars) || 1;
+      const guard = executeFlameGuard(skillDef, stars, burnBonus);
+      updatedHero = {
+        ...updatedHero,
+        flameGuardActive: guard.flameGuardActive,
+        flameGuardTurnsRemaining: guard.flameGuardTurnsRemaining,
+        flameGuardBurnDamage: guard.flameGuardBurnDamage,
+        flameGuardBurnDuration: guard.flameGuardBurnDuration,
+      };
+      addLog(guard.log);
 
-      // Self-buff results (guard, stealth, counter)
-      if (res.type === 'guard' || res.type === 'stealth' || res.type === 'counter') {
-        updatedHero = {
-          ...updatedHero,
-          effects: addStatusEffects(updatedHero.effects, res.effect),
-        };
-      }
+    } else {
+      // Fallback: legacy executeSkill path for any non-element skills
+      const targets = getTargetsForSkill(skillDef, selectedEnemyIndex, enemies);
+      const skillResult = executeSkill(skillDef, heroState, targets, heroState);
+      addLog(skillResult.log);
 
-      // Death mark — add effect to the enemy
-      if (res.type === 'deathMark' && res.target !== undefined) {
-        updatedEnemies = updatedEnemies.map((e) => {
-          if ((e.uid || e.id) !== res.target) return e;
-          return {
-            ...e,
-            effects: addStatusEffects(e.effects, res.effect),
-          };
-        });
+      for (const res of skillResult.results) {
+        if (res.damage !== undefined && res.target !== undefined) {
+          updatedEnemies = updatedEnemies.map((e) => {
+            if ((e.uid || e.id) !== res.target) return e;
+            const newHp = Math.max(0, e.hp - res.damage);
+            let newEffects = e.effects || [];
+            if (res.stunApplied && res.stunEffect) newEffects = addStatusEffects(newEffects, res.stunEffect);
+            return { ...e, hp: newHp, effects: newEffects };
+          });
+        }
+        if (res.type === 'heal' && res.healAmount) {
+          updatedHero = { ...updatedHero, hp: Math.min(updatedHero.maxHp, updatedHero.hp + res.healAmount) };
+        }
+        if (res.type === 'guard' || res.type === 'stealth' || res.type === 'counter') {
+          updatedHero = { ...updatedHero, effects: addStatusEffects(updatedHero.effects, res.effect) };
+        }
+        if (res.type === 'deathMark' && res.target !== undefined) {
+          updatedEnemies = updatedEnemies.map((e) => {
+            if ((e.uid || e.id) !== res.target) return e;
+            return { ...e, effects: addStatusEffects(e.effects, res.effect) };
+          });
+        }
       }
     }
 
@@ -717,8 +772,20 @@ export default function CombatScreen() {
       setSelectedEnemyIndex(Math.max(0, updatedEnemies.length - 1));
     }
 
+    // Decrement Flame Guard turns
+    let guardedHero = { ...updatedHero };
+    if (guardedHero.flameGuardActive) {
+      const remaining = (guardedHero.flameGuardTurnsRemaining || 1) - 1;
+      if (remaining <= 0) {
+        guardedHero = { ...guardedHero, flameGuardActive: false, flameGuardTurnsRemaining: 0 };
+        addLog('🛡️ Flame Guard fades.');
+      } else {
+        guardedHero = { ...guardedHero, flameGuardTurnsRemaining: remaining };
+      }
+    }
+
     // Tick hero's status effects at the end of their turn
-    const { updatedHero: finalHero, logged } = tickHeroStatusEffects(updatedHero);
+    const { updatedHero: finalHero, logged } = tickHeroStatusEffects(guardedHero);
     setHeroState(finalHero);
 
     if (finalHero.hp <= 0) {
@@ -788,10 +855,7 @@ export default function CombatScreen() {
     const { updatedHero: finalHero, logged } = tickHeroStatusEffects(updatedHero);
     setHeroState(finalHero);
 
-    if (finalHero.hp <= 0) {
-      setCombatPhase('defeat');
-      return;
-    }
+    if (finalHero.hp <= 0) { setCombatPhase('defeat'); return; }
 
     setCombatPhase('enemyTurn');
     await delay(600 + (logged ? 400 : 0));
@@ -821,10 +885,14 @@ export default function CombatScreen() {
     // ── Phase 1: Each enemy executes their telegraphed move ─────────────────
     for (let i = 0; i < updatedEnemies.length; i++) {
       const enemy     = updatedEnemies[i];
+
+      // Failsafe: if the enemy is missing or already dead, skip them!
+      if (!enemy || enemy.hp <= 0) continue;
+
       const enemyData = ENEMIES[enemy.id] || enemy;
 
       const turnResult = executeEnemyTurn(
-        { ...enemyData, moves: [enemy.intent] },
+        { ...enemyData, moves: [enemy.intent].filter(Boolean) },
         enemy,
         updatedHero,
         updatedHero,
@@ -834,11 +902,11 @@ export default function CombatScreen() {
       // Write the updated cooldowns back into the array so they persist.
       updatedEnemies[i] = { ...enemy, cooldowns: { ...(enemy.cooldowns || {}) } };
 
-      // Trigger this enemy's attack animation if they are not stunned
+      // Trigger this enemy's attack animation if they are not stunned or skipped
       const enemyUid = enemy.uid;
-      let animDuration = 500; // default delay if stunned or no animation plays
+      let animDuration = 500; // default delay if stunned, skipped, or no animation plays
 
-      if (!turnResult.isStunned) {
+      if (!turnResult.isStunned && !turnResult.isSkipped) {
         setEnemyAnims(prev => ({ ...prev, [enemyUid]: 'attack' }));
         const spriteDef = getEnemySprite(enemy);
         const attackFrames = spriteDef.attack?.frames || 4;
@@ -852,6 +920,19 @@ export default function CombatScreen() {
         ...updatedHero,
         hp: Math.max(0, updatedHero.hp - turnResult.damage),
       };
+
+      // Flame Guard counter-burn — attacker gets burned
+      if (updatedHero.flameGuardActive && turnResult.damage > 0) {
+        const attacker = updatedEnemies[i];
+        if (attacker && attacker.hp > 0) {
+          const guardEffects = [...(attacker.effects || [])];
+          applyBurn(guardEffects, updatedHero.flameGuardBurnDamage, updatedHero.flameGuardBurnDuration);
+          updatedEnemies = updatedEnemies.map((e, idx) =>
+            idx === i ? { ...e, effects: guardEffects } : e
+          );
+          addLog(`🛡️ Flame Guard counter-burns ${attacker.name}!`);
+        }
+      }
 
       // Apply status effects from this attack (bleed, stun, etc.)
       if (turnResult.effects?.length > 0) {
@@ -1013,9 +1094,9 @@ export default function CombatScreen() {
       addLog('Mochi is stunned and can\'t move!');
       
       // Tick hero's status effects (which handles bleed and decrements stun)
-      const { updatedHero: finalHero, logged } = tickHeroStatusEffects(updatedHero);
+      const { updatedHero: finalHero } = tickHeroStatusEffects(updatedHero);
       setHeroState(finalHero);
-      
+
       if (finalHero.hp <= 0) {
         setCombatPhase('defeat');
         return;
@@ -1040,15 +1121,21 @@ export default function CombatScreen() {
     const dead = [];
     for (const e of enemyList) {
       if (e.hp <= 0) {
-        defeatedEnemiesRef.current.push(e);
-        addLog(`${e.name} has been defeated!`);
-        dead.push(e);
+        const alreadyDefeated = defeatedEnemiesRef.current.some(de => de.uid === e.uid);
+        if (!alreadyDefeated) {
+          defeatedEnemiesRef.current.push(e);
+          addLog(`${e.name} has been defeated!`);
+          dead.push(e);
+        }
       } else {
         alive.push(e);
       }
     }
     if (dead.length > 0) {
-      setDyingEnemies(prev => [...prev, ...dead]);
+      setDyingEnemies(prev => {
+        const uniqueDead = dead.filter(d => !prev.some(p => p.uid === d.uid));
+        return [...prev, ...uniqueDead];
+      });
       // Remove them from dying state after animation ends (800ms)
       setTimeout(() => {
         setDyingEnemies(prev => prev.filter(de => !dead.some(d => d.uid === de.uid)));
@@ -1297,7 +1384,7 @@ export default function CombatScreen() {
                   <Text style={styles.enemyName} numberOfLines={1}>
                     {enemy.name}
                   </Text>
-                  <View style={{ flexDirection: 'row', marginBottom: 4, justifyContent: 'center' }}>
+                  <View style={{ flexDirection: 'row', justifyContent: 'center' }}>
                     {Array.from({ length: enemy.isBoss ? 5 : (enemy.stars || 1) }).map((_, i) => (
                       <Text key={i} style={{ 
                         color: enemy.isBoss ? '#F5CF4A' : '#A0AEC0', 
@@ -1703,36 +1790,66 @@ export default function CombatScreen() {
 
   // ── Skill button renderer ──────────────────────────────────────────────
   function renderSkillButton(slotIndex) {
-    const skillId = state.hero.equippedSkills[slotIndex];
+    const skillId  = state.hero.equippedSkills[slotIndex];
     const skillDef = skillId ? SKILLS[skillId] : null;
-    const cd = skillId ? cooldowns[skillId] || 0 : 0;
+    const isPassive = skillDef?.type === 'passive';
+    const cd = (skillId && !isPassive) ? (cooldowns[skillId] || 0) : 0;
     const isOnCooldown = cd > 0;
     const hasSkill = !!skillDef;
-    const isDisabled = !hasSkill || isOnCooldown;
+    const isDisabled = !hasSkill || isOnCooldown || isPassive;
 
-    const btnStyle = hasSkill
-      ? isOnCooldown ? styles.actionBtnSkillCooldown : styles.actionBtnSkill
-      : styles.actionBtnEmpty;
-    const titleColor = hasSkill ? (isOnCooldown ? '#9C7D44' : '#A98EE0') : '#5A5A5A';
+    const elColor = state.hero.element === 'fire' ? '#FF6B35'
+                  : state.hero.element === 'water' ? '#3B9EFF'
+                  : state.hero.element === 'earth' ? '#8B6914'
+                  : state.hero.element === 'wind'  ? '#5CC4B8'
+                  : '#A98EE0';
+
+    const btnStyle = !hasSkill ? styles.actionBtnEmpty
+      : isPassive ? styles.actionBtnSkill
+      : isOnCooldown ? styles.actionBtnSkillCooldown
+      : styles.actionBtnSkill;
+
+    const titleColor = !hasSkill ? '#5A5A5A'
+      : isPassive ? `${elColor}99`
+      : isOnCooldown ? '#9C7D44'
+      : elColor;
+
+    const icon = skillDef?.icon || (hasSkill ? '✨' : '—');
+
     const subText = !hasSkill
       ? 'empty slot'
-      : isOnCooldown
-        ? `${cd} turn${cd !== 1 ? 's' : ''}`
-        : 'Ready';
+      : isPassive
+        ? 'Passive · always on'
+        : isOnCooldown
+          ? `${cd} turn${cd !== 1 ? 's' : ''}`
+          : 'Ready';
+
+    // Show Flame Guard active indicator
+    const isFlameGuardActive = skillId === 'flame_guard' && heroState?.flameGuardActive;
 
     return (
       <TouchableOpacity
         key={slotIndex}
-        style={[styles.actionBtn, btnStyle, isDisabled && { opacity: isOnCooldown ? 0.65 : 0.38 }]}
+        style={[
+          styles.actionBtn, btnStyle,
+          isDisabled && !isPassive && { opacity: isOnCooldown ? 0.65 : 0.38 },
+          isPassive && { opacity: 0.7 },
+          isFlameGuardActive && { borderColor: elColor, borderWidth: 1.5 },
+        ]}
         onPress={() => !isDisabled && handleSkill(slotIndex)}
         activeOpacity={0.75}
         disabled={isDisabled}
       >
-        <Text style={styles.actionBtnIcon}>{hasSkill ? '✨' : '—'}</Text>
-        <Text style={[styles.actionBtnTitle, { color: titleColor }]}>
+        <Text style={styles.actionBtnIcon}>{icon}</Text>
+        <Text style={[styles.actionBtnTitle, { color: titleColor }]} numberOfLines={1}>
           {hasSkill ? skillDef.name.toUpperCase() : `SKILL ${slotIndex + 1}`}
         </Text>
         <Text style={styles.actionBtnSub}>{subText}</Text>
+        {isFlameGuardActive && (
+          <Text style={[styles.actionBtnSub, { color: elColor }]}>
+            🛡️ {heroState.flameGuardTurnsRemaining}t
+          </Text>
+        )}
       </TouchableOpacity>
     );
   }
@@ -1964,11 +2081,11 @@ const styles = StyleSheet.create({
     width: '100%',
     height: 1,
     backgroundColor: 'rgba(255, 255, 255, 0.08)',
-    marginVertical: 4,
+    marginVertical: 6,
   },
   hudTray: {
     width: '100%',
-    height: 68,
+    height: 72,
     justifyContent: 'center',
     alignItems: 'center',
     gap: 4,
@@ -1976,7 +2093,6 @@ const styles = StyleSheet.create({
   effectsRowContainer: {
     width: '100%',
     height: 20,
-    marginTop: 4,
   },
   effectsRowScroll: {
     flexDirection: 'row',
@@ -2000,10 +2116,10 @@ const styles = StyleSheet.create({
   },
   enemyName: {
     ...theme.FONTS.body,
+    lineHeight: 16,
     color: theme.COLORS.textBright,
     fontWeight: 'bold',
     textAlign: 'center',
-    marginBottom: 4,
   },
 
   /* ── Status effects ────────────────────────────────────────── */

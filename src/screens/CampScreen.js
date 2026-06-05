@@ -129,7 +129,7 @@ const previewMaxHp = effectiveMaxHp + tempVitAlloc * 3;
     let stonefurCount = 0;
     let shadowClawCount = 0;
 
-    (hero.unlockedSkills || []).forEach(skillId => {
+    Object.keys(hero.unlockedSkills || {}).forEach(skillId => {
       const skill = SKILLS[skillId];
       if (skill) {
         if (skill.path === 'ironPaw') ironPawCount++;
