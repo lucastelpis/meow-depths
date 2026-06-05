@@ -267,11 +267,13 @@ function addStatusEffects(effectsList, newEffects) {
         }
         existing.stacks = (existing.stacks || 1) + (newEffect.stacks || 1);
       }
+      existing.isNew = true; // Mark as new so it doesn't tick down on the turn it's applied
       list[existingIndex] = existing;
     } else {
       list.push({
         ...newEffect,
         stacks: newEffect.stacks || 1,
+        isNew: true, // Mark as new
       });
     }
   });

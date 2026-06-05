@@ -47,7 +47,7 @@ export const STANCES = {
     }),
   },
   earth: { name: 'Earth Stance', description: 'Coming soon.', getBonus: () => ({}) },
-  wind:  { name: 'Wind Stance',  description: 'Coming soon.', getBonus: () => ({}) },
+  wind: { name: 'Wind Stance', description: 'Coming soon.', getBonus: () => ({}) },
 };
 
 /**
@@ -78,7 +78,7 @@ export function applyHealingEfficiency(baseHeal, heroOrStats) {
         efficiency = hydrationDef.stars[stars].healingEfficiency || 0;
       }
     }
-  } 
+  }
   // If it's effectiveStats or heroState from combat which already has passives computed
   else if (heroOrStats.passives && heroOrStats.passives.healingEfficiency !== undefined) {
     efficiency = heroOrStats.passives.healingEfficiency;
@@ -151,33 +151,33 @@ export function getXpForLevel(level) {
  */
 export function checkLevelUp(hero) {
   // We'll track how many levels were gained and build log messages
-  let levelsGained  = 0;
-  let currentLevel  = hero.level;
-  let currentMaxHp  = hero.maxHp;
+  let levelsGained = 0;
+  let currentLevel = hero.level;
+  let currentMaxHp = hero.maxHp;
   let currentAttack = hero.attack;
-  let currentDef    = hero.defence;
-  let currentSP     = hero.skillPoints;
+  let currentDef = hero.defence;
+  let currentSP = hero.skillPoints;
   let currentStatPoints = hero.statPoints || 0;
-  const messages    = [];
+  const messages = [];
 
   // Keep leveling up as long as XP exceeds the next level's threshold
   while (hero.xp >= getXpForLevel(currentLevel + 1)) {
-    currentLevel  += 1;
-    currentSP     += 1;   // +1 Skill Point per level
+    currentLevel += 1;
+    currentSP += 1;   // +1 Skill Point per level
     currentStatPoints += 3; // +3 Stat Points per level
-    levelsGained  += 1;
+    levelsGained += 1;
 
     messages.push(`🎉 Level up! Mochi is now level ${currentLevel}! Gained +1 Skill Point and +3 Stat Points.`);
   }
 
   return {
     levelsGained,
-    newLevel:       currentLevel,
-    newMaxHp:       currentMaxHp,
-    newAttack:      currentAttack,
-    newDefence:     currentDef,
+    newLevel: currentLevel,
+    newMaxHp: currentMaxHp,
+    newAttack: currentAttack,
+    newDefence: currentDef,
     newSkillPoints: currentSP,
-    newStatPoints:  currentStatPoints,
+    newStatPoints: currentStatPoints,
     messages,
   };
 }
@@ -210,12 +210,12 @@ export function checkLevelUp(hero) {
  */
 export function calculateEffectiveStats(hero, skillDefinitions = SKILLS, runBuffs = null) {
   // --- Start from the hero's base stats ------------------------------------
-  let baseHp    = hero.maxHp      || 50;
-  let maxHp     = baseHp;
-  let attack    = hero.attack     || 10;
-  let defence   = hero.defence    || 2;
+  let baseHp = hero.maxHp || 50;
+  let maxHp = baseHp;
+  let attack = hero.attack || 10;
+  let defence = hero.defence || 2;
   let critChance = hero.critChance || 0.05;
-  let dodge     = hero.dodge      || 0.05;
+  let dodge = hero.dodge || 0.05;
   const gearSpecials = [];
   const passives = {};
 
@@ -232,11 +232,11 @@ export function calculateEffectiveStats(hero, skillDefinitions = SKILLS, runBuff
     if (!gearDef) continue; // safety check — gear id not found in data
 
     // Add each stat from the gear piece
-    if (gearDef.stats.attack)     attack     += gearDef.stats.attack;
-    if (gearDef.stats.defence)    defence    += gearDef.stats.defence;
-    if (gearDef.stats.maxHp)      gearHp     += gearDef.stats.maxHp;
+    if (gearDef.stats.attack) attack += gearDef.stats.attack;
+    if (gearDef.stats.defence) defence += gearDef.stats.defence;
+    if (gearDef.stats.maxHp) gearHp += gearDef.stats.maxHp;
     if (gearDef.stats.critChance) critChance += gearDef.stats.critChance;
-    if (gearDef.stats.dodge)      dodge      += gearDef.stats.dodge;
+    if (gearDef.stats.dodge) dodge += gearDef.stats.dodge;
 
     // Track special gear effects (e.g. "bleed_on_hit")
     if (gearDef.special) {
@@ -247,7 +247,7 @@ export function calculateEffectiveStats(hero, skillDefinitions = SKILLS, runBuff
     // the same bleedOnHitChance passive slot so combatEngine picks it up.
     if (gearDef.stats.bleedChance) {
       passives.bleedOnHitChance = (passives.bleedOnHitChance || 0) + gearDef.stats.bleedChance;
-      if (!passives.bleedDamage)   passives.bleedDamage   = 3;
+      if (!passives.bleedDamage) passives.bleedDamage = 3;
       if (!passives.bleedDuration) passives.bleedDuration = 3;
     }
 
@@ -266,7 +266,7 @@ export function calculateEffectiveStats(hero, skillDefinitions = SKILLS, runBuff
   for (const [skillId] of unlockedEntries) {
     const skillDef = skillDefinitions[skillId];
     if (!skillDef || skillDef.type !== 'passive') continue;
-    
+
     // Add Hydration passive healingEfficiency to effective passives
     if (skillId === 'hydration' && hero.equippedSkills && hero.equippedSkills.includes('hydration')) {
       const stars = unlockedSkills[skillId].stars || 1;
@@ -287,21 +287,21 @@ export function calculateEffectiveStats(hero, skillDefinitions = SKILLS, runBuff
 
   for (const setBonus of activeSets) {
     const bonus = setBonus.bonus || {};
-    if (bonus.attack)     attack     += bonus.attack;
-    if (bonus.defence)    defence    += bonus.defence;
-    if (bonus.maxHp)      gearHp     += bonus.maxHp;
+    if (bonus.attack) attack += bonus.attack;
+    if (bonus.defence) defence += bonus.defence;
+    if (bonus.maxHp) gearHp += bonus.maxHp;
     if (bonus.critChance) critChance += bonus.critChance;
-    if (bonus.dodge)      dodge      += bonus.dodge;
+    if (bonus.dodge) dodge += bonus.dodge;
   }
 
   // --- 5. Run-only buffs (applied on top) ----------------------------------
   // Tracked in currentRun.runBuffs and cleared when run ends
   if (runBuffs) {
-    if (runBuffs.attackBonus)  attack     += runBuffs.attackBonus;
-    if (runBuffs.defenceBonus) defence    += runBuffs.defenceBonus;
-    if (runBuffs.maxHpBonus)   gearHp     += runBuffs.maxHpBonus;
-    if (runBuffs.critBonus)    critChance += runBuffs.critBonus;
-    if (runBuffs.dodgeBonus)   dodge      += runBuffs.dodgeBonus;
+    if (runBuffs.attackBonus) attack += runBuffs.attackBonus;
+    if (runBuffs.defenceBonus) defence += runBuffs.defenceBonus;
+    if (runBuffs.maxHpBonus) gearHp += runBuffs.maxHpBonus;
+    if (runBuffs.critBonus) critChance += runBuffs.critBonus;
+    if (runBuffs.dodgeBonus) dodge += runBuffs.dodgeBonus;
   }
 
   // Apply Water Stance max HP bonus (totalMaxHP = baseHp + gearHp + Math.floor(baseHp * stanceBonus.maxHpPercent))

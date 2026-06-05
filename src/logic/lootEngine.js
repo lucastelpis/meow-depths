@@ -82,8 +82,8 @@ export function calculateDrops(enemy, zoneId, floorNumber) {
   } else {
     const starLevel = enemy.stars || 1;
     const mult = STAR_MULTIPLIERS[starLevel] || 1.0;
-    xp   = Math.floor((enemy.baseXp  || 20) * mult);
-    gold = Math.floor((enemy.baseGold ||  7) * mult);
+    xp = Math.floor((enemy.baseXp || 20) * mult);
+    gold = Math.floor((enemy.baseGold || 7) * mult);
   }
 
   return { materials, gold, xp };
@@ -118,7 +118,7 @@ export function mergeLoot(lootArray) {
   for (const loot of lootArray) {
     // Sum up gold and XP
     merged.gold += loot.gold || 0;
-    merged.xp   += loot.xp  || 0;
+    merged.xp += loot.xp || 0;
 
     // Merge materials: add quantities for matching itemIds
     for (const mat of (loot.materials || [])) {

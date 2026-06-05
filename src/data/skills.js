@@ -28,11 +28,11 @@ const fire_slash = {
   icon: '🔥',
   description: 'Deals fire damage and applies guaranteed burn.',
   stars: {
-    1: { damageMultiplier: 1.20, burnDamage: 2, burnDuration: 3 },
-    2: { damageMultiplier: 1.40, burnDamage: 2, burnDuration: 3 },
-    3: { damageMultiplier: 1.60, burnDamage: 3, burnDuration: 3 },
-    4: { damageMultiplier: 1.80, burnDamage: 3, burnDuration: 4 },
-    5: { damageMultiplier: 2.00, burnDamage: 4, burnDuration: 4 },
+    1: { damageMultiplier: 1.20, burnDamage: 2, burnDuration: 1 },
+    2: { damageMultiplier: 1.40, burnDamage: 2, burnDuration: 2 },
+    3: { damageMultiplier: 1.60, burnDamage: 3, burnDuration: 2 },
+    4: { damageMultiplier: 1.80, burnDamage: 3, burnDuration: 3 },
+    5: { damageMultiplier: 2.00, burnDamage: 4, burnDuration: 3 },
   },
 };
 
@@ -68,11 +68,11 @@ const fire_burst = {
   icon: '💥',
   description: 'Explosive AOE — full hit on target, 40% splash + 30% burn on adjacent.',
   stars: {
-    1: { damageMultiplier: 1.50, burnDamage: 4, burnDuration: 4, spreadPercent: 0.40, spreadBurnChance: 0.30 },
-    2: { damageMultiplier: 1.60, burnDamage: 4, burnDuration: 4, spreadPercent: 0.40, spreadBurnChance: 0.30 },
-    3: { damageMultiplier: 1.70, burnDamage: 5, burnDuration: 4, spreadPercent: 0.40, spreadBurnChance: 0.30 },
-    4: { damageMultiplier: 1.85, burnDamage: 5, burnDuration: 5, spreadPercent: 0.40, spreadBurnChance: 0.30 },
-    5: { damageMultiplier: 2.00, burnDamage: 6, burnDuration: 5, spreadPercent: 0.40, spreadBurnChance: 0.30 },
+    1: { damageMultiplier: 1.50, burnDamage: 4, burnDuration: 3, spreadPercent: 0.30, spreadBurnChance: 0.30 },
+    2: { damageMultiplier: 1.60, burnDamage: 4, burnDuration: 3, spreadPercent: 0.40, spreadBurnChance: 0.30 },
+    3: { damageMultiplier: 1.70, burnDamage: 5, burnDuration: 3, spreadPercent: 0.40, spreadBurnChance: 0.30 },
+    4: { damageMultiplier: 1.85, burnDamage: 5, burnDuration: 3, spreadPercent: 0.50, spreadBurnChance: 0.30 },
+    5: { damageMultiplier: 2.00, burnDamage: 6, burnDuration: 3, spreadPercent: 0.50, spreadBurnChance: 0.30 },
   },
 };
 
@@ -86,13 +86,13 @@ const flame_guard = {
   cooldown: 4,
   unlockedBy: 'fire_slash',
   icon: '🛡️',
-  description: 'For several turns, every enemy hit burns you counter-burns them.',
+  description: 'For 1 turn, you light up a flame wall that causes enemies to burn when they hit.',
   stars: {
-    1: { counterBurnDamage: 2, counterBurnDuration: 3, guardDuration: 3 },
-    2: { counterBurnDamage: 3, counterBurnDuration: 3, guardDuration: 3 },
-    3: { counterBurnDamage: 4, counterBurnDuration: 3, guardDuration: 3 },
-    4: { counterBurnDamage: 5, counterBurnDuration: 3, guardDuration: 3 },
-    5: { counterBurnDamage: 6, counterBurnDuration: 3, guardDuration: 3 },
+    1: { counterBurnDamage: 3, counterBurnDuration: 1, guardDuration: 1 },
+    2: { counterBurnDamage: 3, counterBurnDuration: 2, guardDuration: 1 },
+    3: { counterBurnDamage: 4, counterBurnDuration: 2, guardDuration: 1 },
+    4: { counterBurnDamage: 4, counterBurnDuration: 3, guardDuration: 1 },
+    5: { counterBurnDamage: 5, counterBurnDuration: 3, guardDuration: 1 },
   },
 };
 
@@ -377,10 +377,10 @@ export const SKILLS = {
 
 // Per-element ordered list: [T1 active, T1 passive, T2A, T2B]
 export const ELEMENT_SKILLS = {
-  fire:  ['fire_slash', 'smoldering', 'fire_burst', 'flame_guard'],
+  fire: ['fire_slash', 'smoldering', 'fire_burst', 'flame_guard'],
   water: ['tidal_strike', 'hydration', 'tidal_wave', 'healing_current'],
   earth: ['earth_slam', 'bedrock', 'rockslide', 'stone_wall'],
-  wind:  ['wind_slash', 'swift_step', 'cyclone', 'wind_veil'],
+  wind: ['wind_slash', 'swift_step', 'cyclone', 'wind_veil'],
 };
 
 // Tier 1 active skill per element (the parent that unlocks T2 skills)

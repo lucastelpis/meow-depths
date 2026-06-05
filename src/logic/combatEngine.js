@@ -824,6 +824,13 @@ export function processStatusEffects(entityState) {
 
   // Walk through each effect and apply / tick it
   for (const effect of entityState.effects) {
+    const isBuff = ['def_buff', 'guard', 'counter', 'stealth'].includes(effect.type);
+    if (effect.isNew) {
+      effect.isNew = false;
+      if (isBuff) {
+        continue;
+      }
+    }
     switch (effect.type) {
       // -- Burn: deal damage then decrement duration ------------------------
       case 'burn':
