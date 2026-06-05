@@ -37,6 +37,7 @@ import theme from '../constants/theme';
 import { useGame } from '../state/gameState';
 import { useFocusEffect } from '@react-navigation/native';
 import { ZONES } from '../data/zones';
+import { ZONE_COMBAT_POOLS } from '../logic/dungeonGenerator';
 import { MATERIALS, CONSUMABLES } from '../data/gear';
 import { calculateEffectiveStats, getXpForLevel } from '../logic/progressionEngine';
 import Button from '../components/ui/Button';
@@ -425,8 +426,16 @@ export default function DungeonMapScreen({ navigation }) {
         });
         setActiveModal('gamble');
       } else {
+        const zoneId = currentRun.zoneId || 'zone1';
+        const floorNum = currentRun.floorNumber || 1;
+        const floorPools = ZONE_COMBAT_POOLS[zoneId]?.[floorNum] || { ratings: [1], enemyCounts: [1] };
+        const maxRating = Math.max(...floorPools.ratings);
+        const maxEnemyCount = Math.max(...floorPools.enemyCounts);
+
         setModalData({
-          outcome: 'elite',
+          outcome: 'ambush',
+          battleRating: maxRating,
+          enemyCount: maxEnemyCount,
         });
         setActiveModal('gamble');
       }
@@ -448,8 +457,12 @@ export default function DungeonMapScreen({ navigation }) {
       }
     } else if (outcome === 'treasure') {
       dispatch({ type: 'CLEAR_CURRENT_TILE' });
-    } else if (outcome === 'elite') {
-      navigation.navigate('Combat', { roomType: 'elite' });
+    } else if (outcome === 'ambush') {
+      navigation.navigate('Combat', {
+        roomType: 'ambush',
+        battleRating: modalData.battleRating,
+        enemyCount: modalData.enemyCount,
+      });
     }
   };
 
@@ -1006,21 +1019,21 @@ export default function DungeonMapScreen({ navigation }) {
                 </View>
               )}
 
-              {modalData?.outcome === 'elite' && (
+              {modalData?.outcome === 'ambush' && (
                 <View style={styles.outcomeContent}>
                   <Text style={styles.outcomeEmoji}>👺</Text>
-                  <Text style={styles.outcomeTitle}>Elite Encounter!</Text>
+                  <Text style={styles.outcomeTitle}>Ambush!</Text>
                   <Text style={styles.outcomeSubText}>
-                    A shadow leaps from the dark. An elite monster attacks!
+                    A shadow leaps from the dark. You are ambushed by monsters!
                   </Text>
-                  <Text style={styles.eliteWarningText}>
-                    Enemies have +40% HP & +30% Attack. Wins guarantee rare material drops!
+                  <Text style={styles.ambushWarningText}>
+                    Prepare for a challenging fight!
                   </Text>
                 </View>
               )}
 
               <Button
-                title={modalData?.outcome === 'elite' ? 'Prepare for Battle' : 'Continue'}
+                title={modalData?.outcome === 'ambush' ? 'Prepare for Battle' : 'Continue'}
                 variant={modalData?.outcome === 'trap' && !modalData.survived ? 'danger' : 'primary'}
                 onPress={handleCloseGamble}
                 style={{ width: '100%', marginTop: 8 }}
@@ -1786,7 +1799,7 @@ const styles = StyleSheet.create({
     color: '#707F94',
     textAlign: 'center',
   },
-  eliteWarningText: {
+  ambushWarningText: {
     ...theme.FONTS.heading,
     fontSize: 11,
     color: '#EF4444',

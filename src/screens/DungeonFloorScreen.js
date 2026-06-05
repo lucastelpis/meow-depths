@@ -116,7 +116,7 @@ const FLOOR_FLAVORS = [
   'Warm up here. Materials drop freely.',
   'A little darker now. Stay alert.',
   'The first real test begins here.',
-  'Elite enemies start appearing.',
+  'Tougher 3-star enemies start appearing.',
   'The dungeon shows its true face.',
   'No safe shortcuts from here on.',
   'Every room is a threat.',

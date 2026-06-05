@@ -34,7 +34,7 @@
 // ---------------------------------------------------------------------------
 // Imports — we pull enemy data and zone info from our data layer.
 // ---------------------------------------------------------------------------
-import { ZONES, ENCOUNTER_CHANCES } from '../data/zones';
+import { ZONES } from '../data/zones';
 import { ENEMIES, STAR_MULTIPLIERS } from '../data/enemies';
 
 // ---------------------------------------------------------------------------
@@ -1167,89 +1167,7 @@ export function executeHealingCurrent(skillDef, stars) {
   };
 }
 
-// ============================================================================
-// 10) generateEncounter — decide what enemies appear on a given floor
-// ============================================================================
-/**
- * Generate an array of enemy objects for a specific floor in a zone.
- *
- * Rules:
- *   • If `floorNumber` equals `totalFloors` → it's the BOSS floor.
- *     Return the zone's boss enemy (single enemy).
- *   • Otherwise, roll against ENCOUNTER_CHANCES:
- *       60 % → 2 common enemies (random from pool)
- *       25 % → 1 elite enemy (a random common with +30 % HP and attack)
- *       15 % → 3 common enemies
- *
- * All returned enemies are DEEP CLONES so we can mutate their HP during
- * combat without corrupting the template data.
- *
- * @param {Object} zone        – Zone definition from ZONES.
- * @param {number} floorNumber – Current floor (1-indexed).
- * @param {number} totalFloors – Total floors in this zone.
- *
- * @returns {Object[]} Array of enemy objects ready for combat.
- */
-export function generateEncounter(zone, floorNumber, totalFloors) {
-  // -- Boss floor -----------------------------------------------------------
-  if (floorNumber >= totalFloors) {
-    // zone.bossId is a string like 'king_rat' — look up the full enemy object
-    const bossData = ENEMIES[zone.bossId];
-    const boss = deepCloneEnemy(bossData);
-    boss.type = 'boss';
-    boss.maxHp = boss.hp; // track maxHp for HP bar display
-    return [boss];
-  }
 
-  // -- Normal floor: roll for encounter type --------------------------------
-  const roll = Math.random();
-  // zone.enemies is an array of ID strings — resolve them to enemy objects
-  let pool = zone.enemies.map(id => ENEMIES[id]).filter(Boolean);
-
-  // Floor 1 spawn adjustment: always spawn a single common enemy to avoid gang-ups on naked players
-  if (floorNumber === 1) {
-    pool = pool.filter(e => e.stars === 1);
-    return [makeCommonEnemy(randomPick(pool))];
-  }
-
-  if (roll < ENCOUNTER_CHANCES.twoEnemies) {
-    // 60 % — TWO random common enemies
-    return [
-      makeCommonEnemy(randomPick(pool)),
-      makeCommonEnemy(randomPick(pool)),
-    ];
-  } else if (roll < ENCOUNTER_CHANCES.twoEnemies + ENCOUNTER_CHANCES.oneElite) {
-    // 25 % — ONE elite enemy (star-scaled, then +30 % elite bonus on top)
-    const elite = deepCloneEnemy(randomPick(pool));
-    const starMult = STAR_MULTIPLIERS[elite.stars] || 1.0;
-    elite.type   = 'elite';
-    elite.name   = `Elite ${elite.name}`;
-    elite.hp     = Math.ceil(elite.hp          * starMult * 1.3);
-    elite.attack = Math.ceil(elite.attack      * starMult * 1.3);
-    elite.def    = Math.max(1, Math.ceil((elite.def || 0) * starMult * 1.3));
-    elite.maxHp  = elite.hp;
-    return [elite];
-  } else {
-    // 15 % — THREE random common enemies
-    return [
-      makeCommonEnemy(randomPick(pool)),
-      makeCommonEnemy(randomPick(pool)),
-      makeCommonEnemy(randomPick(pool)),
-    ];
-  }
-}
-
-/** Clone a common enemy, apply its star multiplier, and set type/maxHp */
-function makeCommonEnemy(template) {
-  const enemy = deepCloneEnemy(template);
-  const mult = STAR_MULTIPLIERS[enemy.stars] || 1.0;
-  enemy.type   = 'common';
-  enemy.hp     = Math.ceil(enemy.hp     * mult);
-  enemy.attack = Math.ceil(enemy.attack * mult);
-  enemy.def    = Math.max(1, Math.ceil((enemy.def || 0) * mult));
-  enemy.maxHp  = enemy.hp;
-  return enemy;
-}
 
 // ============================================================================
 // 9) useConsumable — pop a potion or toss a smoke vial

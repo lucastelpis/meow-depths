@@ -53,7 +53,6 @@ import Button           from '../components/ui/Button';
 import ResourceBar      from '../components/ui/ResourceBar';
 import { HERO_SPRITE, getEnemySprite } from '../constants/sprites';
 import {
-  generateEncounter,
   executeAttack,
   executeEnemyTurn,
   processStatusEffects,
@@ -412,28 +411,11 @@ export default function CombatScreen() {
         boss.intent = selectEnemyMove(boss);
         taggedEnemies = [boss];
       }
-    } else if (roomType === 'elite') {
-      const template = randomPick(pool);
-      if (template) {
-        const elite = {
-          ...template,
-          uid: template.id + '_elite',
-          type: 'elite',
-          name: `Elite ${template.name}`,
-          hp: Math.floor(template.hp * 1.4),
-          maxHp: Math.floor(template.hp * 1.4),
-          attack: Math.floor(template.attack * 1.3),  // +30% Attack
-          effects: [],
-          cooldowns: {},
-        };
-        elite.intent = selectEnemyMove(elite);
-        taggedEnemies = [elite];
-      }
     } else {
       // Scale all spawned enemies by the room's battle rating (star level)
+      // Handles both 'combat' and 'ambush' room types
       const makeScaledEnemy = (template, i) => {
         const mult = STAR_MULTIPLIERS[battleRating] || 1.0;
-        const name = battleRating >= 3 ? `Elite ${template.name}` : template.name;
         
         const scaled = {
           ...template,
@@ -447,7 +429,6 @@ export default function CombatScreen() {
           effects: [],
           cooldowns: {},
         };
-        scaled.intent = selectEnemyMove(scaled, []);
         return scaled;
       };
 
@@ -1318,7 +1299,7 @@ export default function CombatScreen() {
         <View style={styles.combatHeaderRow}>
           <View style={styles.combatHeaderLeft}>
             <Text style={styles.encounterTypeLabel}>
-              {roomType === 'boss' ? '☠️  BOSS BATTLE' : roomType === 'elite' ? '💀  ELITE ENCOUNTER' : '⚔️  COMBAT'}
+              {roomType === 'boss' ? '☠️  BOSS BATTLE' : roomType === 'ambush' ? '👺  AMBUSH!' : '⚔️  COMBAT'}
             </Text>
             <Text style={styles.narratorFlavor} numberOfLines={1}>{narratorText}</Text>
           </View>

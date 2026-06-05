@@ -51,7 +51,6 @@ export default function EnemyCard({ enemy, enemyState, isSelected, onSelect }) {
       activeOpacity={0.7}
     >
       {/* Enemy type badge */}
-      {enemy.type === 'elite' && <Text style={styles.eliteBadge}>⭐ Elite</Text>}
       {enemy.type === 'boss' && <Text style={styles.bossBadge}>💀 Boss</Text>}
 
       {/* Enemy sprite placeholder */}
@@ -136,12 +135,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.5,
     shadowRadius: 8,
     elevation: 5,
-  },
-  eliteBadge: {
-    fontSize: 9,
-    color: theme.COLORS.gold,
-    fontWeight: 'bold',
-    marginBottom: 2,
   },
   bossBadge: {
     fontSize: 9,

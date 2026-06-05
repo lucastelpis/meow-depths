@@ -83,39 +83,7 @@ export function getGridSizeForFloor(floorNumber) {
   return { gridWidth: 4, gridHeight: 5 }; // floor 10 (boss floor)
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Encounter Composition Probabilities
-// Rolled once per floor to decide what the player fights.
-// ─────────────────────────────────────────────────────────────────────────────
 
-export const ENCOUNTER_CHANCES = {
-  /** 60 % — two common enemies */
-  twoEnemies: 0.60,
-  /** 25 % — one elite-tier enemy */
-  oneElite: 0.25,
-  /** 15 % — three common enemies (tough but rewarding) */
-  threeEnemies: 0.15,
-};
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Gold Drops — random range per enemy tier
-// ─────────────────────────────────────────────────────────────────────────────
-
-export const GOLD_DROPS = {
-  common: { min: 5, max: 10 },
-  elite:  { min: 15, max: 25 },
-  boss:   { min: 80, max: 120 },
-};
-
-// ─────────────────────────────────────────────────────────────────────────────
-// XP Values — flat XP reward per enemy tier
-// ─────────────────────────────────────────────────────────────────────────────
-
-export const XP_VALUES = {
-  common: 20,
-  elite: 50,
-  boss: 200,
-};
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Floor Material Pools — which materials can drop on each floor range
