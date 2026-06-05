@@ -34,6 +34,7 @@ export default function AnimatedSprite({
   onComplete,
   displaySize = 80,
   flipX       = false,
+  active      = true,
   style,
 }) {
   const finalTotalFrames = totalFrames || frames || 1;
@@ -58,7 +59,7 @@ export default function AnimatedSprite({
   onCompleteRef.current     = onComplete;
 
   useEffect(() => {
-    // Reset to frame 0 whenever the animation sheet changes
+    // Reset to frame 0 whenever the animation sheet changes or becomes active
     frameRef.current = 0;
     setFrame(0);
 
@@ -67,8 +68,8 @@ export default function AnimatedSprite({
       intervalRef.current = null;
     }
 
-    // Static sprite — nothing to animate
-    if (finalTotalFrames <= 1) return;
+    // Static sprite or inactive — nothing to animate
+    if (finalTotalFrames <= 1 || !active) return;
 
     const ms = Math.round(1000 / fps);
 
@@ -98,7 +99,7 @@ export default function AnimatedSprite({
         intervalRef.current = null;
       }
     };
-  }, [source, frameSize, finalTotalFrames, fps, loop]);
+  }, [source, frameSize, finalTotalFrames, fps, loop, active]);
 
   const scale = displaySize / frameSize;
   const isSourceChanged = source !== prevSource || finalTotalFrames !== prevTotalFrames;

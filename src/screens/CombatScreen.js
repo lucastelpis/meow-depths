@@ -1349,23 +1349,37 @@ export default function CombatScreen() {
 
                     {/* Animated Enemy Sprite */}
                     {(() => {
-                      const animKey   = enemyAnims[enemy.uid] || 'idle';
-                      const animData  = spriteDef[animKey] || spriteDef.idle;
+                      const animKey = enemyAnims[enemy.uid] || 'idle';
                       return (
-                        <AnimatedSprite
-                          key={enemy.uid}
-                          source={animData.source}
-                          frameSize={animData.frameSize}
-                          totalFrames={animData.frames}
-                          fps={animKey === 'idle' ? 8 : 10}
-                          loop={animKey === 'idle'}
-                          onComplete={animKey !== 'idle'
-                            ? () => setEnemyAnims(prev => ({ ...prev, [enemy.uid]: 'idle' }))
-                            : undefined}
-                          displaySize={displaySize}
-                          flipX
-                          style={styles.enemySprite}
-                        />
+                        <>
+                          <AnimatedSprite
+                            key={`${enemy.uid}_idle`}
+                            source={spriteDef.idle.source}
+                            frameSize={spriteDef.idle.frameSize}
+                            totalFrames={spriteDef.idle.frames}
+                            fps={8}
+                            loop={true}
+                            active={animKey === 'idle'}
+                            displaySize={displaySize}
+                            flipX
+                            style={[styles.enemySprite, animKey !== 'idle' && { display: 'none' }]}
+                          />
+                          <AnimatedSprite
+                            key={`${enemy.uid}_attack`}
+                            source={spriteDef.attack.source}
+                            frameSize={spriteDef.attack.frameSize}
+                            totalFrames={spriteDef.attack.frames}
+                            fps={10}
+                            loop={false}
+                            active={animKey === 'attack'}
+                            onComplete={animKey === 'attack'
+                              ? () => setEnemyAnims(prev => ({ ...prev, [enemy.uid]: 'idle' }))
+                              : undefined}
+                            displaySize={displaySize}
+                            flipX
+                            style={[styles.enemySprite, animKey !== 'attack' && { display: 'none' }]}
+                          />
+                        </>
                       );
                     })()}
                   </View>
@@ -1487,19 +1501,60 @@ export default function CombatScreen() {
                 </View>
 
                 {(() => {
-                  const animData = HERO_SPRITE[heroAnim] || HERO_SPRITE.idle;
+                  const isIdle = heroAnim === 'idle';
+                  const isGuard = heroAnim === 'guard';
+                  const isAttack = heroAnim === 'attack';
+                  const isSkill = !isIdle && !isGuard && !isAttack;
+
                   return (
-                    <AnimatedSprite
-                      key="hero_sprite"
-                      source={animData.source}
-                      frameSize={animData.frameSize}
-                      totalFrames={animData.frames}
-                      fps={heroAnim === 'idle' ? 8 : 10}
-                      loop={heroAnim === 'idle'}
-                      onComplete={heroAnim !== 'idle' ? () => setHeroAnim('idle') : undefined}
-                      displaySize={105}
-                      style={styles.heroCardSprite}
-                    />
+                    <>
+                      <AnimatedSprite
+                        key="hero_sprite_idle"
+                        source={HERO_SPRITE.idle.source}
+                        frameSize={HERO_SPRITE.idle.frameSize}
+                        totalFrames={HERO_SPRITE.idle.frames}
+                        fps={8}
+                        loop={true}
+                        active={isIdle}
+                        displaySize={105}
+                        style={[styles.heroCardSprite, !isIdle && { display: 'none' }]}
+                      />
+                      <AnimatedSprite
+                        key="hero_sprite_guard"
+                        source={HERO_SPRITE.guard.source}
+                        frameSize={HERO_SPRITE.guard.frameSize}
+                        totalFrames={HERO_SPRITE.guard.frames}
+                        fps={8}
+                        loop={true}
+                        active={isGuard}
+                        displaySize={105}
+                        style={[styles.heroCardSprite, !isGuard && { display: 'none' }]}
+                      />
+                      <AnimatedSprite
+                        key="hero_sprite_attack"
+                        source={HERO_SPRITE.attack.source}
+                        frameSize={HERO_SPRITE.attack.frameSize}
+                        totalFrames={HERO_SPRITE.attack.frames}
+                        fps={10}
+                        loop={false}
+                        active={isAttack}
+                        onComplete={isAttack ? () => setHeroAnim('idle') : undefined}
+                        displaySize={105}
+                        style={[styles.heroCardSprite, !isAttack && { display: 'none' }]}
+                      />
+                      <AnimatedSprite
+                        key="hero_sprite_skill"
+                        source={require('../../assets/sprites/Tiny Swords (Free Pack)/Units/Original/cat_flame_attack.png')}
+                        frameSize={104}
+                        totalFrames={11}
+                        fps={10}
+                        loop={false}
+                        active={isSkill}
+                        onComplete={isSkill ? () => setHeroAnim('idle') : undefined}
+                        displaySize={105}
+                        style={[styles.heroCardSprite, !isSkill && { display: 'none' }]}
+                      />
+                    </>
                   );
                 })()}
               </View>
