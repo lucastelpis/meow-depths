@@ -621,8 +621,7 @@ export default function CombatScreen() {
     // Lock player UI instantly
     setCombatPhase('enemyTurn');
 
-    const isGuardSkill = skillDef.targetType === 'self';
-    setHeroAnim(isGuardSkill ? 'guard' : 'attack');
+    setHeroAnim(skillId);
 
     // Set cooldown
     const newCooldowns = { ...cooldowns, [skillId]: skillDef.cooldown };
@@ -751,7 +750,7 @@ export default function CombatScreen() {
     setEnemies(updatedEnemies);
 
     // Calculate animation length
-    const animData = HERO_SPRITE[isGuardSkill ? 'guard' : 'attack'] || HERO_SPRITE.attack;
+    const animData = HERO_SPRITE[skillId] || HERO_SPRITE.attack;
     const animDuration = Math.round((animData.frames / 10) * 1000);
 
     // Wait for the skill animation to finish

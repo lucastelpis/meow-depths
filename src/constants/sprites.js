@@ -36,6 +36,67 @@ export const HERO_SPRITE = {
     frameSize: 104,
     frames:    9,
   },
+  // Active skill animations
+  fire_slash: {
+    source:    require('../../assets/sprites/Tiny Swords (Free Pack)/Units/Original/cat_flame_attack.png'),
+    frameSize: 104,
+    frames:    11,
+  },
+  fire_burst: {
+    source:    require('../../assets/sprites/Tiny Swords (Free Pack)/Units/Original/cat_flame_attack.png'),
+    frameSize: 104,
+    frames:    11,
+  },
+  flame_guard: {
+    source:    require('../../assets/sprites/Tiny Swords (Free Pack)/Units/Original/cat_flame_attack.png'),
+    frameSize: 104,
+    frames:    11,
+  },
+  tidal_strike: {
+    source:    require('../../assets/sprites/Tiny Swords (Free Pack)/Units/Original/cat_flame_attack.png'),
+    frameSize: 104,
+    frames:    11,
+  },
+  tidal_wave: {
+    source:    require('../../assets/sprites/Tiny Swords (Free Pack)/Units/Original/cat_flame_attack.png'),
+    frameSize: 104,
+    frames:    11,
+  },
+  healing_current: {
+    source:    require('../../assets/sprites/Tiny Swords (Free Pack)/Units/Original/cat_flame_attack.png'),
+    frameSize: 104,
+    frames:    11,
+  },
+  earth_slam: {
+    source:    require('../../assets/sprites/Tiny Swords (Free Pack)/Units/Original/cat_flame_attack.png'),
+    frameSize: 104,
+    frames:    11,
+  },
+  rockslide: {
+    source:    require('../../assets/sprites/Tiny Swords (Free Pack)/Units/Original/cat_flame_attack.png'),
+    frameSize: 104,
+    frames:    11,
+  },
+  stone_wall: {
+    source:    require('../../assets/sprites/Tiny Swords (Free Pack)/Units/Original/cat_flame_attack.png'),
+    frameSize: 104,
+    frames:    11,
+  },
+  wind_slash: {
+    source:    require('../../assets/sprites/Tiny Swords (Free Pack)/Units/Original/cat_flame_attack.png'),
+    frameSize: 104,
+    frames:    11,
+  },
+  cyclone: {
+    source:    require('../../assets/sprites/Tiny Swords (Free Pack)/Units/Original/cat_flame_attack.png'),
+    frameSize: 104,
+    frames:    11,
+  },
+  wind_veil: {
+    source:    require('../../assets/sprites/Tiny Swords (Free Pack)/Units/Original/cat_flame_attack.png'),
+    frameSize: 104,
+    frames:    11,
+  },
 };
 
 export const HERO_FIREPLACE_SPRITE = {
