@@ -22,7 +22,8 @@
 // ---------------------------------------------------------------------------
 // Imports
 // ---------------------------------------------------------------------------
-import { GOLD_DROPS, XP_VALUES, FLOOR_MATERIAL_POOLS } from '../data/zones';
+import { FLOOR_MATERIAL_POOLS } from '../data/zones';
+import { STAR_MULTIPLIERS } from '../data/enemies';
 
 // ============================================================================
 // 1) calculateDrops — roll for loot from one defeated enemy
@@ -69,15 +70,21 @@ export function calculateDrops(enemy, zoneId, floorNumber) {
     }
   }
 
-  // -- Calculate gold based on enemy tier ------------------------------------
-  // GOLD_DROPS looks like: { common: { min: 5, max: 15 }, elite: { min: 20, max: 40 }, ... }
-  const tier = enemy.type || 'common';
-  const goldRange = GOLD_DROPS[tier] || GOLD_DROPS.common;
-  const gold = randomInRange(goldRange.min, goldRange.max);
-
-  // -- XP is a flat value per tier -------------------------------------------
-  // XP_VALUES looks like: { common: 20, elite: 50, boss: 120 }
-  const xp = XP_VALUES[tier] || XP_VALUES.common;
+  // -- Calculate XP and gold based on star level --------------------------------
+  // Bosses use fixed xp / gold defined on their template.
+  // Regular monsters scale baseXp and baseGold by the star multiplier.
+  let xp, gold;
+  if (enemy.isBoss) {
+    xp = enemy.xp || 200;
+    const goldMin = enemy.goldMin || 80;
+    const goldMax = enemy.goldMax || 120;
+    gold = randomInRange(goldMin, goldMax);
+  } else {
+    const starLevel = enemy.stars || 1;
+    const mult = STAR_MULTIPLIERS[starLevel] || 1.0;
+    xp   = Math.floor((enemy.baseXp  || 20) * mult);
+    gold = Math.floor((enemy.baseGold ||  7) * mult);
+  }
 
   return { materials, gold, xp };
 }

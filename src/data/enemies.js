@@ -9,9 +9,10 @@
 // 5★ bosses are excluded — their stats are fixed in the definition.
 export const STAR_MULTIPLIERS = {
   1: 1.00,
-  2: 1.25,
-  3: 1.50,
-  4: 2.00,
+  2: 1.50,
+  3: 2.00,
+  4: 2.50,
+  5: 3.00,
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -31,6 +32,8 @@ const sewer_rat = {
   zone: 1,
   isBoss: false,
   isElite: false,
+  baseXp: 15,
+  baseGold: 6,
   drops: [
     { itemId: 'black_shard', chance: 0.85, count: 2 },
   ],
@@ -60,8 +63,9 @@ const slimeling = {
   zone: 1,
   isBoss: false,
   isElite: false,
+  baseXp: 15,
+  baseGold: 6,
   drops: [
-    { itemId: 'black_shard', chance: 0.80, count: 2 },
     { itemId: 'black_crystal_small', chance: 0.35 },
   ],
   moves: [
@@ -94,6 +98,8 @@ const cockroach_knight = {
   zone: 1,
   isBoss: false,
   isElite: false,
+  baseXp: 22,
+  baseGold: 8,
   drops: [
     { itemId: 'black_shard', chance: 0.75, count: 2 },
     { itemId: 'black_crystal_small', chance: 0.55 },
@@ -136,9 +142,9 @@ const plague_frog = {
   zone: 1,
   isBoss: false,
   isElite: false,
+  baseXp: 18,
+  baseGold: 7,
   drops: [
-    { itemId: 'black_shard', chance: 0.75, count: 2 },
-    { itemId: 'black_crystal_small', chance: 0.45 },
   ],
   moves: [
     {
@@ -172,8 +178,10 @@ const king_rat = {
   zone: 1,
   isBoss: true,
   isElite: false,
+  xp: 250,
+  goldMin: 80,
+  goldMax: 120,
   drops: [
-    { itemId: 'black_crystal_core', chance: 1.0, count: 2 },
     { itemId: 'black_crystal_big', chance: 1.0, count: 3 },
     { itemId: 'black_crystal_small', chance: 1.0, count: 4 },
     { itemId: 'gnarlcrown_shard', chance: 1.0 },
@@ -227,8 +235,9 @@ const thorn_sprite = {
   zone: 2,
   isBoss: false,
   isElite: false,
+  baseXp: 45,
+  baseGold: 18,
   drops: [
-    { itemId: 'green_shard', chance: 0.85, count: 2 },
   ],
   moves: [
     { name: 'Thorn Jab', damage: 12 },
@@ -249,6 +258,8 @@ const giant_beetle = {
   zone: 2,
   isBoss: false,
   isElite: false,
+  baseXp: 55,
+  baseGold: 22,
   drops: [
     { itemId: 'green_shard', chance: 0.75, count: 2 },
     { itemId: 'green_crystal_small', chance: 0.55 },
@@ -272,8 +283,9 @@ const mushroom_puffer = {
   zone: 2,
   isBoss: false,
   isElite: false,
+  baseXp: 42,
+  baseGold: 17,
   drops: [
-    { itemId: 'green_shard', chance: 0.80, count: 2 },
     { itemId: 'green_crystal_small', chance: 0.35 },
   ],
   moves: [
@@ -295,6 +307,8 @@ const vine_lurker = {
   zone: 2,
   isBoss: false,
   isElite: false,
+  baseXp: 50,
+  baseGold: 20,
   drops: [
     { itemId: 'green_shard', chance: 0.75, count: 2 },
     { itemId: 'green_crystal_small', chance: 0.45 },
@@ -318,8 +332,10 @@ const rootmother = {
   zone: 2,
   isBoss: true,
   isElite: false,
+  xp: 500,
+  goldMin: 200,
+  goldMax: 350,
   drops: [
-    { itemId: 'green_crystal_core', chance: 1.0, count: 2 },
     { itemId: 'green_crystal_big', chance: 1.0, count: 3 },
     { itemId: 'green_crystal_small', chance: 1.0, count: 4 },
     { itemId: 'rootmother_heart', chance: 1.0 },
@@ -357,8 +373,9 @@ const barnacle_crab = {
   zone: 3,
   isBoss: false,
   isElite: false,
+  baseXp: 135,
+  baseGold: 54,
   drops: [
-    { itemId: 'yellow_shard', chance: 0.85, count: 2 },
   ],
   moves: [
     { name: 'Claw Snap', damage: 16 },
@@ -379,6 +396,8 @@ const sea_witch_eel = {
   zone: 3,
   isBoss: false,
   isElite: false,
+  baseXp: 150,
+  baseGold: 60,
   drops: [
     { itemId: 'yellow_shard', chance: 0.75, count: 2 },
     { itemId: 'yellow_crystal_small', chance: 0.55 },
@@ -402,9 +421,9 @@ const drowned_sailor = {
   zone: 3,
   isBoss: false,
   isElite: false,
+  baseXp: 120,
+  baseGold: 48,
   drops: [
-    { itemId: 'yellow_shard', chance: 0.75, count: 2 },
-    { itemId: 'yellow_crystal_small', chance: 0.45 },
   ],
   moves: [
     { name: 'Haunt', damage: 17, effect: { type: "stun", chance: 0.30 } },
@@ -428,8 +447,9 @@ const pufferfish_bomb = {
   zone: 3,
   isBoss: false,
   isElite: false,
+  baseXp: 115,
+  baseGold: 46,
   drops: [
-    { itemId: 'yellow_shard', chance: 0.80, count: 2 },
     { itemId: 'yellow_crystal_small', chance: 0.35 },
   ],
   moves: [
@@ -451,8 +471,10 @@ const captain_moray = {
   zone: 3,
   isBoss: true,
   isElite: false,
+  xp: 1000,
+  goldMin: 500,
+  goldMax: 800,
   drops: [
-    { itemId: 'yellow_crystal_core', chance: 1.0, count: 2 },
     { itemId: 'yellow_crystal_big', chance: 1.0, count: 3 },
     { itemId: 'yellow_crystal_small', chance: 1.0, count: 4 },
     { itemId: 'morays_fang', chance: 1.0 },

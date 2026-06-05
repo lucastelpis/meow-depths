@@ -407,7 +407,7 @@ const ELEMENTS = [
     glowColor: 'rgba(59, 158, 255, 0.25)',
     borderColor: 'rgba(59, 158, 255, 0.6)',
     gradientStart: 'rgba(59, 158, 255, 0.15)',
-    stancePreview: 'Stance: Coming soon',
+    stancePreview: 'Stance: +1% max HP per level · Tidal Resilience',
     artwork: WaterArtwork,
   },
   {

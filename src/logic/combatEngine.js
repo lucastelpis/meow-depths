@@ -614,12 +614,20 @@ export function executeEnemyTurn(enemy, enemyState, target, targetState) {
 
   const move = moves[Math.floor(Math.random() * moves.length)];
 
+  // Set cooldown if applicable
+  if (move.cooldown && move.cooldown > 0) {
+    if (!enemyState.cooldowns) {
+      enemyState.cooldowns = {};
+    }
+    enemyState.cooldowns[move.name] = move.cooldown;
+  }
+
   // -- Guard self (some bosses can guard themselves) -------------------------
   if (move.effect === 'guard_self') {
     const guardEffect = {
       type: 'guard',
       reduction: 0.5,
-      duration: 2,
+      duration: 3,
     };
     return {
       damage: 0,
@@ -637,7 +645,7 @@ export function executeEnemyTurn(enemy, enemyState, target, targetState) {
     const defBuffEffect = {
       type: 'def_buff',
       value: buffVal,
-      duration: 2,
+      duration: 3,
     };
     return {
       damage: 0,
@@ -759,14 +767,6 @@ export function executeEnemyTurn(enemy, enemyState, target, targetState) {
     if (healVal > 0) {
       log += ' King Rat leeches life!';
     }
-  }
-
-  // Set cooldown if applicable
-  if (move.cooldown && move.cooldown > 0) {
-    if (!enemyState.cooldowns) {
-      enemyState.cooldowns = {};
-    }
-    enemyState.cooldowns[move.name] = move.cooldown;
   }
 
   return {
@@ -1059,6 +1059,104 @@ export function executeFlameGuard(skillDef, stars, burnBonus) {
     flameGuardBurnDamage: burnDmg,
     flameGuardBurnDuration: starData.counterBurnDuration,
     log: `🛡️ Flame Guard active for ${starData.guardDuration} turns! Attackers burn for ${burnDmg}/turn!`,
+  };
+}
+
+/**
+ * Merge an ATK reduce effect onto an entity.
+ * Keeps the highest value and longest duration.
+ */
+export function applyAtkReduce(effects, value, duration) {
+  const existing = effects.find(e => e.type === 'atk_reduce');
+  if (existing) {
+    existing.value = Math.max(existing.value, value);
+    existing.duration = Math.max(existing.duration, duration);
+  } else {
+    effects.push({ type: 'atk_reduce', value, duration });
+  }
+}
+
+/**
+ * Execute Tidal Strike: deals damage and applies ATK reduce to a single target.
+ */
+export function executeTidalStrike(skillDef, stars, heroState, target) {
+  const starData = skillDef.stars[stars];
+  const { damage, isCrit } = calculateDamage(
+    heroState,
+    target,
+    { multiplier: starData.damageMultiplier }
+  );
+
+  applyAtkReduce(target.effects || (target.effects = []), starData.atkReduce, starData.duration);
+
+  const critText = isCrit ? ' (CRIT!)' : '';
+  return {
+    damage,
+    targetUid: target.uid || target.id,
+    log: `💧 Tidal Strike hits ${target.name} for ${damage}${critText} and reduces their ATK by ${Math.round(starData.atkReduce * 100)}% for ${starData.duration} turns!`,
+  };
+}
+
+/**
+ * Execute Tidal Wave: damage + ATK reduce on primary + spread to adjacent.
+ */
+export function executeTidalWave(skillDef, stars, heroState, enemies, targetIdx) {
+  const starData = skillDef.stars[stars];
+  const results = [];
+  const logParts = [];
+
+  // Primary target
+  const primary = enemies[targetIdx];
+  if (primary) {
+    const { damage, isCrit } = calculateDamage(
+      heroState,
+      primary,
+      { multiplier: starData.damageMultiplier }
+    );
+    applyAtkReduce(primary.effects || (primary.effects = []), starData.atkReduce, starData.duration);
+    results.push({ damage, targetUid: primary.uid || primary.id });
+    logParts.push(`${primary.name} takes ${damage}${isCrit ? ' (CRIT!)' : ''} + ATK Reduce`);
+  }
+
+  // Adjacent enemies (index ±1)
+  const rawMainDamage = primary ? Math.floor((heroState.attack || 10) * starData.damageMultiplier) : 0;
+  for (const adjIdx of [targetIdx - 1, targetIdx + 1]) {
+    if (adjIdx < 0 || adjIdx >= enemies.length) continue;
+    const adj = enemies[adjIdx];
+    if (!adj || adj.hp <= 0) continue;
+
+    const rawDmg = Math.floor(rawMainDamage * starData.spreadPercent);
+    const effectiveDef = Math.max(0, (adj.def || adj.defence || 0) - 1);
+    const reduction = effectiveDef / (effectiveDef + 15);
+    const spreadDmg = Math.max(1, Math.floor(rawDmg * (1 - reduction)));
+
+    results.push({ damage: spreadDmg, targetUid: adj.uid || adj.id });
+    logParts.push(`${adj.name} splashed for ${spreadDmg}`);
+
+    if (Math.random() < starData.spreadAtkReduceChance) {
+      applyAtkReduce(adj.effects || (adj.effects = []), starData.atkReduce, starData.duration);
+      logParts[logParts.length - 1] += ' + ATK Reduce';
+    }
+  }
+
+  return {
+    results,
+    log: `🌊 Tidal Wave! ${logParts.join(', ')}!`,
+  };
+}
+
+/**
+ * Execute Healing Current: applies HoT buff to Mochi for N turns.
+ */
+export function executeHealingCurrent(skillDef, stars) {
+  const starData = skillDef.stars[stars];
+  return {
+    playerHoT: {
+      healPerTurn: starData.healPerTurn,
+      duration: starData.duration,
+      turnsRemaining: starData.duration,
+    },
+    log: `💧 Healing Current active! Mochi will restore HP each turn for ${starData.duration} turns.`,
   };
 }
 

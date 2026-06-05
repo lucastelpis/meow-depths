@@ -100,29 +100,29 @@ const flame_guard = {
 // WATER — placeholder (mirrors Fire structure, same stats for now)
 // ─────────────────────────────────────────────────────────────────────────────
 
-const water_strike = {
-  id: 'water_strike',
-  name: 'Water Strike',
+const tidal_strike = {
+  id: 'tidal_strike',
+  name: 'Tidal Strike',
   element: 'water',
   tier: 1,
   type: 'active',
   targetType: 'single',
-  cooldown: 3,
+  cooldown: 4,
   unlockedBy: null,
   icon: '💧',
-  description: 'Deals water damage and applies a healing tide.',
+  description: 'Deals damage and reduces enemy ATK for a duration. Reliable and methodical.',
   stars: {
-    1: { damageMultiplier: 1.20, burnDamage: 2, burnDuration: 3 },
-    2: { damageMultiplier: 1.40, burnDamage: 2, burnDuration: 3 },
-    3: { damageMultiplier: 1.60, burnDamage: 3, burnDuration: 3 },
-    4: { damageMultiplier: 1.80, burnDamage: 3, burnDuration: 4 },
-    5: { damageMultiplier: 2.00, burnDamage: 4, burnDuration: 4 },
+    1: { damageMultiplier: 1.20, atkReduce: 0.10, duration: 2, cooldown: 4 },
+    2: { damageMultiplier: 1.35, atkReduce: 0.10, duration: 3, cooldown: 4 },
+    3: { damageMultiplier: 1.50, atkReduce: 0.15, duration: 3, cooldown: 4 },
+    4: { damageMultiplier: 1.65, atkReduce: 0.15, duration: 3, cooldown: 3 },
+    5: { damageMultiplier: 1.80, atkReduce: 0.20, duration: 3, cooldown: 3 },
   },
 };
 
-const flowing = {
-  id: 'flowing',
-  name: 'Flowing',
+const hydration = {
+  id: 'hydration',
+  name: 'Hydration',
   element: 'water',
   tier: 1,
   type: 'passive',
@@ -130,13 +130,13 @@ const flowing = {
   cooldown: 0,
   unlockedBy: null,
   icon: '🌊',
-  description: 'Sustains vitality passively over time.',
+  description: 'Amplifies all healing sources while equipped. Always active.',
   stars: {
-    1: { burnTickBonus: 1 },
-    2: { burnTickBonus: 2 },
-    3: { burnTickBonus: 3 },
-    4: { burnTickBonus: 4 },
-    5: { burnTickBonus: 5 },
+    1: { healingEfficiency: 0.10 },
+    2: { healingEfficiency: 0.15 },
+    3: { healingEfficiency: 0.20 },
+    4: { healingEfficiency: 0.25 },
+    5: { healingEfficiency: 0.30 },
   },
 };
 
@@ -148,35 +148,35 @@ const tidal_wave = {
   type: 'active',
   targetType: 'single_with_spread',
   cooldown: 4,
-  unlockedBy: 'water_strike',
+  unlockedBy: 'tidal_strike',
   icon: '🌊',
-  description: 'Crashing wave hits primary target and splashes adjacent enemies.',
+  description: 'Crashing wave hits target for damage and ATK reduce. Adjacent enemies take 40% splash with a 30% chance for ATK reduce.',
   stars: {
-    1: { damageMultiplier: 1.50, burnDamage: 4, burnDuration: 4, spreadPercent: 0.40, spreadBurnChance: 0.30 },
-    2: { damageMultiplier: 1.60, burnDamage: 4, burnDuration: 4, spreadPercent: 0.40, spreadBurnChance: 0.30 },
-    3: { damageMultiplier: 1.70, burnDamage: 5, burnDuration: 4, spreadPercent: 0.40, spreadBurnChance: 0.30 },
-    4: { damageMultiplier: 1.85, burnDamage: 5, burnDuration: 5, spreadPercent: 0.40, spreadBurnChance: 0.30 },
-    5: { damageMultiplier: 2.00, burnDamage: 6, burnDuration: 5, spreadPercent: 0.40, spreadBurnChance: 0.30 },
+    1: { damageMultiplier: 1.00, atkReduce: 0.10, duration: 2, spreadPercent: 0.40, spreadAtkReduceChance: 0.30, cooldown: 4 },
+    2: { damageMultiplier: 1.10, atkReduce: 0.10, duration: 3, spreadPercent: 0.40, spreadAtkReduceChance: 0.30, cooldown: 4 },
+    3: { damageMultiplier: 1.20, atkReduce: 0.15, duration: 3, spreadPercent: 0.40, spreadAtkReduceChance: 0.30, cooldown: 4 },
+    4: { damageMultiplier: 1.35, atkReduce: 0.15, duration: 3, spreadPercent: 0.40, spreadAtkReduceChance: 0.30, cooldown: 3 },
+    5: { damageMultiplier: 1.50, atkReduce: 0.20, duration: 3, spreadPercent: 0.40, spreadAtkReduceChance: 0.30, cooldown: 3 },
   },
 };
 
-const water_shield = {
-  id: 'water_shield',
-  name: 'Water Shield',
+const healing_current = {
+  id: 'healing_current',
+  name: 'Healing Current',
   element: 'water',
   tier: 2,
   type: 'active',
   targetType: 'self',
-  cooldown: 4,
-  unlockedBy: 'water_strike',
+  cooldown: 6,
+  unlockedBy: 'tidal_strike',
   icon: '🫧',
-  description: 'A protective bubble that heals over time.',
+  description: 'No damage — healing only. Applies a HoT effect restoring % of max HP each turn for 3 turns.',
   stars: {
-    1: { counterBurnDamage: 2, counterBurnDuration: 3, guardDuration: 3 },
-    2: { counterBurnDamage: 3, counterBurnDuration: 3, guardDuration: 3 },
-    3: { counterBurnDamage: 4, counterBurnDuration: 3, guardDuration: 3 },
-    4: { counterBurnDamage: 5, counterBurnDuration: 3, guardDuration: 3 },
-    5: { counterBurnDamage: 6, counterBurnDuration: 3, guardDuration: 3 },
+    1: { healPerTurn: 0.03, duration: 3, cooldown: 6 },
+    2: { healPerTurn: 0.05, duration: 3, cooldown: 6 },
+    3: { healPerTurn: 0.06, duration: 3, cooldown: 6 },
+    4: { healPerTurn: 0.08, duration: 3, cooldown: 6 },
+    5: { healPerTurn: 0.10, duration: 3, cooldown: 6 },
   },
 };
 
@@ -359,10 +359,10 @@ export const SKILLS = {
   fire_burst,
   flame_guard,
   // Water
-  water_strike,
-  flowing,
+  tidal_strike,
+  hydration,
   tidal_wave,
-  water_shield,
+  healing_current,
   // Earth
   earth_slam,
   bedrock,
@@ -378,7 +378,7 @@ export const SKILLS = {
 // Per-element ordered list: [T1 active, T1 passive, T2A, T2B]
 export const ELEMENT_SKILLS = {
   fire:  ['fire_slash', 'smoldering', 'fire_burst', 'flame_guard'],
-  water: ['water_strike', 'flowing', 'tidal_wave', 'water_shield'],
+  water: ['tidal_strike', 'hydration', 'tidal_wave', 'healing_current'],
   earth: ['earth_slam', 'bedrock', 'rockslide', 'stone_wall'],
   wind:  ['wind_slash', 'swift_step', 'cyclone', 'wind_veil'],
 };
@@ -386,7 +386,7 @@ export const ELEMENT_SKILLS = {
 // Tier 1 active skill per element (the parent that unlocks T2 skills)
 export const ELEMENT_T1_ACTIVE = {
   fire: 'fire_slash',
-  water: 'water_strike',
+  water: 'tidal_strike',
   earth: 'earth_slam',
   wind: 'wind_slash',
 };
@@ -406,6 +406,7 @@ export function getSkillCost(skill) {
 export function canUnlockElementSkill(skillId, hero) {
   const skill = SKILLS[skillId];
   if (!skill) return { can: false, reason: 'Unknown skill.' };
+  if (skill.element !== hero.element) return { can: false, reason: 'Wrong element.' };
   if (hero.unlockedSkills[skillId]) return { can: false, reason: 'Already unlocked.' };
 
   const cost = getSkillCost(skill);
@@ -434,6 +435,7 @@ export function canUnlockElementSkill(skillId, hero) {
 export function canStarUpSkill(skillId, hero) {
   const skill = SKILLS[skillId];
   if (!skill) return { can: false, reason: 'Unknown skill.' };
+  if (skill.element !== hero.element) return { can: false, reason: 'Wrong element.' };
   const entry = hero.unlockedSkills[skillId];
   if (!entry) return { can: false, reason: 'Skill not unlocked.' };
   if (entry.stars >= 5) return { can: false, reason: 'Already at max star.' };

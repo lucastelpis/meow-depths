@@ -40,7 +40,7 @@ import React, {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { generateDungeonGrid } from '../logic/dungeonGenerator';
 import { ZONES, getGridSizeForFloor } from '../data/zones';
-import { calculateEffectiveStats } from '../logic/progressionEngine';
+import { calculateEffectiveStats, applyHealingEfficiency } from '../logic/progressionEngine';
 import { GEAR, CONSUMABLES } from '../data/gear';
 
 // ---------------------------------------------------------------------------
@@ -555,7 +555,8 @@ function gameReducer(state, action) {
       let updatedHp = state.hero.hp;
       if (type === 'maxHpBonus') {
         const effectiveMaxHp = calculateEffectiveStats(state.hero, undefined, currentRunBuffs).maxHp;
-        updatedHp = Math.min(effectiveMaxHp, state.hero.hp + value);
+        const finalHeal = applyHealingEfficiency(value, state.hero);
+        updatedHp = Math.min(effectiveMaxHp, state.hero.hp + finalHeal);
       }
 
       return {
@@ -725,7 +726,9 @@ function gameReducer(state, action) {
 
       const consumableDef = CONSUMABLES.find(c => c.id === consumableId);
       if (consumableDef?.effect?.type === 'heal') {
-        updatedHp = Math.min(effectiveMaxHp, updatedHp + (consumableDef.effect.amount || 0));
+        const baseHeal = consumableDef.effect.amount || 0;
+        const finalHeal = applyHealingEfficiency(baseHeal, state.hero);
+        updatedHp = Math.min(effectiveMaxHp, updatedHp + finalHeal);
       }
 
       return {
@@ -932,11 +935,13 @@ function gameReducer(state, action) {
         undefined,
         state.currentRun.active ? state.currentRun.runBuffs : null
       ).maxHp;
+      const baseHeal = action.payload.amount || 0;
+      const finalHeal = applyHealingEfficiency(baseHeal, state.hero);
       return {
         ...state,
         hero: {
           ...state.hero,
-          hp: Math.min(effectiveMaxHp, state.hero.hp + (action.payload.amount || 0)),
+          hp: Math.min(effectiveMaxHp, state.hero.hp + finalHeal),
         },
       };
     }

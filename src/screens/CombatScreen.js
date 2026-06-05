@@ -64,9 +64,12 @@ import {
   executeFireBurst,
   executeFlameGuard,
   applyBurn,
+  executeTidalStrike,
+  executeTidalWave,
+  executeHealingCurrent,
 } from '../logic/combatEngine';
 import { calculateEncounterLoot } from '../logic/lootEngine';
-import { calculateEffectiveStats, checkLevelUp, getStanceBonus } from '../logic/progressionEngine';
+import { calculateEffectiveStats, checkLevelUp, getStanceBonus, applyHealingEfficiency } from '../logic/progressionEngine';
 import { useGame }  from '../state/gameState';
 import theme        from '../constants/theme';
 
@@ -192,9 +195,10 @@ const STATUS_EMOJIS = {
   stealth: '🌫️',
   counter: '⚔️',
   debuff_attack: '📉',
-  atk_reduce: '📉',
+  atk_reduce: '⬇️',
   dodge_reduce: '📉',
   crit_reduce: '📉',
+  hot: '💧',
 };
 
 const STATUS_COLORS = {
@@ -210,6 +214,7 @@ const STATUS_COLORS = {
   atk_reduce: '#D8483F',
   dodge_reduce: '#D8483F',
   crit_reduce: '#D8483F',
+  hot: '#3B9EFF',
 };
 
 function consolidateEffectsArray(effectsList) {
@@ -247,8 +252,13 @@ function addStatusEffects(effectsList, newEffects) {
     if (existingIndex > -1) {
       const existing = { ...list[existingIndex] };
       if (newEffect.type === 'atk_reduce' || newEffect.type === 'dodge_reduce' || newEffect.type === 'crit_reduce' || newEffect.type === 'def_buff') {
-        existing.duration = newEffect.duration;
-        existing.value = newEffect.value;
+        if (newEffect.type === 'atk_reduce') {
+          existing.duration = Math.max(existing.duration || 0, newEffect.duration || 0);
+          existing.value = Math.max(existing.value || 0, newEffect.value || 0);
+        } else {
+          existing.duration = newEffect.duration;
+          existing.value = newEffect.value;
+        }
         existing.stacks = 1;
       } else {
         existing.duration = newEffect.duration;
@@ -323,6 +333,28 @@ export default function CombatScreen() {
       addLog(heroEffectResult.log);
       logged = true;
     }
+
+    // Process Healing Current HoT tick
+    if (updatedHero.playerHoT && updatedHero.playerHoT.turnsRemaining > 0) {
+      const hot = updatedHero.playerHoT;
+      const baseHeal = Math.floor(updatedHero.maxHp * hot.healPerTurn);
+      const finalHeal = applyHealingEfficiency(baseHeal, updatedHero);
+      updatedHero.hp = Math.min(updatedHero.maxHp, updatedHero.hp + finalHeal);
+      
+      const newTurns = hot.turnsRemaining - 1;
+      if (newTurns > 0) {
+        updatedHero.playerHoT = {
+          ...hot,
+          turnsRemaining: newTurns,
+        };
+      } else {
+        updatedHero.playerHoT = null;
+      }
+      
+      addLog(`💧 Healing Current tick: Mochi recovers ${finalHeal} HP!`);
+      logged = true;
+    }
+
     return { updatedHero, logged };
   }, [addLog]);
 
@@ -386,7 +418,7 @@ export default function CombatScreen() {
           uid: template.id + '_elite',
           type: 'elite',
           name: `Elite ${template.name}`,
-          hp: Math.floor(template.hp * 1.4),       // +40% HP
+          hp: Math.floor(template.hp * 1.4),
           maxHp: Math.floor(template.hp * 1.4),
           attack: Math.floor(template.attack * 1.3),  // +30% Attack
           effects: [],
@@ -716,6 +748,47 @@ export default function CombatScreen() {
         flameGuardBurnDuration: guard.flameGuardBurnDuration,
       };
       addLog(guard.log);
+
+    } else if (skillId === 'tidal_strike') {
+      const target = updatedEnemies[selectedEnemyIndex];
+      if (!target) { setCombatPhase('playerTurn'); return; }
+      const stars = (state.hero.unlockedSkills[skillId]?.stars) || 1;
+      const result = executeTidalStrike(skillDef, stars, updatedHero, target);
+      updatedEnemies = updatedEnemies.map(e =>
+        (e.uid || e.id) === result.targetUid
+          ? { ...e, hp: Math.max(0, e.hp - result.damage) }
+          : e
+      );
+      const effectUpdated = updatedEnemies.findIndex(e => (e.uid || e.id) === result.targetUid);
+      if (effectUpdated >= 0) {
+        updatedEnemies[effectUpdated].effects = [...target.effects];
+      }
+      addLog(result.log);
+
+    } else if (skillId === 'tidal_wave') {
+      const stars = (state.hero.unlockedSkills[skillId]?.stars) || 1;
+      const wave = executeTidalWave(skillDef, stars, updatedHero, updatedEnemies, selectedEnemyIndex);
+      for (const res of wave.results) {
+        updatedEnemies = updatedEnemies.map(e => {
+          if ((e.uid || e.id) !== res.targetUid) return e;
+          return {
+            ...e,
+            hp: Math.max(0, e.hp - res.damage),
+            effects: [...(e.effects || [])]
+          };
+        });
+      }
+      addLog(wave.log);
+
+    } else if (skillId === 'healing_current') {
+      const stars = (state.hero.unlockedSkills[skillId]?.stars) || 1;
+      const hc = executeHealingCurrent(skillDef, stars);
+      updatedHero = {
+        ...updatedHero,
+        playerHoT: hc.playerHoT,
+        effects: addStatusEffects(updatedHero.effects, { type: 'hot', duration: hc.playerHoT.duration }),
+      };
+      addLog(hc.log);
 
     } else {
       // Fallback: legacy executeSkill path for any non-element skills
@@ -1415,7 +1488,9 @@ export default function CombatScreen() {
                           ]}
                         >
                           <Text style={styles.effectText}>
-                            {STATUS_EMOJIS[eff.type] || '❓'}{eff.duration > 0 ? eff.duration : ''}
+                            {STATUS_EMOJIS[eff.type] || '❓'}
+                            {eff.type === 'atk_reduce' ? `${Math.round((eff.value || 0) * 100)}%` : ''}
+                            {eff.duration > 0 ? (eff.type === 'atk_reduce' ? ` ${eff.duration}` : eff.duration) : ''}
                             {eff.stacks > 1 && (
                               <Text style={styles.effectStackText}> x{eff.stacks}</Text>
                             )}
@@ -1453,13 +1528,20 @@ export default function CombatScreen() {
         <View style={styles.heroCardAndButtonsRow}>
 
           {/* Hero card — same structure as enemy cards */}
-          <View style={styles.heroCard}>
+          <View style={[
+            styles.heroCard,
+            heroState?.playerHoT && {
+              borderColor: '#3B9EFF',
+              backgroundColor: 'rgba(59, 158, 255, 0.08)',
+              shadowColor: '#3B9EFF',
+            }
+          ]}>
 
             {/* Sprite backlight — radial gold halo behind Mochi */}
             <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
               <Defs>
                 <RadialGradient id="heroBacklight" cx="50%" cy="40%" r="45%">
-                  <Stop offset="0%" stopColor="#F5CF4A" stopOpacity="0.14" />
+                  <Stop offset="0%" stopColor={heroState?.playerHoT ? "#3B9EFF" : "#F5CF4A"} stopOpacity={heroState?.playerHoT ? 0.25 : 0.14} />
                   <Stop offset="100%" stopColor="transparent" stopOpacity="0" />
                 </RadialGradient>
               </Defs>
@@ -1474,7 +1556,7 @@ export default function CombatScreen() {
                   <Svg width={100} height={16}>
                     <Defs>
                       <RadialGradient id="heroStageGlow" cx="50%" cy="50%" r="50%">
-                        <Stop offset="0%" stopColor="#F5CF4A" stopOpacity="0.28" />
+                        <Stop offset="0%" stopColor={heroState?.playerHoT ? "#3B9EFF" : "#F5CF4A"} stopOpacity={heroState?.playerHoT ? 0.35 : 0.28} />
                         <Stop offset="100%" stopColor="transparent" stopOpacity="0" />
                       </RadialGradient>
                     </Defs>
@@ -1527,7 +1609,9 @@ export default function CombatScreen() {
                       ]}
                     >
                       <Text style={styles.effectText}>
-                        {STATUS_EMOJIS[eff.type] || '❓'}{eff.duration > 0 ? eff.duration : ''}
+                        {STATUS_EMOJIS[eff.type] || '❓'}
+                        {eff.type === 'atk_reduce' ? `${Math.round((eff.value || 0) * 100)}%` : ''}
+                        {eff.duration > 0 ? (eff.type === 'atk_reduce' ? ` ${eff.duration}` : eff.duration) : ''}
                         {eff.stacks > 1 && (
                           <Text style={styles.effectStackText}> x{eff.stacks}</Text>
                         )}
@@ -1827,6 +1911,10 @@ export default function CombatScreen() {
     // Show Flame Guard active indicator
     const isFlameGuardActive = skillId === 'flame_guard' && heroState?.flameGuardActive;
 
+    // Show Healing Current active indicator
+    const isHealingCurrentActive = skillId === 'healing_current' && heroState?.playerHoT;
+    const isHealingCurrentReady = skillId === 'healing_current' && !isDisabled;
+
     return (
       <TouchableOpacity
         key={slotIndex}
@@ -1835,6 +1923,15 @@ export default function CombatScreen() {
           isDisabled && !isPassive && { opacity: isOnCooldown ? 0.65 : 0.38 },
           isPassive && { opacity: 0.7 },
           isFlameGuardActive && { borderColor: elColor, borderWidth: 1.5 },
+          isHealingCurrentReady && {
+            borderColor: '#3B9EFF',
+            borderWidth: 1.5,
+            shadowColor: '#3B9EFF',
+            shadowOffset: { width: 0, height: 0 },
+            shadowOpacity: 0.8,
+            shadowRadius: 6,
+            elevation: 4,
+          },
         ]}
         onPress={() => !isDisabled && handleSkill(slotIndex)}
         activeOpacity={0.75}
@@ -1848,6 +1945,11 @@ export default function CombatScreen() {
         {isFlameGuardActive && (
           <Text style={[styles.actionBtnSub, { color: elColor }]}>
             🛡️ {heroState.flameGuardTurnsRemaining}t
+          </Text>
+        )}
+        {isHealingCurrentActive && (
+          <Text style={[styles.actionBtnSub, { color: '#3B9EFF' }]}>
+            💧 {heroState.playerHoT.turnsRemaining}t
           </Text>
         )}
       </TouchableOpacity>

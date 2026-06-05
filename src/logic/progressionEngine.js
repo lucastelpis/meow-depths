@@ -39,7 +39,13 @@ export const STANCES = {
       burnTickBonus: 1 + Math.floor(level / 5),
     }),
   },
-  water: { name: 'Water Stance', description: 'Coming soon.', getBonus: () => ({}) },
+  water: {
+    name: 'Water Stance',
+    description: 'Innate — scales with level, always active',
+    getBonus: (level) => ({
+      maxHpPercent: level * 0.01,  // +1% max HP per level → +20% at level 20
+    }),
+  },
   earth: { name: 'Earth Stance', description: 'Coming soon.', getBonus: () => ({}) },
   wind:  { name: 'Wind Stance',  description: 'Coming soon.', getBonus: () => ({}) },
 };
@@ -52,6 +58,33 @@ export function getStanceBonus(element, level) {
   const stance = STANCES[element];
   if (!stance) return {};
   return stance.getBonus(level || 1);
+}
+
+/**
+ * Amplifies healing by the Hydration passive bonus if equipped.
+ * Supports both raw hero (global state) and effectiveStats/combatState (with passives).
+ */
+export function applyHealingEfficiency(baseHeal, heroOrStats) {
+  if (!heroOrStats) return baseHeal;
+
+  let efficiency = 0;
+  // If it's a raw hero state
+  if (heroOrStats.equippedSkills && heroOrStats.unlockedSkills) {
+    const isEquipped = heroOrStats.equippedSkills.includes('hydration');
+    if (isEquipped && heroOrStats.unlockedSkills['hydration']) {
+      const stars = heroOrStats.unlockedSkills['hydration'].stars || 1;
+      const hydrationDef = SKILLS['hydration'];
+      if (hydrationDef && hydrationDef.stars[stars]) {
+        efficiency = hydrationDef.stars[stars].healingEfficiency || 0;
+      }
+    }
+  } 
+  // If it's effectiveStats or heroState from combat which already has passives computed
+  else if (heroOrStats.passives && heroOrStats.passives.healingEfficiency !== undefined) {
+    efficiency = heroOrStats.passives.healingEfficiency;
+  }
+
+  return Math.floor(baseHeal * (1 + efficiency));
 }
 
 // ============================================================================
@@ -78,9 +111,14 @@ export function getXpForLevel(level) {
   if (level === 2) return 100;   // First level-up
   if (level === 3) return 250;   // Second level-up
 
-  // From level 4 onward: 250 + (level - 3) * 200
-  // This means each level after 3 costs an additional 200 XP.
-  return 250 + (level - 3) * 200;
+  // 35% compounded exponential curve from Level 4 onwards
+  let totalXp = 250;
+  let currentInc = 150;
+  for (let l = 4; l <= level; l++) {
+    currentInc = currentInc * 1.35;
+    totalXp += currentInc;
+  }
+  return Math.round(totalXp / 10) * 10;
 }
 
 // ============================================================================
@@ -172,7 +210,8 @@ export function checkLevelUp(hero) {
  */
 export function calculateEffectiveStats(hero, skillDefinitions = SKILLS, runBuffs = null) {
   // --- Start from the hero's base stats ------------------------------------
-  let maxHp     = hero.maxHp      || 50;
+  let baseHp    = hero.maxHp      || 50;
+  let maxHp     = baseHp;
   let attack    = hero.attack     || 10;
   let defence   = hero.defence    || 2;
   let critChance = hero.critChance || 0.05;
@@ -184,6 +223,7 @@ export function calculateEffectiveStats(hero, skillDefinitions = SKILLS, runBuff
   // hero.gear looks like: { weapon: 'coral_blade', armor: null, trinket: null }
   const gearSlots = ['weapon', 'armor', 'trinket'];
 
+  let gearHp = 0;
   for (const slot of gearSlots) {
     const gearId = hero.gear?.[slot];
     if (!gearId) continue; // nothing equipped in this slot
@@ -194,7 +234,7 @@ export function calculateEffectiveStats(hero, skillDefinitions = SKILLS, runBuff
     // Add each stat from the gear piece
     if (gearDef.stats.attack)     attack     += gearDef.stats.attack;
     if (gearDef.stats.defence)    defence    += gearDef.stats.defence;
-    if (gearDef.stats.maxHp)      maxHp      += gearDef.stats.maxHp;
+    if (gearDef.stats.maxHp)      gearHp     += gearDef.stats.maxHp;
     if (gearDef.stats.critChance) critChance += gearDef.stats.critChance;
     if (gearDef.stats.dodge)      dodge      += gearDef.stats.dodge;
 
@@ -226,8 +266,14 @@ export function calculateEffectiveStats(hero, skillDefinitions = SKILLS, runBuff
   for (const [skillId] of unlockedEntries) {
     const skillDef = skillDefinitions[skillId];
     if (!skillDef || skillDef.type !== 'passive') continue;
-    // Passive element skills have no stat boosts in calculateEffectiveStats —
-    // their burnTickBonus is read at combat time via getSmolderingBonus().
+    
+    // Add Hydration passive healingEfficiency to effective passives
+    if (skillId === 'hydration' && hero.equippedSkills && hero.equippedSkills.includes('hydration')) {
+      const stars = unlockedSkills[skillId].stars || 1;
+      if (skillDef.stars[stars]) {
+        passives.healingEfficiency = skillDef.stars[stars].healingEfficiency || 0;
+      }
+    }
   }
 
   // --- 3. Stance ATK % bonus (Fire Stance: +1% ATK per level) --------------
@@ -243,7 +289,7 @@ export function calculateEffectiveStats(hero, skillDefinitions = SKILLS, runBuff
     const bonus = setBonus.bonus || {};
     if (bonus.attack)     attack     += bonus.attack;
     if (bonus.defence)    defence    += bonus.defence;
-    if (bonus.maxHp)      maxHp      += bonus.maxHp;
+    if (bonus.maxHp)      gearHp     += bonus.maxHp;
     if (bonus.critChance) critChance += bonus.critChance;
     if (bonus.dodge)      dodge      += bonus.dodge;
   }
@@ -253,10 +299,17 @@ export function calculateEffectiveStats(hero, skillDefinitions = SKILLS, runBuff
   if (runBuffs) {
     if (runBuffs.attackBonus)  attack     += runBuffs.attackBonus;
     if (runBuffs.defenceBonus) defence    += runBuffs.defenceBonus;
-    if (runBuffs.maxHpBonus)   maxHp      += runBuffs.maxHpBonus;
+    if (runBuffs.maxHpBonus)   gearHp     += runBuffs.maxHpBonus;
     if (runBuffs.critBonus)    critChance += runBuffs.critBonus;
     if (runBuffs.dodgeBonus)   dodge      += runBuffs.dodgeBonus;
   }
+
+  // Apply Water Stance max HP bonus (totalMaxHP = baseHp + gearHp + Math.floor(baseHp * stanceBonus.maxHpPercent))
+  let stanceHpBonus = 0;
+  if (stanceBonus.maxHpPercent) {
+    stanceHpBonus = Math.floor(baseHp * stanceBonus.maxHpPercent);
+  }
+  maxHp = baseHp + gearHp + stanceHpBonus;
 
   return {
     maxHp,

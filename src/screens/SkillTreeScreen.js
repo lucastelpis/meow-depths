@@ -11,7 +11,7 @@
  *   - Tap card → detail modal (unlock, star-up, equip)
  */
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
@@ -36,7 +36,7 @@ const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 const ELEMENTS = [
   { id: 'fire',  label: 'Fire',  icon: '🔥', color: '#FF6B35', available: true  },
-  { id: 'water', label: 'Water', icon: '💧', color: '#3B9EFF', available: false },
+  { id: 'water', label: 'Water', icon: '💧', color: '#3B9EFF', available: true  },
   { id: 'earth', label: 'Earth', icon: '⛰️', color: '#8B6914', available: false },
   { id: 'wind',  label: 'Wind',  icon: '🌪️', color: '#5CC4B8', available: false },
 ];
@@ -73,16 +73,25 @@ const SKILL_STAT_LABELS = {
   counterBurnDamage: 'Counter Damage / Turn',
   counterBurnDuration: 'Counter Duration',
   guardDuration: 'Guard Duration',
+  // Water stats
+  atkReduce: 'Attack Reduction',
+  duration: 'Duration',
+  spreadAtkReduceChance: 'Splash ATK Reduce Chance',
+  healPerTurn: 'Healing / Turn',
+  cooldown: 'Cooldown',
 };
 
 const formatSkillStatValue = (key, value) => {
   if (key === 'damageMultiplier') {
     return `${Math.round(value * 100)}% ATK`;
   }
-  if (key === 'spreadPercent' || key === 'spreadBurnChance') {
+  if (key === 'spreadPercent' || key === 'spreadBurnChance' || key === 'spreadAtkReduceChance' || key === 'atkReduce') {
     return `${Math.round(value * 100)}%`;
   }
-  if (key === 'burnDuration' || key === 'counterBurnDuration' || key === 'guardDuration') {
+  if (key === 'healPerTurn') {
+    return `${Math.round(value * 100)}% Max HP (${Math.round(value * 300)}% Max HP total)`;
+  }
+  if (key === 'burnDuration' || key === 'counterBurnDuration' || key === 'guardDuration' || key === 'duration' || key === 'cooldown') {
     return `${value} ${value === 1 ? 'turn' : 'turns'}`;
   }
   return value;
@@ -104,6 +113,13 @@ export default function SkillTreeScreen() {
   // The player's element tab is always shown first; others visible but locked
   const activeTabElement = element || 'fire';
   const [viewingElement, setViewingElement] = useState(activeTabElement);
+
+  // Sync viewingElement to player's element when it finishes loading from AsyncStorage
+  useEffect(() => {
+    if (element) {
+      setViewingElement(element);
+    }
+  }, [element]);
 
   // Skills for the currently viewed element
   const elementSkillIds = ELEMENT_SKILLS[viewingElement] || [];
@@ -454,9 +470,11 @@ export default function SkillTreeScreen() {
             </Svg>
             <View style={styles.stanceInner}>
               <View style={styles.stanceLeft}>
-                <Text style={styles.stanceLabel}>INNATE · ALWAYS ACTIVE</Text>
+                <Text style={styles.stanceLabel}>
+                  {element === 'water' ? 'Innate — scales with level, always active' : 'INNATE · ALWAYS ACTIVE'}
+                </Text>
                 <Text style={[styles.stanceName, { color: elementColor }]}>
-                  {ELEMENTS.find(e => e.id === element)?.icon} {stance.name}
+                  {ELEMENTS.find(e => e.id === element)?.icon} {element === 'water' ? 'Water Stance — Tidal Resilience' : stance.name}
                 </Text>
                 <Text style={styles.stanceDesc}>{stance.description}</Text>
               </View>
@@ -469,6 +487,16 @@ export default function SkillTreeScreen() {
                 {stanceBonus.burnTickBonus !== undefined && (
                   <Text style={[styles.stanceStat, { color: elementColor }]}>
                     +{stanceBonus.burnTickBonus} burn/tick
+                  </Text>
+                )}
+                {stanceBonus.maxHpPercent !== undefined && (
+                  <Text style={[styles.stanceStat, { color: elementColor }]}>
+                    +{Math.round(stanceBonus.maxHpPercent * 100)}% max HP
+                  </Text>
+                )}
+                {stanceBonus.maxHpPercent !== undefined && (
+                  <Text style={[styles.stanceStat, { color: elementColor, fontSize: 10, opacity: 0.8 }]}>
+                    (currently +{Math.floor((hero.maxHp || 50) * stanceBonus.maxHpPercent)} HP)
                   </Text>
                 )}
               </View>
