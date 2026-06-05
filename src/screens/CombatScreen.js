@@ -1333,7 +1333,7 @@ export default function CombatScreen() {
               >
                 {/* Canvas Viewport (Top 70%) */}
                 <View style={styles.spriteCanvas}>
-                  <View style={styles.spriteWrapper}>
+                  <View style={[styles.spriteWrapper, { height: displaySize }]}>
                     {/* Stage platform below enemy */}
                     <View style={[styles.stagePlatform, { bottom: platformBottom }]}>
                       <Svg width={100} height={16}>
@@ -1362,7 +1362,11 @@ export default function CombatScreen() {
                             active={animKey === 'idle'}
                             displaySize={displaySize}
                             flipX
-                            style={[styles.enemySprite, animKey !== 'idle' && { display: 'none' }]}
+                            pointerEvents={animKey === 'idle' ? 'auto' : 'none'}
+                            style={[
+                              styles.enemySprite,
+                              { position: 'absolute', opacity: animKey === 'idle' ? 1 : 0 }
+                            ]}
                           />
                           <AnimatedSprite
                             key={`${enemy.uid}_attack`}
@@ -1377,7 +1381,11 @@ export default function CombatScreen() {
                               : undefined}
                             displaySize={displaySize}
                             flipX
-                            style={[styles.enemySprite, animKey !== 'attack' && { display: 'none' }]}
+                            pointerEvents={animKey === 'attack' ? 'auto' : 'none'}
+                            style={[
+                              styles.enemySprite,
+                              { position: 'absolute', opacity: animKey === 'attack' ? 1 : 0 }
+                            ]}
                           />
                         </>
                       );
@@ -1486,7 +1494,7 @@ export default function CombatScreen() {
 
             {/* Canvas Viewport (Top 70%) */}
             <View style={styles.spriteCanvas}>
-              <View style={styles.spriteWrapper}>
+              <View style={[styles.spriteWrapper, { height: 105 }]}>
                 {/* Stage platform glow — same as enemies, always gold */}
                 <View style={[styles.heroStagePlatform, { bottom: Math.round(105 * 0.18) }]}>
                   <Svg width={100} height={16}>
@@ -1506,6 +1514,8 @@ export default function CombatScreen() {
                   const isAttack = heroAnim === 'attack';
                   const isSkill = !isIdle && !isGuard && !isAttack;
 
+                  const skillDef = isSkill ? HERO_SPRITE[heroAnim] : null;
+
                   return (
                     <>
                       <AnimatedSprite
@@ -1517,7 +1527,8 @@ export default function CombatScreen() {
                         loop={true}
                         active={isIdle}
                         displaySize={105}
-                        style={[styles.heroCardSprite, !isIdle && { display: 'none' }]}
+                        pointerEvents={isIdle ? 'auto' : 'none'}
+                        style={[styles.heroCardSprite, { position: 'absolute', opacity: isIdle ? 1 : 0 }]}
                       />
                       <AnimatedSprite
                         key="hero_sprite_guard"
@@ -1528,7 +1539,8 @@ export default function CombatScreen() {
                         loop={true}
                         active={isGuard}
                         displaySize={105}
-                        style={[styles.heroCardSprite, !isGuard && { display: 'none' }]}
+                        pointerEvents={isGuard ? 'auto' : 'none'}
+                        style={[styles.heroCardSprite, { position: 'absolute', opacity: isGuard ? 1 : 0 }]}
                       />
                       <AnimatedSprite
                         key="hero_sprite_attack"
@@ -1540,19 +1552,21 @@ export default function CombatScreen() {
                         active={isAttack}
                         onComplete={isAttack ? () => setHeroAnim('idle') : undefined}
                         displaySize={105}
-                        style={[styles.heroCardSprite, !isAttack && { display: 'none' }]}
+                        pointerEvents={isAttack ? 'auto' : 'none'}
+                        style={[styles.heroCardSprite, { position: 'absolute', opacity: isAttack ? 1 : 0 }]}
                       />
                       <AnimatedSprite
                         key="hero_sprite_skill"
-                        source={require('../../assets/sprites/Tiny Swords (Free Pack)/Units/Original/cat_flame_attack.png')}
-                        frameSize={104}
-                        totalFrames={11}
+                        source={skillDef?.source || require('../../assets/sprites/Tiny Swords (Free Pack)/Units/Original/cat_flame_attack.png')}
+                        frameSize={skillDef?.frameSize || 104}
+                        totalFrames={skillDef?.frames || 11}
                         fps={10}
                         loop={false}
                         active={isSkill}
                         onComplete={isSkill ? () => setHeroAnim('idle') : undefined}
                         displaySize={105}
-                        style={[styles.heroCardSprite, !isSkill && { display: 'none' }]}
+                        pointerEvents={isSkill ? 'auto' : 'none'}
+                        style={[styles.heroCardSprite, { position: 'absolute', opacity: isSkill ? 1 : 0 }]}
                       />
                     </>
                   );

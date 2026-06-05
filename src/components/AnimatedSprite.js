@@ -35,6 +35,7 @@ export default function AnimatedSprite({
   displaySize = 80,
   flipX       = false,
   active      = true,
+  pointerEvents,
   style,
 }) {
   const finalTotalFrames = totalFrames || frames || 1;
@@ -107,6 +108,7 @@ export default function AnimatedSprite({
 
   return (
     <View
+      pointerEvents={pointerEvents}
       style={[
         {
           width:    displaySize,
