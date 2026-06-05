@@ -101,7 +101,8 @@ export default function AnimatedSprite({
   }, [source, frameSize, finalTotalFrames, fps, loop]);
 
   const scale = displaySize / frameSize;
-  const safeFrame = finalTotalFrames > 0 ? Math.min(frame, finalTotalFrames - 1) : 0;
+  const isSourceChanged = source !== prevSource || finalTotalFrames !== prevTotalFrames;
+  const currentFrame = isSourceChanged ? 0 : (finalTotalFrames > 0 ? Math.min(frame, finalTotalFrames - 1) : 0);
 
   return (
     <View
@@ -118,14 +119,14 @@ export default function AnimatedSprite({
       ]}
     >
       <Image
-        key={source}
         source={source}
+        fadeDuration={0}
         style={{
           // Stretch the full sheet to scale, then shift left to expose current frame
           width:    frameSize * finalTotalFrames * scale,
           height:   displaySize,
           position: 'absolute',
-          left:     -(safeFrame * displaySize),
+          left:     -(currentFrame * displaySize),
           top:      0,
         }}
         resizeMode="stretch"

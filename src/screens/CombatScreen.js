@@ -1353,7 +1353,7 @@ export default function CombatScreen() {
                       const animData  = spriteDef[animKey] || spriteDef.idle;
                       return (
                         <AnimatedSprite
-                          key={`${enemy.uid}_${animKey}`}
+                          key={enemy.uid}
                           source={animData.source}
                           frameSize={animData.frameSize}
                           totalFrames={animData.frames}
@@ -1490,7 +1490,7 @@ export default function CombatScreen() {
                   const animData = HERO_SPRITE[heroAnim] || HERO_SPRITE.idle;
                   return (
                     <AnimatedSprite
-                      key={`hero_${heroAnim}`}
+                      key="hero_sprite"
                       source={animData.source}
                       frameSize={animData.frameSize}
                       totalFrames={animData.frames}
