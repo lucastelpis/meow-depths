@@ -13,50 +13,46 @@
  */
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Battle rating distribution per floor
+// Zone Floor Configurations & Combat Pools
 // ─────────────────────────────────────────────────────────────────────────────
 
-/**
- * Returns cumulative probability thresholds for [1★, 2★, 3★, 4★] on a given floor.
- * Roll Math.random() against these to pick a rating.
- *
- * @param {number} floorNumber
- * @returns {{ star1: number, star2: number, star3: number, star4: number }} cumulative thresholds
- *   roll < star1  → 1★
- *   roll < star2  → 2★
- *   roll < star3  → 3★
- *   roll < star4  → 4★
- *   else          → 5★
- */
-function getBattleRatingThresholds(floorNumber) {
-  if (floorNumber === 1) return { star1: 1.00, star2: 1.00, star3: 1.00, star4: 1.00 }; // 100% 1★
-  if (floorNumber === 2) return { star1: 0.70, star2: 1.00, star3: 1.00, star4: 1.00 }; // 70% 1★ / 30% 2★
-  if (floorNumber === 3) return { star1: 0.30, star2: 0.90, star3: 1.00, star4: 1.00 }; // 30% 1★ / 60% 2★ / 10% 3★
-  if (floorNumber <= 5)  return { star1: 0.00, star2: 0.30, star3: 0.90, star4: 1.00 }; // 30% 2★ / 60% 3★ / 10% 4★
-  if (floorNumber <= 7)  return { star1: 0.00, star2: 0.00, star3: 0.20, star4: 0.80 }; // 20% 3★ / 60% 4★ / 20% 5★
-  if (floorNumber <= 9)  return { star1: 0.00, star2: 0.00, star3: 0.00, star4: 0.30 }; // 30% 4★ / 70% 5★
-  return { star1: 0.00, star2: 0.00, star3: 0.00, star4: 0.00 };                       // floor 10: all 5★
-}
+export const ZONE_FLOOR_CONFIGS = {
+  zone1: {
+    1:  { gridWidth: 3, gridHeight: 3, numCombat: 4,  numRest: 2, numGamble: 1, numTreasure: 1, hasBoss: false },
+    2:  { gridWidth: 3, gridHeight: 3, numCombat: 5,  numRest: 1, numGamble: 1, numTreasure: 1, hasBoss: false },
+    3:  { gridWidth: 3, gridHeight: 3, numCombat: 5,  numRest: 1, numGamble: 1, numTreasure: 1, hasBoss: false },
+    4:  { gridWidth: 3, gridHeight: 4, numCombat: 7,  numRest: 2, numGamble: 1, numTreasure: 1, hasBoss: false },
+    5:  { gridWidth: 3, gridHeight: 4, numCombat: 8,  numRest: 1, numGamble: 1, numTreasure: 1, hasBoss: false },
+    6:  { gridWidth: 3, gridHeight: 4, numCombat: 8,  numRest: 1, numGamble: 1, numTreasure: 1, hasBoss: false },
+    7:  { gridWidth: 4, gridHeight: 4, numCombat: 11, numRest: 2, numGamble: 1, numTreasure: 1, hasBoss: false },
+    8:  { gridWidth: 4, gridHeight: 4, numCombat: 11, numRest: 2, numGamble: 1, numTreasure: 1, hasBoss: false },
+    9:  { gridWidth: 4, gridHeight: 4, numCombat: 11, numRest: 2, numGamble: 1, numTreasure: 1, hasBoss: false },
+    10: { gridWidth: 4, gridHeight: 5, numCombat: 13, numRest: 2, numGamble: 1, numTreasure: 2, hasBoss: true  },
+  }
+};
 
-function rollBattleRating(floorNumber) {
-  const { star1, star2, star3, star4 } = getBattleRatingThresholds(floorNumber);
-  const roll = Math.random();
-  if (roll < star1) return 1;
-  if (roll < star2) return 2;
-  if (roll < star3) return 3;
-  if (roll < star4) return 4;
-  return 5;
-}
+export const ZONE_COMBAT_POOLS = {
+  zone1: {
+    1:  { ratings: [1, 1, 1, 1], enemyCounts: [1, 1, 1, 2] },
+    2:  { ratings: [1, 1, 2, 2, 2], enemyCounts: [1, 1, 2, 2, 2] },
+    3:  { ratings: [2, 2, 2, 2, 2], enemyCounts: [2, 2, 2, 3, 3] },
+    4:  { ratings: [2, 2, 2, 3, 3, 3, 3], enemyCounts: [2, 2, 3, 3, 3, 3, 3] },
+    5:  { ratings: [3, 3, 3, 3, 3, 3, 3, 3], enemyCounts: [2, 2, 3, 3, 3, 3, 3, 3] },
+    6:  { ratings: [3, 3, 3, 3, 4, 4, 4, 4], enemyCounts: [2, 2, 3, 3, 3, 3, 4, 4] },
+    7:  { ratings: [4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4], enemyCounts: [3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4] },
+    8:  { ratings: [4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 5], enemyCounts: [3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4] },
+    9:  { ratings: [5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5], enemyCounts: [3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4] },
+    10: { ratings: [5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5], enemyCounts: [3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4] },
+  }
+};
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Room composition ratios per floor range
-// ─────────────────────────────────────────────────────────────────────────────
-
-function getRoomRatios(floorNumber) {
-  if (floorNumber <= 3)  return { restPct: 0.12, treasurePct: 0.10, gamblePct: 0.08 };
-  if (floorNumber <= 6)  return { restPct: 0.10, treasurePct: 0.14, gamblePct: 0.12 };
-  if (floorNumber <= 9)  return { restPct: 0.08, treasurePct: 0.12, gamblePct: 0.10 };
-  return                        { restPct: 0.06, treasurePct: 0.06, gamblePct: 0.06 }; // floor 10
+function shuffle(array) {
+  const copy = [...array];
+  for (let i = copy.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [copy[i], copy[j]] = [copy[j], copy[i]];
+  }
+  return copy;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -235,50 +231,50 @@ export function validateGrid(grid, gridWidth, gridHeight, hasBoss = false) {
  * @param {number} floorNumber – 1-indexed (1–10). Drives room composition and battle ratings.
  * @returns {Array} 2D array of tile objects (tiles[y][x]).
  */
-export function generateDungeonGrid(gridWidth, gridHeight, _zoneId, floorNumber = 1) {
+export function generateDungeonGrid(gridWidth, gridHeight, zoneId, floorNumber = 1) {
   const MAX_ATTEMPTS    = 100;
   const SOFT_RELAX_LIMIT = 50;
-  const hasBoss = floorNumber === 10;
 
-  const totalTiles   = gridWidth * gridHeight;
-  // Start tile + boss tile (only on floor 10) are reserved
-  const reservedTiles = hasBoss ? 2 : 1;
-  const nonReserved   = totalTiles - reservedTiles;
+  // Retrieve configurations for this specific zone & floor (fall back to zone1 if undefined)
+  const zoneConfig = ZONE_FLOOR_CONFIGS[zoneId] || ZONE_FLOOR_CONFIGS.zone1;
+  const config = zoneConfig[floorNumber] || zoneConfig[1];
 
-  const { restPct, treasurePct, gamblePct } = getRoomRatios(floorNumber);
+  const w = config.gridWidth;
+  const h = config.gridHeight;
+  const hasBoss = config.hasBoss;
 
-  const numRest     = Math.max(1, Math.min(Math.floor(nonReserved * 0.4), Math.round(nonReserved * restPct)));
-  const numTreasure = Math.max(1, Math.min(Math.floor(nonReserved * 0.4), Math.round(nonReserved * treasurePct)));
-  const numGamble   = Math.max(1, Math.min(Math.floor(nonReserved * 0.3), Math.round(nonReserved * gamblePct)));
-  const numCombat   = nonReserved - numRest - numTreasure - numGamble;
+  const numRest = config.numRest;
+  const numTreasure = config.numTreasure;
+  const numGamble = config.numGamble;
+  const numCombat = config.numCombat;
 
   let bestGrid = null;
 
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
     // 1. Initialise empty grid
     const grid = [];
-    for (let y = 0; y < gridHeight; y++) {
+    for (let y = 0; y < h; y++) {
       const row = [];
-      for (let x = 0; x < gridWidth; x++) {
-        row.push({ x, y, type: 'combat', revealed: false, cleared: false, contents: null, battleRating: 1 });
+      for (let x = 0; x < w; x++) {
+        row.push({ x, y, type: 'combat', revealed: false, cleared: false, contents: null, battleRating: 1, enemyCount: 1 });
       }
       grid.push(row);
     }
 
     // 2. Place start (bottom-left, always revealed + cleared)
     const startX = 0;
-    const startY = gridHeight - 1;
+    const startY = h - 1;
     grid[startY][startX].type    = 'start';
     grid[startY][startX].revealed = true;
     grid[startY][startX].cleared  = true;
 
-    // 3. Place boss (floor 10 only — top row or rightmost column, not adjacent to start)
+    // 3. Place boss (top row or rightmost column, not adjacent to start)
     if (hasBoss) {
       const bossPositions = [];
-      for (let y = 0; y < gridHeight; y++) {
-        for (let x = 0; x < gridWidth; x++) {
+      for (let y = 0; y < h; y++) {
+        for (let x = 0; x < w; x++) {
           if (x === startX && y === startY) continue;
-          if (y === 0 || x === gridWidth - 1) {
+          if (y === 0 || x === w - 1) {
             const dist = Math.abs(x - startX) + Math.abs(y - startY);
             if (dist > 1) bossPositions.push({ x, y });
           }
@@ -290,8 +286,8 @@ export function generateDungeonGrid(gridWidth, gridHeight, _zoneId, floorNumber 
 
     // 4. Collect remaining empty coordinates
     const emptyCoords = [];
-    for (let y = 0; y < gridHeight; y++) {
-      for (let x = 0; x < gridWidth; x++) {
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
         const t = grid[y][x];
         if (t.type !== 'start' && t.type !== 'boss') emptyCoords.push({ x, y });
       }
@@ -304,22 +300,26 @@ export function generateDungeonGrid(gridWidth, gridHeight, _zoneId, floorNumber 
     for (let i = 0; i < numGamble;   i++) roomPool.push('gamble');
     for (let i = 0; i < numCombat;   i++) roomPool.push('combat');
 
-    for (let i = roomPool.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [roomPool[i], roomPool[j]] = [roomPool[j], roomPool[i]];
-    }
+    const shuffledRoomPool = shuffle(roomPool);
 
-    // 6. Assign types and battle ratings
+    // 6. Assign types, battle ratings, and enemy counts
+    const zoneCombatPool = ZONE_COMBAT_POOLS[zoneId] || ZONE_COMBAT_POOLS.zone1;
+    const combatPool = zoneCombatPool[floorNumber] || zoneCombatPool[1];
+
+    const ratingsPool = shuffle(combatPool.ratings);
+    const enemyCountsPool = shuffle(combatPool.enemyCounts);
+
     emptyCoords.forEach((coord, idx) => {
-      const type = roomPool[idx];
+      const type = shuffledRoomPool[idx];
       grid[coord.y][coord.x].type = type;
       if (type === 'combat') {
-        grid[coord.y][coord.x].battleRating = rollBattleRating(floorNumber);
+        grid[coord.y][coord.x].battleRating = ratingsPool.pop() || 1;
+        grid[coord.y][coord.x].enemyCount = enemyCountsPool.pop() || 1;
       }
     });
 
     // 7. Validate
-    const { isValid, passSoft, report } = validateGrid(grid, gridWidth, gridHeight, hasBoss);
+    const { isValid, passSoft, report } = validateGrid(grid, w, h, hasBoss);
 
     if (isValid) {
       if (passSoft || attempt >= SOFT_RELAX_LIMIT) {

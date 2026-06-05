@@ -284,7 +284,7 @@ function addStatusEffects(effectsList, newEffects) {
 export default function CombatScreen() {
   const navigation = useNavigation();
   const route = useRoute();
-  const { roomType, battleRating = 1 } = route.params || { roomType: 'combat', battleRating: 1 };
+  const { roomType, battleRating = 1, enemyCount } = route.params || { roomType: 'combat', battleRating: 1 };
   const { state, dispatch } = useGame();
 
   // ── Local combat state ───────────────────────────────────────────────────
@@ -428,101 +428,41 @@ export default function CombatScreen() {
         taggedEnemies = [elite];
       }
     } else {
-      // Tier-based encounter from battleRating (1★ to 5★)
-      const makeCommon = (template, i) => {
-        const common = {
+      // Scale all spawned enemies by the room's battle rating (star level)
+      const makeScaledEnemy = (template, i) => {
+        const mult = STAR_MULTIPLIERS[battleRating] || 1.0;
+        const name = battleRating >= 3 ? `Elite ${template.name}` : template.name;
+        
+        const scaled = {
           ...template,
           uid: template.id + '_' + i,
           type: 'common',
-          maxHp: template.hp,
+          stars: battleRating,
+          hp: Math.ceil(template.hp * mult),
+          maxHp: Math.ceil(template.hp * mult),
+          attack: Math.ceil(template.attack * mult),
+          def: Math.max(1, Math.ceil((template.def || 0) * mult)),
           effects: [],
           cooldowns: {},
         };
-        common.intent = selectEnemyMove(common);
-        return common;
+        scaled.intent = selectEnemyMove(scaled, []);
+        return scaled;
       };
 
-      const makeElite = (template, i) => {
-        const eliteObj = {
-          ...template,
-          uid: template.id + '_elite_' + i,
-          type: 'elite',
-          name: `Elite ${template.name}`,
-          hp: Math.floor(template.hp * 1.4),
-          maxHp: Math.floor(template.hp * 1.4),
-          attack: Math.floor(template.attack * 1.3),
-          effects: [],
-          cooldowns: {},
-        };
-        eliteObj.intent = selectEnemyMove(eliteObj);
-        return eliteObj;
-      };
+      let count = enemyCount;
+      if (count === undefined) {
+        // Fallback counts based on battle rating if not provided (e.g. testing or legacy path)
+        if (battleRating === 1) count = 1;
+        else if (battleRating === 2) count = 2;
+        else if (battleRating === 3) count = 2;
+        else if (battleRating === 4) count = 3;
+        else count = 4;
+      }
 
-      if (floorNumber === 1) {
-        // Floor 1 is always exactly 1 common enemy to prevent gang-ups
+      for (let i = 0; i < count; i++) {
         const template = randomPick(pool);
-        if (template) taggedEnemies.push(makeCommon(template, 0));
-      } else if (battleRating === 1) {
-        // 1★ — 80% chance 1 common, 20% chance 2 common
-        const count = Math.random() < 0.80 ? 1 : 2;
-        for (let i = 0; i < count; i++) {
-          const template = randomPick(pool);
-          if (template) taggedEnemies.push(makeCommon(template, i));
-        }
-      } else if (battleRating === 2) {
-        // 2★ — 60% chance 2 common, 40% chance 1 common
-        const count = Math.random() < 0.60 ? 2 : 1;
-        for (let i = 0; i < count; i++) {
-          const template = randomPick(pool);
-          if (template) taggedEnemies.push(makeCommon(template, i));
-        }
-      } else if (battleRating === 3) {
-        // 3★ — 60% chance 2 common, 15% chance 3 common, 25% chance 1 elite
-        const roll = Math.random();
-        if (roll < 0.60) {
-          for (let i = 0; i < 2; i++) {
-            const template = randomPick(pool);
-            if (template) taggedEnemies.push(makeCommon(template, i));
-          }
-        } else if (roll < 0.75) {
-          for (let i = 0; i < 3; i++) {
-            const template = randomPick(pool);
-            if (template) taggedEnemies.push(makeCommon(template, i));
-          }
-        } else {
-          const template = randomPick(pool);
-          if (template) taggedEnemies.push(makeElite(template, 0));
-        }
-      } else if (battleRating === 4) {
-        // 4★ — 50% chance 1 elite + 2 common, 30% chance 2 elite, 20% chance 4 common
-        const roll = Math.random();
-        if (roll < 0.50) {
-          // 1 elite + 2 common
-          const eliteTemplate = randomPick(pool);
-          if (eliteTemplate) taggedEnemies.push(makeElite(eliteTemplate, 0));
-          for (let i = 1; i <= 2; i++) {
-            const template = randomPick(pool);
-            if (template) taggedEnemies.push(makeCommon(template, i));
-          }
-        } else if (roll < 0.80) {
-          // 2 elite
-          for (let i = 0; i < 2; i++) {
-            const template = randomPick(pool);
-            if (template) taggedEnemies.push(makeElite(template, i));
-          }
-        } else {
-          // 4 common
-          for (let i = 0; i < 4; i++) {
-            const template = randomPick(pool);
-            if (template) taggedEnemies.push(makeCommon(template, i));
-          }
-        }
-      } else {
-        // 5★ — 50% chance 3 elite, 50% chance 4 elite
-        const count = Math.random() < 0.50 ? 3 : 4;
-        for (let i = 0; i < count; i++) {
-          const template = randomPick(pool);
-          if (template) taggedEnemies.push(makeElite(template, i));
+        if (template) {
+          taggedEnemies.push(makeScaledEnemy(template, i));
         }
       }
     }

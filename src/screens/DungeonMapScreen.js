@@ -345,13 +345,14 @@ export default function DungeonMapScreen({ navigation }) {
     dispatch({ type: 'MOVE_PLAYER', payload: { x: tile.x, y: tile.y } });
 
     if (!tile.cleared && tile.type !== 'start') {
-      resolveRoom(tile.type, tile.x, tile.y, tile.battleRating);
+      resolveRoom(tile);
     }
   };
 
-  const resolveRoom = (type, _x, _y, battleRating = 1) => {
+  const resolveRoom = (tile) => {
+    const { type, battleRating = 1, enemyCount } = tile;
     if (type === 'combat') {
-      navigation.navigate('Combat', { roomType: 'combat', battleRating });
+      navigation.navigate('Combat', { roomType: 'combat', battleRating, enemyCount });
     } else if (type === 'boss') {
       navigation.navigate('Combat', { roomType: 'boss' });
     } else if (type === 'rest') {

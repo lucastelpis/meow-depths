@@ -940,8 +940,8 @@ export function processStatusEffects(entityState) {
 export function applyBurn(effects, damage, duration) {
   const existing = effects.find(e => e.type === 'burn');
   if (existing) {
-    existing.damage   = existing.damage + damage;      // stack damage
-    existing.duration = Math.max(existing.duration, duration); // keep longest
+    existing.damage   = Math.max(existing.damage, damage);     // keep highest damage
+    existing.duration = Math.max(existing.duration, duration); // keep longest duration
   } else {
     effects.push({ type: 'burn', damage, duration });
   }
