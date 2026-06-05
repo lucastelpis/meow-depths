@@ -53,17 +53,17 @@ export const HERO_SPRITE = {
     frames:    11,
   },
   tidal_strike: {
-    source:    require('../../assets/sprites/Tiny Swords (Free Pack)/Units/Original/cat_flame_attack.png'),
+    source:    require('../../assets/sprites/Tiny Swords (Free Pack)/Units/Original/cat_water_attack.png'),
     frameSize: 104,
     frames:    11,
   },
   tidal_wave: {
-    source:    require('../../assets/sprites/Tiny Swords (Free Pack)/Units/Original/cat_flame_attack.png'),
+    source:    require('../../assets/sprites/Tiny Swords (Free Pack)/Units/Original/cat_water_attack.png'),
     frameSize: 104,
     frames:    11,
   },
   healing_current: {
-    source:    require('../../assets/sprites/Tiny Swords (Free Pack)/Units/Original/cat_flame_attack.png'),
+    source:    require('../../assets/sprites/Tiny Swords (Free Pack)/Units/Original/cat_water_attack.png'),
     frameSize: 104,
     frames:    11,
   },
@@ -83,17 +83,17 @@ export const HERO_SPRITE = {
     frames:    11,
   },
   wind_slash: {
-    source:    require('../../assets/sprites/Tiny Swords (Free Pack)/Units/Original/cat_flame_attack.png'),
+    source:    require('../../assets/sprites/Tiny Swords (Free Pack)/Units/Original/cat_wind_attack.png'),
     frameSize: 104,
     frames:    11,
   },
   cyclone: {
-    source:    require('../../assets/sprites/Tiny Swords (Free Pack)/Units/Original/cat_flame_attack.png'),
+    source:    require('../../assets/sprites/Tiny Swords (Free Pack)/Units/Original/cat_wind_attack.png'),
     frameSize: 104,
     frames:    11,
   },
   wind_veil: {
-    source:    require('../../assets/sprites/Tiny Swords (Free Pack)/Units/Original/cat_flame_attack.png'),
+    source:    require('../../assets/sprites/Tiny Swords (Free Pack)/Units/Original/cat_wind_attack.png'),
     frameSize: 104,
     frames:    11,
   },

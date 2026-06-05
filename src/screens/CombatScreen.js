@@ -1515,6 +1515,15 @@ export default function CombatScreen() {
                   const isSkill = !isIdle && !isGuard && !isAttack;
 
                   const skillDef = isSkill ? HERO_SPRITE[heroAnim] : null;
+                  const skillSource = skillDef?.source;
+
+                  const flameSource = HERO_SPRITE.fire_slash.source;
+                  const waterSource = HERO_SPRITE.tidal_strike.source;
+                  const windSource = HERO_SPRITE.wind_slash.source;
+
+                  const isWaterActive = isSkill && skillSource === waterSource;
+                  const isWindActive = isSkill && skillSource === windSource;
+                  const isFlameActive = isSkill && !isWaterActive && !isWindActive;
 
                   return (
                     <>
@@ -1555,18 +1564,47 @@ export default function CombatScreen() {
                         pointerEvents={isAttack ? 'auto' : 'none'}
                         style={[styles.heroCardSprite, { position: 'absolute', opacity: isAttack ? 1 : 0 }]}
                       />
+                      {/* Skill Animation: Flame/Fire/Earth (default fallback) */}
                       <AnimatedSprite
-                        key="hero_sprite_skill"
-                        source={skillDef?.source || require('../../assets/sprites/Tiny Swords (Free Pack)/Units/Original/cat_flame_attack.png')}
-                        frameSize={skillDef?.frameSize || 104}
-                        totalFrames={skillDef?.frames || 11}
+                        key="hero_sprite_skill_flame"
+                        source={flameSource}
+                        frameSize={104}
+                        totalFrames={11}
                         fps={10}
                         loop={false}
-                        active={isSkill}
-                        onComplete={isSkill ? () => setHeroAnim('idle') : undefined}
+                        active={isFlameActive}
+                        onComplete={isFlameActive ? () => setHeroAnim('idle') : undefined}
                         displaySize={105}
-                        pointerEvents={isSkill ? 'auto' : 'none'}
-                        style={[styles.heroCardSprite, { position: 'absolute', opacity: isSkill ? 1 : 0 }]}
+                        pointerEvents={isFlameActive ? 'auto' : 'none'}
+                        style={[styles.heroCardSprite, { position: 'absolute', opacity: isFlameActive ? 1 : 0 }]}
+                      />
+                      {/* Skill Animation: Water */}
+                      <AnimatedSprite
+                        key="hero_sprite_skill_water"
+                        source={waterSource}
+                        frameSize={104}
+                        totalFrames={11}
+                        fps={10}
+                        loop={false}
+                        active={isWaterActive}
+                        onComplete={isWaterActive ? () => setHeroAnim('idle') : undefined}
+                        displaySize={105}
+                        pointerEvents={isWaterActive ? 'auto' : 'none'}
+                        style={[styles.heroCardSprite, { position: 'absolute', opacity: isWaterActive ? 1 : 0 }]}
+                      />
+                      {/* Skill Animation: Wind */}
+                      <AnimatedSprite
+                        key="hero_sprite_skill_wind"
+                        source={windSource}
+                        frameSize={104}
+                        totalFrames={11}
+                        fps={10}
+                        loop={false}
+                        active={isWindActive}
+                        onComplete={isWindActive ? () => setHeroAnim('idle') : undefined}
+                        displaySize={105}
+                        pointerEvents={isWindActive ? 'auto' : 'none'}
+                        style={[styles.heroCardSprite, { position: 'absolute', opacity: isWindActive ? 1 : 0 }]}
                       />
                     </>
                   );
