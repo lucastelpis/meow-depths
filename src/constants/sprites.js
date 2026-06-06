@@ -68,17 +68,17 @@ export const HERO_SPRITE = {
     frames:    11,
   },
   earth_slam: {
-    source:    require('../../assets/sprites/Tiny Swords (Free Pack)/Units/Original/cat_flame_attack.png'),
+    source:    require('../../assets/sprites/Tiny Swords (Free Pack)/Units/Original/cat_earth_attack.png'),
     frameSize: 104,
     frames:    11,
   },
   rockslide: {
-    source:    require('../../assets/sprites/Tiny Swords (Free Pack)/Units/Original/cat_flame_attack.png'),
+    source:    require('../../assets/sprites/Tiny Swords (Free Pack)/Units/Original/cat_earth_attack.png'),
     frameSize: 104,
     frames:    11,
   },
   stone_wall: {
-    source:    require('../../assets/sprites/Tiny Swords (Free Pack)/Units/Original/cat_flame_attack.png'),
+    source:    require('../../assets/sprites/Tiny Swords (Free Pack)/Units/Original/cat_earth_attack.png'),
     frameSize: 104,
     frames:    11,
   },

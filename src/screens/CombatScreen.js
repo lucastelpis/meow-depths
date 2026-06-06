@@ -49,6 +49,7 @@ import { ENEMIES, STAR_MULTIPLIERS }      from '../data/enemies';
 import { SKILLS }       from '../data/skills';
 import { CONSUMABLES }  from '../data/gear';
 import AnimatedSprite   from '../components/AnimatedSprite';
+import ScreenLoader     from '../components/ScreenLoader';
 import Button           from '../components/ui/Button';
 import ResourceBar      from '../components/ui/ResourceBar';
 import { HERO_SPRITE, getEnemySprite } from '../constants/sprites';
@@ -287,6 +288,22 @@ export default function CombatScreen() {
   const route = useRoute();
   const { roomType, battleRating = 1, enemyCount } = route.params || { roomType: 'combat', battleRating: 1 };
   const { state, dispatch } = useGame();
+
+  // ── Assets to preload before combat is interactable ───────────────────────
+  // Hero base sprites + every skill the player has equipped
+  const assetsToPreload = React.useMemo(() => {
+    const sources = [
+      HERO_SPRITE.idle.source,
+      HERO_SPRITE.attack.source,
+      HERO_SPRITE.guard.source,
+    ];
+    (state.hero?.equippedSkills || []).forEach((skillId) => {
+      const src = skillId && HERO_SPRITE[skillId]?.source;
+      if (src) sources.push(src);
+    });
+    return sources;
+  }, []);
+
 
   // ── Local combat state ───────────────────────────────────────────────────
   const [combatPhase, setCombatPhase]             = useState('start');
@@ -729,7 +746,8 @@ export default function CombatScreen() {
           });
         }
         if (res.type === 'heal' && res.healAmount) {
-          updatedHero = { ...updatedHero, hp: Math.min(updatedHero.maxHp, updatedHero.hp + res.healAmount) };
+          const finalHeal = applyHealingEfficiency(res.healAmount, updatedHero);
+          updatedHero = { ...updatedHero, hp: Math.min(updatedHero.maxHp, updatedHero.hp + finalHeal) };
         }
         if (res.type === 'guard' || res.type === 'stealth' || res.type === 'counter') {
           updatedHero = { ...updatedHero, effects: addStatusEffects(updatedHero.effects, res.effect) };
@@ -1276,6 +1294,7 @@ export default function CombatScreen() {
   };
 
   return (
+    <ScreenLoader assets={assetsToPreload}>
     <SafeAreaView style={styles.root}>
       {/* Background SVG gradients */}
       <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
@@ -1515,15 +1534,6 @@ export default function CombatScreen() {
                   const isSkill = !isIdle && !isGuard && !isAttack;
 
                   const skillDef = isSkill ? HERO_SPRITE[heroAnim] : null;
-                  const skillSource = skillDef?.source;
-
-                  const flameSource = HERO_SPRITE.fire_slash.source;
-                  const waterSource = HERO_SPRITE.tidal_strike.source;
-                  const windSource = HERO_SPRITE.wind_slash.source;
-
-                  const isWaterActive = isSkill && skillSource === waterSource;
-                  const isWindActive = isSkill && skillSource === windSource;
-                  const isFlameActive = isSkill && !isWaterActive && !isWindActive;
 
                   return (
                     <>
@@ -1564,48 +1574,22 @@ export default function CombatScreen() {
                         pointerEvents={isAttack ? 'auto' : 'none'}
                         style={[styles.heroCardSprite, { position: 'absolute', opacity: isAttack ? 1 : 0 }]}
                       />
-                      {/* Skill Animation: Flame/Fire/Earth (default fallback) */}
-                      <AnimatedSprite
-                        key="hero_sprite_skill_flame"
-                        source={flameSource}
-                        frameSize={104}
-                        totalFrames={11}
-                        fps={10}
-                        loop={false}
-                        active={isFlameActive}
-                        onComplete={isFlameActive ? () => setHeroAnim('idle') : undefined}
-                        displaySize={105}
-                        pointerEvents={isFlameActive ? 'auto' : 'none'}
-                        style={[styles.heroCardSprite, { position: 'absolute', opacity: isFlameActive ? 1 : 0 }]}
-                      />
-                      {/* Skill Animation: Water */}
-                      <AnimatedSprite
-                        key="hero_sprite_skill_water"
-                        source={waterSource}
-                        frameSize={104}
-                        totalFrames={11}
-                        fps={10}
-                        loop={false}
-                        active={isWaterActive}
-                        onComplete={isWaterActive ? () => setHeroAnim('idle') : undefined}
-                        displaySize={105}
-                        pointerEvents={isWaterActive ? 'auto' : 'none'}
-                        style={[styles.heroCardSprite, { position: 'absolute', opacity: isWaterActive ? 1 : 0 }]}
-                      />
-                      {/* Skill Animation: Wind */}
-                      <AnimatedSprite
-                        key="hero_sprite_skill_wind"
-                        source={windSource}
-                        frameSize={104}
-                        totalFrames={11}
-                        fps={10}
-                        loop={false}
-                        active={isWindActive}
-                        onComplete={isWindActive ? () => setHeroAnim('idle') : undefined}
-                        displaySize={105}
-                        pointerEvents={isWindActive ? 'auto' : 'none'}
-                        style={[styles.heroCardSprite, { position: 'absolute', opacity: isWindActive ? 1 : 0 }]}
-                      />
+                      {/* Skill Animation — remounts fresh on each skill via key */}
+                      {isSkill && skillDef && (
+                        <AnimatedSprite
+                          key={`hero_sprite_skill_${heroAnim}`}
+                          source={skillDef.source}
+                          frameSize={skillDef.frameSize}
+                          totalFrames={skillDef.frames}
+                          fps={10}
+                          loop={false}
+                          active={true}
+                          onComplete={() => setHeroAnim('idle')}
+                          displaySize={105}
+                          pointerEvents="auto"
+                          style={[styles.heroCardSprite, { position: 'absolute' }]}
+                        />
+                      )}
                     </>
                   );
                 })()}
@@ -1899,6 +1883,7 @@ export default function CombatScreen() {
         </View>
       )}
     </SafeAreaView>
+    </ScreenLoader>
   );
 
   // ── Skill button renderer ──────────────────────────────────────────────

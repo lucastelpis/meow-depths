@@ -36,6 +36,7 @@
 // ---------------------------------------------------------------------------
 import { ZONES } from '../data/zones';
 import { ENEMIES, STAR_MULTIPLIERS } from '../data/enemies';
+import { applyHealingEfficiency } from './progressionEngine';
 
 // ---------------------------------------------------------------------------
 // CONSTANTS — tweak these to balance the game
@@ -391,7 +392,8 @@ export function executeSkill(skill, attacker, targets, attackerState) {
     // -----------------------------------------------------------------------
     case 'heal': {
       const healPercent = skill.effect.percentMaxHp || 0.3;
-      const healAmount  = Math.floor(attacker.maxHp * healPercent);
+      const rawHeal = Math.floor(attacker.maxHp * healPercent);
+      const healAmount = applyHealingEfficiency(rawHeal, attackerState);
 
       results.push({
         healAmount,
@@ -1192,7 +1194,8 @@ export function useConsumable(consumable, heroState) {
     // -- Health Potion -------------------------------------------------------
     case 'heal': {
       const healAmount = effectDef.amount || 50;
-      const actualHeal = Math.min(healAmount, (heroState.maxHp || 50) - (heroState.hp || 0));
+      const boostedHeal = applyHealingEfficiency(healAmount, heroState);
+      const actualHeal = Math.min(boostedHeal, (heroState.maxHp || 50) - (heroState.hp || 0));
 
       return {
         effect: { type: 'heal', amount: actualHeal },

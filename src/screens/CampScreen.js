@@ -29,6 +29,7 @@ import theme from '../constants/theme';
 import { useGame } from '../state/gameState';
 import { getXpForLevel, calculateEffectiveStats } from '../logic/progressionEngine';
 import AnimatedSprite from '../components/AnimatedSprite';
+import ScreenLoader from '../components/ScreenLoader';
 import Button from '../components/ui/Button';
 import ResourceBar from '../components/ui/ResourceBar';
 import { HERO_SPRITE } from '../constants/sprites';
@@ -245,6 +246,10 @@ const previewMaxHp = effectiveMaxHp + tempVitAlloc * 3;
   };
 
   return (
+    <ScreenLoader assets={[
+      require('../../assets/top_banner.png'),
+      HERO_SPRITE.idle.source,
+    ]}>
     <SafeAreaView style={styles.container}>
       <ScrollView
         contentContainerStyle={styles.scroll}
@@ -748,6 +753,7 @@ const previewMaxHp = effectiveMaxHp + tempVitAlloc * 3;
         </Pressable>
       </Modal>
     </SafeAreaView>
+    </ScreenLoader>
   );
 }
 

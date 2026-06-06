@@ -39,7 +39,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { ZONES } from '../data/zones';
 import { ZONE_COMBAT_POOLS } from '../logic/dungeonGenerator';
 import { MATERIALS, CONSUMABLES } from '../data/gear';
-import { calculateEffectiveStats, getXpForLevel } from '../logic/progressionEngine';
+import { calculateEffectiveStats, getXpForLevel, applyHealingEfficiency } from '../logic/progressionEngine';
 import Button from '../components/ui/Button';
 import ResourceBar from '../components/ui/ResourceBar';
 
@@ -251,11 +251,17 @@ export default function DungeonMapScreen({ navigation }) {
     }
     return Object.entries(consumableMap).map(([id, quantity]) => {
       const def = CONSUMABLES.find(c => c.id === id);
+      let description = def?.description || '';
+      if (def?.effect?.type === 'heal') {
+        const baseHeal = def.effect.amount || 0;
+        const finalHeal = applyHealingEfficiency(baseHeal, hero);
+        description = `Restore ${finalHeal} HP (enhanced from ${baseHeal})`;
+      }
       return {
         id,
         quantity,
         name: def?.name || id,
-        description: def?.description || '',
+        description,
       };
     });
   }, [currentRun.consumables]);
@@ -267,8 +273,13 @@ export default function DungeonMapScreen({ navigation }) {
         return;
       }
 
+      const consumableDef = CONSUMABLES.find(c => c.id === item.id);
+      const baseHeal = consumableDef?.effect?.amount || 0;
+      const finalHeal = applyHealingEfficiency(baseHeal, hero);
+      const actualHealed = Math.min(finalHeal, effectiveStats.maxHp - hero.hp);
+
       dispatch({ type: 'USE_RUN_CONSUMABLE', payload: { consumableId: item.id } });
-      Alert.alert('Item Used', `Mochi consumed ${item.name} and recovered health!`);
+      Alert.alert('Item Used', `Mochi consumed ${item.name} and recovered ${actualHealed} HP!`);
     } else if (item.id === 'mystery_chest') {
       Alert.alert('Mystery Chest', 'You can open this chest from your inventory bag back at camp.');
     } else {
@@ -898,7 +909,7 @@ export default function DungeonMapScreen({ navigation }) {
                     <Text style={styles.modalBtnEmoji}>❤️</Text>
                     <Text style={styles.modalBtnTitle}>Restore Health</Text>
                     <Text style={styles.modalBtnDesc}>
-                      Recover 40% of Max HP (+{Math.floor(effectiveStats.maxHp * 0.4)} HP)
+                      Recover 40% of Max HP (+{applyHealingEfficiency(Math.floor(effectiveStats.maxHp * 0.4), hero)} HP)
                     </Text>
                   </View>
                 </TouchableOpacity>

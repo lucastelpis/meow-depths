@@ -79,6 +79,7 @@ const SKILL_STAT_LABELS = {
   spreadAtkReduceChance: 'Splash ATK Reduce Chance',
   healPerTurn: 'Healing / Turn',
   cooldown: 'Cooldown',
+  healingEfficiency: 'Healing Efficiency',
 };
 
 const formatSkillStatValue = (key, value) => {
@@ -87,6 +88,9 @@ const formatSkillStatValue = (key, value) => {
   }
   if (key === 'spreadPercent' || key === 'spreadBurnChance' || key === 'spreadAtkReduceChance' || key === 'atkReduce') {
     return `${Math.round(value * 100)}%`;
+  }
+  if (key === 'healingEfficiency') {
+    return `+${Math.round(value * 100)}%`;
   }
   if (key === 'healPerTurn') {
     return `${Math.round(value * 100)}% Max HP (${Math.round(value * 300)}% Max HP total)`;
