@@ -9,10 +9,10 @@
 // 5★ bosses are excluded — their stats are fixed in the definition.
 export const STAR_MULTIPLIERS = {
   1: 1.00,
-  2: 1.50,
-  3: 2.00,
-  4: 2.50,
-  5: 3.00,
+  2: 1.40,
+  3: 1.80,
+  4: 2.20,
+  5: 2.50,
 };
 
 // ─────────────────────────────────────────────────────────────────────────────

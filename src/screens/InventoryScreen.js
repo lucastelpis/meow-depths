@@ -13,10 +13,13 @@ import {
   TouchableOpacity,
   StyleSheet,
   Alert,
+  Modal,
+  Pressable,
+  Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
-import Svg, { Defs, LinearGradient, RadialGradient, Stop, Rect } from 'react-native-svg';
+import Svg, { Defs, LinearGradient, RadialGradient, Stop, Rect, Circle, Path } from 'react-native-svg';
 
 import { useGame } from '../state/gameState';
 import { GEAR, CONSUMABLES, MATERIALS } from '../data/gear';
@@ -75,6 +78,106 @@ const MATERIAL_ZONES = [
   },
 ];
 
+const GEAR_ICONS = {
+  toy_sword: '🗡️',
+  cardboard_armor: '📦',
+  sewer_shiv: '🔪',
+  rat_hide_vest: '🧥',
+  slimecrawler_shell: '🐚',
+  plague_cloak: '🧣',
+  gnarlcrown: '👑',
+  cockroach_carapace: '🛡️',
+  thorn_dagger: '🗡️',
+  beetle_shell_vest: '🥋',
+  spore_cloak: '🧥',
+  vine_wrap: '🩹',
+  rootmother_eye: '👁️',
+  glowspore_vial: '🧪',
+  ghost_cutlass: '⚔️',
+  barnacle_plate: '🛡️',
+  ghost_silk_coat: '🧥',
+  saltcaptain_coat: '🧥',
+  morays_compass: '🧭',
+  toxin_vial: '🧪',
+};
+
+const MATERIAL_ICONS = {
+  black_shard: '🖤',
+  black_crystal_small: '🔮',
+  black_crystal_big: '💎',
+  black_crystal_core: '🌌',
+  green_shard: '💚',
+  green_crystal_small: '🧪',
+  green_crystal_big: '❇️',
+  green_crystal_core: '🌀',
+  yellow_shard: '💛',
+  yellow_crystal_small: '🟡',
+  yellow_crystal_big: '🔶',
+  yellow_crystal_core: '☀️',
+};
+
+const ZONE_NAMES = {
+  1: 'Soggy Sewers',
+  2: 'Twisted Garden',
+  3: 'Sunken Docks',
+};
+
+const LORE_DESCRIPTIONS = {
+  // Consumables
+  potion: "A standard brew made from healing herbs. Tastes slightly of peppermint.",
+  super_potion: "A stronger concentrate of healing herbs, glowing with a soft blue light.",
+  mega_potion: "A potent elixir infused with ancient life essence. Tastes like sweet honey.",
+  ultra_potion: "The pinnacle of alchemy. A single drop can stitch deep wounds instantly.",
+  antidote: "Made from crushed wild herbs. Neutralizes toxic substances in the veins.",
+  smoke_vial: "A fragile glass flask filled with compressed, blinding fog. Great for escape.",
+  mystery_chest: "A locked treasure chest salvaged from the deep. Who knows what crystals lie within?",
+
+  // Materials
+  black_shard: "A sharp fragment of obsidian-like crystal, cold to the touch. Found in dark sewer corners.",
+  black_crystal_small: "A small crystal pulsing with a faint, dark resonance. Emits a low hum.",
+  black_crystal_big: "A large chunk of dark crystal, heavy and dense. Vibrates when close to metal.",
+  black_crystal_core: "The pristine, concentrated center of a black crystal. Radiant with dark energy.",
+  green_shard: "A glowing emerald shard harvested from overgrown roots. Warm and lively.",
+  green_crystal_small: "A minor forest gem that seems to breathe in sync with the garden.",
+  green_crystal_big: "A heavy green gemstone, overgrown with tiny moss. Rich in natural magic.",
+  green_crystal_core: "A pulsating heart of pure garden energy, warm and humming with growth.",
+  yellow_shard: "A bright amber shard washed up from the depths, smelling of sea salt.",
+  yellow_crystal_small: "A small luminescent gemstone that glows like a firefly underwater.",
+  yellow_crystal_big: "A large, heavy golden crystal. It seems to resist the pressure of the ocean.",
+  yellow_crystal_core: "An ancient marine crystal core. It glows with the intense light of the deep sea.",
+
+  // Gear
+  toy_sword: "A wooden training sword. Mostly harmless, but good for building confidence.",
+  cardboard_armor: "A taped-together box. Smells like old wet paper, but offers basic protection.",
+  sewer_shiv: "A jagged piece of metal wrapped in dirty rags. Crude, but dangerous.",
+  rat_hide_vest: "Tough leather made from sewer rats. Surprisingly flexible and waterproof.",
+  slimecrawler_shell: "A hardened shell coated in slick mucus. Repels toxic liquids.",
+  plague_cloak: "A tattered cowl that has survived the worst of the sewers.",
+  gnarlcrown: "A crown woven from thorny roots. Increases precision in combat.",
+  cockroach_carapace: "A shield-like plate made of thick insect shell. Highly durable.",
+  thorn_dagger: "A weapon crafted from giant garden thorns. Coated in natural toxins.",
+  beetle_shell_vest: "A heavy vest reinforced with iridescent beetle plates.",
+  spore_cloak: "A lightweight cloak that releases silent spores when moving.",
+  vine_wrap: "Woven vines that tighten around the wearer, boosting vitality.",
+  rootmother_eye: "A glowing amber bead that increases magic and skill potency.",
+  glowspore_vial: "A glass pendant containing bioluminescent spores.",
+  ghost_cutlass: "A spectral saber that cuts through the air with an eerie whistle.",
+  barnacle_plate: "Heavy plate armor covered in stubborn barnacles. Extremely tough.",
+  ghost_silk_coat: "A coat woven from ethereal threads, allowing the wearer to slip past attacks.",
+  saltcaptain_coat: "The weathered coat of a lost sea captain, resistant to wind and wave.",
+  morays_compass: "An old brass compass whose needle points towards weaknesses.",
+  toxin_vial: "A vial filled with concentrated sea viper venom.",
+};
+
+// ─── Grid Calculations ────────────────────────────────────────────────────────
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const minItemWidth = 100;
+const gap = 10;
+const padding = 16;
+const availableWidth = SCREEN_WIDTH - (padding * 2);
+const numColumns = Math.max(1, Math.floor((availableWidth + gap) / (minItemWidth + gap)));
+const itemWidth = (availableWidth - (gap * (numColumns - 1))) / numColumns;
+
 // ─── Component ────────────────────────────────────────────────────────────────
 export default function InventoryScreen() {
   const navigation = useNavigation();
@@ -82,6 +185,15 @@ export default function InventoryScreen() {
   const { hero } = state;
 
   const [activeTab, setActiveTab] = useState('consumables');
+  const [selectedItem, setSelectedItem] = useState(null);
+  const [itemType, setItemType] = useState(null);
+  const [modalVisible, setModalVisible] = useState(false);
+
+  const handleOpenDetails = (item, type) => {
+    setSelectedItem(item);
+    setItemType(type);
+    setModalVisible(true);
+  };
 
   // Derived data (Equipment tab)
   const effectiveStats = useMemo(() => calculateEffectiveStats(hero), [hero]);
@@ -172,53 +284,57 @@ export default function InventoryScreen() {
         </View>
       );
     }
-    return items.map((entry) => {
-      const def     = CONSUMABLES.find(c => c.id === entry.id);
-      const icon    = CONSUMABLE_ICONS[entry.id] || '🧪';
-      const isChest = entry.id === 'mystery_chest';
-      return (
-        <View key={entry.id} style={styles.card}>
-          <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
-            <Rect width="100%" height="100%" fill="rgba(255,255,255,0.02)" rx={14} />
-            <Rect x="1" y="1" width="99%" height="98%" rx={13} fill="none"
-              stroke="rgba(255,255,255,0.05)" strokeWidth={1} />
-          </Svg>
-          <View style={styles.cardInner}>
-            <View style={styles.cardIconBox}>
-              <Text style={styles.cardIcon}>{icon}</Text>
-            </View>
-            <View style={styles.cardInfo}>
-              <Text style={styles.cardName}>{def?.name || entry.id}</Text>
-              <Text style={styles.cardDesc} numberOfLines={1}>{def?.description || ''}</Text>
-            </View>
-            {isChest ? (
-              <TouchableOpacity style={styles.openChestBtn} onPress={handleOpenChest} activeOpacity={0.8}>
-                <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
-                  <Defs>
-                    <LinearGradient id="chestGrad" x1="0" y1="0" x2="1" y2="0">
-                      <Stop offset="0%" stopColor="#F9D99A" />
-                      <Stop offset="100%" stopColor="#D4A754" />
-                    </LinearGradient>
-                  </Defs>
-                  <Rect width="100%" height="100%" fill="url(#chestGrad)" rx={8} />
-                </Svg>
-                <Text style={styles.openChestText}>Open ({entry.quantity})</Text>
-              </TouchableOpacity>
-            ) : (
-              <View style={styles.qtyBadge}>
-                <Text style={styles.qtyText}>×{entry.quantity}</Text>
+    return (
+      <View style={styles.gridContainer}>
+        {items.map((entry) => {
+          const def     = CONSUMABLES.find(c => c.id === entry.id);
+          const icon    = CONSUMABLE_ICONS[entry.id] || '🧪';
+          return (
+            <TouchableOpacity
+              key={entry.id}
+              style={[styles.gridCard, { width: itemWidth }]}
+              onPress={() => handleOpenDetails(entry, 'consumable')}
+              activeOpacity={0.8}
+            >
+              <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
+                <Rect width="100%" height="100%" fill="rgba(255,255,255,0.015)" rx={14} />
+                <Rect x="1" y="1" width="98%" height="98%" rx={13} fill="none"
+                  stroke="rgba(255,255,255,0.04)" strokeWidth={1} />
+              </Svg>
+              <View style={styles.gridCardInner}>
+                <View style={styles.gridIconBox}>
+                  <Text style={styles.gridIcon}>{icon}</Text>
+                </View>
+                <Text style={styles.gridName} numberOfLines={2}>{def?.name || entry.id}</Text>
+                <View style={styles.gridQtyBadge}>
+                  <Text style={styles.gridQtyText}>×{entry.quantity}</Text>
+                </View>
               </View>
-            )}
-          </View>
-        </View>
-      );
-    });
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+    );
   };
 
   const renderCrafting = () => {
     const materials = hero.inventory.materials;
-    const hasAny = MATERIAL_ZONES.some(z => z.ids.some(id => (materials[id] || 0) > 0));
-    if (!hasAny) {
+    const allMaterials = [];
+    MATERIAL_ZONES.forEach((zone) => {
+      zone.ids.forEach((id) => {
+        const qty = materials[id] || 0;
+        if (qty > 0) {
+          allMaterials.push({
+            id,
+            qty,
+            name: MATERIALS[id]?.name || id,
+            zone,
+          });
+        }
+      });
+    });
+
+    if (allMaterials.length === 0) {
       return (
         <View style={styles.emptyBox}>
           <Text style={styles.emptyEmoji}>💎</Text>
@@ -227,49 +343,44 @@ export default function InventoryScreen() {
         </View>
       );
     }
-    return MATERIAL_ZONES.map((zone) => {
-      const zoneItems = zone.ids
-        .map(id => ({ id, qty: materials[id] || 0, name: MATERIALS[id]?.name || id }))
-        .filter(m => m.qty > 0);
-      if (zoneItems.length === 0) return null;
-      return (
-        <View key={zone.label} style={styles.materialGroup}>
-          {/* Zone header */}
-          <View style={styles.materialGroupHeader}>
-            <View style={[styles.materialGroupDot, { backgroundColor: zone.zoneColor }]} />
-            <Text style={[styles.materialGroupLabel, { color: zone.zoneColor }]}>{zone.label}</Text>
-          </View>
-          {/* Zone card */}
-          <View style={[styles.materialGroupCard, { borderColor: zone.zoneColor + '25' }]}>
-            <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
-              <Defs>
-                <RadialGradient id={`matGlow_${zone.label}`} cx="0%" cy="50%" rx="50%" ry="80%">
-                  <Stop offset="0%" stopColor={zone.zoneColor} stopOpacity="0.05" />
-                  <Stop offset="100%" stopColor="transparent" stopOpacity="0" />
-                </RadialGradient>
-              </Defs>
-              <Rect width="100%" height="100%" fill="rgba(255,255,255,0.015)" rx={14} />
-              <Rect width="100%" height="100%" fill={`url(#matGlow_${zone.label})`} rx={14} />
-            </Svg>
-            {zoneItems.map((mat, idx) => (
-              <View
-                key={mat.id}
-                style={[
-                  styles.materialRow,
-                  idx < zoneItems.length - 1 && styles.materialRowBorder,
-                ]}
-              >
-                <Text style={styles.materialEmoji}>{zone.emoji}</Text>
-                <Text style={styles.materialName}>{mat.name}</Text>
-                <View style={[styles.materialQtyBadge, { borderColor: zone.zoneColor + '50', backgroundColor: zone.zoneColor + '15' }]}>
-                  <Text style={[styles.materialQty, { color: zone.zoneColor }]}>×{mat.qty}</Text>
+
+    return (
+      <View style={styles.gridContainer}>
+        {allMaterials.map((mat) => {
+          const icon = MATERIAL_ICONS[mat.id] || mat.zone.emoji;
+          return (
+            <TouchableOpacity
+              key={mat.id}
+              style={[styles.gridCard, { width: itemWidth }]}
+              onPress={() => handleOpenDetails(mat, 'material')}
+              activeOpacity={0.8}
+            >
+              <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
+                <Defs>
+                  <RadialGradient id={`matGlow_${mat.id}`} cx="0%" cy="50%" rx="50%" ry="80%">
+                    <Stop offset="0%" stopColor={mat.zone.zoneColor} stopOpacity="0.04" />
+                    <Stop offset="100%" stopColor="transparent" stopOpacity="0" />
+                  </RadialGradient>
+                </Defs>
+                <Rect width="100%" height="100%" fill="rgba(255,255,255,0.015)" rx={14} />
+                <Rect width="100%" height="100%" fill={`url(#matGlow_${mat.id})`} rx={14} />
+                <Rect x="1" y="1" width="98%" height="98%" rx={13} fill="none"
+                  stroke={mat.zone.zoneColor + '15'} strokeWidth={1} />
+              </Svg>
+              <View style={styles.gridCardInner}>
+                <View style={styles.gridIconBox}>
+                  <Text style={styles.gridIcon}>{icon}</Text>
+                </View>
+                <Text style={styles.gridName} numberOfLines={2}>{mat.name}</Text>
+                <View style={[styles.gridQtyBadge, { borderColor: mat.zone.zoneColor + '30', backgroundColor: mat.zone.zoneColor + '08' }]}>
+                  <Text style={[styles.gridQtyText, { color: mat.zone.zoneColor }]}>×{mat.qty}</Text>
                 </View>
               </View>
-            ))}
-          </View>
-        </View>
-      );
-    });
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+    );
   };
 
   const renderEquipment = () => (
@@ -391,42 +502,55 @@ export default function InventoryScreen() {
           <Text style={styles.emptyDesc}>Visit the Town Hall to forge equipment from your materials.</Text>
         </View>
       ) : (
-        hero.inventory.craftedGear.map((gearId) => {
-          const gearDef   = GEAR[gearId];
-          if (!gearDef) return null;
-          const isEquipped = hero.gear[gearDef.type] === gearId;
-          return (
-            <View key={gearId} style={[
-              styles.card,
-              isEquipped ? styles.cardGearEquipped : styles.cardGearUnequipped,
-            ]}>
-              <View style={styles.cardInner}>
-                <View style={styles.cardInfo}>
-                  <View style={styles.gearNameRow}>
-                    <Text style={styles.gearTypeIcon}>{GEAR_TYPE_ICON[gearDef.type] || '🎒'}</Text>
-                    <Text style={styles.cardName}>{gearDef.name}</Text>
-                    <Text style={styles.gearZoneTag}>Z{gearDef.zone}</Text>
+        <View style={styles.gridContainer}>
+          {[...hero.inventory.craftedGear]
+            .map(gearId => ({ id: gearId, ...GEAR[gearId] }))
+            .filter(item => !!item.name)
+            .sort((a, b) => {
+              if (a.zone !== b.zone) {
+                return a.zone - b.zone;
+              }
+              return (a.goldCost || 0) - (b.goldCost || 0);
+            })
+            .map((gearDef) => {
+              const gearId = gearDef.id;
+              const isEquipped = hero.gear[gearDef.type] === gearId;
+              const icon = GEAR_ICONS[gearId] || GEAR_TYPE_ICON[gearDef.type] || '🎒';
+              const zoneColor = gearDef.zone === 1 ? '#3FB56E' : gearDef.zone === 2 ? '#A855F7' : gearDef.zone === 3 ? '#06B6D4' : '#707F94';
+              return (
+                <TouchableOpacity
+                  key={gearId}
+                  style={[
+                    styles.gridCard,
+                    { width: itemWidth },
+                    isEquipped && styles.gridCardGearEquipped,
+                  ]}
+                  onPress={() => handleOpenDetails(gearDef, 'gear')}
+                  activeOpacity={0.8}
+                >
+                  <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
+                    <Rect width="100%" height="100%" fill="rgba(255,255,255,0.015)" rx={14} />
+                    <Rect x="1" y="1" width="98%" height="98%" rx={13} fill="none"
+                      stroke={isEquipped ? 'rgba(212,167,84,0.4)' : 'rgba(255,255,255,0.04)'} strokeWidth={isEquipped ? 1.5 : 1} />
+                  </Svg>
+                  <View style={styles.gridCardInner}>
+                    {isEquipped && (
+                      <View style={styles.equippedBadge}>
+                        <Text style={styles.equippedBadgeText}>✓</Text>
+                      </View>
+                    )}
+                    <View style={styles.gridIconBox}>
+                      <Text style={styles.gridIcon}>{icon}</Text>
+                    </View>
+                    <Text style={styles.gridName} numberOfLines={2}>{gearDef.name}</Text>
+                    <View style={[styles.gridZoneBadge, { borderColor: zoneColor + '30', backgroundColor: zoneColor + '08' }]}>
+                      <Text style={[styles.gridZoneText, { color: zoneColor }]}>Z{gearDef.zone}</Text>
+                    </View>
                   </View>
-                  <Text style={styles.gearStats}>{statSummary(gearDef)}</Text>
-                </View>
-                {isEquipped ? (
-                  <TouchableOpacity
-                    style={styles.unequipBtnGear}
-                    onPress={() => handleUnequip(gearDef.type)}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={styles.unequipBtnGearStatus}>✓ Equipped</Text>
-                    <Text style={styles.unequipBtnGearAction}>Tap to remove</Text>
-                  </TouchableOpacity>
-                ) : (
-                  <TouchableOpacity style={styles.equipBtn} onPress={() => handleEquip(gearDef)} activeOpacity={0.7}>
-                    <Text style={styles.equipBtnText}>Equip</Text>
-                  </TouchableOpacity>
-                )}
-              </View>
-            </View>
-          );
-        })
+                </TouchableOpacity>
+              );
+            })}
+        </View>
       )}
     </>
   );
@@ -491,6 +615,312 @@ export default function InventoryScreen() {
         {activeTab === 'crafting'    && renderCrafting()}
         {activeTab === 'equipment'   && renderEquipment()}
       </ScrollView>
+
+      {/* ── Details Popup Modal ──────────────────────────────── */}
+      <Modal
+        visible={modalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setModalVisible(false)}
+      >
+        <Pressable style={styles.modalBackdrop} onPress={() => setModalVisible(false)}>
+          <Pressable style={styles.modalCard} onPress={(e) => e.stopPropagation()}>
+            {selectedItem && (
+              (() => {
+                let title = '';
+                let icon = '';
+                let category = '';
+                let categoryColor = '#D4A754';
+                let lore = LORE_DESCRIPTIONS[selectedItem.id] || '';
+                let statusText = '';
+                let statsList = [];
+                let showEquipBtn = false;
+                let isCurrentlyEquipped = false;
+                let showOpenChestBtn = false;
+                let dungeonSource = '';
+
+                if (itemType === 'consumable') {
+                  const def = CONSUMABLES.find(c => c.id === selectedItem.id);
+                  title = def?.name || selectedItem.id;
+                  icon = CONSUMABLE_ICONS[selectedItem.id] || '🧪';
+                  category = 'Consumable';
+                  categoryColor = '#3FB56E';
+                  statusText = `Owned: ${selectedItem.quantity}`;
+                  dungeonSource = '🗺️ Shop Purchase';
+                  if (selectedItem.id === 'mystery_chest') {
+                    showOpenChestBtn = true;
+                  }
+                } else if (itemType === 'material') {
+                  title = selectedItem.name;
+                  icon = MATERIAL_ICONS[selectedItem.id] || selectedItem.zone.emoji;
+                  category = 'Crafting Material';
+                  categoryColor = selectedItem.zone.zoneColor;
+                  statusText = `Owned: ${selectedItem.qty}`;
+                  dungeonSource = `🏰 Location: ${selectedItem.zone.label}`;
+                } else if (itemType === 'gear') {
+                  title = selectedItem.name;
+                  icon = GEAR_ICONS[selectedItem.id] || GEAR_TYPE_ICON[selectedItem.type] || '🎒';
+                  category = selectedItem.type;
+                  categoryColor = selectedItem.zone === 1 ? '#3FB56E' : selectedItem.zone === 2 ? '#A855F7' : selectedItem.zone === 3 ? '#06B6D4' : '#707F94';
+                  isCurrentlyEquipped = hero.gear[selectedItem.type] === selectedItem.id;
+                  showEquipBtn = true;
+                  dungeonSource = `🏰 Location: ${ZONE_NAMES[selectedItem.zone] || `Zone ${selectedItem.zone}`}`;
+
+                  if (selectedItem.stats) {
+                    if (selectedItem.stats.attack)     statsList.push({ label: 'ATK', value: `+${selectedItem.stats.attack}`, emoji: '⚔️' });
+                    if (selectedItem.stats.defence)    statsList.push({ label: 'DEF', value: `+${selectedItem.stats.defence}`, emoji: '🛡️' });
+                    if (selectedItem.stats.maxHp)      statsList.push({ label: 'HP', value: `+${selectedItem.stats.maxHp}`, emoji: '❤️', color: '#EF4444' });
+                    if (selectedItem.stats.critChance) statsList.push({ label: 'CRIT', value: pct(selectedItem.stats.critChance), emoji: '💥', color: '#FBBF24' });
+                    if (selectedItem.stats.dodge)      statsList.push({ label: 'DODGE', value: pct(selectedItem.stats.dodge), emoji: '💨', color: '#06B6D4' });
+                    if (selectedItem.stats.bleedChance) statsList.push({ label: 'BLEED', value: pct(selectedItem.stats.bleedChance), emoji: '🩸', color: '#EF4444' });
+                    if (selectedItem.stats.poisonChance) statsList.push({ label: 'POISON', value: pct(selectedItem.stats.poisonChance), emoji: '🤢', color: '#10B981' });
+                    if (selectedItem.stats.stunChance) statsList.push({ label: 'STUN', value: pct(selectedItem.stats.stunChance), emoji: '⚡', color: '#FBBF24' });
+                    if (selectedItem.stats.poisonImmune) statsList.push({ label: 'IMMUNITY', value: 'Poison', emoji: '🟢', color: '#10B981' });
+                    if (selectedItem.stats.skillDamage) statsList.push({ label: 'SKILL DMG', value: `+${pct(selectedItem.stats.skillDamage)}`, emoji: '✨', color: '#A855F7' });
+                    if (selectedItem.stats.bleedExtraDamage) statsList.push({ label: 'BLEED DMG', value: `+${selectedItem.stats.bleedExtraDamage}`, emoji: '🩸', color: '#EF4444' });
+                  }
+                }
+
+                const getRarityDetails = (itemId) => {
+                  let label = 'COMMON';
+                  let color = '#94A3B8';
+                  let bg = 'rgba(148, 163, 184, 0.12)';
+
+                  const rares = [
+                    'thorn_dagger', 'beetle_shell_vest', 'spore_cloak', 'vine_wrap', 'rootmother_eye', 'glowspore_vial',
+                    'mega_potion', 'mystery_chest',
+                    'green_shard', 'green_crystal_small', 'green_crystal_big', 'green_crystal_core'
+                  ];
+                  const epics = [
+                    'ghost_cutlass', 'barnacle_plate', 'ghost_silk_coat', 'saltcaptain_coat', 'morays_compass', 'toxin_vial',
+                    'ultra_potion',
+                    'yellow_shard', 'yellow_crystal_small', 'yellow_crystal_big', 'yellow_crystal_core'
+                  ];
+                  const uncommons = [
+                    'sewer_shiv', 'rat_hide_vest', 'slimecrawler_shell', 'plague_cloak', 'gnarlcrown', 'cockroach_carapace',
+                    'super_potion', 'smoke_vial',
+                    'black_shard', 'black_crystal_small', 'black_crystal_big', 'black_crystal_core'
+                  ];
+
+                  if (epics.includes(itemId)) {
+                    label = 'EPIC';
+                    color = '#C084FC';
+                    bg = 'rgba(168, 85, 247, 0.14)';
+                  } else if (rares.includes(itemId)) {
+                    label = 'RARE';
+                    color = '#22D3EE';
+                    bg = 'rgba(6, 182, 212, 0.14)';
+                  } else if (uncommons.includes(itemId)) {
+                    label = 'UNCOMMON';
+                    color = '#4ADE80';
+                    bg = 'rgba(74, 222, 128, 0.14)';
+                  }
+                  return { label, color, bg };
+                };
+
+                const rarity = getRarityDetails(selectedItem.id);
+
+                return (
+                  <>
+                    <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
+                      <Defs>
+                        <RadialGradient id="modalGlow" cx="50%" cy="0%" rx="80%" ry="60%">
+                          <Stop offset="0%" stopColor={rarity.color} stopOpacity="0.18" />
+                          <Stop offset="100%" stopColor="#0D0D12" stopOpacity="0" />
+                        </RadialGradient>
+                      </Defs>
+                      <Rect width="100%" height="100%" fill="#0D0D12" rx={22} />
+                      <Rect width="100%" height="100%" fill="url(#modalGlow)" rx={22} />
+
+                      {/* Sparkles */}
+                      <Text x="12%" y="15%" fill="#D4A754" fontSize="12" opacity="0.3">✦</Text>
+                      <Text x="88%" y="22%" fill={rarity.color} fontSize="14" opacity="0.25">✦</Text>
+                      <Text x="16%" y="78%" fill={rarity.color} fontSize="10" opacity="0.2">✦</Text>
+                      <Text x="84%" y="82%" fill="#D4A754" fontSize="12" opacity="0.3">✦</Text>
+                    </Svg>
+
+                    <View style={styles.modalInnerFrame}>
+                      {/* Corner Brackets */}
+                      <View style={[styles.cornerBracket, { top: -1, left: -1 }]}>
+                        <Svg width="16" height="16" viewBox="0 0 16 16">
+                          <Path d="M16 2 H2 V16" fill="none" stroke="#D4A754" strokeWidth={1.5} />
+                        </Svg>
+                      </View>
+                      <View style={[styles.cornerBracket, { bottom: -1, left: -1 }]}>
+                        <Svg width="16" height="16" viewBox="0 0 16 16">
+                          <Path d="M16 14 H2 V0" fill="none" stroke="#D4A754" strokeWidth={1.5} />
+                        </Svg>
+                      </View>
+                      <View style={[styles.cornerBracket, { bottom: -1, right: -1 }]}>
+                        <Svg width="16" height="16" viewBox="0 0 16 16">
+                          <Path d="M0 14 H14 V0" fill="none" stroke="#D4A754" strokeWidth={1.5} />
+                        </Svg>
+                      </View>
+
+                      {/* Close button acting as top-right ornament */}
+                      <TouchableOpacity
+                        style={styles.modalCloseCorner}
+                        onPress={() => setModalVisible(false)}
+                        activeOpacity={0.7}
+                      >
+                        <View style={styles.modalCloseCircle}>
+                          <Text style={styles.modalCloseCornerText}>✕</Text>
+                        </View>
+                      </TouchableOpacity>
+
+                      <View style={styles.modalContent}>
+                        <View style={[styles.rarityBadge, { backgroundColor: rarity.bg, borderColor: rarity.color + '40' }]}>
+                          <Text style={[styles.rarityText, { color: rarity.color }]}>
+                            ✦ {rarity.label} {category.toUpperCase()} ✦
+                          </Text>
+                        </View>
+
+                        <View style={styles.modalIconContainer}>
+                          <View style={[styles.modalIconFrame, { borderColor: rarity.color + '30', backgroundColor: rarity.color + '05' }]}>
+                            <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
+                              <Defs>
+                                <RadialGradient id={`pedestalGlow_${selectedItem.id}`} cx="50%" cy="50%" rx="50%" ry="50%">
+                                  <Stop offset="0%" stopColor={rarity.color} stopOpacity="0.4" />
+                                  <Stop offset="100%" stopColor="transparent" stopOpacity="0" />
+                                </RadialGradient>
+                              </Defs>
+                              <Circle cx="45" cy="45" r="40" fill={`url(#pedestalGlow_${selectedItem.id})`} />
+                              <Circle cx="45" cy="45" r="37" fill="none" stroke={rarity.color + '25'} strokeWidth={1} strokeDasharray="3 3" />
+                              <Circle cx="45" cy="45" r="31" fill="none" stroke="#D4A754" strokeWidth={1} opacity={0.6} />
+                            </Svg>
+                            <Text style={styles.modalIconText}>{icon}</Text>
+                          </View>
+                        </View>
+
+                        <Text style={styles.modalTitleText}>{title}</Text>
+
+                        {dungeonSource ? (
+                          <View style={styles.modalSourceContainer}>
+                            <Text style={styles.modalSourceText}>{dungeonSource}</Text>
+                          </View>
+                        ) : null}
+
+                        {statusText ? (
+                          <Text style={styles.modalStatusText}>{statusText}</Text>
+                        ) : null}
+
+                        {statsList.length > 0 && (
+                          <View style={styles.modalStatsGrid}>
+                            {statsList.map((stat, idx) => (
+                              <View key={idx} style={styles.modalStatCard}>
+                                <View style={[styles.statHighlightBar, { backgroundColor: stat.color || rarity.color }]} />
+                                <Text style={styles.modalStatLabel}>
+                                  {stat.emoji} {stat.label}
+                                </Text>
+                                <Text style={[styles.modalStatValue, { color: stat.color || '#D4A754' }]}>
+                                  {stat.value}
+                                </Text>
+                              </View>
+                            ))}
+                          </View>
+                        )}
+
+                        <View style={styles.ornateDividerContainer}>
+                          <View style={styles.dividerLine} />
+                          <Text style={styles.dividerDiamond}>◆</Text>
+                          <View style={styles.dividerLine} />
+                        </View>
+
+                        {lore ? (
+                          <View style={styles.modalLoreBox}>
+                            <Text style={styles.modalLoreHeader}>ITEM HISTORY</Text>
+                            <Text style={styles.modalLoreText}>"{lore}"</Text>
+                          </View>
+                        ) : null}
+
+                        {itemType === 'material' && (
+                          <Text style={styles.modalGuideText}>
+                            ⚒️ Visit the Town Hall forge to craft this into powerful equipment.
+                          </Text>
+                        )}
+                        {itemType === 'consumable' && !showOpenChestBtn && (
+                          <Text style={styles.modalGuideText}>
+                            🧪 Slot this consumable before entering a floor to use during combat.
+                          </Text>
+                        )}
+
+                        <View style={styles.modalBtns}>
+                          {showOpenChestBtn ? (
+                            <TouchableOpacity
+                              style={[styles.modalConfirmBtn, { shadowColor: '#D4A754' }]}
+                              onPress={() => {
+                                setModalVisible(false);
+                                handleOpenChest();
+                              }}
+                              activeOpacity={0.85}
+                            >
+                              <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
+                                <Defs>
+                                  <LinearGradient id="modalChestGrad" x1="0" y1="0" x2="1" y2="0">
+                                    <Stop offset="0%" stopColor="#F9D99A" />
+                                    <Stop offset="100%" stopColor="#D4A754" />
+                                  </LinearGradient>
+                                </Defs>
+                                <Rect width="100%" height="100%" fill="url(#modalChestGrad)" rx={12} />
+                              </Svg>
+                              <Text style={styles.modalConfirmText}>Open Mystery Chest</Text>
+                            </TouchableOpacity>
+                          ) : showEquipBtn ? (
+                            <TouchableOpacity
+                              style={
+                                isCurrentlyEquipped
+                                  ? styles.modalUnequipBtn
+                                  : [styles.modalConfirmBtn, { shadowColor: '#D4A754' }]
+                              }
+                              onPress={() => {
+                                setModalVisible(false);
+                                if (isCurrentlyEquipped) {
+                                  handleUnequip(selectedItem.type);
+                                } else {
+                                  handleEquip(selectedItem);
+                                }
+                              }}
+                              activeOpacity={0.85}
+                            >
+                              {!isCurrentlyEquipped && (
+                                <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
+                                  <Defs>
+                                    <LinearGradient id="modalEquipGrad" x1="0" y1="0" x2="1" y2="0">
+                                      <Stop offset="0%" stopColor="#F9D99A" />
+                                      <Stop offset="100%" stopColor="#D4A754" />
+                                    </LinearGradient>
+                                  </Defs>
+                                  <Rect width="100%" height="100%" fill="url(#modalEquipGrad)" rx={12} />
+                                </Svg>
+                              )}
+                              <Text
+                                style={
+                                  isCurrentlyEquipped
+                                    ? styles.modalUnequipText
+                                    : styles.modalConfirmText
+                                }
+                              >
+                                {isCurrentlyEquipped ? 'Unequip Gear' : 'Equip Gear'}
+                              </Text>
+                            </TouchableOpacity>
+                          ) : (
+                            <TouchableOpacity
+                              style={styles.modalCloseBtn}
+                              onPress={() => setModalVisible(false)}
+                            >
+                              <Text style={styles.modalCloseText}>Done</Text>
+                            </TouchableOpacity>
+                          )}
+                        </View>
+                      </View>
+                    </View>
+                  </>
+                );
+              })()
+            )}
+          </Pressable>
+        </Pressable>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -1005,5 +1435,394 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontStyle: 'italic',
     lineHeight: 17,
+  },
+
+  /* ── Grid Layouts ────────────────────────────────────────── */
+  gridContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+    paddingVertical: 4,
+  },
+  gridCard: {
+    borderRadius: 14,
+    height: 124,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.05)',
+  },
+  gridCardGearEquipped: {
+    backgroundColor: 'rgba(212,167,84,0.06)',
+    borderColor: 'rgba(212,167,84,0.45)',
+    borderWidth: 1.5,
+  },
+  gridCardInner: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 8,
+    gap: 6,
+    position: 'relative',
+  },
+  gridIconBox: {
+    width: 38,
+    height: 38,
+    borderRadius: 10,
+    backgroundColor: 'rgba(255,255,255,0.03)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.05)',
+  },
+  gridIcon: {
+    fontSize: 20,
+  },
+  gridName: {
+    fontFamily: 'System',
+    fontSize: 11,
+    color: '#F8FAFC',
+    fontWeight: 'bold',
+    textAlign: 'center',
+    lineHeight: 14,
+    height: 28, // height for 2 lines
+  },
+  gridQtyBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.15)',
+    backgroundColor: 'rgba(255,255,255,0.03)',
+  },
+  gridQtyText: {
+    fontFamily: 'System',
+    fontSize: 9,
+    fontWeight: 'bold',
+    color: 'rgba(255,255,255,0.6)',
+  },
+  gridZoneBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+    borderRadius: 4,
+    borderWidth: 1,
+  },
+  gridZoneText: {
+    fontFamily: 'System',
+    fontSize: 8,
+    fontWeight: 'bold',
+  },
+  equippedBadge: {
+    position: 'absolute',
+    top: 6,
+    right: 6,
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    backgroundColor: '#10B981',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 10,
+  },
+  equippedBadgeText: {
+    fontFamily: 'System',
+    fontSize: 9,
+    color: '#FFFFFF',
+    fontWeight: 'bold',
+    lineHeight: 11,
+  },
+
+  /* ── Modal Popup Styles ─────────────────────────────────── */
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(5, 5, 8, 0.90)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  modalCard: {
+    width: '100%',
+    maxWidth: 320,
+    borderRadius: 22,
+    overflow: 'hidden',
+    backgroundColor: '#0D0D12',
+    borderWidth: 1.5,
+    padding: 8,
+  },
+  modalInnerFrame: {
+    borderWidth: 1.2,
+    borderColor: 'rgba(212, 167, 84, 0.25)',
+    borderRadius: 14,
+    paddingVertical: 20,
+    paddingHorizontal: 12,
+    position: 'relative',
+  },
+  cornerBracket: {
+    position: 'absolute',
+    width: 16,
+    height: 16,
+    zIndex: 20,
+  },
+  modalContent: {
+    alignItems: 'center',
+    width: '100%',
+  },
+  modalCloseCorner: {
+    position: 'absolute',
+    top: 4,
+    right: 4,
+    zIndex: 100,
+  },
+  modalCloseCircle: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: 'rgba(15, 15, 22, 0.9)',
+    borderWidth: 1.2,
+    borderColor: '#D4A75460',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modalCloseCornerText: {
+    fontSize: 11,
+    color: '#D4A754',
+    fontWeight: 'bold',
+    textAlign: 'center',
+  },
+  rarityBadge: {
+    borderRadius: 30,
+    paddingHorizontal: 14,
+    paddingVertical: 4,
+    borderWidth: 1,
+    marginBottom: 16,
+  },
+  rarityText: {
+    fontFamily: 'System',
+    fontSize: 8,
+    fontWeight: '900',
+    letterSpacing: 0.8,
+  },
+  modalIconContainer: {
+    marginVertical: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modalIconFrame: {
+    width: 90,
+    height: 90,
+    borderRadius: 45,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1.5,
+    position: 'relative',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.4,
+    shadowRadius: 8,
+  },
+  modalIconText: {
+    fontSize: 44,
+    zIndex: 15,
+  },
+  modalTitleText: {
+    fontFamily: 'System',
+    fontSize: 22,
+    fontWeight: '900',
+    color: '#FFFFFF',
+    textAlign: 'center',
+    marginBottom: 6,
+    letterSpacing: 0.5,
+    textShadowColor: 'rgba(0, 0, 0, 0.6)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 4,
+  },
+  modalSourceContainer: {
+    backgroundColor: 'rgba(255, 255, 255, 0.03)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.06)',
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    marginBottom: 14,
+  },
+  modalSourceText: {
+    fontFamily: 'System',
+    fontSize: 10,
+    color: '#D4A754',
+    fontWeight: '700',
+    letterSpacing: 0.5,
+  },
+  modalStatusText: {
+    fontFamily: 'System',
+    fontSize: 12,
+    color: 'rgba(255, 255, 255, 0.5)',
+    fontWeight: 'bold',
+    marginBottom: 16,
+  },
+  modalStatsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    justifyContent: 'center',
+    width: '100%',
+    marginBottom: 14,
+  },
+  modalStatCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.05)',
+    borderRadius: 8,
+    paddingLeft: 12,
+    paddingRight: 10,
+    paddingVertical: 6,
+    minWidth: '45%',
+    flex: 1,
+    height: 32,
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  statHighlightBar: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: 3,
+  },
+  modalStatLabel: {
+    fontFamily: 'System',
+    fontSize: 10,
+    fontWeight: 'bold',
+    color: 'rgba(255, 255, 255, 0.45)',
+  },
+  modalStatValue: {
+    fontFamily: 'System',
+    fontSize: 11,
+    fontWeight: '900',
+  },
+  ornateDividerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    width: '100%',
+    justifyContent: 'center',
+    marginVertical: 14,
+  },
+  dividerLine: {
+    height: 1,
+    flex: 1,
+    backgroundColor: 'rgba(212, 167, 84, 0.15)',
+  },
+  dividerDiamond: {
+    fontSize: 8,
+    color: '#D4A754',
+    opacity: 0.5,
+  },
+  modalLoreBox: {
+    backgroundColor: 'rgba(0, 0, 0, 0.35)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.03)',
+    borderRadius: 10,
+    padding: 14,
+    width: '100%',
+    marginBottom: 16,
+  },
+  modalLoreBoxHeader: {
+    fontFamily: 'System',
+    fontSize: 9,
+    fontWeight: '900',
+    color: '#D4A754',
+    letterSpacing: 1.5,
+    textAlign: 'center',
+    marginBottom: 6,
+    opacity: 0.7,
+  },
+  modalLoreHeader: {
+    fontFamily: 'System',
+    fontSize: 9,
+    fontWeight: '900',
+    color: '#D4A754',
+    letterSpacing: 1.5,
+    textAlign: 'center',
+    marginBottom: 6,
+    opacity: 0.7,
+  },
+  modalLoreText: {
+    fontFamily: 'System',
+    fontSize: 11,
+    color: '#E2E8F0',
+    fontStyle: 'italic',
+    textAlign: 'center',
+    lineHeight: 16,
+  },
+  modalGuideText: {
+    fontFamily: 'System',
+    fontSize: 10,
+    color: 'rgba(255, 255, 255, 0.3)',
+    textAlign: 'center',
+    fontStyle: 'italic',
+    lineHeight: 14,
+    marginBottom: 18,
+    paddingHorizontal: 12,
+  },
+  modalBtns: {
+    width: '100%',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginTop: 6,
+  },
+  modalCloseBtn: {
+    backgroundColor: 'rgba(255, 255, 255, 0.04)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+    borderRadius: 12,
+    height: 46,
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '100%',
+  },
+  modalCloseText: {
+    fontFamily: 'System',
+    fontSize: 13,
+    color: 'rgba(255, 255, 255, 0.65)',
+    fontWeight: 'bold',
+  },
+  modalConfirmBtn: {
+    height: 46,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
+    width: '100%',
+  },
+  modalConfirmText: {
+    fontFamily: 'System',
+    fontSize: 13,
+    color: '#120C00',
+    fontWeight: '900',
+    zIndex: 2,
+    letterSpacing: 0.3,
+  },
+  modalUnequipBtn: {
+    backgroundColor: 'rgba(239, 68, 68, 0.08)',
+    borderWidth: 1.5,
+    borderColor: 'rgba(239, 68, 68, 0.35)',
+    borderRadius: 12,
+    height: 46,
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '100%',
+  },
+  modalUnequipText: {
+    fontFamily: 'System',
+    fontSize: 13,
+    color: '#EF4444',
+    fontWeight: 'bold',
+    letterSpacing: 0.3,
   },
 });
