@@ -2244,7 +2244,12 @@ export default function CombatScreen() {
         disabled={isDisabled}
       >
         <Text style={styles.actionBtnIcon}>{icon}</Text>
-        <Text style={[styles.actionBtnTitle, { color: titleColor }]} numberOfLines={1}>
+        <Text
+          style={[styles.actionBtnTitle, { color: titleColor }]}
+          numberOfLines={1}
+          adjustsFontSizeToFit
+          minimumScaleFactor={0.7}
+        >
           {hasSkill ? skillDef.name.toUpperCase() : `SKILL ${slotIndex + 1}`}
         </Text>
         <Text style={styles.actionBtnSub}>{subText}</Text>
@@ -2753,6 +2758,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
+    paddingHorizontal: 6,
     gap: 2,
   },
   actionBtnAttack: {
