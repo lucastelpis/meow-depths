@@ -68,32 +68,42 @@ export const HERO_SPRITE = {
     frameSize: 128,
     frames: 8,
   },
-  earth_slam: {
+  boulder_slash: {
     source: require('../../assets/sprites/units/hero/hero_earth_attack.png'),
     frameSize: 128,
     frames: 8,
   },
-  rockslide: {
+  fortitude: {
     source: require('../../assets/sprites/units/hero/hero_earth_attack.png'),
     frameSize: 128,
     frames: 8,
   },
-  stone_wall: {
+  fortify: {
     source: require('../../assets/sprites/units/hero/hero_earth_attack.png'),
     frameSize: 128,
     frames: 8,
   },
-  wind_slash: {
+  stone_thorns: {
+    source: require('../../assets/sprites/units/hero/hero_earth_attack.png'),
+    frameSize: 128,
+    frames: 8,
+  },
+  dual_slash: {
     source: require('../../assets/sprites/units/hero/hero_wind_attack.png'),
     frameSize: 128,
     frames: 8,
   },
-  cyclone: {
+  swiftness: {
     source: require('../../assets/sprites/units/hero/hero_wind_attack.png'),
     frameSize: 128,
     frames: 8,
   },
-  wind_veil: {
+  whirlwind: {
+    source: require('../../assets/sprites/units/hero/hero_wind_attack.png'),
+    frameSize: 128,
+    frames: 8,
+  },
+  critical_wind: {
     source: require('../../assets/sprites/units/hero/hero_wind_attack.png'),
     frameSize: 128,
     frames: 8,
