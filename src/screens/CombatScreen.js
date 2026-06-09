@@ -352,6 +352,7 @@ export default function CombatScreen() {
   // Track defeated enemies for loot calculation at the end
   const defeatedEnemiesRef = useRef([]);
   const scrollViewRef = useRef(null);
+  const enemyScrollViewRef = useRef(null);
 
   // ── Damage Popups State & Animators ───────────────────────────────────────
   const [popups, setPopups] = useState([]);
@@ -366,6 +367,37 @@ export default function CombatScreen() {
   const removePopup = useCallback((id) => {
     setPopups((prev) => prev.filter((p) => p.id !== id));
   }, []);
+
+  // Center an enemy card in the horizontal ScrollView
+  const scrollToEnemy = useCallback((enemyUid, currentEnemies = enemiesState.alive) => {
+    if (!enemyScrollViewRef.current) return;
+    const combined = [
+      ...currentEnemies.map(e => ({ ...e, isDying: false })),
+      ...enemiesState.dying.map(e => ({ ...e, isDying: true })),
+    ];
+    combined.sort((a, b) => (a.spawnIndex ?? 0) - (b.spawnIndex ?? 0));
+    const idx = combined.findIndex(e => e.uid === enemyUid);
+    if (idx === -1) return;
+
+    let offset = 16;
+    for (let j = 0; j < idx; j++) {
+      const item = combined[j];
+      const itemWidth = item.isBoss ? 170 : 140;
+      offset += itemWidth + 16;
+    }
+    const currentWidth = combined[idx].isBoss ? 170 : 140;
+    const cardCenter = offset + 8 + currentWidth / 2;
+    const scrollToX = Math.max(0, cardCenter - SCREEN_WIDTH / 2);
+
+    enemyScrollViewRef.current.scrollTo({ x: scrollToX, y: 0, animated: true });
+  }, [enemiesState.alive, enemiesState.dying]);
+
+  // Auto-scroll to selected enemy when selection changes during player's turn
+  useEffect(() => {
+    if (combatPhase === 'playerTurn' && enemies[selectedEnemyIndex]) {
+      scrollToEnemy(enemies[selectedEnemyIndex].uid);
+    }
+  }, [selectedEnemyIndex, combatPhase, enemies, scrollToEnemy]);
 
   // Monitor Hero HP changes for damage and healing popups
   useEffect(() => {
@@ -1003,6 +1035,10 @@ export default function CombatScreen() {
       // Failsafe: if the enemy is missing or already dead, skip them!
       if (!enemy || enemy.hp <= 0) continue;
 
+      // Focus on the active enemy currently taking their turn/attacking
+      scrollToEnemy(enemy.uid, updatedEnemies);
+      await delay(350); // Camera pan delay for high-fidelity combat feel
+
       const enemyData = ENEMIES[enemy.id] || enemy;
 
       const turnResult = executeEnemyTurn(
@@ -1448,6 +1484,7 @@ export default function CombatScreen() {
         {/* ── Enemy Section ────────────────────────────────────────────── */}
         <View style={styles.enemySectionWrapper}>
           <ScrollView
+            ref={enemyScrollViewRef}
             horizontal
             contentContainerStyle={styles.enemyRow}
             showsHorizontalScrollIndicator={false}
@@ -2184,6 +2221,7 @@ function DyingEnemyCard({ enemy, popups = [], removePopup }) {
       style={[
         styles.enemyCard,
         styles.enemyCardDying,
+        enemy.isBoss && styles.enemyCardBoss,
         {
           opacity: fadeAnim,
           transform: [

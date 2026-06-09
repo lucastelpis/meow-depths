@@ -70,9 +70,9 @@ const fire_burst = {
   stars: {
     1: { damageMultiplier: 1.50, burnDamage: 4, burnDuration: 3, spreadPercent: 0.30, spreadBurnChance: 0.30 },
     2: { damageMultiplier: 1.60, burnDamage: 4, burnDuration: 3, spreadPercent: 0.40, spreadBurnChance: 0.30 },
-    3: { damageMultiplier: 1.70, burnDamage: 5, burnDuration: 3, spreadPercent: 0.40, spreadBurnChance: 0.30 },
-    4: { damageMultiplier: 1.85, burnDamage: 5, burnDuration: 3, spreadPercent: 0.50, spreadBurnChance: 0.30 },
-    5: { damageMultiplier: 2.00, burnDamage: 6, burnDuration: 3, spreadPercent: 0.50, spreadBurnChance: 0.30 },
+    3: { damageMultiplier: 1.70, burnDamage: 5, burnDuration: 3, spreadPercent: 0.40, spreadBurnChance: 0.40 },
+    4: { damageMultiplier: 1.85, burnDamage: 5, burnDuration: 3, spreadPercent: 0.50, spreadBurnChance: 0.40 },
+    5: { damageMultiplier: 2.00, burnDamage: 6, burnDuration: 3, spreadPercent: 0.50, spreadBurnChance: 0.50 },
   },
 };
 
@@ -107,16 +107,16 @@ const tidal_strike = {
   tier: 1,
   type: 'active',
   targetType: 'single',
-  cooldown: 4,
+  cooldown: 3,
   unlockedBy: null,
   icon: '💧',
   description: 'Deals damage and reduces enemy ATK for a duration. Reliable and methodical.',
   stars: {
-    1: { damageMultiplier: 1.20, atkReduce: 0.10, duration: 2, cooldown: 4 },
-    2: { damageMultiplier: 1.35, atkReduce: 0.10, duration: 3, cooldown: 4 },
-    3: { damageMultiplier: 1.50, atkReduce: 0.15, duration: 3, cooldown: 4 },
-    4: { damageMultiplier: 1.65, atkReduce: 0.15, duration: 3, cooldown: 3 },
-    5: { damageMultiplier: 1.80, atkReduce: 0.20, duration: 3, cooldown: 3 },
+    1: { damageMultiplier: 1.20, atkReduce: 0.10, duration: 2 },
+    2: { damageMultiplier: 1.35, atkReduce: 0.10, duration: 3 },
+    3: { damageMultiplier: 1.50, atkReduce: 0.15, duration: 3 },
+    4: { damageMultiplier: 1.65, atkReduce: 0.15, duration: 3 },
+    5: { damageMultiplier: 1.80, atkReduce: 0.20, duration: 3 },
   },
 };
 
@@ -152,11 +152,11 @@ const tidal_wave = {
   icon: '🌊',
   description: 'Crashing wave hits target for damage and ATK reduce. Adjacent enemies take 40% splash with a 30% chance for ATK reduce.',
   stars: {
-    1: { damageMultiplier: 1.00, atkReduce: 0.10, duration: 2, spreadPercent: 0.40, spreadAtkReduceChance: 0.30, cooldown: 4 },
-    2: { damageMultiplier: 1.10, atkReduce: 0.10, duration: 3, spreadPercent: 0.40, spreadAtkReduceChance: 0.30, cooldown: 4 },
-    3: { damageMultiplier: 1.20, atkReduce: 0.15, duration: 3, spreadPercent: 0.40, spreadAtkReduceChance: 0.30, cooldown: 4 },
-    4: { damageMultiplier: 1.35, atkReduce: 0.15, duration: 3, spreadPercent: 0.40, spreadAtkReduceChance: 0.30, cooldown: 3 },
-    5: { damageMultiplier: 1.50, atkReduce: 0.20, duration: 3, spreadPercent: 0.40, spreadAtkReduceChance: 0.30, cooldown: 3 },
+    1: { damageMultiplier: 1.10, atkReduce: 0.10, duration: 3, spreadPercent: 0.20, spreadAtkReduceChance: 0.30 },
+    2: { damageMultiplier: 1.20, atkReduce: 0.15, duration: 3, spreadPercent: 0.30, spreadAtkReduceChance: 0.30 },
+    3: { damageMultiplier: 1.30, atkReduce: 0.20, duration: 3, spreadPercent: 0.40, spreadAtkReduceChance: 0.40 },
+    4: { damageMultiplier: 1.40, atkReduce: 0.25, duration: 3, spreadPercent: 0.50, spreadAtkReduceChance: 0.40 },
+    5: { damageMultiplier: 1.50, atkReduce: 0.30, duration: 3, spreadPercent: 0.60, spreadAtkReduceChance: 0.50 },
   },
 };
 
@@ -172,11 +172,11 @@ const healing_current = {
   icon: '🫧',
   description: 'No damage — healing only. Applies a HoT effect restoring % of max HP each turn for 3 turns.',
   stars: {
-    1: { healPerTurn: 0.03, duration: 3, cooldown: 6 },
-    2: { healPerTurn: 0.05, duration: 3, cooldown: 6 },
-    3: { healPerTurn: 0.06, duration: 3, cooldown: 6 },
-    4: { healPerTurn: 0.08, duration: 3, cooldown: 6 },
-    5: { healPerTurn: 0.10, duration: 3, cooldown: 6 },
+    1: { healPerTurn: 0.05, duration: 3 },
+    2: { healPerTurn: 0.08, duration: 3 },
+    3: { healPerTurn: 0.12, duration: 3 },
+    4: { healPerTurn: 0.16, duration: 3 },
+    5: { healPerTurn: 0.20, duration: 3 },
   },
 };
 
