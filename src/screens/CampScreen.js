@@ -69,11 +69,11 @@ export default function CampScreen({ navigation }) {
   const effectiveStats = calculateEffectiveStats(hero);
   const effectiveMaxHp = effectiveStats.maxHp;
 
-const previewMaxHp = effectiveMaxHp + tempVitAlloc * 3;
-  const previewAttack = hero.attack + tempStrAlloc * 1;
-  const previewDefence = hero.defence + tempVitAlloc * 1;
-  const previewCritChance = hero.critChance + tempAgiAlloc * 0.005;
-  const previewDodge = hero.dodge + tempAgiAlloc * 0.005;
+  const previewMaxHp = effectiveMaxHp + tempVitAlloc * 5;
+  const previewAttack = effectiveStats.attack + tempStrAlloc * 1;
+  const previewDefence = effectiveStats.defence;
+  const previewCritChance = effectiveStats.critChance + tempAgiAlloc * 0.005;
+  const previewDodge = effectiveStats.dodge + tempAgiAlloc * 0.005;
 
   const showControls = (hero.statPoints || 0) > 0;
 
@@ -623,7 +623,7 @@ const previewMaxHp = effectiveMaxHp + tempVitAlloc * 3;
                       </TouchableOpacity>
                     </View>
                   )}
-                  <Text style={styles.attributeSubLabel}>+3 HP, +1 DEF</Text>
+                  <Text style={styles.attributeSubLabel}>+5 HP</Text>
                 </View>
               </View>
 
@@ -642,7 +642,7 @@ const previewMaxHp = effectiveMaxHp + tempVitAlloc * 3;
                     <Text style={styles.statEmoji}>⚔️</Text>
                     <Text style={styles.statLabel}>Attack</Text>
                   </View>
-                  <Text style={styles.colCurrent}>{hero.attack}</Text>
+                  <Text style={styles.colCurrent}>{effectiveStats.attack}</Text>
                   <Text style={[
                     styles.colNew, 
                     tempStrAlloc > 0 ? styles.colNewHighlighted : styles.colNewMuted
@@ -657,13 +657,8 @@ const previewMaxHp = effectiveMaxHp + tempVitAlloc * 3;
                     <Text style={styles.statEmoji}>🛡️</Text>
                     <Text style={styles.statLabel}>Defense</Text>
                   </View>
-                  <Text style={styles.colCurrent}>{hero.defence}</Text>
-                  <Text style={[
-                    styles.colNew, 
-                    tempVitAlloc > 0 ? styles.colNewHighlighted : styles.colNewMuted
-                  ]}>
-                    {tempVitAlloc > 0 ? previewDefence : '—'}
-                  </Text>
+                  <Text style={styles.colCurrent}>{effectiveStats.defence}</Text>
+                  <Text style={[styles.colNew, styles.colNewMuted]}>—</Text>
                 </View>
 
                 {/* HP Row */}
@@ -687,7 +682,7 @@ const previewMaxHp = effectiveMaxHp + tempVitAlloc * 3;
                     <Text style={styles.statEmoji}>💥</Text>
                     <Text style={styles.statLabel}>Crit Chance</Text>
                   </View>
-                  <Text style={styles.colCurrent}>{Math.round(hero.critChance * 1000) / 10}%</Text>
+                  <Text style={styles.colCurrent}>{Math.round(effectiveStats.critChance * 1000) / 10}%</Text>
                   <Text style={[
                     styles.colNew, 
                     tempAgiAlloc > 0 ? styles.colNewHighlighted : styles.colNewMuted
@@ -702,7 +697,7 @@ const previewMaxHp = effectiveMaxHp + tempVitAlloc * 3;
                     <Text style={styles.statEmoji}>💨</Text>
                     <Text style={styles.statLabel}>Dodge Chance</Text>
                   </View>
-                  <Text style={styles.colCurrent}>{Math.round(hero.dodge * 1000) / 10}%</Text>
+                  <Text style={styles.colCurrent}>{Math.round(effectiveStats.dodge * 1000) / 10}%</Text>
                   <Text style={[
                     styles.colNew, 
                     tempAgiAlloc > 0 ? styles.colNewHighlighted : styles.colNewMuted

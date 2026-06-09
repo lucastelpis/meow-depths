@@ -153,9 +153,6 @@ export function checkLevelUp(hero) {
   // We'll track how many levels were gained and build log messages
   let levelsGained = 0;
   let currentLevel = hero.level;
-  let currentMaxHp = hero.maxHp;
-  let currentAttack = hero.attack;
-  let currentDef = hero.defence;
   let currentSP = hero.skillPoints;
   let currentStatPoints = hero.statPoints || 0;
   const messages = [];
@@ -170,12 +167,18 @@ export function checkLevelUp(hero) {
     messages.push(`🎉 Level up! Mochi is now level ${currentLevel}! Gained +1 Skill Point and +3 Stat Points.`);
   }
 
+  const strength = hero.strength || 10;
+  const agility = hero.agility || 10;
+  const vitality = hero.vitality || 10;
+
   return {
     levelsGained,
     newLevel: currentLevel,
-    newMaxHp: currentMaxHp,
-    newAttack: currentAttack,
-    newDefence: currentDef,
+    newMaxHp: vitality * 5,
+    newAttack: strength * 1,
+    newDefence: 0,
+    newCritChance: agility * 0.005,
+    newDodge: agility * 0.005,
     newSkillPoints: currentSP,
     newStatPoints: currentStatPoints,
     messages,
@@ -209,13 +212,17 @@ export function checkLevelUp(hero) {
  * }}
  */
 export function calculateEffectiveStats(hero, skillDefinitions = SKILLS, runBuffs = null) {
-  // --- Start from the hero's base stats ------------------------------------
-  let baseHp = hero.maxHp || 50;
+  // --- Start from the hero's base stats dynamically derived from attributes ---
+  const strength = hero.strength || 10;
+  const agility = hero.agility || 10;
+  const vitality = hero.vitality || 10;
+
+  let baseHp = vitality * 5;
   let maxHp = baseHp;
-  let attack = hero.attack || 10;
-  let defence = hero.defence || 2;
-  let critChance = hero.critChance || 0.05;
-  let dodge = hero.dodge || 0.05;
+  let attack = strength * 1;
+  let defence = 0;
+  let critChance = agility * 0.005;
+  let dodge = agility * 0.005;
   const gearSpecials = [];
   const passives = {};
 

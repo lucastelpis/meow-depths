@@ -68,7 +68,7 @@ const initialState = {
     hp: 50,                   // current HP (can decrease in combat)
     maxHp: 50,                // maximum HP (increases on level up)
     attack: 10,               // base attack power
-    defence: 2,               // base damage reduction
+    defence: 0,               // base damage reduction (only comes from gear/skills now)
     critChance: 0.05,         // 5 % base crit chance
     dodge: 0.05,              // 5 % base dodge chance
     gold: 100,                // start with some gold for first potions
@@ -253,7 +253,7 @@ function gameReducer(state, action) {
         gear: { ...state.hero.gear, [slot]: gearId },
       };
       const newEffectiveMaxHp = calculateEffectiveStats(updatedHero).maxHp;
-      const newHp = Math.min(newEffectiveMaxHp, state.hero.hp + maxHpDelta);
+      const newHp = state.currentRun.active ? Math.min(newEffectiveMaxHp, state.hero.hp + maxHpDelta) : newEffectiveMaxHp;
       return {
         ...state,
         hero: { ...updatedHero, hp: newHp },
@@ -966,7 +966,14 @@ function gameReducer(state, action) {
     // Payload: { newLevel, newMaxHp, newAttack, newDefence, newSkillPoints }
     // -----------------------------------------------------------------------
     case 'LEVEL_UP': {
-      const tempHero = { ...state.hero, maxHp: action.payload.newMaxHp };
+      const tempHero = { 
+        ...state.hero, 
+        maxHp: action.payload.newMaxHp,
+        attack: action.payload.newAttack,
+        defence: action.payload.newDefence,
+        critChance: action.payload.newCritChance !== undefined ? action.payload.newCritChance : state.hero.critChance,
+        dodge: action.payload.newDodge !== undefined ? action.payload.newDodge : state.hero.dodge
+      };
       const effectiveMaxHp = calculateEffectiveStats(
         tempHero,
         undefined,
@@ -980,6 +987,8 @@ function gameReducer(state, action) {
           maxHp:       action.payload.newMaxHp,
           attack:      action.payload.newAttack,
           defence:     action.payload.newDefence,
+          critChance:  tempHero.critChance,
+          dodge:       tempHero.dodge,
           skillPoints: action.payload.newSkillPoints,
           statPoints:  action.payload.newStatPoints !== undefined ? action.payload.newStatPoints : (state.hero.statPoints || 0),
           // Fully heal on level up — it feels good! 🎉
@@ -1002,16 +1011,22 @@ function gameReducer(state, action) {
       const newAgi = (state.hero.agility || 10) + agiInc;
       const newVit = (state.hero.vitality || 10) + vitInc;
 
-      const newMaxHp = state.hero.maxHp + (vitInc * 3);
-      const newAttack = state.hero.attack + (strInc * 1);
-      const newDefence = state.hero.defence + (vitInc * 1);
-      const newCritChance = state.hero.critChance + (agiInc * 0.005);
-      const newDodge = state.hero.dodge + (agiInc * 0.005);
+      const newMaxHp = newVit * 5;
+      const newAttack = newStr * 1;
+      const newDefence = 0; // base defence is 0, only comes from gear/skills
+      const newCritChance = newAgi * 0.005;
+      const newDodge = newAgi * 0.005;
 
       const newStatPoints = state.hero.statPoints - totalPoints;
-      const tempHero = { ...state.hero, maxHp: newMaxHp };
+      const tempHero = {
+        ...state.hero,
+        strength: newStr,
+        agility: newAgi,
+        vitality: newVit,
+        maxHp: newMaxHp
+      };
       const effectiveMaxHp = calculateEffectiveStats(tempHero).maxHp;
-      const newHp = Math.min(effectiveMaxHp, state.hero.hp + (vitInc * 3));
+      const newHp = effectiveMaxHp;
 
       return {
         ...state,
@@ -1099,10 +1114,26 @@ export function GameProvider({ children }) {
           }
         }
 
-        // If hero was at full base HP when saved, restore to full effective HP
-        // (gear bonuses aren't baked into hero.maxHp, only into effectiveStats).
-        if (merged.hero && merged.hero.hp === merged.hero.maxHp) {
-          merged.hero.hp = calculateEffectiveStats(merged.hero).maxHp;
+        // Migrate hero base stats to be dynamically derived from attributes.
+        if (merged.hero) {
+          const isAtFullBaseHp = merged.hero.hp === merged.hero.maxHp;
+
+          const str = merged.hero.strength || 10;
+          const agi = merged.hero.agility || 10;
+          const vit = merged.hero.vitality || 10;
+          merged.hero.maxHp = vit * 5;
+          merged.hero.attack = str * 1;
+          merged.hero.defence = 0;
+          merged.hero.critChance = agi * 0.005;
+          merged.hero.dodge = agi * 0.005;
+
+          // If hero is outside of a dungeon run, their HP should always be full.
+          // Otherwise, if they were at full base HP when saved in a run, restore to full effective HP.
+          if (!merged.currentRun?.active) {
+            merged.hero.hp = calculateEffectiveStats(merged.hero).maxHp;
+          } else if (isAtFullBaseHp) {
+            merged.hero.hp = calculateEffectiveStats(merged.hero).maxHp;
+          }
         }
 
         // Migrate unlockedSkills from old array format to new object format.
