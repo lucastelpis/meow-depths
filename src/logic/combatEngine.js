@@ -19,7 +19,7 @@
  *   target       – the entity receiving damage
  *   attackerState / targetState – in-combat state objects that track
  *                  current HP, active status effects, cooldowns, etc.
- *   isCrit       – whether the hit was a critical strike (175 % damage)
+ *   isCrit       – whether the hit was a critical strike (150 % damage)
  *   isDodged     – whether the target dodged the attack entirely
  *   bleed        – damage-over-time effect (ticks each turn)
  *   stun         – skips the target's next turn(s)
@@ -43,7 +43,7 @@ import { applyHealingEfficiency } from './progressionEngine';
 // ---------------------------------------------------------------------------
 
 /** Crits multiply the final damage by this value. */
-const CRIT_MULTIPLIER = 1.75;
+const CRIT_MULTIPLIER = 1.5;
 
 /** When attacking from stealth, add this % as bonus damage on top of the crit. */
 const STEALTH_BONUS_DAMAGE = 0.5;
@@ -64,7 +64,7 @@ const GEAR_STUN_DURATION = 1;
  *
  * Steps:
  *   1. Start with the attacker's base attack stat.
- *   2. Roll for a crit — if successful, multiply by CRIT_MULTIPLIER (175 %).
+ *   2. Roll for a crit — if successful, multiply by CRIT_MULTIPLIER (150 %).
  *   3. Apply target's defence (diminishing returns percentage, minimum damage is 1).
  *   4. If the target is guarding, reduce damage by the guard's reduction %.
  *   5. If the target has a death mark, INCREASE damage by 50 %.
@@ -102,17 +102,24 @@ export function calculateDamage(attacker, target, options = {}) {
   // explicitly force a crit (e.g. attacking from stealth).
   const critRoll = Math.random();                       // 0.0 – 1.0
   let critChance = attacker.critChance || 0.05;       // default 5 %
-  
+
   // Apply crit_reduce debuff on attacker
   const critReduce = attacker.effects?.find(e => e.type === 'crit_reduce');
   if (critReduce && critReduce.value) {
     critChance = Math.max(0, critChance - critReduce.value);
   }
 
+  // Per-hit bonus crit (Dual Slash, Whirlwind)
+  if (options.critBonus) {
+    critChance = Math.min(1, critChance + options.critBonus);
+  }
+
   const isCrit = options.forceCrit || critRoll < critChance;
 
   if (isCrit) {
-    baseDamage = Math.floor(baseDamage * (options.critMultiplier || CRIT_MULTIPLIER));
+    // Critical Wind passive overrides CRIT_MULTIPLIER; options.critMultiplier takes highest priority
+    const critMult = options.critMultiplier || attacker.passives?.critMultiplier || CRIT_MULTIPLIER;
+    baseDamage = Math.floor(baseDamage * critMult);
   }
 
   // -- Step 2b: Stealth bonus -----------------------------------------------
@@ -573,6 +580,7 @@ export function executeSkill(skill, attacker, targets, attackerState) {
  *
  * @returns {{
  *   damage: number,
+ *   rawDamage: number,
  *   effects: Object[],
  *   log: string,
  *   selfDestruct: boolean
@@ -773,6 +781,7 @@ export function executeEnemyTurn(enemy, enemyState, target, targetState) {
 
   return {
     damage: dmgResult.damage,
+    rawDamage: atkVal, // pre-DEF value used by Stone Thorns reflection
     effects: appliedEffects,
     log,
     selfDestruct,
@@ -1169,7 +1178,140 @@ export function executeHealingCurrent(skillDef, stars) {
   };
 }
 
+/**
+ * Execute Boulder Slash: damage + chance to stun for 1 turn.
+ *
+ * @param {Object} skillDef   - full skill definition from SKILLS
+ * @param {number} stars      - current star level
+ * @param {Object} heroState  - hero combat state
+ * @param {Object} target     - single enemy object
+ */
+export function executeBoulderSlash(skillDef, stars, heroState, target) {
+  const starData = skillDef.stars[stars];
+  const { damage, isCrit } = calculateDamage(
+    heroState,
+    target,
+    { multiplier: starData.damageMultiplier },
+  );
 
+  const stunApplied = Math.random() < starData.stunChance;
+
+  const critText = isCrit ? ' (CRIT!)' : '';
+  let log = `🪨 Boulder Slash hits ${target.name} for ${damage}${critText}`;
+  if (stunApplied) {
+    log += ' and stuns them for 1 turn!';
+  } else {
+    log += '!';
+  }
+
+  return {
+    damage,
+    targetUid: target.uid || target.id,
+    stunApplied,
+    log,
+  };
+}
+
+/**
+ * Execute Fortify: instantly boosts hero DEF by a % for 1 turn.
+ * Returns a def_buff effect to apply to heroState.effects.
+ * The cooldown is star-dependent and returned so CombatScreen can set it.
+ *
+ * @param {Object} skillDef  - full skill definition from SKILLS
+ * @param {number} stars     - current star level
+ * @param {Object} heroState - hero combat state (needs .defence)
+ */
+export function executeFortify(skillDef, stars, heroState) {
+  const starData = skillDef.stars[stars];
+  const defBoost = Math.floor(heroState.defence * starData.defBoostPercent);
+  return {
+    defBuff: {
+      type: 'def_buff',
+      value: defBoost,
+      duration: 1,
+    },
+    cooldown: starData.cooldown,
+    log: `⛰️ Fortify! DEF boosted by +${defBoost} (${Math.round(starData.defBoostPercent * 100)}%) for 1 turn!`,
+  };
+}
+
+/**
+ * Execute Dual Slash: 2 rapid hits on the same target.
+ * Each hit rolls crit independently with a per-hit bonus crit chance.
+ *
+ * @param {Object} skillDef  - full skill definition from SKILLS
+ * @param {number} stars     - current star level
+ * @param {Object} heroState - hero combat state
+ * @param {Object} target    - single enemy object
+ */
+export function executeDualSlash(skillDef, stars, heroState, target) {
+  const starData = skillDef.stars[stars];
+  const hits = [];
+  const logParts = [];
+
+  for (let i = 0; i < 2; i++) {
+    const { damage, isCrit } = calculateDamage(heroState, target, {
+      multiplier: starData.damageMultiplier,
+      critBonus: starData.bonusCritChance,
+    });
+    hits.push({ damage, isCrit });
+    logParts.push(`${damage}${isCrit ? '(CRIT!)' : ''}`);
+  }
+
+  const totalDamage = hits.reduce((s, h) => s + h.damage, 0);
+  return {
+    hits,
+    targetUid: target.uid || target.id,
+    log: `💨 Dual Slash hits ${target.name} — ${logParts.join(' + ')} = ${totalDamage} total!`,
+  };
+}
+
+/**
+ * Execute Whirlwind: 3 rapid strikes on the primary target, each spreading
+ * 40% to adjacent enemies. Every hit (primary + spread) rolls crit independently
+ * with a per-hit bonus crit chance.
+ *
+ * @param {Object}   skillDef  - full skill definition from SKILLS
+ * @param {number}   stars     - current star level
+ * @param {Object}   heroState - hero combat state
+ * @param {Object[]} enemies   - full living enemies array
+ * @param {number}   targetIdx - index of primary target in enemies
+ */
+export function executeWhirlwind(skillDef, stars, heroState, enemies, targetIdx) {
+  const starData = skillDef.stars[stars];
+  const results = [];
+  const primaryLogParts = [];
+
+  const primary = enemies[targetIdx];
+  if (!primary) return { results, log: '🌪️ No target!' };
+
+  for (let hit = 0; hit < 3; hit++) {
+    // Primary hit
+    const { damage: pDmg, isCrit: pCrit } = calculateDamage(heroState, primary, {
+      multiplier: starData.damageMultiplier,
+      critBonus: starData.bonusCritChance,
+    });
+    results.push({ damage: pDmg, targetUid: primary.uid || primary.id });
+    primaryLogParts.push(`${pDmg}${pCrit ? '(CRIT!)' : ''}`);
+
+    // Spread to adjacent enemies at 40% of the hit's full damage
+    for (const adjIdx of [targetIdx - 1, targetIdx + 1]) {
+      if (adjIdx < 0 || adjIdx >= enemies.length) continue;
+      const adj = enemies[adjIdx];
+      if (!adj || adj.hp <= 0) continue;
+      const { damage: aDmg } = calculateDamage(heroState, adj, {
+        multiplier: starData.damageMultiplier * starData.spreadPercent,
+        critBonus: starData.bonusCritChance,
+      });
+      results.push({ damage: aDmg, targetUid: adj.uid || adj.id });
+    }
+  }
+
+  return {
+    results,
+    log: `🌪️ Whirlwind! ${primaryLogParts.join(' → ')}!`,
+  };
+}
 
 // ============================================================================
 // 9) useConsumable — pop a potion or toss a smoke vial

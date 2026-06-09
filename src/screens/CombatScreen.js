@@ -67,6 +67,10 @@ import {
   executeTidalStrike,
   executeTidalWave,
   executeHealingCurrent,
+  executeBoulderSlash,
+  executeFortify,
+  executeDualSlash,
+  executeWhirlwind,
 } from '../logic/combatEngine';
 import { calculateEncounterLoot } from '../logic/lootEngine';
 import { calculateEffectiveStats, checkLevelUp, getStanceBonus, applyHealingEfficiency } from '../logic/progressionEngine';
@@ -768,8 +772,12 @@ export default function CombatScreen() {
 
     setHeroAnim(skillId);
 
-    // Set cooldown
-    const newCooldowns = { ...cooldowns, [skillId]: skillDef.cooldown };
+    // Set cooldown — fortify and whirlwind use per-star cooldowns defined in star data
+    const stars = (state.hero.unlockedSkills[skillId]?.stars) || 1;
+    const skillCooldown = (skillId === 'fortify' || skillId === 'whirlwind')
+      ? (skillDef.stars[stars]?.cooldown ?? skillDef.cooldown)
+      : skillDef.cooldown;
+    const newCooldowns = { ...cooldowns, [skillId]: skillCooldown };
     setCooldowns(newCooldowns);
 
     let updatedHero = { ...heroState };
@@ -848,14 +856,64 @@ export default function CombatScreen() {
       addLog(wave.log);
 
     } else if (skillId === 'healing_current') {
-      const stars = (state.hero.unlockedSkills[skillId]?.stars) || 1;
-      const hc = executeHealingCurrent(skillDef, stars);
+      const hcStars = (state.hero.unlockedSkills[skillId]?.stars) || 1;
+      const hc = executeHealingCurrent(skillDef, hcStars);
       updatedHero = {
         ...updatedHero,
         playerHoT: hc.playerHoT,
         effects: addStatusEffects(updatedHero.effects, { type: 'hot', duration: hc.playerHoT.duration }),
       };
       addLog(hc.log);
+
+    } else if (skillId === 'boulder_slash') {
+      const target = updatedEnemies[selectedEnemyIndex];
+      if (!target) { setCombatPhase('playerTurn'); return; }
+      const bsStars = (state.hero.unlockedSkills[skillId]?.stars) || 1;
+      const result = executeBoulderSlash(skillDef, bsStars, updatedHero, target);
+      updatedEnemies = updatedEnemies.map(e => {
+        if ((e.uid || e.id) !== result.targetUid) return e;
+        const newEffects = result.stunApplied
+          ? addStatusEffects(e.effects, { type: 'stun', duration: 1 })
+          : e.effects;
+        return { ...e, hp: Math.max(0, e.hp - result.damage), effects: newEffects };
+      });
+      addLog(result.log);
+
+    } else if (skillId === 'fortify') {
+      const fyStars = (state.hero.unlockedSkills[skillId]?.stars) || 1;
+      const result = executeFortify(skillDef, fyStars, updatedHero);
+      updatedHero = {
+        ...updatedHero,
+        effects: addStatusEffects(updatedHero.effects, result.defBuff),
+      };
+      addLog(result.log);
+
+    } else if (skillId === 'dual_slash') {
+      const target = updatedEnemies[selectedEnemyIndex];
+      if (!target) { setCombatPhase('playerTurn'); return; }
+      const dsStars = (state.hero.unlockedSkills[skillId]?.stars) || 1;
+      const result = executeDualSlash(skillDef, dsStars, updatedHero, target);
+      const totalDmg = result.hits.reduce((s, h) => s + h.damage, 0);
+      updatedEnemies = updatedEnemies.map(e =>
+        (e.uid || e.id) === result.targetUid
+          ? { ...e, hp: Math.max(0, e.hp - totalDmg) }
+          : e
+      );
+      addLog(result.log);
+
+    } else if (skillId === 'whirlwind') {
+      const wwStars = (state.hero.unlockedSkills[skillId]?.stars) || 1;
+      const result = executeWhirlwind(skillDef, wwStars, updatedHero, updatedEnemies, selectedEnemyIndex);
+      // Accumulate damage per target uid (multiple hits land on same enemy)
+      const damageMap = {};
+      for (const hit of result.results) {
+        damageMap[hit.targetUid] = (damageMap[hit.targetUid] || 0) + hit.damage;
+      }
+      updatedEnemies = updatedEnemies.map(e => {
+        const dmg = damageMap[e.uid || e.id];
+        return dmg ? { ...e, hp: Math.max(0, e.hp - dmg) } : e;
+      });
+      addLog(result.log);
 
     } else {
       // Fallback: legacy executeSkill path for any non-element skills
@@ -1084,6 +1142,20 @@ export default function CombatScreen() {
         }
       }
 
+      // Stone Thorns — reflect raw incoming damage (before DEF) back to the attacker
+      const stoneThornsReflect = updatedHero.passives?.stoneThornsReflect || 0;
+      if (stoneThornsReflect > 0 && turnResult.damage > 0) {
+        const rawDmg = turnResult.rawDamage || turnResult.damage;
+        const reflectDmg = Math.max(1, Math.floor(rawDmg * stoneThornsReflect));
+        const thornsAttacker = updatedEnemies[i];
+        if (thornsAttacker && thornsAttacker.hp > 0) {
+          updatedEnemies = updatedEnemies.map((e, idx) =>
+            idx === i ? { ...e, hp: Math.max(0, e.hp - reflectDmg) } : e
+          );
+          addLog(`🌵 Stone Thorns reflects ${reflectDmg} to ${thornsAttacker.name}!`);
+        }
+      }
+
       // Apply status effects from this attack (bleed, stun, etc.)
       if (turnResult.effects?.length > 0) {
         if (turnResult.appliedToSelf) {
@@ -1095,10 +1167,23 @@ export default function CombatScreen() {
             };
           });
         } else {
-          updatedHero = {
-            ...updatedHero,
-            effects: addStatusEffects(updatedHero.effects, turnResult.effects),
-          };
+          // Fortitude — chance to completely resist each incoming status effect
+          const resistChance = updatedHero.passives?.statusResistChance || 0;
+          const effectsToApply = resistChance > 0
+            ? turnResult.effects.filter(effect => {
+                if (Math.random() < resistChance) {
+                  addLog(`🛡️ Fortitude resisted ${effect.type.replace(/_/g, ' ')}!`);
+                  return false;
+                }
+                return true;
+              })
+            : turnResult.effects;
+          if (effectsToApply.length > 0) {
+            updatedHero = {
+              ...updatedHero,
+              effects: addStatusEffects(updatedHero.effects, effectsToApply),
+            };
+          }
         }
       }
 
@@ -2102,7 +2187,7 @@ export default function CombatScreen() {
 
     const elColor = state.hero.element === 'fire' ? '#FF6B35'
       : state.hero.element === 'water' ? '#3B9EFF'
-        : state.hero.element === 'earth' ? '#8B6914'
+        : state.hero.element === 'earth' ? '#639922'
           : state.hero.element === 'wind' ? '#5CC4B8'
             : '#A98EE0';
 
@@ -2132,6 +2217,9 @@ export default function CombatScreen() {
     // Show Healing Current active indicator
     const isHealingCurrentActive = skillId === 'healing_current' && heroState?.playerHoT;
     const isHealingCurrentReady = skillId === 'healing_current' && !isDisabled;
+
+    // Show Fortify active indicator
+    const isFortifyActive = skillId === 'fortify' && heroState?.effects?.some(e => e.type === 'def_buff');
 
     return (
       <TouchableOpacity
@@ -2168,6 +2256,11 @@ export default function CombatScreen() {
         {isHealingCurrentActive && (
           <Text style={[styles.actionBtnSub, { color: '#3B9EFF' }]}>
             💧 {heroState.playerHoT.turnsRemaining}t
+          </Text>
+        )}
+        {isFortifyActive && (
+          <Text style={[styles.actionBtnSub, { color: elColor }]}>
+            ⛰️ 1t
           </Text>
         )}
       </TouchableOpacity>

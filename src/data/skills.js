@@ -181,12 +181,12 @@ const healing_current = {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// EARTH — placeholder (mirrors Fire structure)
+// EARTH
 // ─────────────────────────────────────────────────────────────────────────────
 
-const earth_slam = {
-  id: 'earth_slam',
-  name: 'Earth Slam',
+const boulder_slash = {
+  id: 'boulder_slash',
+  name: 'Boulder Slash',
   element: 'earth',
   tier: 1,
   type: 'active',
@@ -194,157 +194,159 @@ const earth_slam = {
   cooldown: 3,
   unlockedBy: null,
   icon: '🪨',
-  description: 'Smashes the enemy with the force of stone.',
+  description: 'Smashes the enemy with stony force. Has a chance to stun for 1 turn.',
   stars: {
-    1: { damageMultiplier: 1.20, burnDamage: 2, burnDuration: 3 },
-    2: { damageMultiplier: 1.40, burnDamage: 2, burnDuration: 3 },
-    3: { damageMultiplier: 1.60, burnDamage: 3, burnDuration: 3 },
-    4: { damageMultiplier: 1.80, burnDamage: 3, burnDuration: 4 },
-    5: { damageMultiplier: 2.00, burnDamage: 4, burnDuration: 4 },
+    1: { damageMultiplier: 1.15, stunChance: 0.20 },
+    2: { damageMultiplier: 1.30, stunChance: 0.40 },
+    3: { damageMultiplier: 1.45, stunChance: 0.60 },
+    4: { damageMultiplier: 1.60, stunChance: 0.80 },
+    5: { damageMultiplier: 1.75, stunChance: 1.00 },
   },
 };
 
-const bedrock = {
-  id: 'bedrock',
-  name: 'Bedrock',
+const fortitude = {
+  id: 'fortitude',
+  name: 'Fortitude',
   element: 'earth',
   tier: 1,
   type: 'passive',
   targetType: 'passive',
   cooldown: 0,
   unlockedBy: null,
-  icon: '⛰️',
-  description: 'Unyielding stone skin reduces all incoming damage.',
+  icon: '🛡️',
+  description: 'Passive — incoming status effects (bleed, stun, atk_reduce, etc.) have a chance to be completely resisted.',
   stars: {
-    1: { burnTickBonus: 1 },
-    2: { burnTickBonus: 2 },
-    3: { burnTickBonus: 3 },
-    4: { burnTickBonus: 4 },
-    5: { burnTickBonus: 5 },
+    1: { statusResistChance: 0.15 },
+    2: { statusResistChance: 0.30 },
+    3: { statusResistChance: 0.45 },
+    4: { statusResistChance: 0.60 },
+    5: { statusResistChance: 0.75 },
   },
 };
 
-const rockslide = {
-  id: 'rockslide',
-  name: 'Rockslide',
-  element: 'earth',
-  tier: 2,
-  type: 'active',
-  targetType: 'single_with_spread',
-  cooldown: 4,
-  unlockedBy: 'earth_slam',
-  icon: '🏔️',
-  description: 'Triggers an avalanche that buries nearby enemies.',
-  stars: {
-    1: { damageMultiplier: 1.50, burnDamage: 4, burnDuration: 4, spreadPercent: 0.40, spreadBurnChance: 0.30 },
-    2: { damageMultiplier: 1.60, burnDamage: 4, burnDuration: 4, spreadPercent: 0.40, spreadBurnChance: 0.30 },
-    3: { damageMultiplier: 1.70, burnDamage: 5, burnDuration: 4, spreadPercent: 0.40, spreadBurnChance: 0.30 },
-    4: { damageMultiplier: 1.85, burnDamage: 5, burnDuration: 5, spreadPercent: 0.40, spreadBurnChance: 0.30 },
-    5: { damageMultiplier: 2.00, burnDamage: 6, burnDuration: 5, spreadPercent: 0.40, spreadBurnChance: 0.30 },
-  },
-};
-
-const stone_wall = {
-  id: 'stone_wall',
-  name: 'Stone Wall',
+const fortify = {
+  id: 'fortify',
+  name: 'Fortify',
   element: 'earth',
   tier: 2,
   type: 'active',
   targetType: 'self',
-  cooldown: 4,
-  unlockedBy: 'earth_slam',
-  icon: '🧱',
-  description: 'Erects an earthen barrier that absorbs damage.',
+  cooldown: 5, // base cooldown (★1-2); overridden per star in combat
+  unlockedBy: 'boulder_slash',
+  icon: '⛰️',
+  description: 'No damage — self only. Instantly boosts DEF for 1 turn. Can reduce incoming damage to 0.',
   stars: {
-    1: { counterBurnDamage: 2, counterBurnDuration: 3, guardDuration: 3 },
-    2: { counterBurnDamage: 3, counterBurnDuration: 3, guardDuration: 3 },
-    3: { counterBurnDamage: 4, counterBurnDuration: 3, guardDuration: 3 },
-    4: { counterBurnDamage: 5, counterBurnDuration: 3, guardDuration: 3 },
-    5: { counterBurnDamage: 6, counterBurnDuration: 3, guardDuration: 3 },
+    1: { defBoostPercent: 0.50, cooldown: 5 },
+    2: { defBoostPercent: 0.75, cooldown: 5 },
+    3: { defBoostPercent: 1.00, cooldown: 4 },
+    4: { defBoostPercent: 1.25, cooldown: 4 },
+    5: { defBoostPercent: 1.50, cooldown: 3 },
+  },
+};
+
+const stone_thorns = {
+  id: 'stone_thorns',
+  name: 'Stone Thorns',
+  element: 'earth',
+  tier: 2,
+  type: 'passive',
+  targetType: 'passive',
+  cooldown: 0,
+  unlockedBy: 'fortitude',
+  icon: '🌵',
+  description: 'Passive — reflects a portion of raw incoming damage (before DEF reduction) back to attackers. Minimum 1.',
+  stars: {
+    1: { reflectPercent: 0.07 },
+    2: { reflectPercent: 0.14 },
+    3: { reflectPercent: 0.21 },
+    4: { reflectPercent: 0.28 },
+    5: { reflectPercent: 0.35 },
   },
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// WIND — placeholder (mirrors Fire structure)
+// WIND
 // ─────────────────────────────────────────────────────────────────────────────
 
-const wind_slash = {
-  id: 'wind_slash',
-  name: 'Wind Slash',
+const dual_slash = {
+  id: 'dual_slash',
+  name: 'Dual Slash',
   element: 'wind',
   tier: 1,
   type: 'active',
   targetType: 'single',
   cooldown: 3,
   unlockedBy: null,
-  icon: '🌪️',
-  description: 'A razor-sharp gust that slices with precision.',
+  icon: '💨',
+  description: 'Two rapid strikes on the same target. Each hit rolls crit independently with +10% bonus crit per hit.',
   stars: {
-    1: { damageMultiplier: 1.20, burnDamage: 2, burnDuration: 3 },
-    2: { damageMultiplier: 1.40, burnDamage: 2, burnDuration: 3 },
-    3: { damageMultiplier: 1.60, burnDamage: 3, burnDuration: 3 },
-    4: { damageMultiplier: 1.80, burnDamage: 3, burnDuration: 4 },
-    5: { damageMultiplier: 2.00, burnDamage: 4, burnDuration: 4 },
+    1: { damageMultiplier: 0.55, bonusCritChance: 0.10 },
+    2: { damageMultiplier: 0.60, bonusCritChance: 0.10 },
+    3: { damageMultiplier: 0.65, bonusCritChance: 0.10 },
+    4: { damageMultiplier: 0.70, bonusCritChance: 0.10 },
+    5: { damageMultiplier: 0.75, bonusCritChance: 0.10 },
   },
 };
 
-const swift_step = {
-  id: 'swift_step',
-  name: 'Swift Step',
+const swiftness = {
+  id: 'swiftness',
+  name: 'Swiftness',
   element: 'wind',
   tier: 1,
   type: 'passive',
   targetType: 'passive',
   cooldown: 0,
   unlockedBy: null,
-  icon: '💨',
-  description: 'Heightened agility improves evasion at all times.',
+  icon: '🍃',
+  description: 'Passive — permanently increases Mochi\'s dodge chance while equipped.',
   stars: {
-    1: { burnTickBonus: 1 },
-    2: { burnTickBonus: 2 },
-    3: { burnTickBonus: 3 },
-    4: { burnTickBonus: 4 },
-    5: { burnTickBonus: 5 },
+    1: { dodgeBonus: 0.02 },
+    2: { dodgeBonus: 0.04 },
+    3: { dodgeBonus: 0.06 },
+    4: { dodgeBonus: 0.08 },
+    5: { dodgeBonus: 0.10 },
   },
 };
 
-const cyclone = {
-  id: 'cyclone',
-  name: 'Cyclone',
+const whirlwind = {
+  id: 'whirlwind',
+  name: 'Whirlwind',
   element: 'wind',
   tier: 2,
   type: 'active',
   targetType: 'single_with_spread',
-  cooldown: 4,
-  unlockedBy: 'wind_slash',
-  icon: '🌀',
-  description: 'A spiraling vortex that tears through all enemies.',
+  cooldown: 4, // base; ★5 reduces to 3 (stored in star data)
+  unlockLevel: 15,
+  unlockedBy: 'dual_slash',
+  icon: '🌪️',
+  description: '3 rapid strikes on the primary target, each spreading 40% to adjacent enemies. Every hit rolls crit independently with +15% bonus crit.',
   stars: {
-    1: { damageMultiplier: 1.50, burnDamage: 4, burnDuration: 4, spreadPercent: 0.40, spreadBurnChance: 0.30 },
-    2: { damageMultiplier: 1.60, burnDamage: 4, burnDuration: 4, spreadPercent: 0.40, spreadBurnChance: 0.30 },
-    3: { damageMultiplier: 1.70, burnDamage: 5, burnDuration: 4, spreadPercent: 0.40, spreadBurnChance: 0.30 },
-    4: { damageMultiplier: 1.85, burnDamage: 5, burnDuration: 5, spreadPercent: 0.40, spreadBurnChance: 0.30 },
-    5: { damageMultiplier: 2.00, burnDamage: 6, burnDuration: 5, spreadPercent: 0.40, spreadBurnChance: 0.30 },
+    1: { damageMultiplier: 0.45, spreadPercent: 0.40, bonusCritChance: 0.15, cooldown: 4 },
+    2: { damageMultiplier: 0.50, spreadPercent: 0.40, bonusCritChance: 0.15, cooldown: 4 },
+    3: { damageMultiplier: 0.55, spreadPercent: 0.40, bonusCritChance: 0.15, cooldown: 4 },
+    4: { damageMultiplier: 0.60, spreadPercent: 0.40, bonusCritChance: 0.15, cooldown: 4 },
+    5: { damageMultiplier: 0.65, spreadPercent: 0.40, bonusCritChance: 0.15, cooldown: 3 },
   },
 };
 
-const wind_veil = {
-  id: 'wind_veil',
-  name: 'Wind Veil',
+const critical_wind = {
+  id: 'critical_wind',
+  name: 'Critical Wind',
   element: 'wind',
   tier: 2,
-  type: 'active',
-  targetType: 'self',
-  cooldown: 4,
-  unlockedBy: 'wind_slash',
-  icon: '🌬️',
-  description: 'Wraps Mochi in a gust that deflects incoming blows.',
+  type: 'passive',
+  targetType: 'passive',
+  cooldown: 0,
+  unlockLevel: 15,
+  unlockedBy: 'dual_slash',
+  icon: '⚡',
+  description: 'Passive — replaces the base crit multiplier (150%) with a higher value. Not additive — it fully overrides it.',
   stars: {
-    1: { counterBurnDamage: 2, counterBurnDuration: 3, guardDuration: 3 },
-    2: { counterBurnDamage: 3, counterBurnDuration: 3, guardDuration: 3 },
-    3: { counterBurnDamage: 4, counterBurnDuration: 3, guardDuration: 3 },
-    4: { counterBurnDamage: 5, counterBurnDuration: 3, guardDuration: 3 },
-    5: { counterBurnDamage: 6, counterBurnDuration: 3, guardDuration: 3 },
+    1: { critMultiplier: 1.60 },
+    2: { critMultiplier: 1.70 },
+    3: { critMultiplier: 1.80 },
+    4: { critMultiplier: 1.90 },
+    5: { critMultiplier: 2.00 },
   },
 };
 
@@ -364,31 +366,31 @@ export const SKILLS = {
   tidal_wave,
   healing_current,
   // Earth
-  earth_slam,
-  bedrock,
-  rockslide,
-  stone_wall,
+  boulder_slash,
+  fortitude,
+  fortify,
+  stone_thorns,
   // Wind
-  wind_slash,
-  swift_step,
-  cyclone,
-  wind_veil,
+  dual_slash,
+  swiftness,
+  whirlwind,
+  critical_wind,
 };
 
-// Per-element ordered list: [T1 active, T1 passive, T2A, T2B]
+// Per-element ordered list: [T1 active, T1 passive, T2 active, T2 passive]
 export const ELEMENT_SKILLS = {
   fire: ['fire_slash', 'smoldering', 'fire_burst', 'flame_guard'],
   water: ['tidal_strike', 'hydration', 'tidal_wave', 'healing_current'],
-  earth: ['earth_slam', 'bedrock', 'rockslide', 'stone_wall'],
-  wind: ['wind_slash', 'swift_step', 'cyclone', 'wind_veil'],
+  earth: ['boulder_slash', 'fortitude', 'fortify', 'stone_thorns'],
+  wind: ['dual_slash', 'swiftness', 'whirlwind', 'critical_wind'],
 };
 
 // Tier 1 active skill per element (the parent that unlocks T2 skills)
 export const ELEMENT_T1_ACTIVE = {
   fire: 'fire_slash',
   water: 'tidal_strike',
-  earth: 'earth_slam',
-  wind: 'wind_slash',
+  earth: 'boulder_slash',
+  wind: 'dual_slash',
 };
 
 /**
@@ -420,7 +422,8 @@ export function canUnlockElementSkill(skillId, hero) {
   }
 
   // Tier 2
-  if (hero.level < 10) return { can: false, reason: 'Requires level 10.' };
+  const requiredLevel = skill.unlockLevel || 10;
+  if (hero.level < requiredLevel) return { can: false, reason: `Requires level ${requiredLevel}.` };
   const parentEntry = hero.unlockedSkills[skill.unlockedBy];
   if (!parentEntry || parentEntry.stars < 5) {
     const parentSkill = SKILLS[skill.unlockedBy];

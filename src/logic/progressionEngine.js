@@ -41,13 +41,25 @@ export const STANCES = {
   },
   water: {
     name: 'Water Stance',
-    description: 'Innate — scales with level, always active',
+    description: '+1% max HP per level → +20% at level 20.',
     getBonus: (level) => ({
       maxHpPercent: level * 0.01,  // +1% max HP per level → +20% at level 20
     }),
   },
-  earth: { name: 'Earth Stance', description: 'Coming soon.', getBonus: () => ({}) },
-  wind: { name: 'Wind Stance', description: 'Coming soon.', getBonus: () => ({}) },
+  earth: {
+    name: 'Earth Stance',
+    description: '+1 DEF per level → +20 DEF at level 20.',
+    getBonus: (level) => ({
+      defBonus: level * 1, // +1 DEF per level → +20 DEF at level 20
+    }),
+  },
+  wind: {
+    name: 'Wind Stance',
+    description: '+1 AGI per level → +0.5% crit + 0.5% dodge per AGI point.',
+    getBonus: (level) => ({
+      agiBonus: level * 1,
+    }),
+  },
 };
 
 /**
@@ -164,7 +176,7 @@ export function checkLevelUp(hero) {
     currentStatPoints += 3; // +3 Stat Points per level
     levelsGained += 1;
 
-    messages.push(`🎉 Level up! Mochi is now level ${currentLevel}! Gained +1 Skill Point and +3 Stat Points.`);
+    messages.push(`🎉 Level up! You are now level ${currentLevel}! Gained +1 Skill Point and +3 Stat Points.`);
   }
 
   const strength = hero.strength || 10;
@@ -281,12 +293,51 @@ export function calculateEffectiveStats(hero, skillDefinitions = SKILLS, runBuff
         passives.healingEfficiency = skillDef.stars[stars].healingEfficiency || 0;
       }
     }
+
+    // Fortitude — status resistance chance (checked at runtime in combat)
+    if (skillId === 'fortitude' && hero.equippedSkills && hero.equippedSkills.includes('fortitude')) {
+      const stars = unlockedSkills[skillId].stars || 1;
+      if (skillDef.stars[stars]) {
+        passives.statusResistChance = skillDef.stars[stars].statusResistChance || 0;
+      }
+    }
+
+    // Stone Thorns — raw damage reflection (checked at runtime in combat)
+    if (skillId === 'stone_thorns' && hero.equippedSkills && hero.equippedSkills.includes('stone_thorns')) {
+      const stars = unlockedSkills[skillId].stars || 1;
+      if (skillDef.stars[stars]) {
+        passives.stoneThornsReflect = skillDef.stars[stars].reflectPercent || 0;
+      }
+    }
+
+    // Swiftness — flat dodge bonus baked directly into dodge stat
+    if (skillId === 'swiftness' && hero.equippedSkills && hero.equippedSkills.includes('swiftness')) {
+      const stars = unlockedSkills[skillId].stars || 1;
+      if (skillDef.stars[stars]) {
+        dodge += skillDef.stars[stars].dodgeBonus || 0;
+      }
+    }
+
+    // Critical Wind — overrides crit multiplier (replaces base 150%, not additive)
+    if (skillId === 'critical_wind' && hero.equippedSkills && hero.equippedSkills.includes('critical_wind')) {
+      const stars = unlockedSkills[skillId].stars || 1;
+      if (skillDef.stars[stars]) {
+        passives.critMultiplier = skillDef.stars[stars].critMultiplier;
+      }
+    }
   }
 
-  // --- 3. Stance ATK % bonus (Fire Stance: +1% ATK per level) --------------
+  // --- 3. Stance bonuses (Fire: +ATK%, Water: +maxHP%, Earth: +DEF flat) -------
   const stanceBonus = getStanceBonus(hero.element, hero.level);
   if (stanceBonus.atkPercent) {
     attack = Math.floor(attack * (1 + stanceBonus.atkPercent));
+  }
+  if (stanceBonus.defBonus) {
+    defence += stanceBonus.defBonus;
+  }
+  if (stanceBonus.agiBonus) {
+    critChance += stanceBonus.agiBonus * 0.005;
+    dodge += stanceBonus.agiBonus * 0.005;
   }
 
   // --- 4. Set bonuses ------------------------------------------------------

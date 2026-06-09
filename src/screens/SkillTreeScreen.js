@@ -37,15 +37,15 @@ const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const ELEMENTS = [
   { id: 'fire',  label: 'Fire',  icon: '🔥', color: '#FF6B35', available: true  },
   { id: 'water', label: 'Water', icon: '💧', color: '#3B9EFF', available: true  },
-  { id: 'earth', label: 'Earth', icon: '⛰️', color: '#8B6914', available: false },
-  { id: 'wind',  label: 'Wind',  icon: '🌪️', color: '#5CC4B8', available: false },
+  { id: 'earth', label: 'Earth', icon: '⛰️', color: '#639922', available: true  },
+  { id: 'wind',  label: 'Wind',  icon: '🌪️', color: '#7F77DD', available: true  },
 ];
 
 const ELEMENT_COLORS = {
   fire:  '#FF6B35',
   water: '#3B9EFF',
-  earth: '#8B6914',
-  wind:  '#5CC4B8',
+  earth: '#639922',
+  wind:  '#7F77DD',
 };
 
 // Stars display
@@ -80,6 +80,15 @@ const SKILL_STAT_LABELS = {
   healPerTurn: 'Healing / Turn',
   cooldown: 'Cooldown',
   healingEfficiency: 'Healing Efficiency',
+  // Earth stats
+  stunChance: 'Stun Chance',
+  defBoostPercent: 'DEF Boost',
+  reflectPercent: 'Reflect (raw damage)',
+  statusResistChance: 'Status Resistance',
+  // Wind stats
+  dodgeBonus: 'Dodge Bonus',
+  bonusCritChance: 'Bonus Crit Chance (per hit)',
+  critMultiplier: 'Crit Damage Multiplier',
 };
 
 const formatSkillStatValue = (key, value) => {
@@ -97,6 +106,17 @@ const formatSkillStatValue = (key, value) => {
   }
   if (key === 'burnDuration' || key === 'counterBurnDuration' || key === 'guardDuration' || key === 'duration' || key === 'cooldown') {
     return `${value} ${value === 1 ? 'turn' : 'turns'}`;
+  }
+  // Earth stats
+  if (key === 'stunChance' || key === 'defBoostPercent' || key === 'reflectPercent' || key === 'statusResistChance') {
+    return `${Math.round(value * 100)}%`;
+  }
+  // Wind stats
+  if (key === 'dodgeBonus' || key === 'bonusCritChance') {
+    return `+${Math.round(value * 100)}%`;
+  }
+  if (key === 'critMultiplier') {
+    return `${Math.round(value * 100)}% (replaces base 150%)`;
   }
   return value;
 };
@@ -474,11 +494,9 @@ export default function SkillTreeScreen() {
             </Svg>
             <View style={styles.stanceInner}>
               <View style={styles.stanceLeft}>
-                <Text style={styles.stanceLabel}>
-                  {element === 'water' ? 'Innate — scales with level, always active' : 'INNATE · ALWAYS ACTIVE'}
-                </Text>
+                <Text style={styles.stanceLabel}>INNATE · ALWAYS ACTIVE</Text>
                 <Text style={[styles.stanceName, { color: elementColor }]}>
-                  {ELEMENTS.find(e => e.id === element)?.icon} {element === 'water' ? 'Water Stance — Tidal Resilience' : stance.name}
+                  {ELEMENTS.find(e => e.id === element)?.icon} {stance.name}
                 </Text>
                 <Text style={styles.stanceDesc}>{stance.description}</Text>
               </View>
@@ -501,6 +519,26 @@ export default function SkillTreeScreen() {
                 {stanceBonus.maxHpPercent !== undefined && (
                   <Text style={[styles.stanceStat, { color: elementColor, fontSize: 10, opacity: 0.8 }]}>
                     (currently +{Math.floor((hero.maxHp || 50) * stanceBonus.maxHpPercent)} HP)
+                  </Text>
+                )}
+                {stanceBonus.defBonus !== undefined && (
+                  <Text style={[styles.stanceStat, { color: elementColor }]}>
+                    +{stanceBonus.defBonus} DEF
+                  </Text>
+                )}
+                {stanceBonus.defBonus !== undefined && (
+                  <Text style={[styles.stanceStat, { color: elementColor, fontSize: 10, opacity: 0.8 }]}>
+                    (+1 DEF / level)
+                  </Text>
+                )}
+                {stanceBonus.agiBonus !== undefined && (
+                  <Text style={[styles.stanceStat, { color: elementColor }]}>
+                    +{stanceBonus.agiBonus} AGI
+                  </Text>
+                )}
+                {stanceBonus.agiBonus !== undefined && (
+                  <Text style={[styles.stanceStat, { color: elementColor, fontSize: 10, opacity: 0.8 }]}>
+                    +{(stanceBonus.agiBonus * 0.5).toFixed(1)}% crit · +{(stanceBonus.agiBonus * 0.5).toFixed(1)}% dodge
                   </Text>
                 )}
               </View>
