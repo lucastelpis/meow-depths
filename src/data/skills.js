@@ -5,7 +5,7 @@
  * Each element has:
  *   - Tier 1 Active  (core attack / utility)
  *   - Tier 1 Passive (always-on enhancement when equipped)
- *   - Tier 2 Active A (unlocked from T1 Active at ★5 + level 15)
+ *   - Tier 2 Active A (unlocked from T1 Active at ★5 + level 10)
  *   - Tier 2 Active B (same unlock requirement as T2A)
  *
  * stars map: { 1: {...}, 2: {...}, 3: {...}, 4: {...}, 5: {...} }
@@ -401,7 +401,7 @@ export function getSkillCost(skill) {
 /**
  * Returns whether the hero can unlock a skill.
  * T1: hero.level >= 2
- * T2: hero.level >= 15 AND parent T1 active is at stars 5
+ * T2: hero.level >= 10 AND parent T1 active is at stars 5
  */
 export function canUnlockElementSkill(skillId, hero) {
   const skill = SKILLS[skillId];
@@ -420,7 +420,7 @@ export function canUnlockElementSkill(skillId, hero) {
   }
 
   // Tier 2
-  if (hero.level < 15) return { can: false, reason: 'Requires level 15.' };
+  if (hero.level < 10) return { can: false, reason: 'Requires level 10.' };
   const parentEntry = hero.unlockedSkills[skill.unlockedBy];
   if (!parentEntry || parentEntry.stars < 5) {
     const parentSkill = SKILLS[skill.unlockedBy];

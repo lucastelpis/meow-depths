@@ -39,6 +39,10 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const BANNER_WIDTH = SCREEN_WIDTH - 32;
 const BANNER_HEIGHT = BANNER_WIDTH * (1024 / 4128);
 
+// Display size for Mochi's home screen avatar sprite (set higher to zoom in and crop padding)
+const HERO_AVATAR_DISPLAY_SIZE = 90;
+
+
 // ─── Nav button metadata ────────────────────────────────────────────────────
 const NAV_ITEMS = [
   { key: 'WorldMap',  icon: '🚪', label: 'Enter the Depths', sub: 'Conquer Zones',  color: '#B5701A' }, // torchOrange / primary
@@ -307,7 +311,7 @@ const previewMaxHp = effectiveMaxHp + tempVitAlloc * 3;
                 {...HERO_SPRITE.idle}
                 fps={8}
                 loop={true}
-                displaySize={64}
+                displaySize={HERO_AVATAR_DISPLAY_SIZE}
               />
             </View>
             <View style={styles.levelBadge}>

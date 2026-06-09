@@ -21,88 +21,89 @@
  */
 
 export const HERO_SPRITE = {
+  platformOffsetFactor: 0.24,
   idle: {
-    source:    require('../../assets/sprites/Tiny Swords (Free Pack)/Units/Original/cat_idle.png'),
-    frameSize: 104,
-    frames:    9,
+    source: require('../../assets/sprites/units/hero/hero_idle.png'),
+    frameSize: 128,
+    frames: 4,
   },
   attack: {
-    source:    require('../../assets/sprites/Tiny Swords (Free Pack)/Units/Original/cat_attack.png'),
-    frameSize: 104,
-    frames:    11,
+    source: require('../../assets/sprites/units/hero/hero_attack.png'),
+    frameSize: 128,
+    frames: 8,
   },
   guard: {
-    source:    require('../../assets/sprites/Tiny Swords (Free Pack)/Units/Original/cat_idle.png'),
-    frameSize: 104,
-    frames:    9,
+    source: require('../../assets/sprites/units/hero/hero_idle.png'),
+    frameSize: 128,
+    frames: 4,
   },
   // Active skill animations
   fire_slash: {
-    source:    require('../../assets/sprites/Tiny Swords (Free Pack)/Units/Original/cat_flame_attack.png'),
-    frameSize: 104,
-    frames:    11,
+    source: require('../../assets/sprites/units/hero/hero_flame_attack.png'),
+    frameSize: 128,
+    frames: 8,
   },
   fire_burst: {
-    source:    require('../../assets/sprites/Tiny Swords (Free Pack)/Units/Original/cat_flame_attack.png'),
-    frameSize: 104,
-    frames:    11,
+    source: require('../../assets/sprites/units/hero/hero_flame_attack.png'),
+    frameSize: 128,
+    frames: 8,
   },
   flame_guard: {
-    source:    require('../../assets/sprites/Tiny Swords (Free Pack)/Units/Original/cat_flame_attack.png'),
-    frameSize: 104,
-    frames:    11,
+    source: require('../../assets/sprites/units/hero/hero_flame_attack.png'),
+    frameSize: 128,
+    frames: 8,
   },
   tidal_strike: {
-    source:    require('../../assets/sprites/Tiny Swords (Free Pack)/Units/Original/cat_water_attack.png'),
-    frameSize: 104,
-    frames:    11,
+    source: require('../../assets/sprites/units/hero/hero_water_attack.png'),
+    frameSize: 128,
+    frames: 8,
   },
   tidal_wave: {
-    source:    require('../../assets/sprites/Tiny Swords (Free Pack)/Units/Original/cat_water_attack.png'),
-    frameSize: 104,
-    frames:    11,
+    source: require('../../assets/sprites/units/hero/hero_water_attack.png'),
+    frameSize: 128,
+    frames: 8,
   },
   healing_current: {
-    source:    require('../../assets/sprites/Tiny Swords (Free Pack)/Units/Original/cat_water_attack.png'),
-    frameSize: 104,
-    frames:    11,
+    source: require('../../assets/sprites/units/hero/hero_water_attack.png'),
+    frameSize: 128,
+    frames: 8,
   },
   earth_slam: {
-    source:    require('../../assets/sprites/Tiny Swords (Free Pack)/Units/Original/cat_earth_attack.png'),
-    frameSize: 104,
-    frames:    11,
+    source: require('../../assets/sprites/units/hero/hero_earth_attack.png'),
+    frameSize: 128,
+    frames: 8,
   },
   rockslide: {
-    source:    require('../../assets/sprites/Tiny Swords (Free Pack)/Units/Original/cat_earth_attack.png'),
-    frameSize: 104,
-    frames:    11,
+    source: require('../../assets/sprites/units/hero/hero_earth_attack.png'),
+    frameSize: 128,
+    frames: 8,
   },
   stone_wall: {
-    source:    require('../../assets/sprites/Tiny Swords (Free Pack)/Units/Original/cat_earth_attack.png'),
-    frameSize: 104,
-    frames:    11,
+    source: require('../../assets/sprites/units/hero/hero_earth_attack.png'),
+    frameSize: 128,
+    frames: 8,
   },
   wind_slash: {
-    source:    require('../../assets/sprites/Tiny Swords (Free Pack)/Units/Original/cat_wind_attack.png'),
-    frameSize: 104,
-    frames:    11,
+    source: require('../../assets/sprites/units/hero/hero_wind_attack.png'),
+    frameSize: 128,
+    frames: 8,
   },
   cyclone: {
-    source:    require('../../assets/sprites/Tiny Swords (Free Pack)/Units/Original/cat_wind_attack.png'),
-    frameSize: 104,
-    frames:    11,
+    source: require('../../assets/sprites/units/hero/hero_wind_attack.png'),
+    frameSize: 128,
+    frames: 8,
   },
   wind_veil: {
-    source:    require('../../assets/sprites/Tiny Swords (Free Pack)/Units/Original/cat_wind_attack.png'),
-    frameSize: 104,
-    frames:    11,
+    source: require('../../assets/sprites/units/hero/hero_wind_attack.png'),
+    frameSize: 128,
+    frames: 8,
   },
 };
 
 export const HERO_FIREPLACE_SPRITE = {
-  source:    require('../../assets/sprites/Tiny Swords (Free Pack)/Units/Original/sitting_fireplace.png'),
+  source: require('../../assets/sprites/Tiny Swords (Free Pack)/Units/Original/sitting_fireplace.png'),
   frameSize: 104,
-  frames:    8,
+  frames: 8,
 };
 
 // ─── Enemy sprite definitions ─────────────────────────────────────────────────
@@ -112,69 +113,69 @@ export const ENEMY_SPRITES = {
   // ── Zone 1 — Soggy Sewers (Black units) ──────────────────────────────────
 
   sewer_rat: {
-    idle:   { source: require('../../assets/sprites/Tiny Swords (Free Pack)/Units/Black Units/Archer/Archer_Idle.png'),  frameSize: 192, frames: 6 },
-    attack: { source: require('../../assets/sprites/Tiny Swords (Free Pack)/Units/Black Units/Archer/Archer_Shoot.png'), frameSize: 192, frames: 8 },
+    idle: { source: require('../../assets/sprites/units/dungeon-1/rat_idle.png'), frameSize: 128, frames: 4 },
+    attack: { source: require('../../assets/sprites/units/dungeon-1/rat_attack.png'), frameSize: 128, frames: 8 },
   },
   slimeling: {
-    idle:   { source: require('../../assets/sprites/Tiny Swords (Free Pack)/Units/Black Units/Monk/Idle.png'), frameSize: 192, frames: 6 },
-    attack: { source: require('../../assets/sprites/Tiny Swords (Free Pack)/Units/Black Units/Monk/Heal.png'), frameSize: 192, frames: 11 },
+    idle: { source: require('../../assets/sprites/units/dungeon-1/slime_idle.png'), frameSize: 128, frames: 4 },
+    attack: { source: require('../../assets/sprites/units/dungeon-1/slime_attack.png'), frameSize: 128, frames: 8 },
   },
   cockroach_knight: {
-    idle:   { source: require('../../assets/sprites/Tiny Swords (Free Pack)/Units/Black Units/Warrior/Warrior_Idle.png'),    frameSize: 192, frames: 8 },
-    attack: { source: require('../../assets/sprites/Tiny Swords (Free Pack)/Units/Black Units/Warrior/Warrior_Attack1.png'), frameSize: 192, frames: 4 },
+    idle: { source: require('../../assets/sprites/units/dungeon-1/cockroach_idle.png'), frameSize: 128, frames: 4 },
+    attack: { source: require('../../assets/sprites/units/dungeon-1/cockroach_attack.png'), frameSize: 128, frames: 8 },
   },
   plague_frog: {
-    idle:   { source: require('../../assets/sprites/Tiny Swords (Free Pack)/Units/Black Units/Pawn/Pawn_Idle.png'),             frameSize: 192, frames: 8 },
-    attack: { source: require('../../assets/sprites/Tiny Swords (Free Pack)/Units/Black Units/Pawn/Pawn_Interact Knife.png'),   frameSize: 192, frames: 4 },
+    idle: { source: require('../../assets/sprites/units/dungeon-1/frog_idle.png'), frameSize: 128, frames: 4 },
+    attack: { source: require('../../assets/sprites/units/dungeon-1/frog_attack.png'), frameSize: 128, frames: 8 },
   },
   king_rat: {
-    idle:   { source: require('../../assets/sprites/Tiny Swords (Free Pack)/Units/Yellow Units/Warrior/Warrior_Idle.png'),    frameSize: 192, frames: 8 },
-    attack: { source: require('../../assets/sprites/Tiny Swords (Free Pack)/Units/Yellow Units/Warrior/Warrior_Attack1.png'), frameSize: 192, frames: 4 },
+    idle: { source: require('../../assets/sprites/units/dungeon-1/rat_king_idle.png'), frameSize: 128, frames: 4 },
+    attack: { source: require('../../assets/sprites/units/dungeon-1/rat_king_attack.png'), frameSize: 128, frames: 8 },
   },
 
   // ── Zone 2 — Twisted Garden (Red units) ──────────────────────────────────
 
   thorn_sprite: {
-    idle:   { source: require('../../assets/sprites/Tiny Swords (Free Pack)/Units/Red Units/Archer/Archer_Idle.png'),  frameSize: 192, frames: 6 },
+    idle: { source: require('../../assets/sprites/Tiny Swords (Free Pack)/Units/Red Units/Archer/Archer_Idle.png'), frameSize: 192, frames: 6 },
     attack: { source: require('../../assets/sprites/Tiny Swords (Free Pack)/Units/Red Units/Archer/Archer_Shoot.png'), frameSize: 192, frames: 8 },
   },
   giant_beetle: {
-    idle:   { source: require('../../assets/sprites/Tiny Swords (Free Pack)/Units/Red Units/Warrior/Warrior_Idle.png'),    frameSize: 192, frames: 8 },
+    idle: { source: require('../../assets/sprites/Tiny Swords (Free Pack)/Units/Red Units/Warrior/Warrior_Idle.png'), frameSize: 192, frames: 8 },
     attack: { source: require('../../assets/sprites/Tiny Swords (Free Pack)/Units/Red Units/Warrior/Warrior_Attack1.png'), frameSize: 192, frames: 4 },
   },
   mushroom_puffer: {
-    idle:   { source: require('../../assets/sprites/Tiny Swords (Free Pack)/Units/Red Units/Monk/Idle.png'), frameSize: 192, frames: 6 },
+    idle: { source: require('../../assets/sprites/Tiny Swords (Free Pack)/Units/Red Units/Monk/Idle.png'), frameSize: 192, frames: 6 },
     attack: { source: require('../../assets/sprites/Tiny Swords (Free Pack)/Units/Red Units/Monk/Heal.png'), frameSize: 192, frames: 11 },
   },
   vine_lurker: {
-    idle:   { source: require('../../assets/sprites/Tiny Swords (Free Pack)/Units/Red Units/Pawn/Pawn_Idle.png'),           frameSize: 192, frames: 8 },
+    idle: { source: require('../../assets/sprites/Tiny Swords (Free Pack)/Units/Red Units/Pawn/Pawn_Idle.png'), frameSize: 192, frames: 8 },
     attack: { source: require('../../assets/sprites/Tiny Swords (Free Pack)/Units/Red Units/Pawn/Pawn_Interact Knife.png'), frameSize: 192, frames: 4 },
   },
   rootmother: {
-    idle:   { source: require('../../assets/sprites/Tiny Swords (Free Pack)/Units/Yellow Units/Monk/Idle.png'), frameSize: 192, frames: 6 },
+    idle: { source: require('../../assets/sprites/Tiny Swords (Free Pack)/Units/Yellow Units/Monk/Idle.png'), frameSize: 192, frames: 6 },
     attack: { source: require('../../assets/sprites/Tiny Swords (Free Pack)/Units/Yellow Units/Monk/Heal.png'), frameSize: 192, frames: 11 },
   },
 
   // ── Zone 3 — Sunken Docks (Purple units) ─────────────────────────────────
 
   barnacle_crab: {
-    idle:   { source: require('../../assets/sprites/Tiny Swords (Free Pack)/Units/Purple Units/Warrior/Warrior_Idle.png'),    frameSize: 192, frames: 8 },
+    idle: { source: require('../../assets/sprites/Tiny Swords (Free Pack)/Units/Purple Units/Warrior/Warrior_Idle.png'), frameSize: 192, frames: 8 },
     attack: { source: require('../../assets/sprites/Tiny Swords (Free Pack)/Units/Purple Units/Warrior/Warrior_Attack1.png'), frameSize: 192, frames: 4 },
   },
   sea_witch_eel: {
-    idle:   { source: require('../../assets/sprites/Tiny Swords (Free Pack)/Units/Purple Units/Archer/Archer_Idle.png'),  frameSize: 192, frames: 6 },
+    idle: { source: require('../../assets/sprites/Tiny Swords (Free Pack)/Units/Purple Units/Archer/Archer_Idle.png'), frameSize: 192, frames: 6 },
     attack: { source: require('../../assets/sprites/Tiny Swords (Free Pack)/Units/Purple Units/Archer/Archer_Shoot.png'), frameSize: 192, frames: 8 },
   },
   drowned_sailor: {
-    idle:   { source: require('../../assets/sprites/Tiny Swords (Free Pack)/Units/Purple Units/Monk/Idle.png'), frameSize: 192, frames: 6 },
+    idle: { source: require('../../assets/sprites/Tiny Swords (Free Pack)/Units/Purple Units/Monk/Idle.png'), frameSize: 192, frames: 6 },
     attack: { source: require('../../assets/sprites/Tiny Swords (Free Pack)/Units/Purple Units/Monk/Heal.png'), frameSize: 192, frames: 11 },
   },
   pufferfish_bomb: {
-    idle:   { source: require('../../assets/sprites/Tiny Swords (Free Pack)/Units/Purple Units/Pawn/Pawn_Idle.png'),           frameSize: 192, frames: 8 },
+    idle: { source: require('../../assets/sprites/Tiny Swords (Free Pack)/Units/Purple Units/Pawn/Pawn_Idle.png'), frameSize: 192, frames: 8 },
     attack: { source: require('../../assets/sprites/Tiny Swords (Free Pack)/Units/Purple Units/Pawn/Pawn_Interact Knife.png'), frameSize: 192, frames: 4 },
   },
   captain_moray: {
-    idle:   { source: require('../../assets/sprites/Tiny Swords (Free Pack)/Units/Yellow Units/Warrior/Warrior_Idle.png'),    frameSize: 192, frames: 8 },
+    idle: { source: require('../../assets/sprites/Tiny Swords (Free Pack)/Units/Yellow Units/Warrior/Warrior_Idle.png'), frameSize: 192, frames: 8 },
     attack: { source: require('../../assets/sprites/Tiny Swords (Free Pack)/Units/Yellow Units/Warrior/Warrior_Attack1.png'), frameSize: 192, frames: 4 },
   },
 };
@@ -182,13 +183,13 @@ export const ENEMY_SPRITES = {
 // ─── Fallback for unknown / elite enemies ─────────────────────────────────────
 
 export const FALLBACK_ENEMY_SPRITE = {
-  idle:   { source: require('../../assets/sprites/Tiny Swords (Free Pack)/Units/Black Units/Warrior/Warrior_Idle.png'),    frameSize: 192, frames: 8 },
+  idle: { source: require('../../assets/sprites/Tiny Swords (Free Pack)/Units/Black Units/Warrior/Warrior_Idle.png'), frameSize: 192, frames: 8 },
   attack: { source: require('../../assets/sprites/Tiny Swords (Free Pack)/Units/Black Units/Warrior/Warrior_Attack1.png'), frameSize: 192, frames: 4 },
 };
 
 // ─── Buildings (static images, no animation) ──────────────────────────────────
 
-export const CAMP_CASTLE    = require('../../assets/sprites/Tiny Swords (Free Pack)/Buildings/Yellow Buildings/Castle.png');
+export const CAMP_CASTLE = require('../../assets/sprites/Tiny Swords (Free Pack)/Buildings/Yellow Buildings/Castle.png');
 export const CAMP_MONASTERY = require('../../assets/sprites/Tiny Swords (Free Pack)/Buildings/Yellow Buildings/Monastery.png');
 
 // ─── Helper ──────────────────────────────────────────────────────────────────
@@ -205,15 +206,21 @@ export function getEnemySprite(enemy) {
   const baseId = (enemy.id || '').replace(/^elite_/, '').toLowerCase();
   const spriteDef = ENEMY_SPRITES[baseId] || FALLBACK_ENEMY_SPRITE;
 
+  if (spriteDef.platformOffsetFactor !== undefined) {
+    return {
+      ...spriteDef,
+    };
+  }
+
   // Custom offset factors based on the asset class template from Tiny Swords
   let platformOffsetFactor = 0.25; // Default (Warrior class)
-  
+
   if (baseId.includes('rat') || baseId.includes('thorn') || baseId.includes('eel')) {
     platformOffsetFactor = 0.28; // Archer class
   } else if (
-    baseId.includes('slime') || 
-    baseId.includes('puffer') || 
-    baseId.includes('sailor') || 
+    baseId.includes('slime') ||
+    baseId.includes('puffer') ||
+    baseId.includes('sailor') ||
     baseId.includes('root')
   ) {
     platformOffsetFactor = 0.26; // Monk class

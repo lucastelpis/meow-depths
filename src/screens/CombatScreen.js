@@ -44,14 +44,14 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
-import { ZONES }        from '../data/zones';
-import { ENEMIES, STAR_MULTIPLIERS }      from '../data/enemies';
-import { SKILLS }       from '../data/skills';
-import { CONSUMABLES }  from '../data/gear';
-import AnimatedSprite   from '../components/AnimatedSprite';
-import ScreenLoader     from '../components/ScreenLoader';
-import Button           from '../components/ui/Button';
-import ResourceBar      from '../components/ui/ResourceBar';
+import { ZONES } from '../data/zones';
+import { ENEMIES, STAR_MULTIPLIERS } from '../data/enemies';
+import { SKILLS } from '../data/skills';
+import { CONSUMABLES } from '../data/gear';
+import AnimatedSprite from '../components/AnimatedSprite';
+import ScreenLoader from '../components/ScreenLoader';
+import Button from '../components/ui/Button';
+import ResourceBar from '../components/ui/ResourceBar';
 import { HERO_SPRITE, getEnemySprite } from '../constants/sprites';
 import {
   executeAttack,
@@ -70,8 +70,8 @@ import {
 } from '../logic/combatEngine';
 import { calculateEncounterLoot } from '../logic/lootEngine';
 import { calculateEffectiveStats, checkLevelUp, getStanceBonus, applyHealingEfficiency } from '../logic/progressionEngine';
-import { useGame }  from '../state/gameState';
-import theme        from '../constants/theme';
+import { useGame } from '../state/gameState';
+import theme from '../constants/theme';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -85,24 +85,30 @@ const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 // Constants
 // ---------------------------------------------------------------------------
 
+// Sprite display sizes in combat (can be tweaked to scale characters up or down)
+const HERO_DISPLAY_SIZE = 140;
+const ENEMY_DISPLAY_SIZE = 130;
+const BOSS_DISPLAY_SIZE = 165;
+
+
 /** Map enemy ids (or keywords) to display emojis */
 const ENEMY_EMOJI_MAP = {
-  rat:       '🐀',
-  slime:     '🟢',
+  rat: '🐀',
+  slime: '🟢',
   cockroach: '🪳',
-  frog:      '🐸',
-  boss:      '👑',
-  thorn:     '🌿',
-  beetle:    '🐛',
-  mushroom:  '🍄',
-  vine:      '🌿',
-  crab:      '🦀',
-  eel:       '🐍',
-  sailor:    '👻',
-  puffer:    '🐡',
-  king:      '👑',
-  root:      '🍄',
-  captain:   '👑',
+  frog: '🐸',
+  boss: '👑',
+  thorn: '🌿',
+  beetle: '🐛',
+  mushroom: '🍄',
+  vine: '🌿',
+  crab: '🦀',
+  eel: '🐍',
+  sailor: '👻',
+  puffer: '🐡',
+  king: '👑',
+  root: '🍄',
+  captain: '👑',
 };
 
 /** Atmospheric narrator lines, picked randomly on mount */
@@ -306,31 +312,118 @@ export default function CombatScreen() {
 
 
   // ── Local combat state ───────────────────────────────────────────────────
-  const [combatPhase, setCombatPhase]             = useState('start');
-  const [enemies, setEnemies]                     = useState([]);
-  const [heroState, setHeroState]                 = useState(null);
+  const [combatPhase, setCombatPhase] = useState('start');
+  const [enemiesState, setEnemiesState] = useState({ alive: [], dying: [] });
+  const enemies = enemiesState.alive;
+  const dyingEnemies = enemiesState.dying;
+
+  const setEnemies = useCallback((val) => {
+    setEnemiesState(prev => ({
+      ...prev,
+      alive: typeof val === 'function' ? val(prev.alive) : val
+    }));
+  }, []);
+
+  const setDyingEnemies = useCallback((val) => {
+    setEnemiesState(prev => ({
+      ...prev,
+      dying: typeof val === 'function' ? val(prev.dying) : val
+    }));
+  }, []);
+
+  const [heroState, setHeroState] = useState(null);
   const [selectedEnemyIndex, setSelectedEnemyIndex] = useState(0);
-  const [cooldowns, setCooldowns]                 = useState({});
-  const [combatLog, setCombatLog]                 = useState([]);
-  const [lootResult, setLootResult]               = useState(null);
-  const [turnCount, setTurnCount]                 = useState(0);
-  const [runConsumables, setRunConsumables]        = useState([]);
-  const [narratorText, setNarratorText]           = useState('');
-  const [showItemModal, setShowItemModal]          = useState(false);
-  const [levelUpMessages, setLevelUpMessages]      = useState([]);
+  const [cooldowns, setCooldowns] = useState({});
+  const [combatLog, setCombatLog] = useState([]);
+  const [lootResult, setLootResult] = useState(null);
+  const [turnCount, setTurnCount] = useState(0);
+  const [runConsumables, setRunConsumables] = useState([]);
+  const [narratorText, setNarratorText] = useState('');
+  const [showItemModal, setShowItemModal] = useState(false);
+  const [levelUpMessages, setLevelUpMessages] = useState([]);
 
   // ── Animation state ───────────────────────────────────────────────────────
   // 'idle' | 'attack' | 'guard'  — controls which sprite sheet plays for the hero
-  const [heroAnim, setHeroAnim]   = useState('idle');
+  const [heroAnim, setHeroAnim] = useState('idle');
   // { [enemy.uid]: 'idle' | 'attack' }  — per-enemy animation state
   const [enemyAnims, setEnemyAnims] = useState({});
 
-  // ── Defeated/Dying animation state ──────────────────────────────────────────
-  const [dyingEnemies, setDyingEnemies] = useState([]);
 
   // Track defeated enemies for loot calculation at the end
   const defeatedEnemiesRef = useRef([]);
   const scrollViewRef = useRef(null);
+
+  // ── Damage Popups State & Animators ───────────────────────────────────────
+  const [popups, setPopups] = useState([]);
+  const prevHeroHpRef = useRef(undefined);
+  const prevEnemiesHpRef = useRef({});
+
+  const triggerDamagePopup = useCallback((targetUid, amount, isHeal = false) => {
+    const id = `${targetUid}_${Date.now()}_${Math.random()}`;
+    setPopups((prev) => [...prev, { id, targetUid, amount, isHeal }]);
+  }, []);
+
+  const removePopup = useCallback((id) => {
+    setPopups((prev) => prev.filter((p) => p.id !== id));
+  }, []);
+
+  // Monitor Hero HP changes for damage and healing popups
+  useEffect(() => {
+    if (!heroState) return;
+
+    if (prevHeroHpRef.current === undefined) {
+      prevHeroHpRef.current = heroState.hp;
+      return;
+    }
+
+    if (heroState.hp < prevHeroHpRef.current) {
+      const damage = prevHeroHpRef.current - heroState.hp;
+      if (damage > 0) {
+        triggerDamagePopup('hero', damage, false);
+      }
+    } else if (heroState.hp > prevHeroHpRef.current) {
+      const heal = heroState.hp - prevHeroHpRef.current;
+      if (heal > 0) {
+        triggerDamagePopup('hero', heal, true);
+      }
+    }
+    prevHeroHpRef.current = heroState.hp;
+  }, [heroState?.hp, triggerDamagePopup]);
+
+  // Monitor Enemy HP changes for damage and healing popups (including death)
+  useEffect(() => {
+    if (!enemies) return;
+
+    enemies.forEach((e) => {
+      const prevHp = prevEnemiesHpRef.current[e.uid];
+      if (prevHp === undefined) {
+        prevEnemiesHpRef.current[e.uid] = e.hp;
+      } else if (e.hp < prevHp) {
+        const damage = prevHp - e.hp;
+        if (damage > 0) {
+          triggerDamagePopup(e.uid, damage, false);
+        }
+        prevEnemiesHpRef.current[e.uid] = e.hp;
+      } else if (e.hp > prevHp) {
+        const heal = e.hp - prevHp;
+        if (heal > 0) {
+          triggerDamagePopup(e.uid, heal, true);
+        }
+        prevEnemiesHpRef.current[e.uid] = e.hp;
+      }
+    });
+
+    const currentUids = new Set(enemies.map((e) => e.uid));
+    Object.keys(prevEnemiesHpRef.current).forEach((uid) => {
+      if (!currentUids.has(uid)) {
+        const prevHp = prevEnemiesHpRef.current[uid];
+        if (prevHp > 0) {
+          triggerDamagePopup(uid, prevHp, false);
+        }
+        delete prevEnemiesHpRef.current[uid];
+      }
+    });
+  }, [enemies, triggerDamagePopup]);
 
   // ── Convenience: add to combat log (keeps last 30, UI shows last 3) ─────
   const addLog = useCallback((msg) => {
@@ -358,7 +451,7 @@ export default function CombatScreen() {
       const baseHeal = Math.floor(updatedHero.maxHp * hot.healPerTurn);
       const finalHeal = applyHealingEfficiency(baseHeal, updatedHero);
       updatedHero.hp = Math.min(updatedHero.maxHp, updatedHero.hp + finalHeal);
-      
+
       const newTurns = hot.turnsRemaining - 1;
       if (newTurns > 0) {
         updatedHero.playerHoT = {
@@ -368,7 +461,7 @@ export default function CombatScreen() {
       } else {
         updatedHero.playerHoT = null;
       }
-      
+
       addLog(`💧 Healing Current tick: Mochi recovers ${finalHeal} HP!`);
       logged = true;
     }
@@ -424,6 +517,7 @@ export default function CombatScreen() {
           maxHp: bossData.hp,
           effects: [],
           cooldowns: {},
+          spawnIndex: 0,
         };
         boss.intent = selectEnemyMove(boss);
         taggedEnemies = [boss];
@@ -433,7 +527,7 @@ export default function CombatScreen() {
       // Handles both 'combat' and 'ambush' room types
       const makeScaledEnemy = (template, i) => {
         const mult = STAR_MULTIPLIERS[battleRating] || 1.0;
-        
+
         const scaled = {
           ...template,
           uid: template.id + '_' + i,
@@ -445,6 +539,7 @@ export default function CombatScreen() {
           def: Math.max(1, Math.ceil((template.def || 0) * mult)),
           effects: [],
           cooldowns: {},
+          spawnIndex: i,
         };
         return scaled;
       };
@@ -466,7 +561,7 @@ export default function CombatScreen() {
         }
       }
     }
-    
+
     // Assign intents with awareness of other enemies on the field
     taggedEnemies = taggedEnemies.map(enemy => ({
       ...enemy,
@@ -550,8 +645,9 @@ export default function CombatScreen() {
     });
 
     // Remove dead enemies
-    updatedEnemies = processDeadEnemies(updatedEnemies);
-    setEnemies(updatedEnemies);
+    const attackDeadRes = processDeadEnemies(updatedEnemies);
+    updatedEnemies = attackDeadRes.alive;
+    updateEnemiesAndDyingEnemies(updatedEnemies, attackDeadRes.dead);
 
     // Calculate animation length
     const attackFrames = HERO_SPRITE.attack?.frames || 4;
@@ -594,9 +690,9 @@ export default function CombatScreen() {
   // =========================================================================
   const getBurnBonus = () => {
     const stanceBonus = getStanceBonus(state.hero.element, state.hero.level);
-    const stanceBurn  = stanceBonus.burnTickBonus || 0;
+    const stanceBurn = stanceBonus.burnTickBonus || 0;
     const smolderingEntry = (state.hero.unlockedSkills || {})['smoldering'];
-    const smolderingBurn  = smolderingEntry && state.hero.equippedSkills.includes('smoldering')
+    const smolderingBurn = smolderingEntry && state.hero.equippedSkills.includes('smoldering')
       ? (SKILLS['smoldering']?.stars?.[smolderingEntry.stars]?.burnTickBonus || 0)
       : 0;
     return stanceBurn + smolderingBurn;
@@ -644,9 +740,9 @@ export default function CombatScreen() {
     const newCooldowns = { ...cooldowns, [skillId]: skillDef.cooldown };
     setCooldowns(newCooldowns);
 
-    let updatedHero    = { ...heroState };
+    let updatedHero = { ...heroState };
     let updatedEnemies = enemies.map(e => ({ ...e, effects: [...(e.effects || [])] }));
-    const burnBonus    = getBurnBonus();
+    const burnBonus = getBurnBonus();
 
     // ── Element skill routing ──────────────────────────────────────────────
     if (skillId === 'fire_slash') {
@@ -764,8 +860,9 @@ export default function CombatScreen() {
     setHeroState(updatedHero);
 
     // Remove dead enemies
-    updatedEnemies = processDeadEnemies(updatedEnemies);
-    setEnemies(updatedEnemies);
+    const skillDeadRes = processDeadEnemies(updatedEnemies);
+    updatedEnemies = skillDeadRes.alive;
+    updateEnemiesAndDyingEnemies(updatedEnemies, skillDeadRes.dead);
 
     // Calculate animation length
     const animData = HERO_SPRITE[skillId] || HERO_SPRITE.attack;
@@ -892,12 +989,16 @@ export default function CombatScreen() {
     // but kept for safety in case runEnemyTurn is ever called directly.
     setCombatPhase('enemyTurn');
 
-    let updatedHero    = { ...(currentHeroState ?? heroState) };
+    // Add a 1 second cozy delay before enemies act
+    await delay(1000);
+
+    let updatedHero = { ...(currentHeroState ?? heroState) };
     let updatedEnemies = [...currentEnemies];
+    let turnDead = [];
 
     // ── Phase 1: Each enemy executes their telegraphed move ─────────────────
     for (let i = 0; i < updatedEnemies.length; i++) {
-      const enemy     = updatedEnemies[i];
+      const enemy = updatedEnemies[i];
 
       // Failsafe: if the enemy is missing or already dead, skip them!
       if (!enemy || enemy.hp <= 0) continue;
@@ -988,6 +1089,7 @@ export default function CombatScreen() {
           for (let k = 0; k < count; k++) {
             if (updatedEnemies.length >= 4) break;
 
+            const maxSpawnIndex = Math.max(-1, ...updatedEnemies.map(e => e.spawnIndex ?? 0));
             const newRat = {
               ...baseEnemy,
               uid: `${enemyId}_summoned_${Date.now()}_${k}_${Math.floor(Math.random() * 1000)}`,
@@ -999,6 +1101,7 @@ export default function CombatScreen() {
               def: Math.max(1, Math.ceil((baseEnemy.def || 0) * mult)),
               effects: [],
               cooldowns: {},
+              spawnIndex: maxSpawnIndex + 1 + k,
             };
             newRat.intent = selectEnemyMove(newRat, [...updatedEnemies, newRat]);
             updatedEnemies.push(newRat);
@@ -1008,17 +1111,21 @@ export default function CombatScreen() {
 
       // Handle self-destruct (Pufferfish)
       if (turnResult.selfDestruct) {
-        defeatedEnemiesRef.current.push(updatedEnemies[i]);
+        const selfDestructEnemy = updatedEnemies[i];
+        if (selfDestructEnemy) {
+          defeatedEnemiesRef.current.push(selfDestructEnemy);
+          turnDead.push(selfDestructEnemy);
+        }
         updatedEnemies = updatedEnemies.filter((_, idx) => idx !== i);
         i--;
       }
 
       // Flush HP bar update to screen immediately after each enemy acts
       setHeroState({ ...updatedHero });
-      setEnemies([...updatedEnemies]);
+      updateEnemiesAndDyingEnemies(updatedEnemies, turnDead);
 
-      // Pause for the exact duration of the attack animation (or stun message) to finish
-      await delay(animDuration + 100);
+      // Pause to let the action finish and create a cozy 1-second interval between unit actions
+      await delay(animDuration + 1000);
     }
 
     // Pause briefly before processing status effects so there is a clean beat
@@ -1050,7 +1157,9 @@ export default function CombatScreen() {
     }
 
     // ── Remove enemies that died from status effects ─────────────────────────
-    updatedEnemies = processDeadEnemies(updatedEnemies);
+    const statusDeadRes = processDeadEnemies(updatedEnemies);
+    updatedEnemies = statusDeadRes.alive;
+    turnDead = [...turnDead, ...statusDeadRes.dead];
 
     // ── Decrement skill cooldowns ────────────────────────────────────────────
     setCooldowns((prev) => {
@@ -1066,7 +1175,7 @@ export default function CombatScreen() {
     // ── Check hero death ─────────────────────────────────────────────────────
     if (updatedHero.hp <= 0) {
       setHeroState({ ...updatedHero });
-      setEnemies(updatedEnemies);
+      updateEnemiesAndDyingEnemies(updatedEnemies, turnDead);
       setCombatPhase('defeat');
       return;
     }
@@ -1095,7 +1204,7 @@ export default function CombatScreen() {
     updatedEnemies = refreshIntents(updatedEnemies);
 
     setHeroState({ ...updatedHero });
-    setEnemies(updatedEnemies);
+    updateEnemiesAndDyingEnemies(updatedEnemies, turnDead);
 
     if (selectedEnemyIndex >= updatedEnemies.length) {
       setSelectedEnemyIndex(Math.max(0, updatedEnemies.length - 1));
@@ -1105,7 +1214,7 @@ export default function CombatScreen() {
     const isHeroStunned = updatedHero.effects?.some(e => e.type === 'stun');
     if (isHeroStunned) {
       addLog('Mochi is stunned and can\'t move!');
-      
+
       // Tick hero's status effects (which handles bleed and decrements stun)
       const { updatedHero: finalHero } = tickHeroStatusEffects(updatedHero);
       setHeroState(finalHero);
@@ -1114,7 +1223,7 @@ export default function CombatScreen() {
         setCombatPhase('defeat');
         return;
       }
-      
+
       // Pause for a moment to let the player digest the stun log, then run enemy turn again
       setCombatPhase('enemyTurn');
       await delay(1500);
@@ -1126,9 +1235,27 @@ export default function CombatScreen() {
     setCombatPhase('playerTurn');
   };
 
-  // =========================================================================
-  // Remove dead enemies & track them for loot
-  // =========================================================================
+  const updateEnemiesAndDyingEnemies = useCallback((nextEnemies, newDead) => {
+    if (newDead && newDead.length > 0) {
+      setEnemiesState(prev => {
+        const uniqueDead = newDead.filter(d => !prev.dying.some(p => p.uid === d.uid));
+        return {
+          alive: nextEnemies,
+          dying: [...prev.dying, ...uniqueDead],
+        };
+      });
+      // Remove them from dying state after animation ends (800ms)
+      setTimeout(() => {
+        setEnemiesState(prev => ({
+          ...prev,
+          dying: prev.dying.filter(de => !newDead.some(d => d.uid === de.uid)),
+        }));
+      }, 800);
+    } else {
+      setEnemies(nextEnemies);
+    }
+  }, [setEnemies]);
+
   const processDeadEnemies = (enemyList) => {
     const alive = [];
     const dead = [];
@@ -1144,18 +1271,9 @@ export default function CombatScreen() {
         alive.push(e);
       }
     }
-    if (dead.length > 0) {
-      setDyingEnemies(prev => {
-        const uniqueDead = dead.filter(d => !prev.some(p => p.uid === d.uid));
-        return [...prev, ...uniqueDead];
-      });
-      // Remove them from dying state after animation ends (800ms)
-      setTimeout(() => {
-        setDyingEnemies(prev => prev.filter(de => !dead.some(d => d.uid === de.uid)));
-      }, 800);
-    }
-    return alive;
+    return { alive, dead };
   };
+
 
   // =========================================================================
   // VICTORY — calculate loot, dispatch to global state
@@ -1275,7 +1393,7 @@ export default function CombatScreen() {
   const renderLogText = (msg, index) => {
     let color = '#CBD5E1'; // Cool parchment default
     const lower = msg.toLowerCase();
-    
+
     if (lower.includes('mochi attacks') || lower.includes('crit!') || lower.includes('critical')) {
       color = '#F5CF4A'; // treasureGold — hero actions
     } else if (lower.includes('takes') || lower.includes('damaged') || lower.includes('fells') || lower.includes('dies')) {
@@ -1295,600 +1413,649 @@ export default function CombatScreen() {
 
   return (
     <ScreenLoader assets={assetsToPreload}>
-    <SafeAreaView style={styles.root}>
-      {/* Background SVG gradients */}
-      <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
-        <Defs>
-          <RadialGradient id="combatGlow" cx="50%" cy="30%" r="80%">
-            <Stop offset="0%" stopColor="#D4A754" stopOpacity="0.04" />
-            <Stop offset="100%" stopColor="#07070A" stopOpacity="0" />
-          </RadialGradient>
-        </Defs>
-        <Rect width="100%" height="100%" fill="#07070A" />
-        <Rect width="100%" height="100%" fill="url(#combatGlow)" />
-      </Svg>
-
-      {/* ── Combat Header ──────────────────────────────────────────── */}
-      <View style={styles.combatHeader}>
+      <SafeAreaView style={styles.root}>
+        {/* Background SVG gradients */}
         <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
-          <Rect width="100%" height="100%" fill="rgba(255,255,255,0.02)" rx={14} />
-          <Rect x="1" y="1" width="99%" height="98%" rx={13} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth={1} />
+          <Defs>
+            <RadialGradient id="combatGlow" cx="50%" cy="30%" r="80%">
+              <Stop offset="0%" stopColor="#D4A754" stopOpacity="0.04" />
+              <Stop offset="100%" stopColor="#07070A" stopOpacity="0" />
+            </RadialGradient>
+          </Defs>
+          <Rect width="100%" height="100%" fill="#07070A" />
+          <Rect width="100%" height="100%" fill="url(#combatGlow)" />
         </Svg>
-        <View style={styles.combatHeaderRow}>
-          <View style={styles.combatHeaderLeft}>
-            <Text style={styles.encounterTypeLabel}>
-              {roomType === 'boss' ? '☠️  BOSS BATTLE' : roomType === 'ambush' ? '👺  AMBUSH!' : '⚔️  COMBAT'}
-            </Text>
-            <Text style={styles.narratorFlavor} numberOfLines={1}>{narratorText}</Text>
-          </View>
-          <View style={styles.turnPill}>
-            <Text style={styles.turnPillText}>Turn {turnCount + 1}</Text>
+
+        {/* ── Combat Header ──────────────────────────────────────────── */}
+        <View style={styles.combatHeader}>
+          <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
+            <Rect width="100%" height="100%" fill="rgba(255,255,255,0.02)" rx={14} />
+            <Rect x="1" y="1" width="99%" height="98%" rx={13} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth={1} />
+          </Svg>
+          <View style={styles.combatHeaderRow}>
+            <View style={styles.combatHeaderLeft}>
+              <Text style={styles.encounterTypeLabel}>
+                {roomType === 'boss' ? '☠️  BOSS BATTLE' : roomType === 'ambush' ? '👺  AMBUSH!' : '⚔️  COMBAT'}
+              </Text>
+              <Text style={styles.narratorFlavor} numberOfLines={1}>{narratorText}</Text>
+            </View>
+            <View style={styles.turnPill}>
+              <Text style={styles.turnPillText}>Turn {turnCount + 1}</Text>
+            </View>
           </View>
         </View>
-      </View>
 
-      {/* ── Enemy Section ────────────────────────────────────────────── */}
-      <View style={styles.enemySectionWrapper}>
-        <ScrollView
-          horizontal
-          contentContainerStyle={styles.enemyRow}
-          showsHorizontalScrollIndicator={false}
-        >
-          {enemies.map((enemy, idx) => {
-            const isSelected = idx === selectedEnemyIndex;
-            const spriteDef = getEnemySprite(enemy);
-            const displaySize = enemy.isBoss ? 134 : 110;
-            const platformBottom = Math.round(displaySize * (spriteDef.platformOffsetFactor || 0.25));
-            return (
-              <TouchableOpacity
-                key={enemy.uid}
-                style={[
-                  styles.enemyCard,
-                  isSelected && styles.enemyCardSelected,
-                  enemy.isBoss && styles.enemyCardBoss,
-                ]}
-                onPress={() => setSelectedEnemyIndex(idx)}
-                activeOpacity={0.8}
-              >
-                {/* Canvas Viewport (Top 70%) */}
-                <View style={styles.spriteCanvas}>
-                  <View style={[styles.spriteWrapper, { height: displaySize }]}>
-                    {/* Stage platform below enemy */}
-                    <View style={[styles.stagePlatform, { bottom: platformBottom }]}>
-                      <Svg width={100} height={16}>
+        {/* ── Enemy Section ────────────────────────────────────────────── */}
+        <View style={styles.enemySectionWrapper}>
+          <ScrollView
+            horizontal
+            contentContainerStyle={styles.enemyRow}
+            showsHorizontalScrollIndicator={false}
+          >
+            {(() => {
+              const combined = [
+                ...enemies.map(e => ({ ...e, isDying: false })),
+                ...dyingEnemies.map(e => ({ ...e, isDying: true })),
+              ];
+              combined.sort((a, b) => (a.spawnIndex ?? 0) - (b.spawnIndex ?? 0));
+
+              return combined.map((enemy) => {
+                if (enemy.isDying) {
+                  return (
+                    <DyingEnemyCard
+                      key={`dying_${enemy.uid}`}
+                      enemy={enemy}
+                      popups={popups}
+                      removePopup={removePopup}
+                    />
+                  );
+                }
+
+                const idx = enemies.findIndex(e => e.uid === enemy.uid);
+                const isSelected = idx === selectedEnemyIndex;
+                const spriteDef = getEnemySprite(enemy);
+                const displaySize = enemy.isBoss ? BOSS_DISPLAY_SIZE : ENEMY_DISPLAY_SIZE;
+                const platformBottom = Math.round(displaySize * (spriteDef.platformOffsetFactor || 0.25));
+
+                return (
+                  <TouchableOpacity
+                    key={enemy.uid}
+                    style={[
+                      styles.enemyCard,
+                      isSelected && styles.enemyCardSelected,
+                      enemy.isBoss && styles.enemyCardBoss,
+                    ]}
+                    onPress={() => setSelectedEnemyIndex(idx)}
+                    activeOpacity={0.8}
+                  >
+                    {/* Canvas Viewport (Top 70%) */}
+                    <View style={styles.spriteCanvas}>
+                      {/* Subtle backlight halo behind enemy */}
+                      <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
                         <Defs>
-                          <RadialGradient id={`stageGlow_${enemy.uid}`} cx="50%" cy="50%" r="50%">
-                            <Stop offset="0%" stopColor={isSelected ? '#F5CF4A' : '#707F94'} stopOpacity="0.25" />
+                          <RadialGradient id={`enemyBacklight_${enemy.uid}`} cx="50%" cy="50%" r="50%">
+                            <Stop offset="0%" stopColor={isSelected ? '#F5CF4A' : '#707F94'} stopOpacity={isSelected ? 0.12 : 0.04} />
                             <Stop offset="100%" stopColor="transparent" stopOpacity="0" />
                           </RadialGradient>
                         </Defs>
-                        <Rect width="100%" height="100%" fill={`url(#stageGlow_${enemy.uid})`} rx={8} />
+                        <Rect width="100%" height="100%" fill={`url(#enemyBacklight_${enemy.uid})`} />
                       </Svg>
-                    </View>
 
-                    {/* Animated Enemy Sprite */}
-                    {(() => {
-                      const animKey = enemyAnims[enemy.uid] || 'idle';
-                      return (
-                        <>
-                          <AnimatedSprite
-                            key={`${enemy.uid}_idle`}
-                            source={spriteDef.idle.source}
-                            frameSize={spriteDef.idle.frameSize}
-                            totalFrames={spriteDef.idle.frames}
-                            fps={8}
-                            loop={true}
-                            active={animKey === 'idle'}
-                            displaySize={displaySize}
-                            flipX
-                            pointerEvents={animKey === 'idle' ? 'auto' : 'none'}
-                            style={[
-                              styles.enemySprite,
-                              { position: 'absolute', opacity: animKey === 'idle' ? 1 : 0 }
-                            ]}
-                          />
-                          <AnimatedSprite
-                            key={`${enemy.uid}_attack`}
-                            source={spriteDef.attack.source}
-                            frameSize={spriteDef.attack.frameSize}
-                            totalFrames={spriteDef.attack.frames}
-                            fps={10}
-                            loop={false}
-                            active={animKey === 'attack'}
-                            onComplete={animKey === 'attack'
-                              ? () => setEnemyAnims(prev => ({ ...prev, [enemy.uid]: 'idle' }))
-                              : undefined}
-                            displaySize={displaySize}
-                            flipX
-                            pointerEvents={animKey === 'attack' ? 'auto' : 'none'}
-                            style={[
-                              styles.enemySprite,
-                              { position: 'absolute', opacity: animKey === 'attack' ? 1 : 0 }
-                            ]}
-                          />
-                        </>
-                      );
-                    })()}
-                  </View>
-                </View>
-
-                {/* Divider Line */}
-                <View style={styles.hudDivider} />
-
-                {/* HUD Tray (Bottom 30%) */}
-                <View style={styles.hudTray}>
-                  <Text style={styles.enemyName} numberOfLines={1}>
-                    {enemy.name}
-                  </Text>
-                  <View style={{ flexDirection: 'row', justifyContent: 'center' }}>
-                    {Array.from({ length: enemy.isBoss ? 5 : (enemy.stars || 1) }).map((_, i) => (
-                      <Text key={i} style={{ 
-                        color: enemy.isBoss ? '#F5CF4A' : '#A0AEC0', 
-                        fontSize: 10,
-                        textShadowColor: enemy.isBoss ? 'rgba(245, 207, 74, 0.5)' : 'transparent',
-                        textShadowOffset: { width: 0, height: 0 },
-                        textShadowRadius: enemy.isBoss ? 4 : 0
-                      }}>★</Text>
-                    ))}
-                  </View>
-                  <View style={{ width: '100%' }}>
-                    <ResourceBar variant="enemyHp" current={enemy.hp} max={enemy.maxHp} />
-                  </View>
-
-                  {/* Status Row (Always rendered to reserve height, scrollable horizontally) */}
-                  <View style={styles.effectsRowContainer}>
-                    <ScrollView
-                      horizontal
-                      showsHorizontalScrollIndicator={false}
-                      contentContainerStyle={styles.effectsRowScroll}
-                    >
-                      {consolidateEffectsArray(enemy.effects).map((eff, ei) => (
-                        <View
-                          key={`enemy_${enemy.uid}_${eff.type}_${ei}`}
-                          style={[
-                            styles.effectBadge,
-                            { backgroundColor: STATUS_COLORS[eff.type] || '#666' },
-                          ]}
-                        >
-                          <Text style={styles.effectText}>
-                            {STATUS_EMOJIS[eff.type] || '❓'}
-                            {eff.type === 'atk_reduce' ? `${Math.round((eff.value || 0) * 100)}%` : ''}
-                            {eff.duration > 0 ? (eff.type === 'atk_reduce' ? ` ${eff.duration}` : eff.duration) : ''}
-                            {eff.stacks > 1 && (
-                              <Text style={styles.effectStackText}> x{eff.stacks}</Text>
-                            )}
-                          </Text>
+                      <View style={[styles.spriteWrapper, { height: displaySize }]}>
+                        {/* Stage platform below enemy — scaled proportionally to displaySize */}
+                        <View style={[styles.stagePlatform, { bottom: platformBottom }]}>
+                          <Svg width={Math.round(displaySize * 0.9)} height={Math.round(displaySize * 0.15)}>
+                            <Defs>
+                              <RadialGradient id={`stageGlow_${enemy.uid}`} cx="50%" cy="50%" r="50%">
+                                <Stop offset="0%" stopColor={isSelected ? '#F5CF4A' : '#707F94'} stopOpacity="0.25" />
+                                <Stop offset="100%" stopColor="transparent" stopOpacity="0" />
+                              </RadialGradient>
+                            </Defs>
+                            <Rect width="100%" height="100%" fill={`url(#stageGlow_${enemy.uid})`} rx={8} />
+                          </Svg>
                         </View>
-                      ))}
-                    </ScrollView>
-                  </View>
-                </View>
-              </TouchableOpacity>
-            );
-          })}
-          {dyingEnemies.map((enemy) => (
-            <DyingEnemyCard key={`dying_${enemy.uid}`} enemy={enemy} />
-          ))}
-        </ScrollView>
-      </View>
 
-      {/* ══ Zone 2: Turn header + Hero card + Actions ════════════════ */}
-      <View style={styles.heroActionSection}>
-
-        {/* ── YOUR TURN / ENEMY TURN header — always visible at top ── */}
-        <View style={styles.sectionDivider}>
-          <View style={styles.dividerLine} />
-          <Text style={[
-            styles.dividerLabel,
-            combatPhase === 'enemyTurn' && { color: theme.COLORS.damageRed },
-          ]}>
-            {combatPhase === 'playerTurn' ? 'YOUR TURN' : 'ENEMY TURN'}
-          </Text>
-          <View style={styles.dividerLine} />
-        </View>
-
-        {/* ── Hero card + action buttons (same row) ── */}
-        <View style={styles.heroCardAndButtonsRow}>
-
-          {/* Hero card — same structure as enemy cards */}
-          <View style={[
-            styles.heroCard,
-            heroState?.playerHoT && {
-              borderColor: '#3B9EFF',
-              backgroundColor: 'rgba(59, 158, 255, 0.08)',
-              shadowColor: '#3B9EFF',
-            }
-          ]}>
-
-            {/* Sprite backlight — radial gold halo behind Mochi */}
-            <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
-              <Defs>
-                <RadialGradient id="heroBacklight" cx="50%" cy="40%" r="45%">
-                  <Stop offset="0%" stopColor={heroState?.playerHoT ? "#3B9EFF" : "#F5CF4A"} stopOpacity={heroState?.playerHoT ? 0.25 : 0.14} />
-                  <Stop offset="100%" stopColor="transparent" stopOpacity="0" />
-                </RadialGradient>
-              </Defs>
-              <Rect width="100%" height="100%" fill="url(#heroBacklight)" />
-            </Svg>
-
-            {/* Canvas Viewport (Top 70%) */}
-            <View style={styles.spriteCanvas}>
-              <View style={[styles.spriteWrapper, { height: 105 }]}>
-                {/* Stage platform glow — same as enemies, always gold */}
-                <View style={[styles.heroStagePlatform, { bottom: Math.round(105 * 0.18) }]}>
-                  <Svg width={100} height={16}>
-                    <Defs>
-                      <RadialGradient id="heroStageGlow" cx="50%" cy="50%" r="50%">
-                        <Stop offset="0%" stopColor={heroState?.playerHoT ? "#3B9EFF" : "#F5CF4A"} stopOpacity={heroState?.playerHoT ? 0.35 : 0.28} />
-                        <Stop offset="100%" stopColor="transparent" stopOpacity="0" />
-                      </RadialGradient>
-                    </Defs>
-                    <Rect width="100%" height="100%" fill="url(#heroStageGlow)" rx={8} />
-                  </Svg>
-                </View>
-
-                {(() => {
-                  const isIdle = heroAnim === 'idle';
-                  const isGuard = heroAnim === 'guard';
-                  const isAttack = heroAnim === 'attack';
-                  const isSkill = !isIdle && !isGuard && !isAttack;
-
-                  const skillDef = isSkill ? HERO_SPRITE[heroAnim] : null;
-
-                  return (
-                    <>
-                      <AnimatedSprite
-                        key="hero_sprite_idle"
-                        source={HERO_SPRITE.idle.source}
-                        frameSize={HERO_SPRITE.idle.frameSize}
-                        totalFrames={HERO_SPRITE.idle.frames}
-                        fps={8}
-                        loop={true}
-                        active={isIdle}
-                        displaySize={105}
-                        pointerEvents={isIdle ? 'auto' : 'none'}
-                        style={[styles.heroCardSprite, { position: 'absolute', opacity: isIdle ? 1 : 0 }]}
-                      />
-                      <AnimatedSprite
-                        key="hero_sprite_guard"
-                        source={HERO_SPRITE.guard.source}
-                        frameSize={HERO_SPRITE.guard.frameSize}
-                        totalFrames={HERO_SPRITE.guard.frames}
-                        fps={8}
-                        loop={true}
-                        active={isGuard}
-                        displaySize={105}
-                        pointerEvents={isGuard ? 'auto' : 'none'}
-                        style={[styles.heroCardSprite, { position: 'absolute', opacity: isGuard ? 1 : 0 }]}
-                      />
-                      <AnimatedSprite
-                        key="hero_sprite_attack"
-                        source={HERO_SPRITE.attack.source}
-                        frameSize={HERO_SPRITE.attack.frameSize}
-                        totalFrames={HERO_SPRITE.attack.frames}
-                        fps={10}
-                        loop={false}
-                        active={isAttack}
-                        onComplete={isAttack ? () => setHeroAnim('idle') : undefined}
-                        displaySize={105}
-                        pointerEvents={isAttack ? 'auto' : 'none'}
-                        style={[styles.heroCardSprite, { position: 'absolute', opacity: isAttack ? 1 : 0 }]}
-                      />
-                      {/* Skill Animation — remounts fresh on each skill via key */}
-                      {isSkill && skillDef && (
-                        <AnimatedSprite
-                          key={`hero_sprite_skill_${heroAnim}`}
-                          source={skillDef.source}
-                          frameSize={skillDef.frameSize}
-                          totalFrames={skillDef.frames}
-                          fps={10}
-                          loop={false}
-                          active={true}
-                          onComplete={() => setHeroAnim('idle')}
-                          displaySize={105}
-                          pointerEvents="auto"
-                          style={[styles.heroCardSprite, { position: 'absolute' }]}
-                        />
-                      )}
-                    </>
-                  );
-                })()}
-              </View>
-            </View>
-
-            {/* Divider Line */}
-            <View style={styles.hudDivider} />
-
-            {/* HUD Tray (Bottom 30%) */}
-            <View style={styles.hudTray}>
-              <Text style={styles.enemyName}>Mochi</Text>
-              <View style={{ width: '100%' }}>
-                <ResourceBar variant="heroHp" current={heroState.hp} max={heroState.maxHp} />
-              </View>
-
-              {/* Status Row (Always rendered to reserve height, scrollable horizontally) */}
-              <View style={styles.effectsRowContainer}>
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={styles.effectsRowScroll}
-                >
-                  {consolidateEffectsArray(heroState.effects).map((eff, ei) => (
-                    <View
-                      key={`hero_${eff.type}_${ei}`}
-                      style={[
-                        styles.effectBadge,
-                        { backgroundColor: STATUS_COLORS[eff.type] || '#666' },
-                      ]}
-                    >
-                      <Text style={styles.effectText}>
-                        {STATUS_EMOJIS[eff.type] || '❓'}
-                        {eff.type === 'atk_reduce' ? `${Math.round((eff.value || 0) * 100)}%` : ''}
-                        {eff.duration > 0 ? (eff.type === 'atk_reduce' ? ` ${eff.duration}` : eff.duration) : ''}
-                        {eff.stacks > 1 && (
-                          <Text style={styles.effectStackText}> x{eff.stacks}</Text>
-                        )}
-                      </Text>
+                        {/* Animated Enemy Sprite */}
+                        {(() => {
+                          const animKey = enemyAnims[enemy.uid] || 'idle';
+                          return (
+                            <>
+                              <AnimatedSprite
+                                key={`${enemy.uid}_idle`}
+                                source={spriteDef.idle.source}
+                                frameSize={spriteDef.idle.frameSize}
+                                totalFrames={spriteDef.idle.frames}
+                                fps={8}
+                                loop={true}
+                                active={animKey === 'idle'}
+                                displaySize={displaySize}
+                                flipX
+                                pointerEvents={animKey === 'idle' ? 'auto' : 'none'}
+                                style={[
+                                  styles.enemySprite,
+                                  { position: 'absolute', opacity: animKey === 'idle' ? 1 : 0 }
+                                ]}
+                              />
+                              <AnimatedSprite
+                                key={`${enemy.uid}_attack`}
+                                source={spriteDef.attack.source}
+                                frameSize={spriteDef.attack.frameSize}
+                                totalFrames={spriteDef.attack.frames}
+                                fps={10}
+                                loop={false}
+                                active={animKey === 'attack'}
+                                onComplete={animKey === 'attack'
+                                  ? () => setEnemyAnims(prev => ({ ...prev, [enemy.uid]: 'idle' }))
+                                  : undefined}
+                                displaySize={displaySize}
+                                flipX
+                                pointerEvents={animKey === 'attack' ? 'auto' : 'none'}
+                                style={[
+                                  styles.enemySprite,
+                                  { position: 'absolute', opacity: animKey === 'attack' ? 1 : 0 }
+                                ]}
+                              />
+                            </>
+                          );
+                        })()}
+                        {popups
+                          .filter((p) => p.targetUid === enemy.uid)
+                          .map((p) => (
+                            <DamagePopup
+                              key={p.id}
+                              amount={p.amount}
+                              isHeal={p.isHeal}
+                              onComplete={() => removePopup(p.id)}
+                            />
+                          ))}
+                      </View>
                     </View>
-                  ))}
-                </ScrollView>
-              </View>
-            </View>
-          </View>
 
-          {/* ── Action side ── */}
-          <View style={styles.actionSide}>
-            {combatPhase === 'playerTurn' && (
-              <View style={styles.actionGrid}>
-                <View style={styles.actionRow}>
-                  <TouchableOpacity
-                    style={[styles.actionBtn, styles.actionBtnAttack]}
-                    onPress={handleAttack}
-                    activeOpacity={0.75}
-                  >
-                    <Text style={styles.actionBtnIcon}>⚔️</Text>
-                    <Text style={[styles.actionBtnTitle, { color: '#5CC489' }]}>ATTACK</Text>
-                    <Text style={styles.actionBtnSub}>Basic Strike</Text>
+                    {/* Divider Line */}
+                    <View style={styles.hudDivider} />
+
+                    {/* HUD Tray (Bottom 30%) */}
+                    <View style={styles.hudTray}>
+                      <Text style={styles.enemyName} numberOfLines={1}>
+                        {enemy.name}
+                      </Text>
+                      <View style={{ flexDirection: 'row', justifyContent: 'center' }}>
+                        {Array.from({ length: enemy.isBoss ? 5 : (enemy.stars || 1) }).map((_, i) => (
+                          <Text key={i} style={{
+                            color: enemy.isBoss ? '#F5CF4A' : '#A0AEC0',
+                            fontSize: 10,
+                            textShadowColor: enemy.isBoss ? 'rgba(245, 207, 74, 0.5)' : 'transparent',
+                            textShadowOffset: { width: 0, height: 0 },
+                            textShadowRadius: enemy.isBoss ? 4 : 0
+                          }}>★</Text>
+                        ))}
+                      </View>
+                      <View style={{ width: '100%' }}>
+                        <ResourceBar variant="enemyHp" current={enemy.hp} max={enemy.maxHp} />
+                      </View>
+
+                      {/* Status Row (Always rendered to reserve height, scrollable horizontally) */}
+                      <View style={styles.effectsRowContainer}>
+                        <ScrollView
+                          horizontal
+                          showsHorizontalScrollIndicator={false}
+                          contentContainerStyle={styles.effectsRowScroll}
+                        >
+                          {consolidateEffectsArray(enemy.effects).map((eff, ei) => (
+                            <View
+                              key={`enemy_${enemy.uid}_${eff.type}_${ei}`}
+                              style={[
+                                styles.effectBadge,
+                                { backgroundColor: STATUS_COLORS[eff.type] || '#666' },
+                              ]}
+                            >
+                              <Text style={styles.effectText}>
+                                {STATUS_EMOJIS[eff.type] || '❓'}
+                                {eff.type === 'atk_reduce' ? `${Math.round((eff.value || 0) * 100)}%` : ''}
+                                {eff.duration > 0 ? (eff.type === 'atk_reduce' ? ` ${eff.duration}` : eff.duration) : ''}
+                                {eff.stacks > 1 && (
+                                  <Text style={styles.effectStackText}> x{eff.stacks}</Text>
+                                )}
+                              </Text>
+                            </View>
+                          ))}
+                        </ScrollView>
+                      </View>
+                    </View>
                   </TouchableOpacity>
-
-                  <TouchableOpacity
-                    style={[styles.actionBtn, totalConsumables > 0 ? styles.actionBtnItem : styles.actionBtnEmpty]}
-                    onPress={() => totalConsumables > 0 && setShowItemModal(true)}
-                    activeOpacity={0.75}
-                    disabled={totalConsumables === 0}
-                  >
-                    <Text style={styles.actionBtnIcon}>🧪</Text>
-                    <Text style={[styles.actionBtnTitle, { color: totalConsumables > 0 ? '#F5CF4A' : '#5A5A5A' }]}>ITEMS</Text>
-                    <Text style={styles.actionBtnSub}>{totalConsumables > 0 ? `${totalConsumables} in bag` : 'empty bag'}</Text>
-                  </TouchableOpacity>
-                </View>
-
-                <View style={styles.actionRow}>
-                  {renderSkillButton(0)}
-                  {renderSkillButton(1)}
-                </View>
-              </View>
-            )}
-
-            {combatPhase === 'enemyTurn' && (
-              <View style={styles.enemyTurnBox}>
-                <Text style={styles.enemyTurnPulse}>⚔️</Text>
-                <Text style={styles.enemyTurnText}>Enemies are acting…</Text>
-              </View>
-            )}
-          </View>
-
-        </View>
-      </View>
-
-      {/* ══ Zone 3: Battle log — takes all remaining space ══════════════ */}
-      <View style={styles.logSection}>
-        <View style={styles.sectionDivider}>
-          <View style={styles.dividerLine} />
-          <Text style={styles.dividerLabel}>BATTLE LOG</Text>
-          <View style={styles.dividerLine} />
-        </View>
-        <View style={styles.logContainer}>
-          <ScrollView
-            ref={scrollViewRef}
-            contentContainerStyle={styles.logContainerInner}
-            showsVerticalScrollIndicator={true}
-            onContentSizeChange={() => scrollViewRef.current?.scrollToEnd({ animated: true })}
-          >
-            {combatLog.map((msg, i) => renderLogText(msg, i))}
+                );
+              });
+            })()}
           </ScrollView>
         </View>
-      </View>
 
-      {/* ── Item selection modal ─────────────────────────────────────── */}
-      <Modal
-        visible={showItemModal}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowItemModal(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
-              <Defs>
-                <RadialGradient id="itemModalGlow" cx="50%" cy="0%" r="55%">
-                  <Stop offset="0%" stopColor="#3FB56E" stopOpacity="0.08" />
-                  <Stop offset="100%" stopColor="#111317" stopOpacity="0" />
-                </RadialGradient>
-              </Defs>
-              <Rect width="100%" height="100%" fill="#111317" rx={20} />
-              <Rect width="100%" height="100%" fill="url(#itemModalGlow)" rx={20} />
-              <Rect x="1" y="1" width="98%" height="98%" rx={19} fill="none" stroke="rgba(16, 185, 129, 0.15)" strokeWidth={1} />
-            </Svg>
+        {/* ══ Zone 2: Turn header + Hero card + Actions ════════════════ */}
+        <View style={styles.heroActionSection}>
 
-            <View style={styles.modalContentInner}>
-              <Text style={styles.modalTitle}>🧪 Supplies Bag</Text>
-
-              <ScrollView style={styles.modalItemScroll} showsVerticalScrollIndicator={false}>
-                {runConsumables.length === 0 ? (
-                  <Text style={styles.modalEmpty}>No potions or items available.</Text>
-                ) : (
-                  runConsumables.map((entry) => {
-                    const def = CONSUMABLES.find((c) => c.id === entry.id);
-                    return (
-                      <TouchableOpacity
-                        key={entry.id}
-                        style={styles.modalItem}
-                        onPress={() => handleUseItem(entry)}
-                        activeOpacity={0.8}
-                      >
-                        <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
-                          <Rect width="100%" height="100%" fill="rgba(255,255,255,0.01)" rx={10} />
-                          <Rect x="1" y="1" width="98%" height="98%" rx={9} fill="none" stroke="rgba(255,255,255,0.04)" strokeWidth={1} />
-                        </Svg>
-                        <View style={styles.modalItemInner}>
-                          <Text style={styles.modalItemName}>
-                            {def?.name || entry.id} ×{entry.quantity}
-                          </Text>
-                          <Text style={styles.modalItemDesc}>
-                            {def?.description || ''}
-                          </Text>
-                        </View>
-                      </TouchableOpacity>
-                    );
-                  })
-                )}
-              </ScrollView>
-
-              <Button
-                title="Cancel"
-                variant="secondary"
-                onPress={() => setShowItemModal(false)}
-                style={{ width: '100%', marginTop: 16 }}
-              />
-            </View>
+          {/* ── YOUR TURN / ENEMY TURN header — always visible at top ── */}
+          <View style={styles.sectionDivider}>
+            <View style={styles.dividerLine} />
+            <Text style={[
+              styles.dividerLabel,
+              combatPhase === 'enemyTurn' && { color: theme.COLORS.damageRed },
+            ]}>
+              {combatPhase === 'playerTurn' ? 'YOUR TURN' : 'ENEMY TURN'}
+            </Text>
+            <View style={styles.dividerLine} />
           </View>
-        </View>
-      </Modal>
 
-      {/* ── Victory / Loot Overlay ───────────────────────────────────── */}
-      {combatPhase === 'loot' && lootResult && (
-        <View style={styles.overlay}>
-          <View style={styles.overlayCard}>
-            <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
-              <Defs>
-                <RadialGradient id="victoryGlow" cx="50%" cy="0%" r="55%">
-                  <Stop offset="0%" stopColor="#FBBF24" stopOpacity="0.08" />
-                  <Stop offset="100%" stopColor="#0E0F14" stopOpacity="0" />
-                </RadialGradient>
-              </Defs>
-              <Rect width="100%" height="100%" fill="#0E0F14" rx={20} />
-              <Rect width="100%" height="100%" fill="url(#victoryGlow)" rx={20} />
-              <Rect x="1" y="1" width="98%" height="98%" rx={19} fill="none" stroke="rgba(251, 191, 36, 0.18)" strokeWidth={1} />
-            </Svg>
+          {/* ── Hero card + action buttons (same row) ── */}
+          <View style={styles.heroCardAndButtonsRow}>
 
-            <View style={styles.overlayInner}>
-              <Text style={styles.victoryTitle}>🎉 Victory!</Text>
+            {/* Hero card — same structure as enemy cards */}
+            <View style={[
+              styles.heroCard,
+              heroState?.playerHoT && {
+                borderColor: '#3B9EFF',
+                backgroundColor: 'rgba(59, 158, 255, 0.08)',
+                shadowColor: '#3B9EFF',
+              }
+            ]}>
 
-              {/* Loot breakdown */}
-              <View style={styles.lootSection}>
-                {lootResult.xp > 0 && (
-                  <Text style={styles.lootLine}>✨ XP: +{lootResult.xp}</Text>
-                )}
-                {lootResult.gold > 0 && (
-                  <Text style={styles.lootLine}>💰 Gold: +{lootResult.gold}</Text>
-                )}
-                {Object.entries(lootResult.materials).map(([itemId, qty]) => {
-                  let matEmoji = '💎';
-                  if (itemId.startsWith('black')) matEmoji = '🖤';
-                  if (itemId.startsWith('green')) matEmoji = '💚';
-                  if (itemId.startsWith('yellow')) matEmoji = '💛';
-                  return (
-                    <Text key={itemId} style={styles.lootLine}>
-                      {matEmoji} {itemId.replace(/_/g, ' ').toUpperCase()}: ×{qty}
-                    </Text>
-                  );
-                })}
+              {/* Sprite backlight — radial gold halo behind Mochi */}
+              <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
+                <Defs>
+                  <RadialGradient id="heroBacklight" cx="50%" cy="40%" r="45%">
+                    <Stop offset="0%" stopColor={heroState?.playerHoT ? "#3B9EFF" : "#F5CF4A"} stopOpacity={heroState?.playerHoT ? 0.25 : 0.14} />
+                    <Stop offset="100%" stopColor="transparent" stopOpacity="0" />
+                  </RadialGradient>
+                </Defs>
+                <Rect width="100%" height="100%" fill="url(#heroBacklight)" />
+              </Svg>
+
+              {/* Canvas Viewport (Top 70%) */}
+              <View style={styles.spriteCanvas}>
+                <View style={[styles.spriteWrapper, { height: HERO_DISPLAY_SIZE }]}>
+                  {/* Stage platform glow — same as enemies, always gold */}
+                  <View style={[styles.heroStagePlatform, { bottom: Math.round(HERO_DISPLAY_SIZE * (HERO_SPRITE.platformOffsetFactor || 0.18)) }]}>
+                    <Svg width={Math.round(HERO_DISPLAY_SIZE * 0.9)} height={Math.round(HERO_DISPLAY_SIZE * 0.15)}>
+                      <Defs>
+                        <RadialGradient id="heroStageGlow" cx="50%" cy="50%" r="50%">
+                          <Stop offset="0%" stopColor={heroState?.playerHoT ? "#3B9EFF" : "#F5CF4A"} stopOpacity={heroState?.playerHoT ? 0.35 : 0.28} />
+                          <Stop offset="100%" stopColor="transparent" stopOpacity="0" />
+                        </RadialGradient>
+                      </Defs>
+                      <Rect width="100%" height="100%" fill="url(#heroStageGlow)" rx={8} />
+                    </Svg>
+                  </View>
+
+                  {(() => {
+                    const isIdle = heroAnim === 'idle';
+                    const isGuard = heroAnim === 'guard';
+                    const isAttack = heroAnim === 'attack';
+                    const isSkill = !isIdle && !isGuard && !isAttack;
+
+                    const skillDef = isSkill ? HERO_SPRITE[heroAnim] : null;
+
+                    return (
+                      <>
+                        <AnimatedSprite
+                          key="hero_sprite_idle"
+                          source={HERO_SPRITE.idle.source}
+                          frameSize={HERO_SPRITE.idle.frameSize}
+                          totalFrames={HERO_SPRITE.idle.frames}
+                          fps={8}
+                          loop={true}
+                          active={isIdle}
+                          displaySize={HERO_DISPLAY_SIZE}
+                          pointerEvents={isIdle ? 'auto' : 'none'}
+                          style={[styles.heroCardSprite, { position: 'absolute', opacity: isIdle ? 1 : 0 }]}
+                        />
+                        <AnimatedSprite
+                          key="hero_sprite_guard"
+                          source={HERO_SPRITE.guard.source}
+                          frameSize={HERO_SPRITE.guard.frameSize}
+                          totalFrames={HERO_SPRITE.guard.frames}
+                          fps={8}
+                          loop={true}
+                          active={isGuard}
+                          displaySize={HERO_DISPLAY_SIZE}
+                          pointerEvents={isGuard ? 'auto' : 'none'}
+                          style={[styles.heroCardSprite, { position: 'absolute', opacity: isGuard ? 1 : 0 }]}
+                        />
+                        <AnimatedSprite
+                          key="hero_sprite_attack"
+                          source={HERO_SPRITE.attack.source}
+                          frameSize={HERO_SPRITE.attack.frameSize}
+                          totalFrames={HERO_SPRITE.attack.frames}
+                          fps={10}
+                          loop={false}
+                          active={isAttack}
+                          onComplete={isAttack ? () => setHeroAnim('idle') : undefined}
+                          displaySize={HERO_DISPLAY_SIZE}
+                          pointerEvents={isAttack ? 'auto' : 'none'}
+                          style={[styles.heroCardSprite, { position: 'absolute', opacity: isAttack ? 1 : 0 }]}
+                        />
+                        {/* Skill Animation — remounts fresh on each skill via key */}
+                        {isSkill && skillDef && (
+                          <AnimatedSprite
+                            key={`hero_sprite_skill_${heroAnim}`}
+                            source={skillDef.source}
+                            frameSize={skillDef.frameSize}
+                            totalFrames={skillDef.frames}
+                            fps={10}
+                            loop={false}
+                            active={true}
+                            onComplete={() => setHeroAnim('idle')}
+                            displaySize={HERO_DISPLAY_SIZE}
+                            pointerEvents="auto"
+                            style={[styles.heroCardSprite, { position: 'absolute' }]}
+                          />
+                        )}
+                      </>
+                    );
+                  })()}
+                  {popups
+                    .filter((p) => p.targetUid === 'hero')
+                    .map((p) => (
+                      <DamagePopup
+                        key={p.id}
+                        amount={p.amount}
+                        isHeal={p.isHeal}
+                        onComplete={() => removePopup(p.id)}
+                      />
+                    ))}
+                </View>
               </View>
 
-              {/* Level up messages */}
-              {levelUpMessages.length > 0 && (
-                <View style={styles.levelUpSection}>
-                  {levelUpMessages.map((msg, i) => (
-                    <Text key={`lu_${i}`} style={styles.levelUpText}>
-                      🌟 {msg}
-                    </Text>
-                  ))}
+              {/* Divider Line */}
+              <View style={styles.hudDivider} />
+
+              {/* HUD Tray (Bottom 30%) */}
+              <View style={styles.hudTray}>
+                <Text style={styles.enemyName}>Mochi</Text>
+                <View style={{ width: '100%' }}>
+                  <ResourceBar variant="heroHp" current={heroState.hp} max={heroState.maxHp} />
+                </View>
+
+                {/* Status Row (Always rendered to reserve height, scrollable horizontally) */}
+                <View style={styles.effectsRowContainer}>
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.effectsRowScroll}
+                  >
+                    {consolidateEffectsArray(heroState.effects).map((eff, ei) => (
+                      <View
+                        key={`hero_${eff.type}_${ei}`}
+                        style={[
+                          styles.effectBadge,
+                          { backgroundColor: STATUS_COLORS[eff.type] || '#666' },
+                        ]}
+                      >
+                        <Text style={styles.effectText}>
+                          {STATUS_EMOJIS[eff.type] || '❓'}
+                          {eff.type === 'atk_reduce' ? `${Math.round((eff.value || 0) * 100)}%` : ''}
+                          {eff.duration > 0 ? (eff.type === 'atk_reduce' ? ` ${eff.duration}` : eff.duration) : ''}
+                          {eff.stacks > 1 && (
+                            <Text style={styles.effectStackText}> x{eff.stacks}</Text>
+                          )}
+                        </Text>
+                      </View>
+                    ))}
+                  </ScrollView>
+                </View>
+              </View>
+            </View>
+
+            {/* ── Action side ── */}
+            <View style={styles.actionSide}>
+              {combatPhase === 'playerTurn' && (
+                <View style={styles.actionGrid}>
+                  <View style={styles.actionRow}>
+                    <TouchableOpacity
+                      style={[styles.actionBtn, styles.actionBtnAttack]}
+                      onPress={handleAttack}
+                      activeOpacity={0.75}
+                    >
+                      <Text style={styles.actionBtnIcon}>⚔️</Text>
+                      <Text style={[styles.actionBtnTitle, { color: '#5CC489' }]}>ATTACK</Text>
+                      <Text style={styles.actionBtnSub}>Basic Strike</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      style={[styles.actionBtn, totalConsumables > 0 ? styles.actionBtnItem : styles.actionBtnEmpty]}
+                      onPress={() => totalConsumables > 0 && setShowItemModal(true)}
+                      activeOpacity={0.75}
+                      disabled={totalConsumables === 0}
+                    >
+                      <Text style={styles.actionBtnIcon}>🧪</Text>
+                      <Text style={[styles.actionBtnTitle, { color: totalConsumables > 0 ? '#F5CF4A' : '#5A5A5A' }]}>ITEMS</Text>
+                      <Text style={styles.actionBtnSub}>{totalConsumables > 0 ? `${totalConsumables} in bag` : 'empty bag'}</Text>
+                    </TouchableOpacity>
+                  </View>
+
+                  <View style={styles.actionRow}>
+                    {renderSkillButton(0)}
+                    {renderSkillButton(1)}
+                  </View>
                 </View>
               )}
 
-              <Button
-                title={roomType === 'boss' ? '🏕️ Return to Camp' : '➡️ Return to Map'}
-                variant="primary"
-                onPress={handleContinue}
-                style={{ width: '100%', marginTop: 16 }}
-              />
+              {combatPhase === 'enemyTurn' && (
+                <View style={styles.enemyTurnBox}>
+                  <Text style={styles.enemyTurnPulse}>⚔️</Text>
+                  <Text style={styles.enemyTurnText}>Enemies are acting…</Text>
+                </View>
+              )}
             </View>
+
           </View>
         </View>
-      )}
 
-      {/* ── Defeat Overlay ───────────────────────────────────────────── */}
-      {combatPhase === 'defeat' && (
-        <View style={styles.overlay}>
-          <View style={styles.overlayCard}>
-            <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
-              <Rect width="100%" height="100%" fill="#140A0A" rx={20} />
-              <Rect x="1" y="1" width="98%" height="98%" rx={19} fill="none" stroke="rgba(255, 68, 68, 0.2)" strokeWidth={1} />
-            </Svg>
+        {/* ══ Zone 3: Battle log — takes all remaining space ══════════════ */}
+        <View style={styles.logSection}>
+          <View style={styles.sectionDivider}>
+            <View style={styles.dividerLine} />
+            <Text style={styles.dividerLabel}>BATTLE LOG</Text>
+            <View style={styles.dividerLine} />
+          </View>
+          <View style={styles.logContainer}>
+            <ScrollView
+              ref={scrollViewRef}
+              contentContainerStyle={styles.logContainerInner}
+              showsVerticalScrollIndicator={true}
+              onContentSizeChange={() => scrollViewRef.current?.scrollToEnd({ animated: true })}
+            >
+              {combatLog.map((msg, i) => renderLogText(msg, i))}
+            </ScrollView>
+          </View>
+        </View>
 
-            <View style={styles.overlayInner}>
-              <Text style={styles.defeatTitle}>💀 Defeated…</Text>
-              <Text style={styles.defeatSubtext}>
-                Mochi retreats to camp, battered but alive.
-              </Text>
+        {/* ── Item selection modal ─────────────────────────────────────── */}
+        <Modal
+          visible={showItemModal}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setShowItemModal(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
+                <Defs>
+                  <RadialGradient id="itemModalGlow" cx="50%" cy="0%" r="55%">
+                    <Stop offset="0%" stopColor="#3FB56E" stopOpacity="0.08" />
+                    <Stop offset="100%" stopColor="#111317" stopOpacity="0" />
+                  </RadialGradient>
+                </Defs>
+                <Rect width="100%" height="100%" fill="#111317" rx={20} />
+                <Rect width="100%" height="100%" fill="url(#itemModalGlow)" rx={20} />
+                <Rect x="1" y="1" width="98%" height="98%" rx={19} fill="none" stroke="rgba(16, 185, 129, 0.15)" strokeWidth={1} />
+              </Svg>
 
-              <View style={styles.lostLootBox}>
-                <Text style={styles.lostLootTitle}>Loot Lost in the Depths:</Text>
-                {state.currentRun.lootCollected.gold === 0 &&
-                Object.keys(state.currentRun.lootCollected.materials).length === 0 &&
-                (state.currentRun.lootCollected.xp || 0) === 0 ? (
-                  <Text style={styles.noLostLootText}>No materials, gold, or XP were collected this run.</Text>
-                ) : (
-                  <>
-                    {state.currentRun.lootCollected.xp > 0 && (
-                      <Text style={styles.lostLootXpText}>✨ {state.currentRun.lootCollected.xp} XP</Text>
-                    )}
-                    {state.currentRun.lootCollected.gold > 0 && (
-                      <Text style={styles.lostLootGold}>💰 {state.currentRun.lootCollected.gold} Gold</Text>
-                    )}
-                    {Object.entries(state.currentRun.lootCollected.materials).map(([id, qty]) => {
-                      let matEmoji = '💎';
-                      if (id.startsWith('black')) matEmoji = '🖤';
-                      if (id.startsWith('green')) matEmoji = '💚';
-                      if (id.startsWith('yellow')) matEmoji = '💛';
+              <View style={styles.modalContentInner}>
+                <Text style={styles.modalTitle}>🧪 Supplies Bag</Text>
+
+                <ScrollView style={styles.modalItemScroll} showsVerticalScrollIndicator={false}>
+                  {runConsumables.length === 0 ? (
+                    <Text style={styles.modalEmpty}>No potions or items available.</Text>
+                  ) : (
+                    runConsumables.map((entry) => {
+                      const def = CONSUMABLES.find((c) => c.id === entry.id);
                       return (
-                        <Text key={id} style={styles.lostLootItemText}>
-                          {matEmoji} {id.replace(/_/g, ' ').toUpperCase()} ×{qty}
-                        </Text>
+                        <TouchableOpacity
+                          key={entry.id}
+                          style={styles.modalItem}
+                          onPress={() => handleUseItem(entry)}
+                          activeOpacity={0.8}
+                        >
+                          <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
+                            <Rect width="100%" height="100%" fill="rgba(255,255,255,0.01)" rx={10} />
+                            <Rect x="1" y="1" width="98%" height="98%" rx={9} fill="none" stroke="rgba(255,255,255,0.04)" strokeWidth={1} />
+                          </Svg>
+                          <View style={styles.modalItemInner}>
+                            <Text style={styles.modalItemName}>
+                              {def?.name || entry.id} ×{entry.quantity}
+                            </Text>
+                            <Text style={styles.modalItemDesc}>
+                              {def?.description || ''}
+                            </Text>
+                          </View>
+                        </TouchableOpacity>
                       );
-                    })}
-                  </>
-                )}
-              </View>
+                    })
+                  )}
+                </ScrollView>
 
-              <Button
-                title="🏕️ Return to Camp"
-                variant="danger"
-                onPress={handleDefeatReturn}
-                style={{ width: '100%', marginTop: 16 }}
-              />
+                <Button
+                  title="Cancel"
+                  variant="secondary"
+                  onPress={() => setShowItemModal(false)}
+                  style={{ width: '100%', marginTop: 16 }}
+                />
+              </View>
             </View>
           </View>
-        </View>
-      )}
-    </SafeAreaView>
+        </Modal>
+
+        {/* ── Victory / Loot Overlay ───────────────────────────────────── */}
+        {combatPhase === 'loot' && lootResult && (
+          <View style={styles.overlay}>
+            <View style={styles.overlayCard}>
+              <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
+                <Defs>
+                  <RadialGradient id="victoryGlow" cx="50%" cy="0%" r="55%">
+                    <Stop offset="0%" stopColor="#FBBF24" stopOpacity="0.08" />
+                    <Stop offset="100%" stopColor="#0E0F14" stopOpacity="0" />
+                  </RadialGradient>
+                </Defs>
+                <Rect width="100%" height="100%" fill="#0E0F14" rx={20} />
+                <Rect width="100%" height="100%" fill="url(#victoryGlow)" rx={20} />
+                <Rect x="1" y="1" width="98%" height="98%" rx={19} fill="none" stroke="rgba(251, 191, 36, 0.18)" strokeWidth={1} />
+              </Svg>
+
+              <View style={styles.overlayInner}>
+                <Text style={styles.victoryTitle}>🎉 Victory!</Text>
+
+                {/* Loot breakdown */}
+                <View style={styles.lootSection}>
+                  {lootResult.xp > 0 && (
+                    <Text style={styles.lootLine}>✨ XP: +{lootResult.xp}</Text>
+                  )}
+                  {lootResult.gold > 0 && (
+                    <Text style={styles.lootLine}>💰 Gold: +{lootResult.gold}</Text>
+                  )}
+                  {Object.entries(lootResult.materials).map(([itemId, qty]) => {
+                    let matEmoji = '💎';
+                    if (itemId.startsWith('black')) matEmoji = '🖤';
+                    if (itemId.startsWith('green')) matEmoji = '💚';
+                    if (itemId.startsWith('yellow')) matEmoji = '💛';
+                    return (
+                      <Text key={itemId} style={styles.lootLine}>
+                        {matEmoji} {itemId.replace(/_/g, ' ').toUpperCase()}: ×{qty}
+                      </Text>
+                    );
+                  })}
+                </View>
+
+                {/* Level up messages */}
+                {levelUpMessages.length > 0 && (
+                  <View style={styles.levelUpSection}>
+                    {levelUpMessages.map((msg, i) => (
+                      <Text key={`lu_${i}`} style={styles.levelUpText}>
+                        🌟 {msg}
+                      </Text>
+                    ))}
+                  </View>
+                )}
+
+                <Button
+                  title={roomType === 'boss' ? '🏕️ Return to Camp' : '➡️ Return to Map'}
+                  variant="primary"
+                  onPress={handleContinue}
+                  style={{ width: '100%', marginTop: 16 }}
+                />
+              </View>
+            </View>
+          </View>
+        )}
+
+        {/* ── Defeat Overlay ───────────────────────────────────────────── */}
+        {combatPhase === 'defeat' && (
+          <View style={styles.overlay}>
+            <View style={styles.overlayCard}>
+              <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
+                <Rect width="100%" height="100%" fill="#140A0A" rx={20} />
+                <Rect x="1" y="1" width="98%" height="98%" rx={19} fill="none" stroke="rgba(255, 68, 68, 0.2)" strokeWidth={1} />
+              </Svg>
+
+              <View style={styles.overlayInner}>
+                <Text style={styles.defeatTitle}>💀 Defeated…</Text>
+                <Text style={styles.defeatSubtext}>
+                  Mochi retreats to camp, battered but alive.
+                </Text>
+
+                <View style={styles.lostLootBox}>
+                  <Text style={styles.lostLootTitle}>Loot Lost in the Depths:</Text>
+                  {state.currentRun.lootCollected.gold === 0 &&
+                    Object.keys(state.currentRun.lootCollected.materials).length === 0 &&
+                    (state.currentRun.lootCollected.xp || 0) === 0 ? (
+                    <Text style={styles.noLostLootText}>No materials, gold, or XP were collected this run.</Text>
+                  ) : (
+                    <>
+                      {state.currentRun.lootCollected.xp > 0 && (
+                        <Text style={styles.lostLootXpText}>✨ {state.currentRun.lootCollected.xp} XP</Text>
+                      )}
+                      {state.currentRun.lootCollected.gold > 0 && (
+                        <Text style={styles.lostLootGold}>💰 {state.currentRun.lootCollected.gold} Gold</Text>
+                      )}
+                      {Object.entries(state.currentRun.lootCollected.materials).map(([id, qty]) => {
+                        let matEmoji = '💎';
+                        if (id.startsWith('black')) matEmoji = '🖤';
+                        if (id.startsWith('green')) matEmoji = '💚';
+                        if (id.startsWith('yellow')) matEmoji = '💛';
+                        return (
+                          <Text key={id} style={styles.lostLootItemText}>
+                            {matEmoji} {id.replace(/_/g, ' ').toUpperCase()} ×{qty}
+                          </Text>
+                        );
+                      })}
+                    </>
+                  )}
+                </View>
+
+                <Button
+                  title="🏕️ Return to Camp"
+                  variant="danger"
+                  onPress={handleDefeatReturn}
+                  style={{ width: '100%', marginTop: 16 }}
+                />
+              </View>
+            </View>
+          </View>
+        )}
+      </SafeAreaView>
     </ScreenLoader>
   );
 
   // ── Skill button renderer ──────────────────────────────────────────────
   function renderSkillButton(slotIndex) {
-    const skillId  = state.hero.equippedSkills[slotIndex];
+    const skillId = state.hero.equippedSkills[slotIndex];
     const skillDef = skillId ? SKILLS[skillId] : null;
     const isPassive = skillDef?.type === 'passive';
     const cd = (skillId && !isPassive) ? (cooldowns[skillId] || 0) : 0;
@@ -1897,20 +2064,20 @@ export default function CombatScreen() {
     const isDisabled = !hasSkill || isOnCooldown || isPassive;
 
     const elColor = state.hero.element === 'fire' ? '#FF6B35'
-                  : state.hero.element === 'water' ? '#3B9EFF'
-                  : state.hero.element === 'earth' ? '#8B6914'
-                  : state.hero.element === 'wind'  ? '#5CC4B8'
-                  : '#A98EE0';
+      : state.hero.element === 'water' ? '#3B9EFF'
+        : state.hero.element === 'earth' ? '#8B6914'
+          : state.hero.element === 'wind' ? '#5CC4B8'
+            : '#A98EE0';
 
     const btnStyle = !hasSkill ? styles.actionBtnEmpty
       : isPassive ? styles.actionBtnSkill
-      : isOnCooldown ? styles.actionBtnSkillCooldown
-      : styles.actionBtnSkill;
+        : isOnCooldown ? styles.actionBtnSkillCooldown
+          : styles.actionBtnSkill;
 
     const titleColor = !hasSkill ? '#5A5A5A'
       : isPassive ? `${elColor}99`
-      : isOnCooldown ? '#9C7D44'
-      : elColor;
+        : isOnCooldown ? '#9C7D44'
+          : elColor;
 
     const icon = skillDef?.icon || (hasSkill ? '✨' : '—');
 
@@ -1974,7 +2141,7 @@ export default function CombatScreen() {
 // ============================================================================
 // DyingEnemyCard — collapses and fades out on defeat
 // ============================================================================
-function DyingEnemyCard({ enemy }) {
+function DyingEnemyCard({ enemy, popups = [], removePopup }) {
   const fadeAnim = useRef(new Animated.Value(1)).current;
   const scaleAnim = useRef(new Animated.Value(1)).current;
   const rotateAnim = useRef(new Animated.Value(0)).current;
@@ -2010,7 +2177,7 @@ function DyingEnemyCard({ enemy }) {
   });
 
   const spriteDef = getEnemySprite(enemy);
-  const animData  = spriteDef.idle;
+  const animData = spriteDef.idle;
 
   return (
     <Animated.View
@@ -2031,16 +2198,26 @@ function DyingEnemyCard({ enemy }) {
       <View style={styles.dyingOverlay}>
         <Text style={styles.dyingOverlayText}>💀</Text>
       </View>
-      <View style={styles.spriteWrapper}>
+      <View style={[styles.spriteWrapper, { height: enemy.isBoss ? BOSS_DISPLAY_SIZE : ENEMY_DISPLAY_SIZE }]}>
         <AnimatedSprite
           source={animData.source}
           frameSize={animData.frameSize}
           totalFrames={animData.frames}
           fps={8}
           loop={false}
-          displaySize={enemy.isBoss ? 134 : 110}
+          displaySize={enemy.isBoss ? BOSS_DISPLAY_SIZE : ENEMY_DISPLAY_SIZE}
           flipX
         />
+        {popups
+          .filter((p) => p.targetUid === enemy.uid)
+          .map((p) => (
+            <DamagePopup
+              key={p.id}
+              amount={p.amount}
+              isHeal={p.isHeal}
+              onComplete={() => removePopup?.(p.id)}
+            />
+          ))}
       </View>
       <View style={styles.hudDivider} />
       <View style={styles.hudTray}>
@@ -2050,6 +2227,67 @@ function DyingEnemyCard({ enemy }) {
         <View style={styles.hpPlaceholder} />
         <View style={styles.effectsRowContainer} />
       </View>
+    </Animated.View>
+  );
+}
+
+// ============================================================================
+// DamagePopup — rises up and fades out over a sprite on hit
+// ============================================================================
+function DamagePopup({ amount, isHeal, onComplete }) {
+  const animValue = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.timing(animValue, {
+      toValue: 1,
+      duration: 1200,
+      useNativeDriver: true,
+    }).start(() => {
+      onComplete();
+    });
+  }, [animValue, onComplete]);
+
+  // Translate up and fade out
+  const translateY = animValue.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, -35], // Pop up slower (shorter distance over longer time)
+  });
+
+  const opacity = animValue.interpolate({
+    inputRange: [0, 0.15, 0.8, 1],
+    outputRange: [0, 1, 1, 0], // Quick fade in, hold, then fade out
+  });
+
+  const scale = animValue.interpolate({
+    inputRange: [0, 0.15, 0.8, 1],
+    outputRange: [0.6, 1.4, 1, 0.8], // Slight bounce scale
+  });
+
+  return (
+    <Animated.View
+      pointerEvents="none"
+      style={{
+        position: 'absolute',
+        bottom: '55%', // Start higher on the sprite
+        alignSelf: 'center',
+        zIndex: 999,
+        transform: [{ translateY }, { scale }],
+        opacity,
+      }}
+    >
+      <Text
+        style={{
+          color: isHeal ? '#34C759' : '#FF3B30', // Bright green for healing, red for damage
+          fontSize: 12,
+          fontWeight: '900',
+          textAlign: 'center',
+          textShadowColor: 'black',
+          textShadowOffset: { width: 1, height: 1 },
+          textShadowRadius: 1.5,
+        }}
+      >
+        {isHeal ? '+' : '-'}{amount}
+      </Text>
     </Animated.View>
   );
 }
@@ -2159,7 +2397,9 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: 'transparent',
     borderRadius: 16,
-    padding: 8,
+    paddingTop: 32,
+    paddingBottom: 10,
+    paddingHorizontal: 8,
     marginHorizontal: 8,
     alignItems: 'center',
     justifyContent: 'space-between',
