@@ -42,6 +42,7 @@ import { generateDungeonGrid } from '../logic/dungeonGenerator';
 import { ZONES, getGridSizeForFloor } from '../data/zones';
 import { calculateEffectiveStats, applyHealingEfficiency } from '../logic/progressionEngine';
 import { GEAR, CONSUMABLES } from '../data/gear';
+import { SKILLS, getSkillUpgradeCost } from '../data/skills';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -72,7 +73,6 @@ const initialState = {
     critChance: 0.05,         // 5 % base crit chance
     dodge: 0.05,              // 5 % base dodge chance
     gold: 100,                // start with some gold for first potions
-    skillPoints: 0,           // earned 1 per level-up, spent on skills
     statPoints: 0,            // 3 stat points per level-up, allocated manually
     strength: 10,             // core attribute
     agility: 10,              // core attribute
@@ -83,9 +83,14 @@ const initialState = {
 
     // -- Equipment & Inventory -----------------------------------------------
     gear: {
-      weapon:  'toy_sword',          // equipped weapon gear ID (or null)
-      armor:   'cardboard_armor',          // equipped armor gear ID
-      trinket: null,          // equipped trinket gear ID
+      weapon:   'toy_sword',         // equipped weapon gear ID (or null)
+      head:     null,                // equipped head gear ID
+      chest:    'cardboard_armor',   // equipped chest gear ID
+      legs:     null,                // equipped legs gear ID
+      gloves:   null,                // equipped gloves gear ID
+      boots:    null,                // equipped boots gear ID
+      trinket1: null,                // equipped trinket gear ID (slot 1)
+      trinket2: null,                // equipped trinket gear ID (slot 2)
     },
     inventory: {
       materials: {},          // { itemId: quantity } — crafting components
@@ -157,7 +162,7 @@ const initialState = {
  *   CLEAR_ZONE       – mark a zone as completed
  *   CRAFT_GEAR       – spend materials + gold to create gear
  *   END_RUN          – finish the current dungeon run
- *   EQUIP_GEAR       – put gear in a slot (weapon / armor / trinket)
+ *   EQUIP_GEAR       – put gear in a slot (weapon/head/chest/legs/gloves/boots/trinket1/trinket2)
  *   EQUIP_SKILL      – assign a skill to one of the two active slots
  *   HEAL             – restore HP
  *   LEVEL_UP         – apply level-up stat bonuses
@@ -165,7 +170,7 @@ const initialState = {
  *   SET_STATE        – wholesale state replacement (used when loading)
  *   START_RUN        – begin a new dungeon run
  *   TAKE_DAMAGE      – reduce HP
- *   UNLOCK_SKILL     – learn a new skill, spending skill points
+ *   UNLOCK_SKILL     – learn a new skill, spending crystals
  *   UPDATE_HERO      – generic partial update to hero fields
  *   USE_CONSUMABLE   – use a consumable from inventory
  */
@@ -240,7 +245,7 @@ function gameReducer(state, action) {
 
     // -----------------------------------------------------------------------
     // EQUIP_GEAR — put a gear piece in its slot
-    // Payload: { slot: 'weapon'|'armor'|'trinket', gearId: string }
+    // Payload: { slot: 'weapon'|'head'|'chest'|'legs'|'gloves'|'boots'|'trinket1'|'trinket2', gearId: string }
     // -----------------------------------------------------------------------
     case 'EQUIP_GEAR': {
       const { slot, gearId } = action.payload;
@@ -304,41 +309,70 @@ function gameReducer(state, action) {
       };
 
     // -----------------------------------------------------------------------
-    // UNLOCK_SKILL — learn a new element skill at ★1
-    // Payload: { skillId: string, cost: number }
+    // UNLOCK_SKILL — learn a new element skill at ★1, spending crystals
+    // Payload: { skillId: string }
     // -----------------------------------------------------------------------
     case 'UNLOCK_SKILL': {
+      const skill = SKILLS[action.payload.skillId];
+      const cost = skill && getSkillUpgradeCost(skill, 1);
+      if (!cost) return state;
+
       const unlocked = typeof state.hero.unlockedSkills === 'object' && !Array.isArray(state.hero.unlockedSkills)
         ? state.hero.unlockedSkills
         : {};
+
+      const newMaterials = { ...state.hero.inventory.materials };
+      for (const [itemId, qty] of Object.entries(cost.materials)) {
+        newMaterials[itemId] = (newMaterials[itemId] || 0) - qty;
+        if (newMaterials[itemId] <= 0) delete newMaterials[itemId];
+      }
+
       return {
         ...state,
         hero: {
           ...state.hero,
-          skillPoints: state.hero.skillPoints - (action.payload.cost || 1),
           unlockedSkills: {
             ...unlocked,
             [action.payload.skillId]: { stars: 1 },
+          },
+          inventory: {
+            ...state.hero.inventory,
+            materials: newMaterials,
           },
         },
       };
     }
 
     // -----------------------------------------------------------------------
-    // STAR_UP_SKILL — increase a skill's star level
-    // Payload: { skillId: string, cost: number }
+    // STAR_UP_SKILL — increase a skill's star level, spending crystals
+    // Payload: { skillId: string }
     // -----------------------------------------------------------------------
     case 'STAR_UP_SKILL': {
       const existing = (state.hero.unlockedSkills || {})[action.payload.skillId];
       if (!existing) return state;
+
+      const skill = SKILLS[action.payload.skillId];
+      const targetStar = (existing.stars || 1) + 1;
+      const cost = skill && getSkillUpgradeCost(skill, targetStar);
+      if (!cost) return state;
+
+      const newMaterials = { ...state.hero.inventory.materials };
+      for (const [itemId, qty] of Object.entries(cost.materials)) {
+        newMaterials[itemId] = (newMaterials[itemId] || 0) - qty;
+        if (newMaterials[itemId] <= 0) delete newMaterials[itemId];
+      }
+
       return {
         ...state,
         hero: {
           ...state.hero,
-          skillPoints: state.hero.skillPoints - (action.payload.cost || 1),
           unlockedSkills: {
             ...state.hero.unlockedSkills,
-            [action.payload.skillId]: { ...existing, stars: (existing.stars || 1) + 1 },
+            [action.payload.skillId]: { ...existing, stars: targetStar },
+          },
+          inventory: {
+            ...state.hero.inventory,
+            materials: newMaterials,
           },
         },
       };
@@ -440,7 +474,6 @@ function gameReducer(state, action) {
             maxHp: state.hero.maxHp,
             attack: state.hero.attack,
             defence: state.hero.defence,
-            skillPoints: state.hero.skillPoints,
             statPoints: state.hero.statPoints || 0,
             strength: state.hero.strength || 10,
             agility: state.hero.agility || 10,
@@ -626,7 +659,6 @@ function gameReducer(state, action) {
             maxHp: state.currentRun.heroBackup.maxHp,
             attack: state.currentRun.heroBackup.attack,
             defence: state.currentRun.heroBackup.defence,
-            skillPoints: state.currentRun.heroBackup.skillPoints,
             statPoints: state.currentRun.heroBackup.statPoints || 0,
             strength: state.currentRun.heroBackup.strength || 10,
             agility: state.currentRun.heroBackup.agility || 10,
@@ -963,7 +995,7 @@ function gameReducer(state, action) {
 
     // -----------------------------------------------------------------------
     // LEVEL_UP — apply level-up stat changes
-    // Payload: { newLevel, newMaxHp, newAttack, newDefence, newSkillPoints }
+    // Payload: { newLevel, newMaxHp, newAttack, newDefence, newStatPoints }
     // -----------------------------------------------------------------------
     case 'LEVEL_UP': {
       const tempHero = { 
@@ -989,7 +1021,6 @@ function gameReducer(state, action) {
           defence:     action.payload.newDefence,
           critChance:  tempHero.critChance,
           dodge:       tempHero.dodge,
-          skillPoints: action.payload.newSkillPoints,
           statPoints:  action.payload.newStatPoints !== undefined ? action.payload.newStatPoints : (state.hero.statPoints || 0),
           // Fully heal on level up — it feels good! 🎉
           hp:          effectiveMaxHp,
@@ -1100,7 +1131,21 @@ export function GameProvider({ children }) {
         // Merge saved state with initialState to handle any new fields
         // that were added after the save was created (forward-compatibility).
         const merged = deepMerge(initialState, savedState);
-        
+
+        // Migrate old 3-slot gear shape ({ weapon, armor, trinket }) to the
+        // new 8-slot shape (armor → chest, trinket → trinket1).
+        if (merged.hero?.gear) {
+          const gear = merged.hero.gear;
+          if ('armor' in gear) {
+            if (gear.armor) gear.chest = gear.armor;
+            delete gear.armor;
+          }
+          if ('trinket' in gear) {
+            if (gear.trinket) gear.trinket1 = gear.trinket;
+            delete gear.trinket;
+          }
+        }
+
         // Ensure starter gear is present in inventory.craftedGear if equipped
         if (merged.hero?.inventory) {
           if (!merged.hero.inventory.craftedGear) {
@@ -1109,7 +1154,7 @@ export function GameProvider({ children }) {
           if (merged.hero.gear?.weapon === 'toy_sword' && !merged.hero.inventory.craftedGear.includes('toy_sword')) {
             merged.hero.inventory.craftedGear.push('toy_sword');
           }
-          if (merged.hero.gear?.armor === 'cardboard_armor' && !merged.hero.inventory.craftedGear.includes('cardboard_armor')) {
+          if (merged.hero.gear?.chest === 'cardboard_armor' && !merged.hero.inventory.craftedGear.includes('cardboard_armor')) {
             merged.hero.inventory.craftedGear.push('cardboard_armor');
           }
         }

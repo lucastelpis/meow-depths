@@ -75,7 +75,7 @@ const toy_sword = {
 const cardboard_armor = {
   id: 'cardboard_armor',
   name: 'Cardboard Armor',
-  type: 'armor',
+  type: 'chest',
   zone: 1,
   materials: [],
   stats: { defence: 1 },
@@ -101,7 +101,7 @@ const sewer_shiv = {
 const rat_hide_vest = {
   id: 'rat_hide_vest',
   name: 'Rat Hide Vest',
-  type: 'armor',
+  type: 'chest',
   zone: 1,
   goldCost: 60,
   materials: [
@@ -116,7 +116,7 @@ const rat_hide_vest = {
 const slimecrawler_shell = {
   id: 'slimecrawler_shell',
   name: 'Slimecrawler Shell',
-  type: 'armor',
+  type: 'chest',
   zone: 1,
   goldCost: 75,
   materials: [
@@ -131,7 +131,7 @@ const slimecrawler_shell = {
 const plague_cloak = {
   id: 'plague_cloak',
   name: 'Plague Cloak',
-  type: 'armor',
+  type: 'chest',
   zone: 1,
   goldCost: 65,
   materials: [
@@ -196,7 +196,7 @@ const thorn_dagger = {
 const beetle_shell_vest = {
   id: 'beetle_shell_vest',
   name: 'Beetle Shell Vest',
-  type: 'armor',
+  type: 'chest',
   zone: 2,
   goldCost: 130,
   materials: [
@@ -211,7 +211,7 @@ const beetle_shell_vest = {
 const spore_cloak = {
   id: 'spore_cloak',
   name: 'Spore Cloak',
-  type: 'armor',
+  type: 'chest',
   zone: 2,
   goldCost: 115,
   materials: [
@@ -226,7 +226,7 @@ const spore_cloak = {
 const vine_wrap = {
   id: 'vine_wrap',
   name: 'Vine Wrap',
-  type: 'armor',
+  type: 'chest',
   zone: 2,
   goldCost: 120,
   materials: [
@@ -291,7 +291,7 @@ const ghost_cutlass = {
 const barnacle_plate = {
   id: 'barnacle_plate',
   name: 'Barnacle Plate',
-  type: 'armor',
+  type: 'chest',
   zone: 3,
   goldCost: 210,
   materials: [
@@ -306,7 +306,7 @@ const barnacle_plate = {
 const ghost_silk_coat = {
   id: 'ghost_silk_coat',
   name: 'Ghost Silk Coat',
-  type: 'armor',
+  type: 'chest',
   zone: 3,
   goldCost: 190,
   materials: [
@@ -321,7 +321,7 @@ const ghost_silk_coat = {
 const saltcaptain_coat = {
   id: 'saltcaptain_coat',
   name: 'Saltcaptain Coat',
-  type: 'armor',
+  type: 'chest',
   zone: 3,
   goldCost: 200,
   materials: [
@@ -465,6 +465,36 @@ export const GEAR = {
  */
 export function getGearByZone(zone) {
   return Object.values(GEAR).filter((item) => item.zone === zone);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Equipment slots — the 8 gear slots on the hero
+// ─────────────────────────────────────────────────────────────────────────────
+
+export const EQUIP_SLOTS = [
+  'weapon', 'head', 'chest', 'legs', 'gloves', 'boots', 'trinket1', 'trinket2',
+];
+
+// Which gear `type`s are valid for each slot. head/legs/gloves/boots have no
+// gear defined yet — they remain empty until that gear is added.
+export const SLOT_TYPES = {
+  weapon:   ['weapon'],
+  head:     ['head'],
+  chest:    ['chest'],
+  legs:     ['legs'],
+  gloves:   ['gloves'],
+  boots:    ['boots'],
+  trinket1: ['trinket'],
+  trinket2: ['trinket'],
+};
+
+/**
+ * @param {string} slot — one of EQUIP_SLOTS
+ * @returns {Array} gear items whose `type` is valid for the given slot
+ */
+export function getGearForSlot(slot) {
+  const validTypes = SLOT_TYPES[slot] || [];
+  return Object.values(GEAR).filter((item) => validTypes.includes(item.type));
 }
 
 export default GEAR;

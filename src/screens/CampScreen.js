@@ -48,7 +48,7 @@ const NAV_ITEMS = [
   { key: 'WorldMap',  icon: '🚪', label: 'Enter the Depths', sub: 'Conquer Zones',  color: '#B5701A' }, // torchOrange / primary
   { key: 'Shop',      icon: '🏛️', label: 'Town Hall',        sub: 'Buy & Craft',    color: '#5CC489' }, // buffMint
   { key: 'SkillTree', icon: '🌟', label: 'Skills',           sub: 'Unlock Talents', color: '#A98EE0' }, // skillPurple
-  { key: 'Inventory', icon: '🎒', label: 'Inventory',        sub: 'Manage Loadout', color: '#5A9FE0' }, // coldBlue
+  { key: 'Loadout',   icon: '🎒', label: 'Loadout',          sub: 'Manage Gear',    color: '#5A9FE0' }, // coldBlue
 ];
 
 export default function CampScreen({ navigation }) {

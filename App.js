@@ -26,7 +26,7 @@ import WorldMapScreen from './src/screens/WorldMapScreen';
 import CombatScreen from './src/screens/CombatScreen';
 import ShopScreen from './src/screens/ShopScreen';
 import SkillTreeScreen from './src/screens/SkillTreeScreen';
-import InventoryScreen from './src/screens/InventoryScreen';
+import LoadoutScreen from './src/screens/LoadoutScreen';
 import DungeonMapScreen from './src/screens/DungeonMapScreen';
 import DungeonFloorScreen from './src/screens/DungeonFloorScreen';
 import ElementSelectionScreen from './src/screens/ElementSelectionScreen';
@@ -72,7 +72,7 @@ function AppNavigator() {
         />
         <Stack.Screen name="Shop" component={ShopScreen} />
         <Stack.Screen name="SkillTree" component={SkillTreeScreen} />
-        <Stack.Screen name="Inventory" component={InventoryScreen} />
+        <Stack.Screen name="Loadout" component={LoadoutScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );

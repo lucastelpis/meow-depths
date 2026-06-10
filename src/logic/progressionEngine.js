@@ -146,10 +146,10 @@ export function getXpForLevel(level) {
  *   +8  Max HP
  *   +2  Attack
  *   +1  Defence
- *   +1  Skill Point
+ *   +3  Stat Points
  *
  * @param {Object} hero – The hero object from game state.
- *   Must have: { level, xp, maxHp, attack, defence, skillPoints }
+ *   Must have: { level, xp, maxHp, attack, defence, statPoints }
  *
  * @returns {{
  *   levelsGained: number,
@@ -157,7 +157,7 @@ export function getXpForLevel(level) {
  *   newMaxHp: number,
  *   newAttack: number,
  *   newDefence: number,
- *   newSkillPoints: number,
+ *   newStatPoints: number,
  *   messages: string[]    – e.g. ["Level up! You are now level 3!"]
  * }}
  */
@@ -165,18 +165,16 @@ export function checkLevelUp(hero) {
   // We'll track how many levels were gained and build log messages
   let levelsGained = 0;
   let currentLevel = hero.level;
-  let currentSP = hero.skillPoints;
   let currentStatPoints = hero.statPoints || 0;
   const messages = [];
 
   // Keep leveling up as long as XP exceeds the next level's threshold
   while (hero.xp >= getXpForLevel(currentLevel + 1)) {
     currentLevel += 1;
-    currentSP += 1;   // +1 Skill Point per level
     currentStatPoints += 3; // +3 Stat Points per level
     levelsGained += 1;
 
-    messages.push(`🎉 Level up! You are now level ${currentLevel}! Gained +1 Skill Point and +3 Stat Points.`);
+    messages.push(`🎉 Level up! You are now level ${currentLevel}! Gained +3 Stat Points.`);
   }
 
   const strength = hero.strength || 10;
@@ -191,7 +189,6 @@ export function checkLevelUp(hero) {
     newDefence: 0,
     newCritChance: agility * 0.005,
     newDodge: agility * 0.005,
-    newSkillPoints: currentSP,
     newStatPoints: currentStatPoints,
     messages,
   };
@@ -239,8 +236,8 @@ export function calculateEffectiveStats(hero, skillDefinitions = SKILLS, runBuff
   const passives = {};
 
   // --- 1. Gear bonuses -----------------------------------------------------
-  // hero.gear looks like: { weapon: 'coral_blade', armor: null, trinket: null }
-  const gearSlots = ['weapon', 'armor', 'trinket'];
+  // hero.gear looks like: { weapon, head, chest, legs, gloves, boots, trinket1, trinket2 }
+  const gearSlots = ['weapon', 'head', 'chest', 'legs', 'gloves', 'boots', 'trinket1', 'trinket2'];
 
   let gearHp = 0;
   for (const slot of gearSlots) {
@@ -455,13 +452,14 @@ export function canUnlockSkill(skillId, unlockedSkills, skillPoints, allSkills =
  * Check the hero's equipped gear and return an array of set bonuses that
  * are currently active (i.e. all pieces of the set are equipped).
  *
- * @param {Object} gear – The hero's gear object: { weapon, armor, trinket }
- *                        where each value is a gear id string or null.
+ * @param {Object} gear – The hero's gear object: { weapon, head, chest, legs,
+ *                        gloves, boots, trinket1, trinket2 } where each value
+ *                        is a gear id string or null.
  *
  * @returns {Object[]} Array of active set bonus objects from SET_BONUSES.
  *
  * @example
- *   getActiveSetBonuses({ weapon: 'coral_blade', armor: 'coral_mail', trinket: 'coral_charm' })
+ *   getActiveSetBonuses({ weapon: 'coral_blade', chest: 'coral_mail', trinket1: 'coral_charm' })
  *   // → [{ id: 'coral_set', name: 'Coral Set', bonus: { attack: 2, defence: 1 }, ... }]
  */
 export function getActiveSetBonuses(gear) {
@@ -470,7 +468,10 @@ export function getActiveSetBonuses(gear) {
   const activeBonuses = [];
 
   // Collect all equipped gear ids into a flat array for easy checking
-  const equippedIds = [gear.weapon, gear.armor, gear.trinket].filter(Boolean);
+  const equippedIds = [
+    gear.weapon, gear.head, gear.chest, gear.legs,
+    gear.gloves, gear.boots, gear.trinket1, gear.trinket2,
+  ].filter(Boolean);
 
   // Check each set bonus definition
   for (const setId of Object.keys(SET_BONUSES)) {
@@ -481,9 +482,9 @@ export function getActiveSetBonuses(gear) {
       equippedIds.includes(pieceId)
     );
 
-    // Also require an armor from the matching zone
-    const armorId = gear.armor;
-    const armorDef = armorId ? GEAR[armorId] : null;
+    // Also require chest armor from the matching zone
+    const chestId = gear.chest;
+    const armorDef = chestId ? GEAR[chestId] : null;
     const hasMatchingArmor = armorDef && armorDef.zone === setDef.armorZone;
 
     // Full set bonus requires all named pieces + a matching-zone armor

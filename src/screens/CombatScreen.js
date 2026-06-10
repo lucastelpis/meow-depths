@@ -1432,7 +1432,6 @@ export default function CombatScreen() {
           newMaxHp: lvlResult.newMaxHp,
           newAttack: lvlResult.newAttack,
           newDefence: lvlResult.newDefence,
-          newSkillPoints: lvlResult.newSkillPoints,
           newStatPoints: lvlResult.newStatPoints,
         },
       });

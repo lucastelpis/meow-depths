@@ -394,16 +394,49 @@ export const ELEMENT_T1_ACTIVE = {
 };
 
 /**
- * SP cost to unlock or star-up a skill.
+ * Crystal costs to unlock (★1) or star-up (★2-5) a skill, plus the hero
+ * level required to do so. Costs are keyed by skill tier, then target star.
+ *
+ * Currently only Black Crystal materials (Zone 1) are used for both
+ * Tier 1 (★1-5, level 1-5) and Tier 2 (★1-5, level 11-15) skills.
  */
-export function getSkillCost(skill) {
-  return skill.tier === 1 ? 1 : 2;
+export const SKILL_UPGRADE_COSTS = {
+  1: {
+    1: { requiredLevel: 1, materials: { black_shard: 10 } },
+    2: { requiredLevel: 2, materials: { black_shard: 20 } },
+    3: { requiredLevel: 3, materials: { black_shard: 30 } },
+    4: { requiredLevel: 4, materials: { black_crystal_small: 15 } },
+    5: { requiredLevel: 5, materials: { black_crystal_small: 30 } },
+  },
+  2: {
+    1: { requiredLevel: 11, materials: { black_crystal_small: 50 } },
+    2: { requiredLevel: 12, materials: { black_crystal_big: 15 } },
+    3: { requiredLevel: 13, materials: { black_crystal_big: 30 } },
+    4: { requiredLevel: 14, materials: { black_crystal_big: 45 } },
+    5: { requiredLevel: 15, materials: { black_crystal_big: 60, black_crystal_core: 1 } },
+  },
+};
+
+/**
+ * Returns the { requiredLevel, materials } cost to bring a skill to the
+ * given star level (1-5), or null if no such tier/star is defined.
+ */
+export function getSkillUpgradeCost(skill, targetStar) {
+  return SKILL_UPGRADE_COSTS[skill.tier]?.[targetStar] || null;
 }
 
 /**
- * Returns whether the hero can unlock a skill.
- * T1: hero.level >= 2
- * T2: hero.level >= 10 AND parent T1 active is at stars 5
+ * Returns whether the hero's material inventory satisfies a cost's
+ * material requirements.
+ */
+export function hasMaterials(materials, cost) {
+  return Object.entries(cost).every(([itemId, qty]) => (materials?.[itemId] || 0) >= qty);
+}
+
+/**
+ * Returns whether the hero can unlock a skill (bring it to ★1).
+ * T1: hero.level >= 1, T2: hero.level >= 11 AND parent T1 active is at ★5.
+ * Both also require the crystal cost for ★1.
  */
 export function canUnlockElementSkill(skillId, hero) {
   const skill = SKILLS[skillId];
@@ -411,29 +444,30 @@ export function canUnlockElementSkill(skillId, hero) {
   if (skill.element !== hero.element) return { can: false, reason: 'Wrong element.' };
   if (hero.unlockedSkills[skillId]) return { can: false, reason: 'Already unlocked.' };
 
-  const cost = getSkillCost(skill);
-  if ((hero.skillPoints || 0) < cost) {
-    return { can: false, reason: `Need ${cost} SP (have ${hero.skillPoints || 0}).` };
+  const cost = getSkillUpgradeCost(skill, 1);
+  if (!cost) return { can: false, reason: 'No cost defined.' };
+
+  if (skill.tier === 2) {
+    const parentEntry = hero.unlockedSkills[skill.unlockedBy];
+    if (!parentEntry || parentEntry.stars < 5) {
+      const parentSkill = SKILLS[skill.unlockedBy];
+      return { can: false, reason: `Requires ${parentSkill?.name || skill.unlockedBy} at ★5.`, cost };
+    }
   }
 
-  if (skill.tier === 1) {
-    if (hero.level < 2) return { can: false, reason: 'Requires level 2.' };
-    return { can: true };
+  if (hero.level < cost.requiredLevel) {
+    return { can: false, reason: `Requires level ${cost.requiredLevel}.`, cost };
   }
 
-  // Tier 2
-  const requiredLevel = skill.unlockLevel || 10;
-  if (hero.level < requiredLevel) return { can: false, reason: `Requires level ${requiredLevel}.` };
-  const parentEntry = hero.unlockedSkills[skill.unlockedBy];
-  if (!parentEntry || parentEntry.stars < 5) {
-    const parentSkill = SKILLS[skill.unlockedBy];
-    return { can: false, reason: `Requires ${parentSkill?.name || skill.unlockedBy} at ★5.` };
+  if (!hasMaterials(hero.inventory?.materials, cost.materials)) {
+    return { can: false, reason: 'Not enough crystals.', cost };
   }
-  return { can: true };
+
+  return { can: true, cost };
 }
 
 /**
- * Returns whether the hero can star up a skill.
+ * Returns whether the hero can star up a skill to its next star level.
  */
 export function canStarUpSkill(skillId, hero) {
   const skill = SKILLS[skillId];
@@ -443,11 +477,19 @@ export function canStarUpSkill(skillId, hero) {
   if (!entry) return { can: false, reason: 'Skill not unlocked.' };
   if (entry.stars >= 5) return { can: false, reason: 'Already at max star.' };
 
-  const cost = getSkillCost(skill);
-  if ((hero.skillPoints || 0) < cost) {
-    return { can: false, reason: `Need ${cost} SP (have ${hero.skillPoints || 0}).` };
+  const targetStar = entry.stars + 1;
+  const cost = getSkillUpgradeCost(skill, targetStar);
+  if (!cost) return { can: false, reason: 'No cost defined.' };
+
+  if (hero.level < cost.requiredLevel) {
+    return { can: false, reason: `Requires level ${cost.requiredLevel}.`, cost };
   }
-  return { can: true };
+
+  if (!hasMaterials(hero.inventory?.materials, cost.materials)) {
+    return { can: false, reason: 'Not enough crystals.', cost };
+  }
+
+  return { can: true, cost };
 }
 
 export default SKILLS;

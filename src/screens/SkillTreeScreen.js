@@ -27,7 +27,7 @@ import { useNavigation } from '@react-navigation/native';
 import Svg, { Defs, LinearGradient, RadialGradient, Stop, Rect, Path } from 'react-native-svg';
 
 import { useGame } from '../state/gameState';
-import { SKILLS, ELEMENT_SKILLS, canUnlockElementSkill, canStarUpSkill, getSkillCost } from '../data/skills';
+import { SKILLS, ELEMENT_SKILLS, canUnlockElementSkill, canStarUpSkill, getSkillUpgradeCost } from '../data/skills';
 import { STANCES, getStanceBonus } from '../logic/progressionEngine';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -47,6 +47,17 @@ const ELEMENT_COLORS = {
   earth: '#639922',
   wind:  '#7F77DD',
 };
+
+// ─── Crystal currency metadata (Zone 1 — Black Crystals) ──────────────────────
+
+const CRYSTAL_INFO = {
+  black_shard:         { name: 'Black Crystal Shard',  short: 'Shards',       icon: '🔹', color: '#8FA3FF' },
+  black_crystal_small: { name: 'Small Black Crystal',  short: 'Small Crystals', icon: '🔷', color: '#6E8BFF' },
+  black_crystal_big:   { name: 'Big Black Crystal',    short: 'Big Crystals', icon: '💎', color: '#9B7CFF' },
+  black_crystal_core:  { name: 'Black Crystal Core',   short: 'Crystal Core', icon: '🌑', color: '#FFD700' },
+};
+
+const CRYSTAL_ORDER = ['black_shard', 'black_crystal_small', 'black_crystal_big', 'black_crystal_core'];
 
 // Stars display
 function Stars({ count, max = 5, color = '#FFD700' }) {
@@ -127,7 +138,8 @@ export default function SkillTreeScreen() {
   const navigation = useNavigation();
   const { state, dispatch } = useGame();
   const { hero } = state;
-  const { skillPoints = 0, unlockedSkills = {}, equippedSkills = [null, null], element, level } = hero;
+  const { unlockedSkills = {}, equippedSkills = [null, null], element, level } = hero;
+  const materials = hero.inventory?.materials || {};
 
   const [selectedSkill, setSelectedSkill] = useState(null);
   const elementColor = ELEMENT_COLORS[element] || '#D4A754';
@@ -213,15 +225,13 @@ export default function SkillTreeScreen() {
 
   const handleUnlock = useCallback(() => {
     if (!selectedSkill) return;
-    const cost = getSkillCost(selectedSkill);
-    dispatch({ type: 'UNLOCK_SKILL', payload: { skillId: selectedSkill.id, cost } });
+    dispatch({ type: 'UNLOCK_SKILL', payload: { skillId: selectedSkill.id } });
     setSelectedSkill(null);
   }, [selectedSkill, dispatch]);
 
   const handleStarUp = useCallback(() => {
     if (!selectedSkill) return;
-    const cost = getSkillCost(selectedSkill);
-    dispatch({ type: 'STAR_UP_SKILL', payload: { skillId: selectedSkill.id, cost } });
+    dispatch({ type: 'STAR_UP_SKILL', payload: { skillId: selectedSkill.id } });
     setSelectedSkill(null);
   }, [selectedSkill, dispatch]);
 
@@ -387,11 +397,42 @@ export default function SkillTreeScreen() {
         </Text>
 
         {stars > 0 ? (
-          <Stars count={stars} color={cardState === 'maxed' ? '#FFD700' : elColor} />
+          <>
+            <Stars count={stars} color={cardState === 'maxed' ? '#FFD700' : elColor} />
+            {cardState !== 'maxed' && (() => {
+              const nextCost = getSkillUpgradeCost(skill, stars + 1);
+              if (!nextCost) return null;
+              const [matId, matQty] = Object.entries(nextCost.materials)[0];
+              return (
+                <Text style={styles.cardCostText} numberOfLines={1}>
+                  ★{stars + 1}: {CRYSTAL_INFO[matId]?.icon} {matQty}
+                  {Object.keys(nextCost.materials).length > 1 ? '+' : ''} · Lv.{nextCost.requiredLevel}
+                </Text>
+              );
+            })()}
+          </>
         ) : (
-          <Text style={[styles.cardLockText, cardState === 'available' && { color: '#FFC107', fontWeight: 'bold' }]}>
-            {cardState === 'available' ? `✨ ${getSkillCost(skill)} SP` : '🔒 Locked'}
-          </Text>
+          <>
+            {cardState === 'available' ? (() => {
+              const cost = getSkillUpgradeCost(skill, 1);
+              const [matId, matQty] = Object.entries(cost.materials)[0];
+              return (
+                <Text style={[styles.cardLockText, { color: '#FFC107', fontWeight: 'bold' }]} numberOfLines={1}>
+                  🔓 {CRYSTAL_INFO[matId]?.icon} {matQty} · Lv.{cost.requiredLevel}
+                </Text>
+              );
+            })() : (
+              <Text style={styles.cardLockText} numberOfLines={1}>
+                {(() => {
+                  const check = canUnlockElementSkill(skillId, hero);
+                  if (check.cost && hero.level < check.cost.requiredLevel) {
+                    return `🔒 Lv.${check.cost.requiredLevel}`;
+                  }
+                  return '🔒 Locked';
+                })()}
+              </Text>
+            )}
+          </>
         )}
 
         {skill.type === 'active' && skill.cooldown > 0 && (
@@ -418,6 +459,12 @@ export default function SkillTreeScreen() {
     ? selectedSkill.stars[selectedStars + 1] || selectedSkill.stars[5]
     : null;
 
+  // Cost relevant to the action available on the modal (unlock ★1 or star up to next ★)
+  const relevantCheck = selectedCardState === 'available' ? unlockCheck
+    : selectedCardState === 'unlocked' ? starUpCheck
+    : null;
+  const relevantCost = relevantCheck?.cost || null;
+
   return (
     <SafeAreaView style={styles.container}>
       <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
@@ -437,9 +484,23 @@ export default function SkillTreeScreen() {
           <Text style={styles.backText}>← Hub</Text>
         </TouchableOpacity>
         <Text style={styles.title}>Skill Tree</Text>
-        <View style={[styles.spBadge, { borderColor: '#FFC107', backgroundColor: 'rgba(255, 193, 7, 0.12)' }]}>
-          <Text style={[styles.spText, { color: '#FFC107' }]}>✨ {skillPoints} SP</Text>
+        <View style={[styles.levelBadge, { borderColor: elementColor, backgroundColor: `${elementColor}1F` }]}>
+          <Text style={[styles.levelBadgeText, { color: elementColor }]}>Lv. {level}</Text>
         </View>
+      </View>
+
+      {/* ── Crystal stash bar ─────────────────────────────────────────────── */}
+      <View style={styles.crystalBar}>
+        {CRYSTAL_ORDER.map((itemId) => {
+          const info = CRYSTAL_INFO[itemId];
+          const owned = materials[itemId] || 0;
+          return (
+            <View key={itemId} style={styles.crystalChip}>
+              <Text style={styles.crystalChipIcon}>{info.icon}</Text>
+              <Text style={styles.crystalChipCount}>{owned}</Text>
+            </View>
+          );
+        })}
       </View>
 
       {/* ── Element tabs ───────────────────────────────────────────────── */}
@@ -749,7 +810,38 @@ export default function SkillTreeScreen() {
                   </View>
                 )}
 
-                {/* Unlock requirement info */}
+                {/* Cost breakdown — for unlocking ★1 or starring up to the next ★ */}
+                {relevantCost && (
+                  <View style={[styles.modalCostBox, { borderColor: `${elementColor}40` }]}>
+                    <Text style={styles.modalStatLabel}>
+                      {selectedCardState === 'available' ? `UNLOCK ★1 COST` : `★${selectedStars + 1} UPGRADE COST`}
+                    </Text>
+                    <View style={styles.modalCostLevelRow}>
+                      <Text style={styles.modalCostLevelText}>Hero Level</Text>
+                      <Text style={[
+                        styles.modalCostLevelValue,
+                        { color: hero.level >= relevantCost.requiredLevel ? '#7CFFB2' : '#FF8A8A' }
+                      ]}>
+                        {hero.level} / {relevantCost.requiredLevel}
+                      </Text>
+                    </View>
+                    {Object.entries(relevantCost.materials).map(([itemId, qty]) => {
+                      const owned = materials[itemId] || 0;
+                      const enough = owned >= qty;
+                      const info = CRYSTAL_INFO[itemId] || { icon: '✨', name: itemId };
+                      return (
+                        <View key={itemId} style={styles.modalCostMatRow}>
+                          <Text style={styles.modalCostMatName}>{info.icon} {info.name}</Text>
+                          <Text style={[styles.modalCostMatValue, { color: enough ? '#7CFFB2' : '#FF8A8A' }]}>
+                            {owned} / {qty}
+                          </Text>
+                        </View>
+                      );
+                    })}
+                  </View>
+                )}
+
+                {/* Unlock requirement info (e.g. parent skill not at ★5) */}
                 {selectedCardState === 'locked' && unlockCheck && (
                   <View style={styles.modalInfoBox}>
                     <Text style={styles.modalInfoText}>🔒 {unlockCheck.reason}</Text>
@@ -771,7 +863,7 @@ export default function SkillTreeScreen() {
                         <Rect width="100%" height="100%" fill="url(#btnGrad)" rx={10} />
                       </Svg>
                       <Text style={styles.primaryBtnText}>
-                        Unlock ({getSkillCost(selectedSkill)} SP) 🌟
+                        Unlock ★1 🌟
                       </Text>
                     </TouchableOpacity>
                   )}
@@ -789,7 +881,7 @@ export default function SkillTreeScreen() {
                         <Rect width="100%" height="100%" fill="url(#starBtnGrad)" rx={10} />
                       </Svg>
                       <Text style={styles.primaryBtnText}>
-                        ★ Star Up ({getSkillCost(selectedSkill)} SP) → ★{selectedStars + 1}
+                        ★ Star Up → ★{selectedStars + 1}
                       </Text>
                     </TouchableOpacity>
                   )}
@@ -874,12 +966,35 @@ const styles = StyleSheet.create({
   },
   backText: { color: 'rgba(255,255,255,0.85)', fontWeight: 'bold', fontSize: 13 },
   title:    { fontWeight: '900', fontSize: 18, color: '#FFFFFF', letterSpacing: 1, textTransform: 'uppercase' },
-  spBadge: {
+  levelBadge: {
     paddingHorizontal: 12, paddingVertical: 6,
     borderRadius: 12, borderWidth: 1.5,
     shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.35, shadowRadius: 6, elevation: 3,
   },
-  spText: { fontWeight: '950', fontSize: 12, letterSpacing: 0.5 },
+  levelBadgeText: { fontWeight: '950', fontSize: 12, letterSpacing: 0.5 },
+
+  /* Crystal stash bar */
+  crystalBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    alignItems: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    backgroundColor: 'rgba(255,255,255,0.03)',
+    borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.08)',
+  },
+  crystalChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 10,
+    backgroundColor: 'rgba(0,0,0,0.25)',
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)',
+  },
+  crystalChipIcon:  { fontSize: 13 },
+  crystalChipCount: { fontSize: 12, fontWeight: '900', color: '#FFFFFF', letterSpacing: 0.3 },
 
   /* Tabs */
   tabs: {
@@ -949,6 +1064,7 @@ const styles = StyleSheet.create({
   cardBadgeRow: { flexDirection: 'row', gap: 4, alignItems: 'center', flexWrap: 'wrap', justifyContent: 'flex-end' },
   cardName:     { fontSize: 13, fontWeight: '900', marginBottom: 2 },
   cardLockText: { fontSize: 10, color: 'rgba(255,255,255,0.45)', marginTop: 4 },
+  cardCostText: { fontSize: 9.5, color: 'rgba(255,255,255,0.5)', fontWeight: '700', marginTop: 4 },
   cardCooldown: { fontSize: 9.5, color: '#FFA07A', fontWeight: '800', marginTop: 4 },
 
   typeBadge:      { borderRadius: 6, paddingHorizontal: 6, paddingVertical: 3, borderWidth: 1 },
@@ -1002,6 +1118,7 @@ const styles = StyleSheet.create({
     opacity: 0.85,
   },
   equippedSlotIcon:   { fontSize: 28 },
+  equippedSlotLabel:  { fontSize: 9, fontWeight: '900', letterSpacing: 1, color: 'rgba(255,255,255,0.4)', marginBottom: 2 },
   equippedSlotName:   { fontSize: 12, fontWeight: '900', textAlign: 'center', maxWidth: 110 },
   equippedSlotType:   { fontSize: 10, color: 'rgba(255,255,255,0.5)', textAlign: 'center', marginTop: 2 },
 
@@ -1032,6 +1149,27 @@ const styles = StyleSheet.create({
   },
   modalStatLabel: { fontSize: 8.5, fontWeight: '900', color: 'rgba(255,255,255,0.45)', letterSpacing: 1.5, marginBottom: 6 },
   modalStatLine:  { fontSize: 11.5, color: 'rgba(255,255,255,0.75)', marginBottom: 2 },
+
+  /* Cost breakdown box */
+  modalCostBox: {
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    borderRadius: 10, padding: 10, marginBottom: 12,
+    borderWidth: 1,
+  },
+  modalCostLevelRow: {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    paddingVertical: 4,
+    borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.08)',
+    marginBottom: 4,
+  },
+  modalCostLevelText:  { fontSize: 12, color: 'rgba(255,255,255,0.7)', fontWeight: '700' },
+  modalCostLevelValue: { fontSize: 12, fontWeight: '900' },
+  modalCostMatRow: {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    paddingVertical: 3,
+  },
+  modalCostMatName:  { fontSize: 12, color: 'rgba(255,255,255,0.8)' },
+  modalCostMatValue: { fontSize: 12, fontWeight: '900' },
 
   modalInfoBox: {
     backgroundColor: 'rgba(255,100,0,0.08)',

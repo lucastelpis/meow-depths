@@ -17,31 +17,22 @@ import {
   Pressable,
   Dimensions,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
 import Svg, { Defs, LinearGradient, RadialGradient, Stop, Rect, Circle, Path } from 'react-native-svg';
 
 import { useGame } from '../state/gameState';
 import { GEAR, CONSUMABLES, MATERIALS } from '../data/gear';
-import { calculateEffectiveStats, getActiveSetBonuses } from '../logic/progressionEngine';
+import { getActiveSetBonuses } from '../logic/progressionEngine';
 
 // ─── Tabs ────────────────────────────────────────────────────────────────────
 const TABS = [
   { key: 'consumables', icon: '🧪', label: 'Consumables' },
   { key: 'crafting',    icon: '💎', label: 'Crafting'    },
-  { key: 'equipment',  icon: '⚔️', label: 'Equipment'   },
-];
-
-// ─── Slot config ──────────────────────────────────────────────────────────────
-const SLOT_CONFIG = [
-  { key: 'weapon',  label: 'Weapon',  emoji: '⚔️' },
-  { key: 'armor',   label: 'Armor',   emoji: '🛡️' },
-  { key: 'trinket', label: 'Trinket', emoji: '💎' },
+  { key: 'gear',        icon: '⚒️', label: 'Owned Gear'  },
 ];
 
 const GEAR_TYPE_ICON = {
   weapon:  '⚔️',
-  armor:   '🛡️',
+  chest:   '🛡️',
   trinket: '💎',
 };
 
@@ -180,7 +171,6 @@ const itemWidth = (availableWidth - (gap * (numColumns - 1))) / numColumns;
 
 // ─── Component ────────────────────────────────────────────────────────────────
 export default function InventoryScreen() {
-  const navigation = useNavigation();
   const { state, dispatch } = useGame();
   const { hero } = state;
 
@@ -195,9 +185,8 @@ export default function InventoryScreen() {
     setModalVisible(true);
   };
 
-  // Derived data (Equipment tab)
-  const effectiveStats = useMemo(() => calculateEffectiveStats(hero), [hero]);
-  const activeSets     = useMemo(() => getActiveSetBonuses(hero.gear), [hero.gear]);
+  // Derived data (Owned Gear tab)
+  const activeSets = useMemo(() => getActiveSetBonuses(hero.gear), [hero.gear]);
 
   // Tab badge counts
   const consumableCount = useMemo(
@@ -208,32 +197,22 @@ export default function InventoryScreen() {
     () => Object.values(hero.inventory.materials).filter(q => q > 0).length,
     [hero.inventory.materials],
   );
-  const equipmentCount = hero.inventory.craftedGear.length;
+  const gearCount = hero.inventory.craftedGear.length;
 
-  const tabCounts = { consumables: consumableCount, crafting: craftingCount, equipment: equipmentCount };
+  const tabCounts = { consumables: consumableCount, crafting: craftingCount, gear: gearCount };
 
   // ── Helpers ─────────────────────────────────────────────────────────────────
   const pct = (v) => `${Math.round((v || 0) * 100)}%`;
 
-  const statSummary = (gearDef) => {
-    if (!gearDef?.stats) return '';
-    const parts = [];
-    if (gearDef.stats.attack)     parts.push(`ATK +${gearDef.stats.attack}`);
-    if (gearDef.stats.defence)    parts.push(`DEF +${gearDef.stats.defence}`);
-    if (gearDef.stats.maxHp)      parts.push(`HP +${gearDef.stats.maxHp}`);
-    if (gearDef.stats.critChance) parts.push(`CRIT +${pct(gearDef.stats.critChance)}`);
-    if (gearDef.stats.dodge)      parts.push(`DODGE +${pct(gearDef.stats.dodge)}`);
-    Object.keys(gearDef.stats).forEach((k) => {
-      if (!['attack', 'defence', 'maxHp', 'critChance', 'dodge'].includes(k)) {
-        parts.push(`${k}: ${gearDef.stats[k]}`);
-      }
-    });
-    return parts.join('  ');
-  };
-
   // ── Handlers ─────────────────────────────────────────────────────────────────
-  const handleEquip = (gearItem) =>
-    dispatch({ type: 'EQUIP_GEAR', payload: { slot: gearItem.type, gearId: gearItem.id } });
+  const handleEquip = (gearItem) => {
+    // Trinkets can go in either trinket slot — prefer the empty one, else slot 1.
+    let slot = gearItem.type;
+    if (slot === 'trinket') {
+      slot = !hero.gear.trinket1 ? 'trinket1' : 'trinket2';
+    }
+    dispatch({ type: 'EQUIP_GEAR', payload: { slot, gearId: gearItem.id } });
+  };
 
   const handleUnequip = (slot) =>
     dispatch({ type: 'EQUIP_GEAR', payload: { slot, gearId: null } });
@@ -383,32 +362,8 @@ export default function InventoryScreen() {
     );
   };
 
-  const renderEquipment = () => (
+  const renderGear = () => (
     <>
-      {/* ── Combat Stats ── */}
-      <View style={styles.statsSection}>
-        <Text style={styles.subSectionTitle}>📊 Combat Stats</Text>
-        <View style={styles.statsGrid}>
-          <StatCard label="ATK"   value={effectiveStats.attack}              emoji="⚔️" />
-          <StatCard label="DEF"   value={effectiveStats.defence}             emoji="🛡️" />
-          <StatCard label="HP"    value={effectiveStats.maxHp}               emoji="❤️" color="#EF4444" />
-          <StatCard label="CRIT"  value={pct(effectiveStats.critChance)}     emoji="💥" color="#FBBF24" />
-          <StatCard label="DODGE" value={pct(effectiveStats.dodge)}          emoji="💨" color="#06B6D4" />
-        </View>
-      </View>
-
-      {/* ── Core Attributes ── */}
-      <View style={styles.statsSection}>
-        <Text style={styles.subSectionTitle}>💪 Core Attributes</Text>
-        <View style={styles.statsGrid}>
-          <StatCard label="STR"   value={hero.strength || 10}              emoji="💪" color="#F5CF4A" />
-          <StatCard label="AGI"   value={hero.agility || 10}               emoji="🏃" color="#06B6D4" />
-          <StatCard label="VIT"   value={hero.vitality || 10}              emoji="💚" color="#5CC489" />
-          <View style={{ flex: 1 }} />
-          <View style={{ flex: 1 }} />
-        </View>
-      </View>
-
       {/* ── Active Set Bonuses ── */}
       {activeSets.length > 0 && (
         <View style={styles.statsSection}>
@@ -435,64 +390,6 @@ export default function InventoryScreen() {
         </View>
       )}
 
-      {/* Divider */}
-      <View style={styles.divider} />
-
-      {/* ── Equipped Slots ── */}
-      <Text style={styles.subSectionTitle}>🎯 Equipped Loadout</Text>
-      <View style={styles.slotsRow}>
-        {SLOT_CONFIG.map(({ key, label, emoji }) => {
-          const gearId  = hero.gear[key];
-          const gearDef = gearId ? GEAR[gearId] : null;
-          const isEmpty = !gearDef;
-          return (
-            <View key={key} style={styles.slotCard}>
-              <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
-                <Defs>
-                  <LinearGradient id={`slotBg_${key}`} x1="0" y1="0" x2="0" y2="1">
-                    <Stop offset="0%" stopColor="#12121A" stopOpacity={0.9} />
-                    <Stop offset="100%" stopColor="#0A0A0F" stopOpacity={1} />
-                  </LinearGradient>
-                  {!isEmpty && (
-                    <LinearGradient id={`slotGold_${key}`} x1="0" y1="0" x2="1" y2="1">
-                      <Stop offset="0%" stopColor="#F9D99A" />
-                      <Stop offset="50%" stopColor="#D4A754" />
-                      <Stop offset="100%" stopColor="#8B6914" />
-                    </LinearGradient>
-                  )}
-                </Defs>
-                <Rect width="100%" height="100%" fill={`url(#slotBg_${key})`} rx={16} />
-                <Rect x="1" y="1" width="98%" height="98%" rx={15} fill="none"
-                  stroke={!isEmpty ? `url(#slotGold_${key})` : 'rgba(255,255,255,0.06)'}
-                  strokeWidth={!isEmpty ? 1.5 : 1} />
-              </Svg>
-              <View style={styles.slotInner}>
-                <Text style={styles.slotEmoji}>{emoji}</Text>
-                <Text style={styles.slotLabel}>{label}</Text>
-                {isEmpty ? (
-                  <Text style={styles.slotEmpty}>Empty</Text>
-                ) : (
-                  <>
-                    <Text style={styles.slotName} numberOfLines={2}>{gearDef.name}</Text>
-                    <Text style={styles.slotStats} numberOfLines={2}>{statSummary(gearDef)}</Text>
-                    <TouchableOpacity
-                      style={styles.unequipBtn}
-                      onPress={() => handleUnequip(key)}
-                      activeOpacity={0.7}
-                    >
-                      <Text style={styles.unequipBtnText}>Unequip</Text>
-                    </TouchableOpacity>
-                  </>
-                )}
-              </View>
-            </View>
-          );
-        })}
-      </View>
-
-      {/* Divider */}
-      <View style={styles.divider} />
-
       {/* ── Owned Gear ── */}
       <Text style={styles.subSectionTitle}>⚒️ Owned Gear</Text>
       {hero.inventory.craftedGear.length === 0 ? (
@@ -514,7 +411,7 @@ export default function InventoryScreen() {
             })
             .map((gearDef) => {
               const gearId = gearDef.id;
-              const isEquipped = hero.gear[gearDef.type] === gearId;
+              const isEquipped = Object.values(hero.gear).includes(gearId);
               const icon = GEAR_ICONS[gearId] || GEAR_TYPE_ICON[gearDef.type] || '🎒';
               const zoneColor = gearDef.zone === 1 ? '#3FB56E' : gearDef.zone === 2 ? '#A855F7' : gearDef.zone === 3 ? '#06B6D4' : '#707F94';
               return (
@@ -557,28 +454,7 @@ export default function InventoryScreen() {
 
   // ── Render ────────────────────────────────────────────────────────────────────
   return (
-    <SafeAreaView style={styles.root}>
-      {/* Ambient glow */}
-      <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
-        <Defs>
-          <RadialGradient id="bgGlow" cx="50%" cy="0%" rx="80%" ry="40%">
-            <Stop offset="0%" stopColor="#D4A754" stopOpacity="0.08" />
-            <Stop offset="100%" stopColor="#07070A" stopOpacity="0" />
-          </RadialGradient>
-        </Defs>
-        <Rect width="100%" height="100%" fill="#07070A" />
-        <Rect width="100%" height="100%" fill="url(#bgGlow)" />
-      </Svg>
-
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn} activeOpacity={0.7}>
-          <Text style={styles.backText}>← Hub</Text>
-        </TouchableOpacity>
-        <Text style={styles.title}>🎒 Inventory</Text>
-        <View style={styles.headerSpacer} />
-      </View>
-
+    <View style={styles.root}>
       {/* Tab bar */}
       <View style={styles.tabBarContainer}>
         <View style={styles.tabBar}>
@@ -613,7 +489,7 @@ export default function InventoryScreen() {
       >
         {activeTab === 'consumables' && renderConsumables()}
         {activeTab === 'crafting'    && renderCrafting()}
-        {activeTab === 'equipment'   && renderEquipment()}
+        {activeTab === 'gear'        && renderGear()}
       </ScrollView>
 
       {/* ── Details Popup Modal ──────────────────────────────── */}
@@ -662,7 +538,7 @@ export default function InventoryScreen() {
                   icon = GEAR_ICONS[selectedItem.id] || GEAR_TYPE_ICON[selectedItem.type] || '🎒';
                   category = selectedItem.type;
                   categoryColor = selectedItem.zone === 1 ? '#3FB56E' : selectedItem.zone === 2 ? '#A855F7' : selectedItem.zone === 3 ? '#06B6D4' : '#707F94';
-                  isCurrentlyEquipped = hero.gear[selectedItem.type] === selectedItem.id;
+                  isCurrentlyEquipped = Object.values(hero.gear).includes(selectedItem.id);
                   showEquipBtn = true;
                   dungeonSource = `🏰 Location: ${ZONE_NAMES[selectedItem.zone] || `Zone ${selectedItem.zone}`}`;
 
@@ -875,7 +751,9 @@ export default function InventoryScreen() {
                               onPress={() => {
                                 setModalVisible(false);
                                 if (isCurrentlyEquipped) {
-                                  handleUnequip(selectedItem.type);
+                                  const equippedSlot = Object.entries(hero.gear)
+                                    .find(([, gearId]) => gearId === selectedItem.id)?.[0];
+                                  if (equippedSlot) handleUnequip(equippedSlot);
                                 } else {
                                   handleEquip(selectedItem);
                                 }
@@ -921,24 +799,6 @@ export default function InventoryScreen() {
           </Pressable>
         </Pressable>
       </Modal>
-    </SafeAreaView>
-  );
-}
-
-// ─── StatCard sub-component ───────────────────────────────────────────────────
-function StatCard({ label, value, emoji, color = '#D4A754' }) {
-  return (
-    <View style={styles.statCard}>
-      <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
-        <Rect width="100%" height="100%" fill="rgba(255,255,255,0.02)" rx={12} />
-        <Rect x="1" y="1" width="98%" height="98%" rx={11} fill="none"
-          stroke="rgba(255,255,255,0.04)" strokeWidth={1} />
-      </Svg>
-      <View style={styles.statCardInner}>
-        <Text style={styles.statEmoji}>{emoji}</Text>
-        <Text style={styles.statLabel}>{label}</Text>
-        <Text style={[styles.statValue, { color }]}>{value}</Text>
-      </View>
     </View>
   );
 }
@@ -947,36 +807,8 @@ function StatCard({ label, value, emoji, color = '#D4A754' }) {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: '#07070A',
+    backgroundColor: '#1A1200',
   },
-
-  /* ── Header ──────────────────────────────────────────────── */
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.04)',
-  },
-  backBtn: { width: 60, paddingVertical: 6 },
-  backText: {
-    color: '#D4A754',
-    fontFamily: 'System',
-    fontWeight: 'bold',
-    fontSize: 16,
-    letterSpacing: 0.5,
-  },
-  title: {
-    fontFamily: 'System',
-    fontWeight: 'bold',
-    fontSize: 20,
-    color: '#F8FAFC',
-    textAlign: 'center',
-    letterSpacing: 0.5,
-  },
-  headerSpacer: { width: 60 },
 
   /* ── Tab bar ─────────────────────────────────────────────── */
   tabBarContainer: {
@@ -1201,7 +1033,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
 
-  /* ── Equipment tab ───────────────────────────────────────── */
+  /* ── Owned Gear tab ──────────────────────────────────────── */
   statsSection: {
     marginBottom: 6,
   },
@@ -1213,39 +1045,6 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
     textTransform: 'uppercase',
     marginBottom: 10,
-  },
-  statsGrid: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  statCard: {
-    flex: 1,
-    borderRadius: 12,
-    minHeight: 80,
-    overflow: 'hidden',
-  },
-  statCardInner: {
-    padding: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flex: 1,
-    zIndex: 2,
-    gap: 2,
-  },
-  statEmoji: { fontSize: 14 },
-  statLabel: {
-    fontFamily: 'System',
-    fontSize: 8,
-    fontWeight: 'bold',
-    color: '#707F94',
-    textTransform: 'uppercase',
-    letterSpacing: 0.8,
-  },
-  statValue: {
-    fontFamily: 'System',
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: '#D4A754',
   },
   setBonusCard: {
     borderRadius: 12,
@@ -1268,75 +1067,6 @@ const styles = StyleSheet.create({
     color: 'rgba(255,255,255,0.5)',
     marginTop: 5,
     lineHeight: 16,
-  },
-  divider: {
-    height: 1,
-    backgroundColor: 'rgba(255,255,255,0.05)',
-    marginVertical: 8,
-  },
-  slotsRow: {
-    flexDirection: 'row',
-    gap: 10,
-    marginBottom: 4,
-  },
-  slotCard: {
-    flex: 1,
-    borderRadius: 16,
-    minHeight: 160,
-    overflow: 'hidden',
-  },
-  slotInner: {
-    padding: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flex: 1,
-    zIndex: 2,
-    gap: 3,
-  },
-  slotEmoji: { fontSize: 24 },
-  slotLabel: {
-    fontFamily: 'System',
-    fontSize: 9,
-    fontWeight: '800',
-    color: 'rgba(255,255,255,0.25)',
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-  },
-  slotEmpty: {
-    fontFamily: 'System',
-    fontSize: 11,
-    color: 'rgba(255,255,255,0.2)',
-    fontStyle: 'italic',
-  },
-  slotName: {
-    fontFamily: 'System',
-    fontSize: 11,
-    color: '#F8FAFC',
-    fontWeight: 'bold',
-    textAlign: 'center',
-  },
-  slotStats: {
-    fontFamily: 'System',
-    fontSize: 9,
-    color: '#D4A754',
-    textAlign: 'center',
-    lineHeight: 12,
-    fontWeight: '500',
-  },
-  unequipBtn: {
-    marginTop: 4,
-    backgroundColor: 'rgba(255,68,68,0.08)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,68,68,0.2)',
-    borderRadius: 6,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-  },
-  unequipBtnText: {
-    fontFamily: 'System',
-    fontSize: 9,
-    color: '#D8483F',
-    fontWeight: 'bold',
   },
   gearNameRow: {
     flexDirection: 'row',

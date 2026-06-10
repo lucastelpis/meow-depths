@@ -58,7 +58,6 @@ Mochi grows stronger by earning Experience Points (XP) in dungeons, leveling up,
 
 On each level-up, Mochi fully heals and receives:
 - **+3 Stat Points** (to allocate manually).
-- **+1 Skill Point** (to unlock or star-up talents).
 
 ### Core Attributes
 Players manually distribute Stat Points across three main attributes:
@@ -117,9 +116,23 @@ graph TD
 ```
 
 #### 🔓 Skill Unlock & Star-Up Prerequisites
-- **Tier 1 (T1) Skills**: Cost **1 SP**. Requires Mochi to be at least **Level 2**.
-- **Tier 2 (T2) Skills**: Cost **2 SP**. Requires Mochi to be at least **Level 10** and the parent T1 active skill to be fully upgraded to **★5**.
-- **Star-Ups (★2 to ★5)**: Cost **1 SP** for Tier 1, **2 SP** for Tier 2.
+Skills no longer cost Skill Points (SP) to unlock or upgrade. Instead, they require specific character levels and crystal materials (e.g. shards, crystals, cores) from the Soggy Sewers (Zone 1).
+
+##### **Tier 1 (T1) Skills**
+Requires character level and Black Crystal materials:
+- **★1 (Unlock)**: Level 1 + 10x Black Shard
+- **★2**: Level 2 + 20x Black Shard
+- **★3**: Level 3 + 30x Black Shard
+- **★4**: Level 4 + 15x Small Black Crystal
+- **★5**: Level 5 + 30x Small Black Crystal
+
+##### **Tier 2 (T2) Skills**
+Requires parent T1 active skill at **★5**, and the following level and material milestones:
+- **★1 (Unlock)**: Level 11 + 50x Small Black Crystal
+- **★2**: Level 12 + 15x Big Black Crystal
+- **★3**: Level 13 + 30x Big Black Crystal
+- **★4**: Level 14 + 45x Big Black Crystal
+- **★5**: Level 15 + 60x Big Black Crystal + 1x Crystal Core
 
 ---
 
@@ -169,46 +182,46 @@ graph TD
 
 ## ⚒️ Crafting & Gear System
 
-Mochi has **three equipment slots**: **Weapon**, **Armor**, and **Trinket**. Gear is crafted at the Town Hall forge using Gold and elemental crystals gathered during runs.
+Mochi has **eight equipment slots**: **Weapon**, **Head**, **Chest**, **Legs**, **Gloves**, **Boots**, **Trinket 1**, and **Trinket 2**. Currently, gear is defined for **Weapon** (type `weapon`), **Chest** (type `chest`), and **Trinket** (type `trinket`). The Head, Legs, Gloves, and Boots slots are available but remain empty until gear is added for them. Gear is crafted at the Town Hall forge using Gold and elemental crystals gathered during runs.
 
 ### Gear Data Sheet
 | Slot | Gear Name | Zone | Gold | Required Materials | Stats & Special Effects |
 | :--- | :--- | :---: | :---: | :--- | :--- |
 | **Weapon** | Toy Sword | 1 | — | *Starter Item* | +1 ATK |
-| **Armor** | Cardboard Armor | 1 | — | *Starter Item* | +1 DEF |
+| **Chest** | Cardboard Armor | 1 | — | *Starter Item* | +1 DEF |
 | **Weapon** | Sewer Shiv | 1 | 80 | 18x Black Shard, 8x Small Black Crystal | +12 ATK, 15% Bleed Chance on hit |
-| **Armor** | Rat Hide Vest | 1 | 60 | 20x Black Shard, 5x Small Black Crystal | +18 Max HP, +5% Dodge |
-| **Armor** | Slimecrawler Shell | 1 | 75 | 12x Black Shard, 10x Small Black Crystal | +22 Max HP, Poison Immunity |
-| **Armor** | Plague Cloak | 1 | 65 | 14x Black Shard, 7x Small Black Crystal | +14 Max HP, +4 DEF |
+| **Chest** | Rat Hide Vest | 1 | 60 | 20x Black Shard, 5x Small Black Crystal | +18 Max HP, +5% Dodge |
+| **Chest** | Slimecrawler Shell | 1 | 75 | 12x Black Shard, 10x Small Black Crystal | +22 Max HP, Poison Immunity |
+| **Chest** | Plague Cloak | 1 | 65 | 14x Black Shard, 7x Small Black Crystal | +14 Max HP, +4 DEF |
 | **Trinket** | Gnarlcrown | 1 | 120 | 8x Small Black Crystal, 5x Big Black Crystal, 2x Crystal Core | +10% Crit Chance |
 | **Trinket** | Cockroach Carapace| 1 | 100 | 10x Small Black Crystal, 4x Big Black Crystal | +4 DEF, +5% Dodge |
 | **Weapon** | Thorn Dagger | 2 | 140 | 18x Green Shard, 8x Small Green Crystal | +20 ATK, 20% Poison Chance on hit |
-| **Armor** | Beetle Shell Vest | 2 | 130 | 20x Green Shard, 10x Small Green Crystal | +30 Max HP, +8 DEF |
-| **Armor** | Spore Cloak | 2 | 115 | 12x Green Shard, 10x Small Green Crystal | +24 Max HP, +10% Dodge |
-| **Armor** | Vine Wrap | 2 | 120 | 15x Green Shard, 8x Small Green Crystal | +20 Max HP, +6 DEF, +5% Crit |
+| **Chest** | Beetle Shell Vest | 2 | 130 | 20x Green Shard, 10x Small Green Crystal | +30 Max HP, +8 DEF |
+| **Chest** | Spore Cloak | 2 | 115 | 12x Green Shard, 10x Small Green Crystal | +24 Max HP, +10% Dodge |
+| **Chest** | Vine Wrap | 2 | 120 | 15x Green Shard, 8x Small Green Crystal | +20 Max HP, +6 DEF, +5% Crit |
 | **Trinket** | Rootmother Eye | 2 | 200 | 8x Small Green Crystal, 5x Big Green Crystal, 2x Crystal Core | +15% Skill Damage |
 | **Trinket** | Glowspore Vial | 2 | 170 | 10x Small Green Crystal, 4x Big Green Crystal | +8% Crit, +5% Dodge |
 | **Weapon** | Ghost Cutlass | 3 | 220 | 18x Yellow Shard, 8x Small Yellow Crystal | +28 ATK, 12% Stun Chance on hit |
-| **Armor** | Barnacle Plate | 3 | 210 | 20x Yellow Shard, 10x Small Yellow Crystal | +40 Max HP, +10 DEF |
-| **Armor** | Ghost Silk Coat | 3 | 190 | 12x Yellow Shard, 10x Small Yellow Crystal | +30 Max HP, +15% Dodge |
-| **Armor** | Saltcaptain Coat | 3 | 200 | 15x Yellow Shard, 8x Small Yellow Crystal | +34 Max HP, +8 DEF, +8% Dodge |
+| **Chest** | Barnacle Plate | 3 | 210 | 20x Yellow Shard, 10x Small Yellow Crystal | +40 Max HP, +10 DEF |
+| **Chest** | Ghost Silk Coat | 3 | 190 | 12x Yellow Shard, 10x Small Yellow Crystal | +30 Max HP, +15% Dodge |
+| **Chest** | Saltcaptain Coat | 3 | 200 | 15x Yellow Shard, 8x Small Yellow Crystal | +34 Max HP, +8 DEF, +8% Dodge |
 | **Trinket** | Moray's Compass | 3 | 300 | 8x Small Yellow Crystal, 5x Big Yellow Crystal, 2x Crystal Core | +20% Crit, +10% Dodge |
 | **Trinket** | Toxin Vial | 3 | 260 | 10x Small Yellow Crystal, 4x Big Yellow Crystal | +2 Bleed damage |
 
 ---
 
 ### Gear Set Bonuses
-Equipping both named components plus a matching zone armor activates a powerful passive bonus:
+Equipping both named components plus a matching zone chest piece activates a powerful passive bonus:
 
 ```
-[Weapon Piece] + [Trinket Piece] + [Matching Zone Armor] = Set Bonus
+[Weapon Piece] + [Trinket Piece] + [Matching Zone Chest Piece] = Set Bonus
 ```
 
-1. **Sewer Set** (Sewer Shiv + Gnarlcrown + Zone 1 Armor)
+1. **Sewer Set** (Sewer Shiv + Gnarlcrown + Zone 1 Chest Piece)
    - *Effect*: **Bleed damage is boosted by +50%**.
-2. **Garden Set** (Thorn Dagger + Rootmother Eye + Zone 2 Armor)
+2. **Garden Set** (Thorn Dagger + Rootmother Eye + Zone 2 Chest Piece)
    - *Effect*: **All skill cooldowns are reduced by 1 turn**.
-3. **Docks Set** (Ghost Cutlass + Moray's Compass + Zone 3 Armor)
+3. **Docks Set** (Ghost Cutlass + Moray's Compass + Zone 3 Chest Piece)
    - *Effect*: **After dodging an attack, Mochi's next basic attack automatically stuns the target**.
 
 ---

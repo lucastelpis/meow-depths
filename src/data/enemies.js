@@ -35,7 +35,7 @@ const sewer_rat = {
   baseXp: 20,
   baseGold: 6,
   drops: [
-    { itemId: 'black_shard', chance: 0.85, count: 2 },
+    { itemId: 'black_shard', chance: 0.10, count: 1 },
   ],
   moves: [
     { name: 'Gnaw', damage: 5, minStars: 1 },
@@ -66,7 +66,7 @@ const slimeling = {
   baseXp: 25,
   baseGold: 6,
   drops: [
-    { itemId: 'black_crystal_small', chance: 0.35 },
+    { itemId: 'black_shard', chance: 0.10, count: 1 },
   ],
   moves: [
     {
@@ -101,8 +101,8 @@ const cockroach_knight = {
   baseXp: 30,
   baseGold: 8,
   drops: [
-    { itemId: 'black_shard', chance: 0.75, count: 2 },
-    { itemId: 'black_crystal_small', chance: 0.55 },
+    { itemId: 'black_shard', chance: 0.35, count: 2 },
+    { itemId: 'black_crystal_small', chance: 0.20 },
   ],
   moves: [
     {
@@ -145,6 +145,7 @@ const plague_frog = {
   baseXp: 25,
   baseGold: 7,
   drops: [
+    { itemId: 'black_shard', chance: 0.10, count: 1 },
   ],
   moves: [
     {
@@ -184,6 +185,7 @@ const king_rat = {
   drops: [
     { itemId: 'black_crystal_big', chance: 1.0, count: 3 },
     { itemId: 'black_crystal_small', chance: 1.0, count: 4 },
+    { itemId: 'black_crystal_core', chance: 0.6, count: 1 },
     { itemId: 'gnarlcrown_shard', chance: 1.0 },
     { itemId: 'black_shard_fire', chance: 1.0, count: 2 },
     { itemId: 'black_shard_water', chance: 1.0, count: 2 },
