@@ -11,6 +11,7 @@ import React, { useState, useMemo } from 'react';
 import {
   View,
   Text,
+  Image,
   ScrollView,
   TouchableOpacity,
   StyleSheet,
@@ -23,7 +24,7 @@ import Svg, { Defs, LinearGradient, RadialGradient, Stop, Rect } from 'react-nat
 
 import theme from '../constants/theme';
 import { useGame } from '../state/gameState';
-import { calculateEffectiveStats } from '../logic/progressionEngine';
+import { calculateEffectiveStats, getXpForLevel } from '../logic/progressionEngine';
 import AnimatedSprite from '../components/AnimatedSprite';
 import ResourceBar from '../components/ui/ResourceBar';
 import { HERO_SPRITE } from '../constants/sprites';
@@ -31,6 +32,28 @@ import { GEAR, getGearForSlot } from '../data/gear';
 import InventoryScreen from './InventoryScreen';
 
 const HERO_AVATAR_DISPLAY_SIZE = 80;
+
+// Placeholder item-icon shown for any equipped gear until per-item sprites exist
+const GEAR_ICON_PLACEHOLDER = require('../../assets/sprites/Tiny Swords (Free Pack)/UI Elements/UI Elements/Icons/Icon_05.png');
+
+// Faded silhouette icons shown in empty equipment slots
+const EQUIPMENT_LEATHER_SHEET = require('../../assets/sprites/items/equipment-leather.png');
+const EQUIPMENT_LEATHER_FRAME_SIZE = 32;
+const EQUIPMENT_LEATHER_FRAMES = 14;
+const SLOT_EMPTY_FRAME = {
+  head: 1,
+  chest: 3,
+  legs: 5,
+  gloves: 7,
+  boots: 9,
+  trinket1: 11,
+  trinket2: 11,
+};
+
+// Faded weapon silhouette shown in the empty weapon slot
+const WEAPONS_SHEET = require('../../assets/sprites/items/weapons-1.png');
+const WEAPONS_FRAME_SIZE = 32;
+const WEAPONS_FRAMES = 7;
 
 // ─── Equipment slot config ────────────────────────────────────────────────────
 const SLOT_CONFIG = [
@@ -44,12 +67,12 @@ const SLOT_CONFIG = [
   { key: 'trinket2', label: 'Trinket',  emoji: '💎' },
 ];
 
-// Slot keys laid out per row of the equipment grid
+// Slot keys laid out per row of the equipment grid (2 cards per row)
 const SLOT_ROWS = [
   ['head', 'chest'],
   ['gloves', 'legs'],
-  ['boots'],
-  ['weapon', 'trinket1', 'trinket2'],
+  ['weapon', 'boots'],
+  ['trinket1', 'trinket2'],
 ];
 
 // ─── Top-level tabs ────────────────────────────────────────────────────────────
@@ -68,10 +91,10 @@ export default function LoadoutScreen() {
 
   const effectiveStats = useMemo(() => calculateEffectiveStats(hero), [hero]);
 
-  const emptySlotCount = useMemo(
-    () => SLOT_CONFIG.filter(({ key }) => !hero.gear?.[key]).length,
-    [hero.gear],
-  );
+  const xpForCurrent = getXpForLevel(hero.level);
+  const xpForNext    = getXpForLevel(hero.level + 1);
+  const xpIntoLevel  = hero.xp - xpForCurrent;
+  const xpNeeded     = xpForNext - xpForCurrent;
 
   // Base stats (no gear) for the "+gear bonus" annotations
   const baseStats = useMemo(() => {
@@ -136,6 +159,11 @@ export default function LoadoutScreen() {
 
   const handleEquipFromSlot = (gearId) => {
     dispatch({ type: 'EQUIP_GEAR', payload: { slot: selectedSlot, gearId } });
+    setSelectedSlot(null);
+  };
+
+  const handleUnequip = () => {
+    dispatch({ type: 'EQUIP_GEAR', payload: { slot: selectedSlot, gearId: null } });
     setSelectedSlot(null);
   };
 
@@ -240,45 +268,45 @@ export default function LoadoutScreen() {
                   current={hero.hp}
                   max={effectiveStats.maxHp}
                 />
+                <ResourceBar
+                  variant="xp"
+                  label="XP"
+                  current={xpIntoLevel}
+                  max={xpNeeded}
+                />
               </View>
             </View>
           </View>
 
-          {/* ── Section 2: Attribute Boxes ── */}
-          <Text style={styles.sectionTitle}>💪 Core Attributes</Text>
-          <View style={styles.statsGrid}>
-            <StatBox label="STR" value={hero.strength || 10} emoji="💪" />
-            <StatBox label="AGI" value={hero.agility || 10} emoji="🏃" />
-            <StatBox label="VIT" value={hero.vitality || 10} emoji="💚" />
-            <View style={{ flex: 1 }} />
-            <View style={{ flex: 1 }} />
-          </View>
-
-          <Text style={styles.sectionTitle}>📊 Combat Stats</Text>
-          <View style={styles.statsGrid}>
+          {/* ── Section 2: Attributes & Stats ── */}
+          <Text style={styles.sectionTitle}>Attributes &amp; Stats</Text>
+          <View style={styles.statsRow}>
+            <StatBox label="STR" value={hero.strength || 10} variant="attribute" />
+            <StatBox label="AGI" value={hero.agility || 10} variant="attribute" />
+            <StatBox label="VIT" value={hero.vitality || 10} variant="attribute" />
             <StatBox
-              label="ATK" emoji="⚔️"
+              label="ATK"
               value={effectiveStats.attack}
               bonus={effectiveStats.attack - baseStats.attack}
             />
             <StatBox
-              label="DEF" emoji="🛡️"
+              label="DEF"
               value={effectiveStats.defence}
               bonus={effectiveStats.defence - baseStats.defence}
             />
             <StatBox
-              label="HP" emoji="❤️" color="#EF4444"
+              label="HP"
               value={effectiveStats.maxHp}
               bonus={effectiveStats.maxHp - baseStats.maxHp}
             />
             <StatBox
-              label="CRIT" emoji="💥" color="#FBBF24"
+              label="CRIT"
               value={pct(effectiveStats.critChance)}
               bonus={effectiveStats.critChance - baseStats.critChance}
               isPercent
             />
             <StatBox
-              label="DODGE" emoji="💨" color="#06B6D4"
+              label="DODGE"
               value={pct(effectiveStats.dodge)}
               bonus={effectiveStats.dodge - baseStats.dodge}
               isPercent
@@ -286,7 +314,7 @@ export default function LoadoutScreen() {
           </View>
 
           {/* ── Section 3: Equipment Grid ── */}
-          <Text style={styles.sectionTitle}>🎽 Equipment</Text>
+          <Text style={styles.sectionTitle}>Equipment</Text>
           <View style={styles.equipmentGrid}>
             {SLOT_ROWS.map((row, rowIdx) => (
               <View key={rowIdx} style={styles.slotRow}>
@@ -295,45 +323,65 @@ export default function LoadoutScreen() {
                   const gearId = hero.gear?.[slotKey];
                   const gearDef = gearId ? GEAR[gearId] : null;
                   const isEmpty = !gearDef;
+                  const isWeapon = slotKey === 'weapon';
 
                   return (
                     <TouchableOpacity
                       key={slotKey}
-                      style={[styles.slotCard, isEmpty && styles.slotCardEmpty]}
+                      style={[
+                        styles.slotCard,
+                        isEmpty && styles.slotCardEmpty,
+                        isWeapon && !isEmpty && styles.slotCardWeapon,
+                      ]}
                       onPress={() => setSelectedSlot(slotKey)}
                       activeOpacity={0.8}
                     >
-                      <Text style={styles.slotEmoji}>{slotConfig.emoji}</Text>
-                      <Text style={styles.slotLabel}>{slotConfig.label}</Text>
-                      {isEmpty ? (
-                        <Text style={styles.slotEmptyText}>Nothing here yet!</Text>
-                      ) : (
-                        <>
-                          <Text style={styles.slotItemName} numberOfLines={1}>{gearDef.name}</Text>
-                          {!!statSummary(gearDef) && (
-                            <Text style={styles.slotItemStats} numberOfLines={1}>{statSummary(gearDef)}</Text>
-                          )}
-                        </>
-                      )}
+                      <View style={styles.slotCardInfo}>
+                        <Text style={styles.slotLabel}>{slotConfig.label}</Text>
+                        <Text
+                          style={isEmpty ? styles.slotEmptyText : styles.slotItemName}
+                          numberOfLines={2}
+                        >
+                          {isEmpty ? 'Empty' : gearDef.name}
+                        </Text>
+                        <Text style={styles.slotItemStats} numberOfLines={1}>
+                          {isEmpty ? ' ' : (statSummary(gearDef) || ' ')}
+                        </Text>
+                      </View>
+                      <View style={[styles.slotIconBox, isEmpty && styles.slotIconBoxEmpty]}>
+                        {isEmpty ? (
+                          isWeapon ? (
+                            <SpriteFrame
+                              source={WEAPONS_SHEET}
+                              frameIndex={0}
+                              frameSize={WEAPONS_FRAME_SIZE}
+                              totalFrames={WEAPONS_FRAMES}
+                              displaySize={36}
+                              opacity={0.18}
+                            />
+                          ) : SLOT_EMPTY_FRAME[slotKey] !== undefined && (
+                            <SpriteFrame
+                              source={EQUIPMENT_LEATHER_SHEET}
+                              frameIndex={SLOT_EMPTY_FRAME[slotKey]}
+                              frameSize={EQUIPMENT_LEATHER_FRAME_SIZE}
+                              totalFrames={EQUIPMENT_LEATHER_FRAMES}
+                              displaySize={36}
+                              opacity={0.18}
+                            />
+                          )
+                        ) : (
+                          <Image
+                            source={GEAR_ICON_PLACEHOLDER}
+                            style={styles.slotIconImage}
+                            resizeMode="contain"
+                          />
+                        )}
+                      </View>
                     </TouchableOpacity>
                   );
                 })}
-                {/* Pad row with empty flex spacers so shorter rows don't stretch */}
-                {row.length < 3 && row.length > 0 && Array.from({ length: 3 - row.length }).map((_, i) => (
-                  <View key={`spacer-${i}`} style={styles.slotSpacer} />
-                ))}
               </View>
             ))}
-          </View>
-
-          {/* ── Section 4: Message Area ── */}
-          <View style={[styles.messageBar, theme.SHADOWS.cardShadow]}>
-            <Text style={styles.messageEmoji}>{emptySlotCount > 0 ? '💡' : '✨'}</Text>
-            <Text style={styles.messageText}>
-              {emptySlotCount > 0
-                ? `${emptySlotCount} slot${emptySlotCount === 1 ? '' : 's'} empty — visit the Shop or craft new gear to fill them out!`
-                : 'Fully geared up! Check the Inventory tab to manage your gear.'}
-            </Text>
           </View>
         </ScrollView>
       ) : (
@@ -409,6 +457,12 @@ export default function LoadoutScreen() {
                 </TouchableOpacity>
               </View>
             )}
+
+            {!!currentGearId && (
+              <TouchableOpacity style={styles.unequipBtn} onPress={handleUnequip} activeOpacity={0.8}>
+                <Text style={styles.unequipBtnText}>Unequip {selectedSlotConfig?.label}</Text>
+              </TouchableOpacity>
+            )}
           </Pressable>
         </Pressable>
       </Modal>
@@ -416,24 +470,43 @@ export default function LoadoutScreen() {
   );
 }
 
+// ─── SpriteFrame ───────────────────────────────────────────────────────────────
+// Renders a single static frame from a horizontal sprite sheet.
+function SpriteFrame({ source, frameIndex, frameSize, totalFrames, displaySize = 36, opacity = 1 }) {
+  const scale = displaySize / frameSize;
+  return (
+    <View style={{ width: displaySize, height: displaySize, overflow: 'hidden', opacity }}>
+      <Image
+        source={source}
+        style={{
+          width: frameSize * totalFrames * scale,
+          height: displaySize,
+          position: 'absolute',
+          left: -(frameIndex * displaySize),
+          top: 0,
+        }}
+        resizeMode="stretch"
+      />
+    </View>
+  );
+}
+
 // ─── StatBox ─────────────────────────────────────────────────────────────────
-function StatBox({ label, value, emoji, color = '#D4A754', bonus, isPercent }) {
+function StatBox({ label, value, bonus, isPercent, variant }) {
   const showBonus = bonus !== undefined && Math.abs(bonus) > 0.0001;
   const bonusText = isPercent ? `+${Math.round(bonus * 100)}%` : `+${bonus}`;
+  const isAttribute = variant === 'attribute';
   return (
     <View style={styles.statBox}>
       <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
-        <Rect width="100%" height="100%" fill="rgba(255,255,255,0.02)" rx={12} />
-        <Rect x="1" y="1" width="98%" height="98%" rx={11} fill="none"
-          stroke="rgba(255,255,255,0.06)" strokeWidth={1} />
+        <Rect width="100%" height="100%" fill={isAttribute ? 'rgba(92,196,137,0.08)' : 'rgba(255,255,255,0.02)'} rx={10} />
+        <Rect x="1" y="1" width="98%" height="98%" rx={9} fill="none"
+          stroke={isAttribute ? 'rgba(92,196,137,0.3)' : 'rgba(255,255,255,0.06)'} strokeWidth={1} />
       </Svg>
       <View style={styles.statBoxInner}>
-        <Text style={styles.statEmoji}>{emoji}</Text>
         <Text style={styles.statLabel}>{label}</Text>
-        <Text style={[styles.statValue, { color }]}>{value}</Text>
-        {showBonus && (
-          <Text style={styles.statBonus}>{bonusText} gear</Text>
-        )}
+        <Text style={[styles.statValue, isAttribute && styles.statValueAttribute]}>{value}</Text>
+        <Text style={styles.statBonus}>{showBonus ? bonusText : ' '}</Text>
       </View>
     </View>
   );
@@ -593,41 +666,45 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     marginTop: 4,
   },
-  statsGrid: {
+  statsRow: {
     flexDirection: 'row',
-    gap: 8,
+    gap: 4,
     marginBottom: 16,
   },
   statBox: {
     flex: 1,
-    borderRadius: 12,
-    minHeight: 80,
+    borderRadius: 8,
+    minHeight: 56,
     overflow: 'hidden',
   },
   statBoxInner: {
-    padding: 8,
+    paddingVertical: 6,
+    paddingHorizontal: 2,
     alignItems: 'center',
     justifyContent: 'center',
     flex: 1,
     zIndex: 2,
-    gap: 2,
+    gap: 1,
   },
-  statEmoji: { fontSize: 14 },
   statLabel: {
     fontFamily: 'System',
-    fontSize: 8,
+    fontSize: 7,
     fontWeight: 'bold',
     color: '#707F94',
     letterSpacing: 0.5,
   },
   statValue: {
     fontFamily: 'System',
-    fontSize: 16,
+    fontSize: 13,
     fontWeight: '900',
+    color: theme.COLORS.candleGold,
+  },
+  statValueAttribute: {
+    color: theme.COLORS.buffMint,
   },
   statBonus: {
     fontFamily: 'System',
-    fontSize: 8,
+    fontSize: 7,
     fontWeight: '700',
     color: '#5CC489',
   },
@@ -643,27 +720,31 @@ const styles = StyleSheet.create({
   },
   slotCard: {
     flex: 1,
-    minHeight: 76,
+    minHeight: 92,
     borderRadius: 12,
     paddingVertical: 10,
-    paddingHorizontal: 8,
+    paddingHorizontal: 10,
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'space-between',
     backgroundColor: 'rgba(212,167,84,0.06)',
     borderWidth: 1,
     borderColor: 'rgba(212,167,84,0.25)',
-    gap: 2,
+    gap: 8,
   },
   slotCardEmpty: {
     backgroundColor: 'rgba(255,255,255,0.02)',
     borderStyle: 'dashed',
     borderColor: 'rgba(255,255,255,0.12)',
   },
-  slotSpacer: {
-    flex: 1,
+  slotCardWeapon: {
+    backgroundColor: 'rgba(181,112,26,0.16)',
+    borderColor: 'rgba(232,167,58,0.5)',
   },
-  slotEmoji: {
-    fontSize: 18,
+  slotCardInfo: {
+    flex: 1,
+    minHeight: 72,
+    justifyContent: 'space-between',
   },
   slotLabel: {
     fontFamily: 'System',
@@ -671,50 +752,48 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#707F94',
     letterSpacing: 0.5,
+    textAlign: 'left',
   },
   slotItemName: {
     fontFamily: 'System',
-    fontSize: 11,
+    fontSize: 10,
+    lineHeight: 13,
     fontWeight: '800',
     color: theme.COLORS.parchment,
-    textAlign: 'center',
+    textAlign: 'left',
   },
   slotItemStats: {
     fontFamily: 'System',
-    fontSize: 8,
+    fontSize: 9,
     fontWeight: '700',
     color: '#5CC489',
-    textAlign: 'center',
+    textAlign: 'left',
   },
   slotEmptyText: {
     fontFamily: 'System',
-    fontSize: 9,
+    fontSize: 10,
     fontStyle: 'italic',
     color: '#707F94',
-    textAlign: 'center',
+    textAlign: 'left',
   },
-
-  /* ── Message Area ────────────────────────────────────────── */
-  messageBar: {
-    flexDirection: 'row',
+  slotIconBox: {
+    width: 48,
+    height: 48,
+    borderRadius: 8,
     alignItems: 'center',
-    gap: 10,
-    padding: 12,
-    borderRadius: 14,
-    backgroundColor: 'rgba(212,167,84,0.06)',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(0,0,0,0.2)',
     borderWidth: 1,
-    borderColor: 'rgba(212,167,84,0.15)',
-    marginBottom: 8,
+    borderColor: 'rgba(212,167,84,0.25)',
   },
-  messageEmoji: {
-    fontSize: 18,
+  slotIconBoxEmpty: {
+    backgroundColor: 'rgba(255,255,255,0.02)',
+    borderStyle: 'dashed',
+    borderColor: 'rgba(255,255,255,0.12)',
   },
-  messageText: {
-    flex: 1,
-    fontFamily: 'System',
-    fontSize: 12,
-    color: theme.COLORS.parchment,
-    lineHeight: 16,
+  slotIconImage: {
+    width: 36,
+    height: 36,
   },
 
   /* ── Equipment Slot Popup ────────────────────────────────── */
@@ -844,5 +923,21 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     fontSize: 13,
     color: theme.COLORS.candleGold,
+  },
+  unequipBtn: {
+    backgroundColor: 'rgba(239,68,68,0.10)',
+    borderWidth: 1,
+    borderColor: 'rgba(239,68,68,0.35)',
+    borderRadius: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    marginTop: 12,
+    alignItems: 'center',
+  },
+  unequipBtnText: {
+    fontFamily: 'System',
+    fontWeight: '800',
+    fontSize: 13,
+    color: '#EF4444',
   },
 });
