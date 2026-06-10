@@ -428,10 +428,416 @@ export const CONSUMABLES = [
 // Aggregated gear map — keyed by item id for O(1) lookup
 // ─────────────────────────────────────────────────────────────────────────────
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Weapons 1 Spritesheet Items
+// ─────────────────────────────────────────────────────────────────────────────
+const wooden_branch = {
+  id: 'wooden_branch',
+  name: 'Wooden Branch',
+  type: 'weapon',
+  zone: 1,
+  materials: [],
+  stats: { attack: 1 },
+  setId: null,
+  specialEffect: null,
+  spritesheet: 'weapons-1',
+  frameIndex: 0,
+};
+
+const wooden_sword = {
+  id: 'wooden_sword',
+  name: 'Wooden Sword',
+  type: 'weapon',
+  zone: 1,
+  goldCost: 100,
+  materials: [],
+  stats: { attack: 5 },
+  setId: null,
+  specialEffect: null,
+  spritesheet: 'weapons-1',
+  frameIndex: 1,
+};
+
+const stone_sword = {
+  id: 'stone_sword',
+  name: 'Stone Sword',
+  type: 'weapon',
+  zone: 1,
+  goldCost: 200,
+  materials: [],
+  stats: { attack: 10 },
+  setId: null,
+  specialEffect: null,
+  spritesheet: 'weapons-1',
+  frameIndex: 2,
+};
+
+const bronze_sword = {
+  id: 'bronze_sword',
+  name: 'Bronze Sword',
+  type: 'weapon',
+  zone: 1,
+  materials: [],
+  stats: { attack: 15 },
+  setId: null,
+  specialEffect: null,
+  spritesheet: 'weapons-1',
+  frameIndex: 3,
+};
+
+const refined_bronze_sword = {
+  id: 'refined_bronze_sword',
+  name: 'Refined Bronze Sword',
+  type: 'weapon',
+  zone: 1,
+  materials: [],
+  stats: { attack: 20 },
+  setId: null,
+  specialEffect: null,
+  spritesheet: 'weapons-1',
+  frameIndex: 4,
+};
+
+const iron_sword = {
+  id: 'iron_sword',
+  name: 'Iron Sword',
+  type: 'weapon',
+  zone: 1,
+  materials: [],
+  stats: { attack: 25 },
+  setId: null,
+  specialEffect: null,
+  spritesheet: 'weapons-1',
+  frameIndex: 5,
+};
+
+const refined_iron_sword = {
+  id: 'refined_iron_sword',
+  name: 'Refined Iron Sword',
+  type: 'weapon',
+  zone: 1,
+  materials: [],
+  stats: { attack: 30 },
+  setId: null,
+  specialEffect: null,
+  spritesheet: 'weapons-1',
+  frameIndex: 6,
+};
+
+const weird_wooden_sword = {
+  id: 'weird_wooden_sword',
+  name: 'Weird Wooden Sword',
+  type: 'weapon',
+  zone: 1,
+  materials: [],
+  stats: { attack: 7 },
+  setId: null,
+  specialEffect: null,
+  spritesheet: 'weapons-1',
+  frameIndex: 7,
+};
+
+const bone_sword = {
+  id: 'bone_sword',
+  name: 'Bone Sword',
+  type: 'weapon',
+  zone: 1,
+  materials: [],
+  stats: { attack: 13 },
+  setId: null,
+  specialEffect: null,
+  spritesheet: 'weapons-1',
+  frameIndex: 8,
+};
+
+const curved_iron_sword = {
+  id: 'curved_iron_sword',
+  name: 'Curved Iron Sword',
+  type: 'weapon',
+  zone: 1,
+  materials: [],
+  stats: { attack: 27 },
+  setId: null,
+  specialEffect: null,
+  spritesheet: 'weapons-1',
+  frameIndex: 9,
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Leather Equipment Spritesheet Items
+// ─────────────────────────────────────────────────────────────────────────────
+const leather_helmet = {
+  id: 'leather_helmet',
+  name: 'Leather Helmet',
+  type: 'head',
+  zone: 1,
+  goldCost: 100,
+  materials: [],
+  stats: { defence: 1 },
+  setId: null,
+  specialEffect: null,
+  spritesheet: 'equipment-leather',
+  frameIndex: 0,
+};
+
+const superior_leather_helmet = {
+  id: 'superior_leather_helmet',
+  name: 'Superior Leather Helmet',
+  type: 'head',
+  zone: 1,
+  goldCost: 200,
+  materials: [],
+  stats: { defence: 2 },
+  setId: null,
+  specialEffect: null,
+  spritesheet: 'equipment-leather',
+  frameIndex: 1,
+};
+
+const leather_chestpiece = {
+  id: 'leather_chestpiece',
+  name: 'Leather Chestpiece',
+  type: 'chest',
+  zone: 1,
+  goldCost: 100,
+  materials: [],
+  stats: { defence: 1 },
+  setId: null,
+  specialEffect: null,
+  spritesheet: 'equipment-leather',
+  frameIndex: 2,
+};
+
+const superior_leather_chestpiece = {
+  id: 'superior_leather_chestpiece',
+  name: 'Superior Leather Chestpiece',
+  type: 'chest',
+  zone: 1,
+  goldCost: 200,
+  materials: [],
+  stats: { defence: 2 },
+  setId: null,
+  specialEffect: null,
+  spritesheet: 'equipment-leather',
+  frameIndex: 3,
+};
+
+const leather_leggings = {
+  id: 'leather_leggings',
+  name: 'Leather Leggings',
+  type: 'legs',
+  zone: 1,
+  goldCost: 100,
+  materials: [],
+  stats: { defence: 1 },
+  setId: null,
+  specialEffect: null,
+  spritesheet: 'equipment-leather',
+  frameIndex: 4,
+};
+
+const superior_leather_leggings = {
+  id: 'superior_leather_leggings',
+  name: 'Superior Leather Leggings',
+  type: 'legs',
+  zone: 1,
+  goldCost: 200,
+  materials: [],
+  stats: { defence: 2 },
+  setId: null,
+  specialEffect: null,
+  spritesheet: 'equipment-leather',
+  frameIndex: 5,
+};
+
+const leather_gloves = {
+  id: 'leather_gloves',
+  name: 'Leather Gloves',
+  type: 'gloves',
+  zone: 1,
+  goldCost: 100,
+  materials: [],
+  stats: { defence: 1 },
+  setId: null,
+  specialEffect: null,
+  spritesheet: 'equipment-leather',
+  frameIndex: 6,
+};
+
+const superior_leather_gloves = {
+  id: 'superior_leather_gloves',
+  name: 'Superior Leather Gloves',
+  type: 'gloves',
+  zone: 1,
+  goldCost: 200,
+  materials: [],
+  stats: { defence: 2 },
+  setId: null,
+  specialEffect: null,
+  spritesheet: 'equipment-leather',
+  frameIndex: 7,
+};
+
+const leather_boots = {
+  id: 'leather_boots',
+  name: 'Leather Boots',
+  type: 'boots',
+  zone: 1,
+  goldCost: 100,
+  materials: [],
+  stats: { defence: 1 },
+  setId: null,
+  specialEffect: null,
+  spritesheet: 'equipment-leather',
+  frameIndex: 8,
+};
+
+const superior_leather_boots = {
+  id: 'superior_leather_boots',
+  name: 'Superior Leather Boots',
+  type: 'boots',
+  zone: 1,
+  goldCost: 200,
+  materials: [],
+  stats: { defence: 2 },
+  setId: null,
+  specialEffect: null,
+  spritesheet: 'equipment-leather',
+  frameIndex: 9,
+};
+
+const leather_belt = {
+  id: 'leather_belt',
+  name: 'Leather Belt',
+  type: 'trinket',
+  zone: 1,
+  goldCost: 100,
+  materials: [],
+  stats: { defence: 1 },
+  setId: null,
+  specialEffect: null,
+  spritesheet: 'equipment-leather',
+  frameIndex: 10,
+};
+
+const superior_leather_belt = {
+  id: 'superior_leather_belt',
+  name: 'Superior Leather Belt',
+  type: 'trinket',
+  zone: 1,
+  goldCost: 200,
+  materials: [],
+  stats: { defence: 2 },
+  setId: null,
+  specialEffect: null,
+  spritesheet: 'equipment-leather',
+  frameIndex: 11,
+};
+
+const utility_leather_belt = {
+  id: 'utility_leather_belt',
+  name: 'Utility Leather Belt',
+  type: 'trinket',
+  zone: 1,
+  materials: [],
+  stats: { bagSlots: 1 },
+  setId: null,
+  specialEffect: null,
+  spritesheet: 'equipment-leather',
+  frameIndex: 12,
+};
+
+const leather_bag = {
+  id: 'leather_bag',
+  name: 'Small Pouch',
+  type: 'storage',
+  zone: 1,
+  materials: [],
+  stats: { bagSlots: 3 },
+  setId: null,
+  specialEffect: null,
+  spritesheet: 'storages-1',
+  frameIndex: 0,
+  description: 'Increases bag capacity by +3 slots.',
+};
+
+const simple_backpack = {
+  id: 'simple_backpack',
+  name: 'Simple Backpack',
+  type: 'storage',
+  zone: 1,
+  materials: [],
+  stats: { bagSlots: 5 },
+  setId: null,
+  specialEffect: null,
+  spritesheet: 'storages-1',
+  frameIndex: 1,
+  description: 'Increases bag capacity by +5 slots.',
+};
+
+const fine_backpack = {
+  id: 'fine_backpack',
+  name: 'Fine Backpack',
+  type: 'storage',
+  zone: 1,
+  materials: [],
+  stats: { bagSlots: 7 },
+  setId: null,
+  specialEffect: null,
+  spritesheet: 'storages-1',
+  frameIndex: 2,
+  description: 'Increases bag capacity by +7 slots.',
+};
+
+const luxury_backpack = {
+  id: 'luxury_backpack',
+  name: 'Luxury Backpack',
+  type: 'storage',
+  zone: 2,
+  materials: [],
+  stats: { bagSlots: 10 },
+  setId: null,
+  specialEffect: null,
+  spritesheet: 'storages-1',
+  frameIndex: 3,
+  description: 'Increases bag capacity by +10 slots.',
+};
+
 export const GEAR = {
   // Starter gear
   toy_sword,
   cardboard_armor,
+  
+  // Weapons 1
+  wooden_branch,
+  wooden_sword,
+  stone_sword,
+  bronze_sword,
+  refined_bronze_sword,
+  iron_sword,
+  refined_iron_sword,
+  weird_wooden_sword,
+  bone_sword,
+  curved_iron_sword,
+
+  // Leather Equipment
+  leather_helmet,
+  superior_leather_helmet,
+  leather_chestpiece,
+  superior_leather_chestpiece,
+  leather_leggings,
+  superior_leather_leggings,
+  leather_gloves,
+  superior_leather_gloves,
+  leather_boots,
+  superior_leather_boots,
+  leather_belt,
+  superior_leather_belt,
+  utility_leather_belt,
+  leather_bag,
+  simple_backpack,
+  fine_backpack,
+  luxury_backpack,
   // Zone 1
   sewer_shiv,
   rat_hide_vest,
@@ -472,7 +878,7 @@ export function getGearByZone(zone) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const EQUIP_SLOTS = [
-  'weapon', 'head', 'chest', 'legs', 'gloves', 'boots', 'trinket1', 'trinket2',
+  'weapon', 'head', 'chest', 'legs', 'gloves', 'boots', 'trinket', 'storage',
 ];
 
 // Which gear `type`s are valid for each slot. head/legs/gloves/boots have no
@@ -484,8 +890,8 @@ export const SLOT_TYPES = {
   legs:     ['legs'],
   gloves:   ['gloves'],
   boots:    ['boots'],
-  trinket1: ['trinket'],
-  trinket2: ['trinket'],
+  trinket:  ['trinket'],
+  storage:  ['storage'],
 };
 
 /**

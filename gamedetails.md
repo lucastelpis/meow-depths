@@ -180,33 +180,70 @@ Requires parent T1 active skill at **★5**, and the following level and materia
 
 ---
 
-## ⚒️ Crafting & Gear System
+## ⚔️ Gear & Armory Shop System
 
-Mochi has **eight equipment slots**: **Weapon**, **Head**, **Chest**, **Legs**, **Gloves**, **Boots**, **Trinket 1**, and **Trinket 2**. Currently, gear is defined for **Weapon** (type `weapon`), **Chest** (type `chest`), and **Trinket** (type `trinket`). The Head, Legs, Gloves, and Boots slots are available but remain empty until gear is added for them. Gear is crafted at the Town Hall forge using Gold and elemental crystals gathered during runs.
+Mochi has **eight equipment slots**: **Weapon**, **Head**, **Chest**, **Legs**, **Gloves**, **Boots**, **Trinket**, and **Storage**. All slots now have gear defined for them. 
+
+Rather than crafting gear at a forge, **all equipment is purchased with Gold from the Town Hall Armory Shop or dropped in dungeons**. Crystals are now used exclusively for unlocking and upgrading skills.
+
+### 🎒 Dynamic Dungeon Bag Slots
+By default, Mochi starts with **0 base bag slots** and cannot bring any consumables into dungeon runs. However, Mochi starts the game with a **Small Pouch** (+3 bag slots) already equipped. Equipping certain items increases the number of bag slots available:
+- **Utility Leather Belt** (Trinket): +1 bag slot
+- **Small Pouch** (Storage): +3 bag slots
+- **Simple Backpack** (Storage): +5 bag slots
+- **Fine Backpack** (Storage): +7 bag slots
+- **Luxury Backpack** (Storage): +10 bag slots
 
 ### Gear Data Sheet
-| Slot | Gear Name | Zone | Gold | Required Materials | Stats & Special Effects |
-| :--- | :--- | :---: | :---: | :--- | :--- |
-| **Weapon** | Toy Sword | 1 | — | *Starter Item* | +1 ATK |
-| **Chest** | Cardboard Armor | 1 | — | *Starter Item* | +1 DEF |
-| **Weapon** | Sewer Shiv | 1 | 80 | 18x Black Shard, 8x Small Black Crystal | +12 ATK, 15% Bleed Chance on hit |
-| **Chest** | Rat Hide Vest | 1 | 60 | 20x Black Shard, 5x Small Black Crystal | +18 Max HP, +5% Dodge |
-| **Chest** | Slimecrawler Shell | 1 | 75 | 12x Black Shard, 10x Small Black Crystal | +22 Max HP, Poison Immunity |
-| **Chest** | Plague Cloak | 1 | 65 | 14x Black Shard, 7x Small Black Crystal | +14 Max HP, +4 DEF |
-| **Trinket** | Gnarlcrown | 1 | 120 | 8x Small Black Crystal, 5x Big Black Crystal, 2x Crystal Core | +10% Crit Chance |
-| **Trinket** | Cockroach Carapace| 1 | 100 | 10x Small Black Crystal, 4x Big Black Crystal | +4 DEF, +5% Dodge |
-| **Weapon** | Thorn Dagger | 2 | 140 | 18x Green Shard, 8x Small Green Crystal | +20 ATK, 20% Poison Chance on hit |
-| **Chest** | Beetle Shell Vest | 2 | 130 | 20x Green Shard, 10x Small Green Crystal | +30 Max HP, +8 DEF |
-| **Chest** | Spore Cloak | 2 | 115 | 12x Green Shard, 10x Small Green Crystal | +24 Max HP, +10% Dodge |
-| **Chest** | Vine Wrap | 2 | 120 | 15x Green Shard, 8x Small Green Crystal | +20 Max HP, +6 DEF, +5% Crit |
-| **Trinket** | Rootmother Eye | 2 | 200 | 8x Small Green Crystal, 5x Big Green Crystal, 2x Crystal Core | +15% Skill Damage |
-| **Trinket** | Glowspore Vial | 2 | 170 | 10x Small Green Crystal, 4x Big Green Crystal | +8% Crit, +5% Dodge |
-| **Weapon** | Ghost Cutlass | 3 | 220 | 18x Yellow Shard, 8x Small Yellow Crystal | +28 ATK, 12% Stun Chance on hit |
-| **Chest** | Barnacle Plate | 3 | 210 | 20x Yellow Shard, 10x Small Yellow Crystal | +40 Max HP, +10 DEF |
-| **Chest** | Ghost Silk Coat | 3 | 190 | 12x Yellow Shard, 10x Small Yellow Crystal | +30 Max HP, +15% Dodge |
-| **Chest** | Saltcaptain Coat | 3 | 200 | 15x Yellow Shard, 8x Small Yellow Crystal | +34 Max HP, +8 DEF, +8% Dodge |
-| **Trinket** | Moray's Compass | 3 | 300 | 8x Small Yellow Crystal, 5x Big Yellow Crystal, 2x Crystal Core | +20% Crit, +10% Dodge |
-| **Trinket** | Toxin Vial | 3 | 260 | 10x Small Yellow Crystal, 4x Big Yellow Crystal | +2 Bleed damage |
+| Slot | Gear Name | Acquisition Source / Unlock | Gold | Stats & Special Effects |
+| :--- | :--- | :--- | :---: | :--- |
+| **Weapon** | Wooden Branch | *Starter Item* | — | +1 ATK |
+| **Chest** | Cardboard Armor | *Legacy Starter Item* | — | +1 DEF |
+| **Weapon** | Toy Sword | *Legacy Starter Item* | — | +1 ATK |
+| **Weapon** | Wooden Sword | Armory Shop (Start) | 100 | +5 ATK |
+| **Head** | Leather Helmet | Armory Shop (Start) | 100 | +1 DEF |
+| **Chest** | Leather Chestpiece | Armory Shop (Start) | 100 | +1 DEF |
+| **Legs** | Leather Leggings | Armory Shop (Start) | 100 | +1 DEF |
+| **Gloves** | Leather Gloves | Armory Shop (Start) | 100 | +1 DEF |
+| **Boots** | Leather Boots | Armory Shop (Start) | 100 | +1 DEF |
+| **Trinket** | Leather Belt | Armory Shop (Start) | 100 | +1 DEF |
+| **Storage** | Simple Backpack | Armory Shop (Start) | 300 | +5 Dungeon Run Bag Slots |
+| **Weapon** | Stone Sword | Armory Shop (Dungeon 1 Floor 6 reached) | 200 | +10 ATK |
+| **Head** | Superior Leather Helmet | Armory Shop (Dungeon 1 Floor 6 reached) | 200 | +2 DEF |
+| **Chest** | Superior Leather Chestpiece | Armory Shop (Dungeon 1 Floor 6 reached) | 200 | +2 DEF |
+| **Legs** | Superior Leather Leggings | Armory Shop (Dungeon 1 Floor 6 reached) | 200 | +2 DEF |
+| **Gloves** | Superior Leather Gloves | Armory Shop (Dungeon 1 Floor 6 reached) | 200 | +2 DEF |
+| **Boots** | Superior Leather Boots | Armory Shop (Dungeon 1 Floor 6 reached) | 200 | +2 DEF |
+| **Trinket** | Superior Leather Belt | Armory Shop (Dungeon 1 Floor 6 reached) | 200 | +2 DEF |
+| **Storage** | Fine Backpack | Armory Shop (Dungeon 1 Floor 6 reached) | 1000 | +7 Dungeon Run Bag Slots |
+| **Storage** | Luxury Backpack | Armory Shop (Dungeon 2 Floor 1 reached) | 5000 | +10 Dungeon Run Bag Slots |
+| **Trinket** | Utility Leather Belt | Drop-Only / Other | — | +1 Dungeon Run Bag Slots |
+| **Storage** | Small Pouch | *Starter Item* | — | +3 Dungeon Run Bag Slots |
+| **Weapon** | Bronze Sword | Drop-Only / Other | — | +15 ATK |
+| **Weapon** | Refined Bronze Sword | Drop-Only / Other | — | +20 ATK |
+| **Weapon** | Iron Sword | Drop-Only / Other | — | +25 ATK |
+| **Weapon** | Refined Iron Sword | Drop-Only / Other | — | +30 ATK |
+| **Weapon** | Weird Wooden Sword | Drop-Only / Other | — | +7 ATK |
+| **Weapon** | Bone Sword | Drop-Only / Other | — | +13 ATK |
+| **Weapon** | Curved Iron Sword | Drop-Only / Other | — | +27 ATK |
+| **Weapon** | Sewer Shiv | Dungeon Drop / Zone 1 | — | +12 ATK, 15% Bleed Chance on hit |
+| **Chest** | Rat Hide Vest | Dungeon Drop / Zone 1 | — | +18 Max HP, +5% Dodge |
+| **Chest** | Slimecrawler Shell | Dungeon Drop / Zone 1 | — | +22 Max HP, Poison Immunity |
+| **Chest** | Plague Cloak | Dungeon Drop / Zone 1 | — | +14 Max HP, +4 DEF |
+| **Trinket** | Gnarlcrown | Dungeon Drop / Zone 1 | — | +10% Crit Chance |
+| **Trinket** | Cockroach Carapace| Dungeon Drop / Zone 1 | — | +4 DEF, +5% Dodge |
+| **Weapon** | Thorn Dagger | Dungeon Drop / Zone 2 | — | +20 ATK, 20% Poison Chance on hit |
+| **Chest** | Beetle Shell Vest | Dungeon Drop / Zone 2 | — | +30 Max HP, +8 DEF |
+| **Chest** | Spore Cloak | Dungeon Drop / Zone 2 | — | +24 Max HP, +10% Dodge |
+| **Chest** | Vine Wrap | Dungeon Drop / Zone 2 | — | +20 Max HP, +6 DEF, +5% Crit |
+| **Trinket** | Rootmother Eye | Dungeon Drop / Zone 2 | — | +15% Skill Damage |
+| **Trinket** | Glowspore Vial | Dungeon Drop / Zone 2 | — | +8% Crit, +5% Dodge |
+| **Weapon** | Ghost Cutlass | Dungeon Drop / Zone 3 | — | +28 ATK, 12% Stun Chance on hit |
+| **Chest** | Barnacle Plate | Dungeon Drop / Zone 3 | — | +40 Max HP, +10 DEF |
+| **Chest** | Ghost Silk Coat | Dungeon Drop / Zone 3 | — | +30 Max HP, +15% Dodge |
+| **Chest** | Saltcaptain Coat | Dungeon Drop / Zone 3 | — | +34 Max HP, +8 DEF, +8% Dodge |
+| **Trinket** | Moray's Compass | Dungeon Drop / Zone 3 | — | +20% Crit, +10% Dodge |
+| **Trinket** | Toxin Vial | Dungeon Drop / Zone 3 | — | +2 Bleed damage |
 
 ---
 
@@ -441,7 +478,7 @@ Common enemies have their base HP, Attack, and Defense scaled by room star ratin
 After defeating an encounter, Mochi gathers materials, Gold, and XP.
 
 ### Drop Pool Floor Restrictions
-To control crafting progression, only specific materials drop within certain floor ranges:
+To control skill progression, only specific materials drop within certain floor ranges:
 
 | Zone | Floors 1–3 Allowed | Floors 4–6 Allowed | Floors 7–9 Allowed | Floor 10 (Boss) |
 | :---: | :--- | :--- | :--- | :--- |

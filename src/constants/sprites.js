@@ -20,6 +20,12 @@
  * NOTE: Metro bundler requires fully-static require() strings — no template literals.
  */
 
+export const ITEM_SPRITESHEETS = {
+  'equipment-leather': require('../../assets/sprites/items/equipment-leather.png'),
+  'weapons-1': require('../../assets/sprites/items/weapons-1.png'),
+  'storages-1': require('../../assets/sprites/items/storages-1.png'),
+};
+
 export const HERO_SPRITE = {
   platformOffsetFactor: 0.24,
   idle: {
@@ -243,3 +249,57 @@ export function getEnemySprite(enemy) {
     platformOffsetFactor,
   };
 }
+
+export const ALL_SPRITESHEET_ASSETS = [
+  // Item spritesheets
+  require('../../assets/sprites/items/equipment-leather.png'),
+  require('../../assets/sprites/items/weapons-1.png'),
+  require('../../assets/sprites/items/storages-1.png'),
+  // Hero sprites
+  require('../../assets/sprites/units/hero/hero_idle.png'),
+  require('../../assets/sprites/units/hero/hero_attack.png'),
+  require('../../assets/sprites/units/hero/hero_flame_attack.png'),
+  require('../../assets/sprites/units/hero/hero_water_attack.png'),
+  require('../../assets/sprites/units/hero/hero_earth_attack.png'),
+  require('../../assets/sprites/units/hero/hero_wind_attack.png'),
+  require('../../assets/sprites/Tiny Swords (Free Pack)/Units/Original/sitting_fireplace.png'),
+  // Enemy sprites - Zone 1
+  require('../../assets/sprites/units/dungeon-1/rat_idle.png'),
+  require('../../assets/sprites/units/dungeon-1/rat_attack.png'),
+  require('../../assets/sprites/units/dungeon-1/slime_idle.png'),
+  require('../../assets/sprites/units/dungeon-1/slime_attack.png'),
+  require('../../assets/sprites/units/dungeon-1/cockroach_idle.png'),
+  require('../../assets/sprites/units/dungeon-1/cockroach_attack.png'),
+  require('../../assets/sprites/units/dungeon-1/frog_idle.png'),
+  require('../../assets/sprites/units/dungeon-1/frog_attack.png'),
+  require('../../assets/sprites/units/dungeon-1/rat_king_idle.png'),
+  require('../../assets/sprites/units/dungeon-1/rat_king_attack.png'),
+  // Enemy sprites - Zone 2
+  require('../../assets/sprites/Tiny Swords (Free Pack)/Units/Red Units/Archer/Archer_Idle.png'),
+  require('../../assets/sprites/Tiny Swords (Free Pack)/Units/Red Units/Archer/Archer_Shoot.png'),
+  require('../../assets/sprites/Tiny Swords (Free Pack)/Units/Red Units/Warrior/Warrior_Idle.png'),
+  require('../../assets/sprites/Tiny Swords (Free Pack)/Units/Red Units/Warrior/Warrior_Attack1.png'),
+  require('../../assets/sprites/Tiny Swords (Free Pack)/Units/Red Units/Monk/Idle.png'),
+  require('../../assets/sprites/Tiny Swords (Free Pack)/Units/Red Units/Monk/Heal.png'),
+  require('../../assets/sprites/Tiny Swords (Free Pack)/Units/Red Units/Pawn/Pawn_Idle.png'),
+  require('../../assets/sprites/Tiny Swords (Free Pack)/Units/Red Units/Pawn/Pawn_Interact Knife.png'),
+  require('../../assets/sprites/Tiny Swords (Free Pack)/Units/Yellow Units/Monk/Idle.png'),
+  require('../../assets/sprites/Tiny Swords (Free Pack)/Units/Yellow Units/Monk/Heal.png'),
+  // Enemy sprites - Zone 3
+  require('../../assets/sprites/Tiny Swords (Free Pack)/Units/Purple Units/Warrior/Warrior_Idle.png'),
+  require('../../assets/sprites/Tiny Swords (Free Pack)/Units/Purple Units/Warrior/Warrior_Attack1.png'),
+  require('../../assets/sprites/Tiny Swords (Free Pack)/Units/Purple Units/Archer/Archer_Idle.png'),
+  require('../../assets/sprites/Tiny Swords (Free Pack)/Units/Purple Units/Archer/Archer_Shoot.png'),
+  require('../../assets/sprites/Tiny Swords (Free Pack)/Units/Purple Units/Monk/Idle.png'),
+  require('../../assets/sprites/Tiny Swords (Free Pack)/Units/Purple Units/Monk/Heal.png'),
+  require('../../assets/sprites/Tiny Swords (Free Pack)/Units/Purple Units/Pawn/Pawn_Idle.png'),
+  require('../../assets/sprites/Tiny Swords (Free Pack)/Units/Purple Units/Pawn/Pawn_Interact Knife.png'),
+  require('../../assets/sprites/Tiny Swords (Free Pack)/Units/Yellow Units/Warrior/Warrior_Idle.png'),
+  require('../../assets/sprites/Tiny Swords (Free Pack)/Units/Yellow Units/Warrior/Warrior_Attack1.png'),
+  // Fallbacks
+  require('../../assets/sprites/Tiny Swords (Free Pack)/Units/Black Units/Warrior/Warrior_Idle.png'),
+  require('../../assets/sprites/Tiny Swords (Free Pack)/Units/Black Units/Warrior/Warrior_Attack1.png'),
+  // Buildings
+  require('../../assets/sprites/Tiny Swords (Free Pack)/Buildings/Yellow Buildings/Castle.png'),
+  require('../../assets/sprites/Tiny Swords (Free Pack)/Buildings/Yellow Buildings/Monastery.png'),
+];

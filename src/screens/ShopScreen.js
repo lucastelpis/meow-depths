@@ -25,8 +25,9 @@ import Svg, { Defs, LinearGradient, RadialGradient, Stop, Rect } from 'react-nat
 
 import theme from '../constants/theme';
 import { useGame } from '../state/gameState';
-import { GEAR, CONSUMABLES, MATERIALS, getGearByZone } from '../data/gear';
+import { GEAR, CONSUMABLES, MATERIALS } from '../data/gear';
 import { ZONES } from '../data/zones';
+import ItemSprite from '../components/ItemSprite';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -124,15 +125,50 @@ export default function ShopScreen() {
   const ownedMaterials = hero.inventory.materials || {};
   const craftedGear    = hero.inventory.craftedGear || [];
 
-  // ── Build zone-grouped gear lists ──────────────────────────────────────────
-  const gearByZone = useMemo(
-    () => [1, 2, 3].map(zone => ({
-      zone,
-      label: ZONE_LABELS[zone],
-      items: getGearByZone(zone),
-    })),
-    [],
-  );
+  // ── Build shop items list based on progression ─────────────────────────────
+  const armoryItems = useMemo(() => {
+    const isLvl6Unlocked = (state.progress.floorsCleared?.zone1 || 0) >= 5;
+    const isZone2Unlocked = state.progress.zone1Cleared === true;
+
+    const items = [
+      { id: 'wooden_sword', price: 100 },
+      { id: 'leather_helmet', price: 100 },
+      { id: 'leather_chestpiece', price: 100 },
+      { id: 'leather_leggings', price: 100 },
+      { id: 'leather_gloves', price: 100 },
+      { id: 'leather_boots', price: 100 },
+      { id: 'leather_belt', price: 100 },
+      { id: 'simple_backpack', price: 300 },
+    ];
+
+    if (isLvl6Unlocked) {
+      items.push(
+        { id: 'stone_sword', price: 200 },
+        { id: 'superior_leather_helmet', price: 200 },
+        { id: 'superior_leather_chestpiece', price: 200 },
+        { id: 'superior_leather_leggings', price: 200 },
+        { id: 'superior_leather_gloves', price: 200 },
+        { id: 'superior_leather_boots', price: 200 },
+        { id: 'superior_leather_belt', price: 200 },
+        { id: 'fine_backpack', price: 1000 }
+      );
+    }
+
+    if (isZone2Unlocked) {
+      items.push(
+        { id: 'luxury_backpack', price: 5000 }
+      );
+    }
+
+    return items.map(shopItem => {
+      const baseGear = GEAR[shopItem.id];
+      if (!baseGear) return null;
+      return {
+        ...baseGear,
+        goldCost: shopItem.price,
+      };
+    }).filter(Boolean);
+  }, [state.progress.floorsCleared?.zone1, state.progress.zone1Cleared]);
 
   // ── Collect materials the player actually owns for the top bar ─────────────
   const ownedMaterialList = useMemo(() => {
@@ -154,14 +190,7 @@ export default function ShopScreen() {
     return counts;
   }, [hero.inventory?.consumables]);
 
-  // ── Can the player craft a specific gear piece? ────────────────────────────
-  const canCraft = (gearDef) => {
-    const materialsOk = gearDef.materials.every(
-      ({ itemId, qty }) => (ownedMaterials[itemId] || 0) >= qty,
-    );
-    const goldOk = !gearDef.goldCost || hero.gold >= gearDef.goldCost;
-    return materialsOk && goldOk;
-  };
+
 
   // ── Supplies: purchase handler ─────────────────────────────────────────────
   const handleBuySupplies = (item) => {
@@ -175,29 +204,21 @@ export default function ShopScreen() {
     setQuantities(prev => ({ ...prev, [item.id]: 1 }));
   };
 
-  // ── Armory: craft/forge handler ────────────────────────────────────────────
-  const handleForgeGear = (gearDef) => {
-    const materialCosts = {};
-    gearDef.materials.forEach(({ itemId, qty }) => {
-      materialCosts[itemId] = qty;
-    });
-    const goldCost = gearDef.goldCost || 0;
-    const goldLine = goldCost > 0 ? `\n💰 Cost: ${goldCost} gold` : '';
-
+  // ── Armory: buy handler ────────────────────────────────────────────
+  const handleBuyGear = (item) => {
     Alert.alert(
-      'Forge Equipment',
-      `Craft "${gearDef.name}" using your crystals?${goldLine}`,
+      'Purchase Equipment',
+      `Buy "${item.name}" for 💰 ${item.goldCost} gold?`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
-          text: 'Forge',
+          text: 'Buy',
           onPress: () => {
             dispatch({
-              type: 'CRAFT_GEAR',
+              type: 'BUY_GEAR',
               payload: {
-                gearId: gearDef.id,
-                materials: materialCosts,
-                goldCost,
+                gearId: item.id,
+                price: item.goldCost,
               },
             });
           },
@@ -302,7 +323,7 @@ export default function ShopScreen() {
             </View>
           )}
           <Text style={[styles.tabButtonText, activeTab === 'armory' && styles.tabButtonTextActive, activeTab === 'armory' && { color: '#D4A754' }]}>
-            ⚒️ Equipment Forge
+            ⚔️ Armory Shop
           </Text>
         </TouchableOpacity>
       </View>
@@ -420,170 +441,104 @@ export default function ShopScreen() {
             ═════════════════════════════════════════════════════════════════════ */}
         {activeTab === 'armory' && (
           <View style={styles.tabContent}>
-            {gearByZone.map(({ zone, label, items }) => {
-              const zoneKey = `zone${zone}`;
-              const zoneDef = ZONES[zoneKey];
-              const unlocked = !zoneDef || !zoneDef.unlockCondition || !!state.progress[zoneDef.unlockCondition];
+            <View style={styles.suppliesIntro}>
+              <Text style={styles.introTitle}>⚔️ Armory Shop</Text>
+              <Text style={styles.introDesc}>Purchase equipment and weapons with Gold. Owned gear cannot be bought again.</Text>
+            </View>
 
-              return (
-                <View key={zone} style={styles.zoneSection}>
-                  <Text style={[styles.zoneHeader, !unlocked && styles.zoneHeaderLocked]}>
-                    {unlocked ? label : `🔒 ${zoneDef?.name || label} (Locked)`}
-                  </Text>
+            <View style={styles.listContainer}>
+              {armoryItems.map((item) => {
+                const isOwned = craftedGear.includes(item.id);
+                const canAfford = hero.gold >= item.goldCost;
 
-                  {unlocked ? (
-                    items.map((gear) => {
-                      const isCrafted = craftedGear.includes(gear.id);
-                      const craftable = canCraft(gear);
-                      const typeIcon  = GEAR_TYPE_ICONS[gear.type] || '📦';
-
-                      return (
-                        <View key={gear.id} style={[styles.gearCard, craftable && !isCrafted && theme.SHADOWS.glowPrimary]}>
-                          {/* Blueprint Gradient Background */}
-                          <View style={StyleSheet.absoluteFill}>
-                            <Svg width="100%" height="100%">
-                              <Defs>
-                                <LinearGradient id={`blueGrad_${gear.id}`} x1="0" y1="0" x2="0" y2="1">
-                                  <Stop offset="0%" stopColor="#0E1624" />
-                                  <Stop offset="100%" stopColor="#070A0F" />
-                                </LinearGradient>
-                                {craftable && !isCrafted && (
-                                  <LinearGradient id={`goldBorder_${gear.id}`} x1="0" y1="0" x2="1" y2="1">
-                                    <Stop offset="0%" stopColor="#F9D99A" />
-                                    <Stop offset="100%" stopColor="#D4A754" />
-                                  </LinearGradient>
-                                )}
-                              </Defs>
-                              <Rect width="100%" height="100%" fill={`url(#blueGrad_${gear.id})`} rx={14} />
-                              <Rect
-                                x="1"
-                                y="1"
-                                width="98%"
-                                height="98%"
-                                rx={13}
-                                fill="none"
-                                stroke={isCrafted ? 'rgba(16, 185, 129, 0.2)' : (craftable ? `url(#goldBorder_${gear.id})` : 'rgba(255,255,255,0.05)')}
-                                strokeWidth={craftable && !isCrafted ? 1.5 : 1}
-                              />
-                            </Svg>
-                          </View>
-
-                          <View style={styles.gearCardInner}>
-                            <View style={styles.cardHeader}>
-                              <View style={styles.cardHeaderTitleRow}>
-                                <View style={styles.gearIconWrapper}>
-                                  <Text style={styles.gearIcon}>{typeIcon}</Text>
-                                </View>
-                                <View>
-                                  <Text style={styles.gearName}>{gear.name}</Text>
-                                  <Text style={styles.gearType}>
-                                    {gear.type.toUpperCase()}
-                                  </Text>
-                                </View>
-                              </View>
-                              {isCrafted && (
-                                <View style={styles.craftedBadge}>
-                                  <Text style={styles.craftedBadgeText}>FORGED</Text>
-                                </View>
-                              )}
-                            </View>
-
-                            {/* Stats Preview */}
-                            <Text style={styles.statPreview}>🛡️ {formatStats(gear.stats)}</Text>
-
-                            {/* Material requirements */}
-                            <View style={styles.materialsRow}>
-                              {gear.materials.map(({ itemId, qty }) => {
-                                const owned = ownedMaterials[itemId] || 0;
-                                const enough = owned >= qty;
-                                return (
-                                  <View
-                                    key={itemId}
-                                    style={[
-                                      styles.materialReqChip,
-                                      enough ? styles.matEnough : styles.matShort,
-                                    ]}
-                                  >
-                                    <Text style={styles.materialReqEmoji}>
-                                      {getCrystalEmoji(itemId)}
-                                    </Text>
-                                    <Text style={[styles.materialReqText, enough ? styles.matTextEnough : styles.matTextShort]}>
-                                      {MATERIALS[itemId]?.name || itemId}: {owned}/{qty}
-                                    </Text>
-                                    <Text style={styles.checkIndicator}>{enough ? ' ✓' : ' ✗'}</Text>
-                                  </View>
-                                );
-                              })}
-                              {/* Gold cost chip */}
-                              {gear.goldCost > 0 && (() => {
-                                const hasGold = hero.gold >= gear.goldCost;
-                                return (
-                                  <View
-                                    style={[
-                                      styles.materialReqChip,
-                                      hasGold ? styles.matEnough : styles.matShort,
-                                    ]}
-                                  >
-                                    <Text style={styles.materialReqEmoji}>💰</Text>
-                                    <Text style={[styles.materialReqText, hasGold ? styles.matTextEnough : styles.matTextShort]}>
-                                      Gold: {hero.gold}/{gear.goldCost}
-                                    </Text>
-                                    <Text style={styles.checkIndicator}>{hasGold ? ' ✓' : ' ✗'}</Text>
-                                  </View>
-                                );
-                              })()}
-                            </View>
-
-                            {/* Forge Action Button */}
-                            {!isCrafted && (
-                              <TouchableOpacity
-                                style={[
-                                  styles.forgeBtn,
-                                  craftable ? styles.forgeBtnActive : styles.forgeBtnDisabled,
-                                ]}
-                                disabled={!craftable}
-                                onPress={() => handleForgeGear(gear)}
-                              >
-                                {craftable && (
-                                  <View style={StyleSheet.absoluteFill}>
-                                    <Svg width="100%" height="100%">
-                                      <Defs>
-                                        <LinearGradient id={`forgeBtnGrad_${gear.id}`} x1="0" y1="0" x2="1" y2="0">
-                                          <Stop offset="0%" stopColor="#F9D99A" />
-                                          <Stop offset="100%" stopColor="#D4A754" />
-                                        </LinearGradient>
-                                      </Defs>
-                                      <Rect width="100%" height="100%" fill={`url(#forgeBtnGrad_${gear.id})`} rx={10} />
-                                    </Svg>
-                                  </View>
-                                )}
-                                <Text
-                                  style={[
-                                    styles.forgeBtnText,
-                                    !craftable && styles.forgeBtnTextDisabled,
-                                    craftable && { color: '#1A1200' },
-                                  ]}
-                                >
-                                  Forge Equipment
-                                </Text>
-                              </TouchableOpacity>
-                            )}
-                          </View>
-                        </View>
-                      );
-                    })
-                  ) : (
-                    <View style={styles.lockedZoneCard}>
-                      <Text style={styles.lockedZoneText}>
-                        {zoneDef?.unlockCondition === 'zone1Cleared'
-                          ? 'Defeat the Sewer King in Soggy Sewers to unlock.'
-                          : 'Defeat the Rootmother in Twisted Garden to unlock.'}
-                      </Text>
+                return (
+                  <View key={item.id} style={[styles.gearCard, isOwned && { opacity: 0.8 }]}>
+                    <View style={StyleSheet.absoluteFill}>
+                      <Svg width="100%" height="100%">
+                        <Rect width="100%" height="100%" fill="rgba(255,255,255,0.02)" rx={14} />
+                        <Rect
+                          x="1"
+                          y="1"
+                          width="98%"
+                          height="98%"
+                          rx={13}
+                          fill="none"
+                          stroke={isOwned ? 'rgba(16, 185, 129, 0.2)' : 'rgba(255,255,255,0.05)'}
+                          strokeWidth={1}
+                        />
+                      </Svg>
                     </View>
-                  )}
-                </View>
-              );
-            })}
+
+                    <View style={styles.gearCardInner}>
+                      {/* Left: Icon, Name, Type, Stats */}
+                      <View style={styles.shopRowLeft}>
+                        <View style={styles.gearIconWrapper}>
+                          <ItemSprite
+                            spritesheet={item.spritesheet}
+                            frameIndex={item.frameIndex}
+                            displaySize={36}
+                          />
+                        </View>
+                        <View style={styles.shopRowInfo}>
+                          <View style={styles.shopNameRow}>
+                            <Text style={styles.gearName} numberOfLines={1}>{item.name}</Text>
+                            <View style={styles.gearTypeBadge}>
+                              <Text style={styles.gearTypeBadgeText}>{item.type.toUpperCase()}</Text>
+                            </View>
+                          </View>
+                          <Text style={styles.statPreview}>🛡️ {formatStats(item.stats)}</Text>
+                          {!!item.description && (
+                            <Text style={styles.shopRowDesc}>{item.description}</Text>
+                          )}
+                        </View>
+                      </View>
+
+                      {/* Right: Buy Button / Owned State */}
+                      <View style={styles.buyArea}>
+                        {!isOwned ? (
+                          <TouchableOpacity
+                            style={[
+                              styles.armoryBuyBtn,
+                              !canAfford && styles.armoryBuyBtnDisabled
+                            ]}
+                            disabled={!canAfford}
+                            onPress={() => handleBuyGear(item)}
+                          >
+                            {canAfford && (
+                              <View style={StyleSheet.absoluteFill}>
+                                <Svg width="100%" height="100%">
+                                  <Defs>
+                                    <LinearGradient id={`armoryBuyGrad_${item.id}`} x1="0" y1="0" x2="1" y2="0">
+                                      <Stop offset="0%" stopColor="#F9D99A" />
+                                      <Stop offset="100%" stopColor="#D4A754" />
+                                    </LinearGradient>
+                                  </Defs>
+                                  <Rect width="100%" height="100%" fill={`url(#armoryBuyGrad_${item.id})`} rx={10} />
+                                </Svg>
+                              </View>
+                            )}
+                            <Text
+                              style={[
+                                styles.armoryBuyBtnText,
+                                !canAfford && styles.armoryBuyBtnTextDisabled
+                              ]}
+                            >
+                              💰 {item.goldCost}g
+                            </Text>
+                          </TouchableOpacity>
+                        ) : (
+                          <View style={styles.armoryBuyBtnOwned}>
+                            <Text style={styles.armoryBuyBtnOwnedText}>
+                              Owned
+                            </Text>
+                          </View>
+                        )}
+                      </View>
+                    </View>
+                  </View>
+                );
+              })}
+            </View>
           </View>
         )}
       </ScrollView>
@@ -915,37 +870,26 @@ const styles = StyleSheet.create({
   },
   gearCard: {
     borderRadius: 14,
-    marginBottom: 12,
     overflow: 'hidden',
+    minHeight: 80,
   },
   gearCardInner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     padding: 14,
     zIndex: 2,
   },
   gearIconWrapper: {
-    width: 42,
-    height: 42,
-    borderRadius: 8,
+    width: 44,
+    height: 44,
+    borderRadius: 10,
     backgroundColor: 'rgba(255,255,255,0.03)',
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.05)',
-  },
-  cardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 10,
-  },
-  cardHeaderTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    flex: 1,
-  },
-  gearIcon: {
-    fontSize: 22,
+    marginRight: 12,
   },
   gearName: {
     fontFamily: 'System',
@@ -953,104 +897,68 @@ const styles = StyleSheet.create({
     color: '#F8FAFC',
     fontWeight: 'bold',
   },
-  gearType: {
-    fontFamily: 'System',
-    fontSize: 9,
-    color: '#707F94',
-    fontWeight: '900',
-    letterSpacing: 0.8,
-    marginTop: 2,
-  },
-  craftedBadge: {
-    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+  gearTypeBadge: {
+    backgroundColor: 'rgba(212, 167, 84, 0.08)',
     borderWidth: 1,
-    borderColor: 'rgba(16, 185, 129, 0.25)',
+    borderColor: 'rgba(212, 167, 84, 0.2)',
     borderRadius: 6,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
   },
-  craftedBadgeText: {
+  gearTypeBadgeText: {
     fontFamily: 'System',
     fontSize: 9,
-    color: '#10B981',
     fontWeight: 'bold',
+    color: '#D4A754',
     letterSpacing: 0.5,
   },
   statPreview: {
     fontFamily: 'System',
     fontSize: 12,
     color: '#10B981',
-    marginBottom: 12,
     fontWeight: '600',
+    marginTop: 4,
   },
-  materialsRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 6,
-    marginBottom: 14,
-  },
-  materialReqChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderRadius: 8,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-  },
-  materialReqEmoji: {
-    fontSize: 11,
-    marginRight: 4,
-  },
-  materialReqText: {
-    fontFamily: 'System',
-    fontSize: 10,
-    fontWeight: '600',
-  },
-  checkIndicator: {
-    fontFamily: 'System',
-    fontSize: 10,
-    fontWeight: 'bold',
-  },
-  matEnough: {
-    borderColor: 'rgba(16, 185, 129, 0.2)',
-    backgroundColor: 'rgba(16, 185, 129, 0.06)',
-  },
-  matShort: {
-    borderColor: 'rgba(239, 68, 68, 0.2)',
-    backgroundColor: 'rgba(239, 68, 68, 0.06)',
-  },
-  matTextEnough: {
-    color: '#10B981',
-  },
-  matTextShort: {
-    color: '#EF4444',
-  },
-  forgeBtn: {
+  armoryBuyBtn: {
     borderRadius: 10,
-    paddingVertical: 12,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
     alignItems: 'center',
     justifyContent: 'center',
+    minWidth: 90,
     overflow: 'hidden',
   },
-  forgeBtnActive: {
-    backgroundColor: '#D4A754',
-  },
-  forgeBtnDisabled: {
+  armoryBuyBtnDisabled: {
     backgroundColor: 'rgba(255, 255, 255, 0.02)',
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.05)',
   },
-  forgeBtnText: {
+  armoryBuyBtnText: {
     fontFamily: 'System',
     fontSize: 12,
-    color: '#1A1200',
     fontWeight: 'bold',
     zIndex: 2,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    color: '#1A1200',
   },
-  forgeBtnTextDisabled: {
-    color: 'rgba(255, 255, 255, 0.2)',
+  armoryBuyBtnTextDisabled: {
+    color: 'rgba(255, 255, 255, 0.15)',
+  },
+  armoryBuyBtnOwned: {
+    borderRadius: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minWidth: 90,
+    backgroundColor: 'rgba(92, 196, 137, 0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(92, 196, 137, 0.2)',
+  },
+  armoryBuyBtnOwnedText: {
+    fontFamily: 'System',
+    fontSize: 12,
+    fontWeight: 'bold',
+    color: '#5CC489',
   },
   zoneHeaderLocked: {
     color: 'rgba(255, 255, 255, 0.2)',

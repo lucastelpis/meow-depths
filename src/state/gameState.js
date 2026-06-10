@@ -72,7 +72,7 @@ const initialState = {
     defence: 0,               // base damage reduction (only comes from gear/skills now)
     critChance: 0.05,         // 5 % base crit chance
     dodge: 0.05,              // 5 % base dodge chance
-    gold: 100,                // start with some gold for first potions
+    gold: 0,                  // hero starts with no gold; first daily reward grants some
     statPoints: 0,            // 3 stat points per level-up, allocated manually
     strength: 10,             // core attribute
     agility: 10,              // core attribute
@@ -83,21 +83,19 @@ const initialState = {
 
     // -- Equipment & Inventory -----------------------------------------------
     gear: {
-      weapon:   'toy_sword',         // equipped weapon gear ID (or null)
+      weapon:   'wooden_branch',     // equipped weapon gear ID (or null)
       head:     null,                // equipped head gear ID
-      chest:    'cardboard_armor',   // equipped chest gear ID
+      chest:    null,                // equipped chest gear ID
       legs:     null,                // equipped legs gear ID
       gloves:   null,                // equipped gloves gear ID
       boots:    null,                // equipped boots gear ID
-      trinket1: null,                // equipped trinket gear ID (slot 1)
-      trinket2: null,                // equipped trinket gear ID (slot 2)
+      trinket:  null,                // equipped trinket gear ID
+      storage:  'leather_bag',       // equipped storage gear ID
     },
     inventory: {
       materials: {},          // { itemId: quantity } — crafting components
-      consumables: [          // array of { id, quantity }
-        { id: 'potion', quantity: 3 }, // start with 3 potions
-      ],
-      craftedGear: ['toy_sword', 'cardboard_armor'],        // array of gear IDs the hero has crafted
+      consumables: [],        // array of { id, quantity } — starts empty, first daily reward grants potions
+      craftedGear: ['wooden_branch', 'leather_bag'],        // array of gear IDs the hero has crafted
     },
   },
 
@@ -162,7 +160,7 @@ const initialState = {
  *   CLEAR_ZONE       – mark a zone as completed
  *   CRAFT_GEAR       – spend materials + gold to create gear
  *   END_RUN          – finish the current dungeon run
- *   EQUIP_GEAR       – put gear in a slot (weapon/head/chest/legs/gloves/boots/trinket1/trinket2)
+ *   EQUIP_GEAR       – put gear in a slot (weapon/head/chest/legs/gloves/boots/trinket/storage)
  *   EQUIP_SKILL      – assign a skill to one of the two active slots
  *   HEAL             – restore HP
  *   LEVEL_UP         – apply level-up stat bonuses
@@ -245,7 +243,7 @@ function gameReducer(state, action) {
 
     // -----------------------------------------------------------------------
     // EQUIP_GEAR — put a gear piece in its slot
-    // Payload: { slot: 'weapon'|'head'|'chest'|'legs'|'gloves'|'boots'|'trinket1'|'trinket2', gearId: string }
+    // Payload: { slot: 'weapon'|'head'|'chest'|'legs'|'gloves'|'boots'|'trinket'|'storage', gearId: string }
     // -----------------------------------------------------------------------
     case 'EQUIP_GEAR': {
       const { slot, gearId } = action.payload;
@@ -266,28 +264,18 @@ function gameReducer(state, action) {
     }
 
     // -----------------------------------------------------------------------
-    // CRAFT_GEAR — spend materials + gold, add gear to inventory
-    // Payload: { gearId: string, materials: { itemId: qty }, goldCost: number }
+    // BUY_GEAR — spend gold, add gear to inventory
+    // Payload: { gearId: string, price: number }
     // -----------------------------------------------------------------------
-    case 'CRAFT_GEAR': {
-      const { gearId, materials: matCost, goldCost } = action.payload;
-
-      // Deduct materials
-      const updatedMaterials = { ...state.hero.inventory.materials };
-      for (const [itemId, qty] of Object.entries(matCost || {})) {
-        updatedMaterials[itemId] = (updatedMaterials[itemId] || 0) - qty;
-        // Clean up zeroes
-        if (updatedMaterials[itemId] <= 0) delete updatedMaterials[itemId];
-      }
-
+    case 'BUY_GEAR': {
+      const { gearId, price } = action.payload;
       return {
         ...state,
         hero: {
           ...state.hero,
-          gold: state.hero.gold - (goldCost || 0),
+          gold: state.hero.gold - price,
           inventory: {
             ...state.hero.inventory,
-            materials: updatedMaterials,
             craftedGear: [...state.hero.inventory.craftedGear, gearId],
           },
         },
@@ -1132,17 +1120,31 @@ export function GameProvider({ children }) {
         // that were added after the save was created (forward-compatibility).
         const merged = deepMerge(initialState, savedState);
 
-        // Migrate old 3-slot gear shape ({ weapon, armor, trinket }) to the
-        // new 8-slot shape (armor → chest, trinket → trinket1).
+        // Migrate old 3-slot gear shape ({ weapon, armor, trinket }) or 8-slot ({ trinket1, trinket2 }) to the new 8-slot shape.
         if (merged.hero?.gear) {
           const gear = merged.hero.gear;
           if ('armor' in gear) {
             if (gear.armor) gear.chest = gear.armor;
             delete gear.armor;
           }
-          if ('trinket' in gear) {
-            if (gear.trinket) gear.trinket1 = gear.trinket;
-            delete gear.trinket;
+          // Migrate old trinket1/trinket2 to new trinket/storage
+          if ('trinket1' in gear) {
+            gear.trinket = gear.trinket1;
+            delete gear.trinket1;
+          }
+          if ('trinket2' in gear) {
+            gear.storage = gear.trinket2;
+            delete gear.trinket2;
+          }
+          // If leather_bag is equipped in the trinket slot, move it to storage
+          if (gear.trinket === 'leather_bag') {
+            gear.storage = 'leather_bag';
+            gear.trinket = null;
+          }
+          // If the old trinket field exists (from 3-slot shape), map it directly
+          if ('trinket' in gear && gear.trinket === 'leather_bag') {
+            gear.storage = 'leather_bag';
+            gear.trinket = null;
           }
         }
 
@@ -1156,6 +1158,12 @@ export function GameProvider({ children }) {
           }
           if (merged.hero.gear?.chest === 'cardboard_armor' && !merged.hero.inventory.craftedGear.includes('cardboard_armor')) {
             merged.hero.inventory.craftedGear.push('cardboard_armor');
+          }
+          if (merged.hero.gear?.weapon === 'wooden_branch' && !merged.hero.inventory.craftedGear.includes('wooden_branch')) {
+            merged.hero.inventory.craftedGear.push('wooden_branch');
+          }
+          if ((merged.hero.gear?.storage === 'leather_bag' || merged.hero.gear?.trinket === 'leather_bag') && !merged.hero.inventory.craftedGear.includes('leather_bag')) {
+            merged.hero.inventory.craftedGear.push('leather_bag');
           }
         }
 

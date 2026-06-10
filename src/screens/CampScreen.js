@@ -216,14 +216,16 @@ export default function CampScreen({ navigation }) {
       return;
     }
 
+    const isFirstClaim = !state.progress.lastDailyClaim;
+
     // Scale rewards based on level
     const lvl = hero.level || 1;
-    const goldReward = 100 + lvl * 50;
-    
+    const goldReward = isFirstClaim ? 50 : 100 + lvl * 50;
+
     // Potions: health potions scaled, mega potions starting at lvl 3
-    const healthPotionQty = 1 + Math.floor(lvl / 5);
-    const megaPotionQty = lvl >= 3 ? 1 : 0;
-    
+    const healthPotionQty = isFirstClaim ? 3 : 1 + Math.floor(lvl / 5);
+    const megaPotionQty = isFirstClaim ? 0 : (lvl >= 3 ? 1 : 0);
+
     const consumablesReward = {};
     if (healthPotionQty > 0) consumablesReward['potion'] = healthPotionQty;
     if (megaPotionQty > 0) consumablesReward['super_potion'] = megaPotionQty;

@@ -22,12 +22,13 @@ import Svg, { Defs, LinearGradient, RadialGradient, Stop, Rect, Circle, Path } f
 import { useGame } from '../state/gameState';
 import { GEAR, CONSUMABLES, MATERIALS } from '../data/gear';
 import { getActiveSetBonuses } from '../logic/progressionEngine';
+import ItemSprite from '../components/ItemSprite';
 
 // ─── Tabs ────────────────────────────────────────────────────────────────────
 const TABS = [
   { key: 'consumables', icon: '🧪', label: 'Consumables' },
-  { key: 'crafting',    icon: '💎', label: 'Crafting'    },
-  { key: 'gear',        icon: '⚒️', label: 'Owned Gear'  },
+  { key: 'gear',        icon: '⚒️', label: 'Equipment'  },
+  { key: 'crafting',    icon: '💎', label: 'Miscellaneous' },
 ];
 
 const GEAR_TYPE_ICON = {
@@ -72,6 +73,10 @@ const MATERIAL_ZONES = [
 const GEAR_ICONS = {
   toy_sword: '🗡️',
   cardboard_armor: '📦',
+  leather_bag: '🎒',
+  simple_backpack: '🎒',
+  fine_backpack: '🎒',
+  luxury_backpack: '🎒',
   sewer_shiv: '🔪',
   rat_hide_vest: '🧥',
   slimecrawler_shell: '🐚',
@@ -107,12 +112,6 @@ const MATERIAL_ICONS = {
   yellow_crystal_core: '☀️',
 };
 
-const ZONE_NAMES = {
-  1: 'Soggy Sewers',
-  2: 'Twisted Garden',
-  3: 'Sunken Docks',
-};
-
 const LORE_DESCRIPTIONS = {
   // Consumables
   potion: "A standard brew made from healing herbs. Tastes slightly of peppermint.",
@@ -140,6 +139,10 @@ const LORE_DESCRIPTIONS = {
   // Gear
   toy_sword: "A wooden training sword. Mostly harmless, but good for building confidence.",
   cardboard_armor: "A taped-together box. Smells like old wet paper, but offers basic protection.",
+  leather_bag: "A small pouch for carrying basic items. Increases bag capacity by +3 slots.",
+  simple_backpack: "A simple, reliable backpack. Increases bag capacity by +5 slots.",
+  fine_backpack: "A well-crafted, sturdy backpack with extra pockets. Increases bag capacity by +7 slots.",
+  luxury_backpack: "An exquisite, high-capacity backpack made of fine leather. Increases bag capacity by +10 slots.",
   sewer_shiv: "A jagged piece of metal wrapped in dirty rags. Crude, but dangerous.",
   rat_hide_vest: "Tough leather made from sewer rats. Surprisingly flexible and waterproof.",
   slimecrawler_shell: "A hardened shell coated in slick mucus. Repels toxic liquids.",
@@ -188,29 +191,12 @@ export default function InventoryScreen() {
   // Derived data (Owned Gear tab)
   const activeSets = useMemo(() => getActiveSetBonuses(hero.gear), [hero.gear]);
 
-  // Tab badge counts
-  const consumableCount = useMemo(
-    () => hero.inventory.consumables.filter(c => c.quantity > 0).length,
-    [hero.inventory.consumables],
-  );
-  const craftingCount = useMemo(
-    () => Object.values(hero.inventory.materials).filter(q => q > 0).length,
-    [hero.inventory.materials],
-  );
-  const gearCount = hero.inventory.craftedGear.length;
-
-  const tabCounts = { consumables: consumableCount, crafting: craftingCount, gear: gearCount };
-
   // ── Helpers ─────────────────────────────────────────────────────────────────
   const pct = (v) => `${Math.round((v || 0) * 100)}%`;
 
   // ── Handlers ─────────────────────────────────────────────────────────────────
   const handleEquip = (gearItem) => {
-    // Trinkets can go in either trinket slot — prefer the empty one, else slot 1.
     let slot = gearItem.type;
-    if (slot === 'trinket') {
-      slot = !hero.gear.trinket1 ? 'trinket1' : 'trinket2';
-    }
     dispatch({ type: 'EQUIP_GEAR', payload: { slot, gearId: gearItem.id } });
   };
 
@@ -271,7 +257,7 @@ export default function InventoryScreen() {
           return (
             <TouchableOpacity
               key={entry.id}
-              style={[styles.gridCard, { width: itemWidth }]}
+              style={[styles.gridCard, { width: itemWidth, height: itemWidth }]}
               onPress={() => handleOpenDetails(entry, 'consumable')}
               activeOpacity={0.8}
             >
@@ -281,12 +267,14 @@ export default function InventoryScreen() {
                   stroke="rgba(255,255,255,0.04)" strokeWidth={1} />
               </Svg>
               <View style={styles.gridCardInner}>
-                <View style={styles.gridIconBox}>
+                <Text style={styles.gridName} numberOfLines={2}>{def?.name || entry.id}</Text>
+                <View style={styles.gridIconWrap}>
                   <Text style={styles.gridIcon}>{icon}</Text>
                 </View>
-                <Text style={styles.gridName} numberOfLines={2}>{def?.name || entry.id}</Text>
-                <View style={styles.gridQtyBadge}>
-                  <Text style={styles.gridQtyText}>×{entry.quantity}</Text>
+                <View style={styles.gridTagSlot}>
+                  <View style={[styles.gridTagBadge, styles.gridQtyBadge]}>
+                    <Text style={[styles.gridTagText, styles.gridQtyText]}>×{entry.quantity}</Text>
+                  </View>
                 </View>
               </View>
             </TouchableOpacity>
@@ -330,7 +318,7 @@ export default function InventoryScreen() {
           return (
             <TouchableOpacity
               key={mat.id}
-              style={[styles.gridCard, { width: itemWidth }]}
+              style={[styles.gridCard, { width: itemWidth, height: itemWidth }]}
               onPress={() => handleOpenDetails(mat, 'material')}
               activeOpacity={0.8}
             >
@@ -347,12 +335,14 @@ export default function InventoryScreen() {
                   stroke={mat.zone.zoneColor + '15'} strokeWidth={1} />
               </Svg>
               <View style={styles.gridCardInner}>
-                <View style={styles.gridIconBox}>
+                <Text style={styles.gridName} numberOfLines={2}>{mat.name}</Text>
+                <View style={styles.gridIconWrap}>
                   <Text style={styles.gridIcon}>{icon}</Text>
                 </View>
-                <Text style={styles.gridName} numberOfLines={2}>{mat.name}</Text>
-                <View style={[styles.gridQtyBadge, { borderColor: mat.zone.zoneColor + '30', backgroundColor: mat.zone.zoneColor + '08' }]}>
-                  <Text style={[styles.gridQtyText, { color: mat.zone.zoneColor }]}>×{mat.qty}</Text>
+                <View style={styles.gridTagSlot}>
+                  <View style={[styles.gridTagBadge, styles.gridQtyBadge, { borderColor: mat.zone.zoneColor + '30', backgroundColor: mat.zone.zoneColor + '08' }]}>
+                    <Text style={[styles.gridTagText, styles.gridQtyText, { color: mat.zone.zoneColor }]}>×{mat.qty}</Text>
+                  </View>
                 </View>
               </View>
             </TouchableOpacity>
@@ -390,8 +380,6 @@ export default function InventoryScreen() {
         </View>
       )}
 
-      {/* ── Owned Gear ── */}
-      <Text style={styles.subSectionTitle}>⚒️ Owned Gear</Text>
       {hero.inventory.craftedGear.length === 0 ? (
         <View style={styles.emptyBox}>
           <Text style={styles.emptyEmoji}>⚒️</Text>
@@ -413,13 +401,12 @@ export default function InventoryScreen() {
               const gearId = gearDef.id;
               const isEquipped = Object.values(hero.gear).includes(gearId);
               const icon = GEAR_ICONS[gearId] || GEAR_TYPE_ICON[gearDef.type] || '🎒';
-              const zoneColor = gearDef.zone === 1 ? '#3FB56E' : gearDef.zone === 2 ? '#A855F7' : gearDef.zone === 3 ? '#06B6D4' : '#707F94';
               return (
                 <TouchableOpacity
                   key={gearId}
                   style={[
                     styles.gridCard,
-                    { width: itemWidth },
+                    { width: itemWidth, height: itemWidth },
                     isEquipped && styles.gridCardGearEquipped,
                   ]}
                   onPress={() => handleOpenDetails(gearDef, 'gear')}
@@ -431,17 +418,24 @@ export default function InventoryScreen() {
                       stroke={isEquipped ? 'rgba(212,167,84,0.4)' : 'rgba(255,255,255,0.04)'} strokeWidth={isEquipped ? 1.5 : 1} />
                   </Svg>
                   <View style={styles.gridCardInner}>
-                    {isEquipped && (
-                      <View style={styles.equippedBadge}>
-                        <Text style={styles.equippedBadgeText}>✓</Text>
-                      </View>
-                    )}
-                    <View style={styles.gridIconBox}>
-                      <Text style={styles.gridIcon}>{icon}</Text>
-                    </View>
                     <Text style={styles.gridName} numberOfLines={2}>{gearDef.name}</Text>
-                    <View style={[styles.gridZoneBadge, { borderColor: zoneColor + '30', backgroundColor: zoneColor + '08' }]}>
-                      <Text style={[styles.gridZoneText, { color: zoneColor }]}>Z{gearDef.zone}</Text>
+                    <View style={styles.gridIconWrap}>
+                      {gearDef.spritesheet ? (
+                        <ItemSprite
+                          spritesheet={gearDef.spritesheet}
+                          frameIndex={gearDef.frameIndex}
+                          displaySize={44}
+                        />
+                      ) : (
+                        <Text style={styles.gridIcon}>{icon}</Text>
+                      )}
+                    </View>
+                    <View style={styles.gridTagSlot}>
+                      {isEquipped && (
+                        <View style={[styles.gridTagBadge, styles.equippedBadge]}>
+                          <Text style={[styles.gridTagText, styles.equippedBadgeText]}>EQUIPPED</Text>
+                        </View>
+                      )}
                     </View>
                   </View>
                 </TouchableOpacity>
@@ -460,7 +454,6 @@ export default function InventoryScreen() {
         <View style={styles.tabBar}>
           {TABS.map(({ key, icon, label }) => {
             const isActive = activeTab === key;
-            const count    = tabCounts[key];
             return (
               <TouchableOpacity
                 key={key}
@@ -470,11 +463,6 @@ export default function InventoryScreen() {
               >
                 <Text style={[styles.tabIcon, !isActive && styles.tabIconDim]}>{icon}</Text>
                 <Text style={[styles.tabLabel, isActive && styles.tabLabelActive]}>{label}</Text>
-                {count > 0 && (
-                  <View style={[styles.tabCount, isActive && styles.tabCountActive]}>
-                    <Text style={[styles.tabCountText, isActive && styles.tabCountTextActive]}>{count}</Text>
-                  </View>
-                )}
               </TouchableOpacity>
             );
           })}
@@ -513,7 +501,6 @@ export default function InventoryScreen() {
                 let showEquipBtn = false;
                 let isCurrentlyEquipped = false;
                 let showOpenChestBtn = false;
-                let dungeonSource = '';
 
                 if (itemType === 'consumable') {
                   const def = CONSUMABLES.find(c => c.id === selectedItem.id);
@@ -522,7 +509,6 @@ export default function InventoryScreen() {
                   category = 'Consumable';
                   categoryColor = '#3FB56E';
                   statusText = `Owned: ${selectedItem.quantity}`;
-                  dungeonSource = '🗺️ Shop Purchase';
                   if (selectedItem.id === 'mystery_chest') {
                     showOpenChestBtn = true;
                   }
@@ -532,7 +518,6 @@ export default function InventoryScreen() {
                   category = 'Crafting Material';
                   categoryColor = selectedItem.zone.zoneColor;
                   statusText = `Owned: ${selectedItem.qty}`;
-                  dungeonSource = `🏰 Location: ${selectedItem.zone.label}`;
                 } else if (itemType === 'gear') {
                   title = selectedItem.name;
                   icon = GEAR_ICONS[selectedItem.id] || GEAR_TYPE_ICON[selectedItem.type] || '🎒';
@@ -540,7 +525,6 @@ export default function InventoryScreen() {
                   categoryColor = selectedItem.zone === 1 ? '#3FB56E' : selectedItem.zone === 2 ? '#A855F7' : selectedItem.zone === 3 ? '#06B6D4' : '#707F94';
                   isCurrentlyEquipped = Object.values(hero.gear).includes(selectedItem.id);
                   showEquipBtn = true;
-                  dungeonSource = `🏰 Location: ${ZONE_NAMES[selectedItem.zone] || `Zone ${selectedItem.zone}`}`;
 
                   if (selectedItem.stats) {
                     if (selectedItem.stats.attack)     statsList.push({ label: 'ATK', value: `+${selectedItem.stats.attack}`, emoji: '⚔️' });
@@ -554,6 +538,7 @@ export default function InventoryScreen() {
                     if (selectedItem.stats.poisonImmune) statsList.push({ label: 'IMMUNITY', value: 'Poison', emoji: '🟢', color: '#10B981' });
                     if (selectedItem.stats.skillDamage) statsList.push({ label: 'SKILL DMG', value: `+${pct(selectedItem.stats.skillDamage)}`, emoji: '✨', color: '#A855F7' });
                     if (selectedItem.stats.bleedExtraDamage) statsList.push({ label: 'BLEED DMG', value: `+${selectedItem.stats.bleedExtraDamage}`, emoji: '🩸', color: '#EF4444' });
+                    if (selectedItem.stats.bagSlots)   statsList.push({ label: 'Bag Slots', value: `+${selectedItem.stats.bagSlots}`, emoji: '🎒', color: '#D4A754' });
                   }
                 }
 
@@ -664,17 +649,19 @@ export default function InventoryScreen() {
                               <Circle cx="45" cy="45" r="37" fill="none" stroke={rarity.color + '25'} strokeWidth={1} strokeDasharray="3 3" />
                               <Circle cx="45" cy="45" r="31" fill="none" stroke="#D4A754" strokeWidth={1} opacity={0.6} />
                             </Svg>
-                            <Text style={styles.modalIconText}>{icon}</Text>
+                            {selectedItem.spritesheet ? (
+                              <ItemSprite
+                                spritesheet={selectedItem.spritesheet}
+                                frameIndex={selectedItem.frameIndex}
+                                displaySize={48}
+                              />
+                            ) : (
+                              <Text style={styles.modalIconText}>{icon}</Text>
+                            )}
                           </View>
                         </View>
 
                         <Text style={styles.modalTitleText}>{title}</Text>
-
-                        {dungeonSource ? (
-                          <View style={styles.modalSourceContainer}>
-                            <Text style={styles.modalSourceText}>{dungeonSource}</Text>
-                          </View>
-                        ) : null}
 
                         {statusText ? (
                           <Text style={styles.modalStatusText}>{statusText}</Text>
@@ -857,26 +844,6 @@ const styles = StyleSheet.create({
   tabLabelActive: {
     color: '#F8FAFC',
     fontWeight: '800',
-  },
-  tabCount: {
-    backgroundColor: 'rgba(255,255,255,0.07)',
-    borderRadius: 8,
-    paddingHorizontal: 5,
-    paddingVertical: 1,
-    minWidth: 18,
-    alignItems: 'center',
-  },
-  tabCountActive: {
-    backgroundColor: 'rgba(212,167,84,0.2)',
-  },
-  tabCountText: {
-    fontFamily: 'System',
-    fontSize: 9,
-    fontWeight: 'bold',
-    color: '#707F94',
-  },
-  tabCountTextActive: {
-    color: '#D4A754',
   },
 
   /* ── Scroll ──────────────────────────────────────────────── */
@@ -1176,7 +1143,6 @@ const styles = StyleSheet.create({
   },
   gridCard: {
     borderRadius: 14,
-    height: 124,
     overflow: 'hidden',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.05)',
@@ -1189,23 +1155,17 @@ const styles = StyleSheet.create({
   gridCardInner: {
     flex: 1,
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'space-between',
     padding: 8,
-    gap: 6,
-    position: 'relative',
   },
-  gridIconBox: {
-    width: 38,
-    height: 38,
-    borderRadius: 10,
-    backgroundColor: 'rgba(255,255,255,0.03)',
+  gridIconWrap: {
+    flex: 1,
+    width: '100%',
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
   },
   gridIcon: {
-    fontSize: 20,
+    fontSize: 28,
   },
   gridName: {
     fontFamily: 'System',
@@ -1215,50 +1175,38 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 14,
     height: 28, // height for 2 lines
+    width: '100%',
+  },
+  gridTagSlot: {
+    minHeight: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  gridTagBadge: {
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+    borderRadius: 5,
+    borderWidth: 1,
+  },
+  gridTagText: {
+    fontFamily: 'System',
+    fontSize: 8,
+    fontWeight: 'bold',
+    letterSpacing: 0.3,
   },
   gridQtyBadge: {
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 6,
-    borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.15)',
     backgroundColor: 'rgba(255,255,255,0.03)',
   },
   gridQtyText: {
-    fontFamily: 'System',
-    fontSize: 9,
-    fontWeight: 'bold',
     color: 'rgba(255,255,255,0.6)',
   },
-  gridZoneBadge: {
-    paddingHorizontal: 6,
-    paddingVertical: 1,
-    borderRadius: 4,
-    borderWidth: 1,
-  },
-  gridZoneText: {
-    fontFamily: 'System',
-    fontSize: 8,
-    fontWeight: 'bold',
-  },
   equippedBadge: {
-    position: 'absolute',
-    top: 6,
-    right: 6,
-    width: 14,
-    height: 14,
-    borderRadius: 7,
-    backgroundColor: '#10B981',
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 10,
+    borderColor: 'rgba(212,167,84,0.4)',
+    backgroundColor: 'rgba(212,167,84,0.12)',
   },
   equippedBadgeText: {
-    fontFamily: 'System',
-    fontSize: 9,
-    color: '#FFFFFF',
-    fontWeight: 'bold',
-    lineHeight: 11,
+    color: '#D4A754',
   },
 
   /* ── Modal Popup Styles ─────────────────────────────────── */
@@ -1364,22 +1312,6 @@ const styles = StyleSheet.create({
     textShadowColor: 'rgba(0, 0, 0, 0.6)',
     textShadowOffset: { width: 0, height: 2 },
     textShadowRadius: 4,
-  },
-  modalSourceContainer: {
-    backgroundColor: 'rgba(255, 255, 255, 0.03)',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.06)',
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 3,
-    marginBottom: 14,
-  },
-  modalSourceText: {
-    fontFamily: 'System',
-    fontSize: 10,
-    color: '#D4A754',
-    fontWeight: '700',
-    letterSpacing: 0.5,
   },
   modalStatusText: {
     fontFamily: 'System',

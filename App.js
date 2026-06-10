@@ -16,6 +16,7 @@ import { StatusBar } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import ScreenLoader from './src/components/ScreenLoader';
 
 // Global state provider
 import { GameProvider, useGame } from './src/state/gameState';
@@ -30,6 +31,7 @@ import LoadoutScreen from './src/screens/LoadoutScreen';
 import DungeonMapScreen from './src/screens/DungeonMapScreen';
 import DungeonFloorScreen from './src/screens/DungeonFloorScreen';
 import ElementSelectionScreen from './src/screens/ElementSelectionScreen';
+import { ALL_SPRITESHEET_ASSETS } from './src/constants/sprites';
 
 const Stack = createStackNavigator();
 
@@ -82,7 +84,9 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <GameProvider>
-        <AppNavigator />
+        <ScreenLoader assets={ALL_SPRITESHEET_ASSETS}>
+          <AppNavigator />
+        </ScreenLoader>
       </GameProvider>
     </SafeAreaProvider>
   );

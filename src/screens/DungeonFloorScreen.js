@@ -38,6 +38,7 @@ import Svg, {
 import { useGame } from '../state/gameState';
 import { ZONES } from '../data/zones';
 import { CONSUMABLES } from '../data/gear';
+import { calculateEffectiveStats } from '../logic/progressionEngine';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -125,7 +126,7 @@ const FLOOR_FLAVORS = [
   'The zone boss awaits. Clear every room.',
 ];
 
-const MAX_SLOTS = 5;
+// Dynamic bag slots computed from player equipment
 const CONSUMABLE_ICONS = {
   potion:        '🧪',
   super_potion:  '🧪',
@@ -165,6 +166,9 @@ export default function DungeonFloorScreen() {
   const circumference = 2 * Math.PI * radius;
   const strokeDashoffset = circumference * (1 - effectiveCleared / 10);
 
+  const effectiveStats = useMemo(() => calculateEffectiveStats(state.hero), [state.hero]);
+  const maxSlots = effectiveStats.bagSlots || 0;
+
   const [selectedFloor, setSelectedFloor] = useState(null);
   const [loadout, setLoadout]             = useState({});
 
@@ -174,7 +178,7 @@ export default function DungeonFloorScreen() {
   );
 
   const addItem = (id) => {
-    if (totalPacked >= MAX_SLOTS) return;
+    if (totalPacked >= maxSlots) return;
     const owned = state.hero.inventory.consumables.find(c => c.id === id)?.quantity || 0;
     if ((loadout[id] || 0) >= owned) return;
     setLoadout(prev => ({ ...prev, [id]: (prev[id] || 0) + 1 }));
@@ -583,16 +587,18 @@ export default function DungeonFloorScreen() {
               <View style={styles.loadoutHeader}>
                 <Text style={styles.loadoutTitle}>🎒 Pack Supplies</Text>
                 <View style={styles.slotPips}>
-                  {Array.from({ length: MAX_SLOTS }).map((_, i) => (
+                  {Array.from({ length: maxSlots }).map((_, i) => (
                     <View key={i} style={[styles.pip, i < totalPacked && styles.pipFilled]} />
                   ))}
                 </View>
               </View>
-              <Text style={styles.loadoutSub}>{totalPacked}/{MAX_SLOTS} items packed</Text>
+              <Text style={styles.loadoutSub}>{totalPacked}/{maxSlots} items packed</Text>
 
               {/* Items */}
               <View style={styles.itemList}>
-                {state.hero.inventory.consumables.filter(c => c.quantity > 0).length === 0 ? (
+                {maxSlots === 0 ? (
+                  <Text style={styles.emptyText}>⚠️ No bag slots. Buy & equip a belt/bag in your loadout to bring items!</Text>
+                ) : state.hero.inventory.consumables.filter(c => c.quantity > 0).length === 0 ? (
                   <Text style={styles.emptyText}>No items — visit the Town Hall!</Text>
                 ) : (
                   state.hero.inventory.consumables
@@ -600,7 +606,7 @@ export default function DungeonFloorScreen() {
                     .map(entry => {
                       const def = CONSUMABLES.find(c => c.id === entry.id);
                       const packed = loadout[entry.id] || 0;
-                      const canAdd = totalPacked < MAX_SLOTS && packed < entry.quantity;
+                      const canAdd = totalPacked < maxSlots && packed < entry.quantity;
                       const icon = CONSUMABLE_ICONS[entry.id] || '🧪';
 
                       return (

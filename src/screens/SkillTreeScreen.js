@@ -142,6 +142,14 @@ export default function SkillTreeScreen() {
   const materials = hero.inventory?.materials || {};
 
   const [selectedSkill, setSelectedSkill] = useState(null);
+  const [activeSkill, setActiveSkill] = useState(null);
+
+  const handleOpenSkill = useCallback((skill) => {
+    setSelectedSkill(skill);
+    setActiveSkill(skill);
+  }, []);
+
+  const targetSkill = selectedSkill || activeSkill;
   const elementColor = ELEMENT_COLORS[element] || '#D4A754';
   const stanceBonus  = getStanceBonus(element, level);
   const stance       = STANCES[element];
@@ -224,22 +232,22 @@ export default function SkillTreeScreen() {
   // ── Handlers ──────────────────────────────────────────────────────────────
 
   const handleUnlock = useCallback(() => {
-    if (!selectedSkill) return;
-    dispatch({ type: 'UNLOCK_SKILL', payload: { skillId: selectedSkill.id } });
+    if (!targetSkill) return;
+    dispatch({ type: 'UNLOCK_SKILL', payload: { skillId: targetSkill.id } });
     setSelectedSkill(null);
-  }, [selectedSkill, dispatch]);
+  }, [targetSkill, dispatch]);
 
   const handleStarUp = useCallback(() => {
-    if (!selectedSkill) return;
-    dispatch({ type: 'STAR_UP_SKILL', payload: { skillId: selectedSkill.id } });
+    if (!targetSkill) return;
+    dispatch({ type: 'STAR_UP_SKILL', payload: { skillId: targetSkill.id } });
     setSelectedSkill(null);
-  }, [selectedSkill, dispatch]);
+  }, [targetSkill, dispatch]);
 
   const handleEquip = useCallback((slotIndex) => {
-    if (!selectedSkill) return;
-    dispatch({ type: 'EQUIP_SKILL', payload: { slotIndex, skillId: selectedSkill.id } });
+    if (!targetSkill) return;
+    dispatch({ type: 'EQUIP_SKILL', payload: { slotIndex, skillId: targetSkill.id } });
     setSelectedSkill(null);
-  }, [selectedSkill, dispatch]);
+  }, [targetSkill, dispatch]);
 
   const handleUnequip = useCallback((slotIndex) => {
     dispatch({ type: 'EQUIP_SKILL', payload: { slotIndex, skillId: null } });
@@ -370,7 +378,7 @@ export default function SkillTreeScreen() {
       <TouchableOpacity
         key={skillId}
         style={[styles.skillCard, cardStyle, { borderColor, opacity, backgroundColor: cardBg }]}
-        onPress={() => (viewingElement === element) && setSelectedSkill(skill)}
+        onPress={() => (viewingElement === element) && handleOpenSkill(skill)}
         activeOpacity={0.8}
         disabled={viewingElement !== element}
       >
@@ -444,19 +452,19 @@ export default function SkillTreeScreen() {
 
   // ── Selected skill modal content ──────────────────────────────────────────
 
-  const selectedCardState = selectedSkill ? getCardState(selectedSkill.id) : null;
-  const selectedStars     = selectedSkill ? getStars(selectedSkill.id) : 0;
-  const selectedEquipped  = selectedSkill ? isEquipped(selectedSkill.id) : false;
-  const equippedSlot      = selectedSkill ? equippedSkills.indexOf(selectedSkill.id) : -1;
+  const selectedCardState = targetSkill ? getCardState(targetSkill.id) : null;
+  const selectedStars     = targetSkill ? getStars(targetSkill.id) : 0;
+  const selectedEquipped  = targetSkill ? isEquipped(targetSkill.id) : false;
+  const equippedSlot      = targetSkill ? equippedSkills.indexOf(targetSkill.id) : -1;
 
-  const unlockCheck = selectedSkill ? canUnlockElementSkill(selectedSkill.id, hero) : null;
-  const starUpCheck = selectedSkill ? canStarUpSkill(selectedSkill.id, hero) : null;
+  const unlockCheck = targetSkill ? canUnlockElementSkill(targetSkill.id, hero) : null;
+  const starUpCheck = targetSkill ? canStarUpSkill(targetSkill.id, hero) : null;
 
-  const currentStarData = selectedSkill && selectedStars > 0
-    ? selectedSkill.stars[selectedStars]
+  const currentStarData = targetSkill && selectedStars > 0
+    ? targetSkill.stars[selectedStars]
     : null;
-  const nextStarData = selectedSkill && selectedStars < 5
-    ? selectedSkill.stars[selectedStars + 1] || selectedSkill.stars[5]
+  const nextStarData = targetSkill && selectedStars < 5
+    ? targetSkill.stars[selectedStars + 1] || targetSkill.stars[5]
     : null;
 
   // Cost relevant to the action available on the modal (unlock ★1 or star up to next ★)
@@ -667,7 +675,7 @@ export default function SkillTreeScreen() {
                     ]}
                     onPress={() => {
                       if (sk && viewingElement === element) {
-                        setSelectedSkill(sk);
+                        handleOpenSkill(sk);
                       }
                     }}
                     activeOpacity={0.8}
@@ -724,7 +732,7 @@ export default function SkillTreeScreen() {
       <Modal
         visible={selectedSkill !== null}
         transparent
-        animationType="fade"
+        animationType="none"
         onRequestClose={() => setSelectedSkill(null)}
       >
         <Pressable style={styles.modalBackdrop} onPress={() => setSelectedSkill(null)}>
@@ -743,7 +751,7 @@ export default function SkillTreeScreen() {
               />
             </Svg>
 
-            {selectedSkill && (
+            {targetSkill && (
               <ScrollView
                 style={{ maxHeight: SCREEN_HEIGHT * 0.85 }}
                 contentContainerStyle={styles.modalInner}
@@ -755,27 +763,27 @@ export default function SkillTreeScreen() {
 
                 {/* Title row */}
                 <View style={styles.modalTitleRow}>
-                  <Text style={styles.modalBigIcon}>{selectedSkill.icon || '✨'}</Text>
+                  <Text style={styles.modalBigIcon}>{targetSkill.icon || '✨'}</Text>
                   <View style={styles.modalTitleRight}>
                     <Text style={[styles.modalSkillName, { color: '#FFFFFF' }]}>
-                      {selectedSkill.name}
+                      {targetSkill.name}
                     </Text>
                     <View style={styles.modalBadges}>
                       <View style={[styles.typeBadge, {
-                        backgroundColor: selectedSkill.type === 'active' ? 'rgba(255, 85, 85, 0.15)' : 'rgba(0, 240, 208, 0.15)',
-                        borderColor: selectedSkill.type === 'active' ? 'rgba(255, 85, 85, 0.35)' : 'rgba(0, 240, 208, 0.35)',
+                        backgroundColor: targetSkill.type === 'active' ? 'rgba(255, 85, 85, 0.15)' : 'rgba(0, 240, 208, 0.15)',
+                        borderColor: targetSkill.type === 'active' ? 'rgba(255, 85, 85, 0.35)' : 'rgba(0, 240, 208, 0.35)',
                         borderWidth: 1,
                         borderRadius: 6,
                         paddingHorizontal: 6,
                         paddingVertical: 3,
                       }]}>
-                        <Text style={[styles.typeBadgeText, { color: selectedSkill.type === 'active' ? '#FF5555' : '#00F0D0' }]}>
-                          {selectedSkill.type === 'active' ? 'Active' : 'Passive'}
+                        <Text style={[styles.typeBadgeText, { color: targetSkill.type === 'active' ? '#FF5555' : '#00F0D0' }]}>
+                          {targetSkill.type === 'active' ? 'Active' : 'Passive'}
                         </Text>
                       </View>
-                      <Text style={styles.modalTier}>Tier {selectedSkill.tier}</Text>
-                      {selectedSkill.cooldown > 0 && (
-                        <Text style={styles.modalCD}>⏳ {selectedSkill.cooldown}-Turn Cooldown</Text>
+                      <Text style={styles.modalTier}>Tier {targetSkill.tier}</Text>
+                      {targetSkill.cooldown > 0 && (
+                        <Text style={styles.modalCD}>⏳ {targetSkill.cooldown}-Turn Cooldown</Text>
                       )}
                     </View>
                     {selectedStars > 0 && (
@@ -784,7 +792,7 @@ export default function SkillTreeScreen() {
                   </View>
                 </View>
 
-                <Text style={styles.modalDesc}>{selectedSkill.description}</Text>
+                <Text style={styles.modalDesc}>{targetSkill.description}</Text>
 
                 {/* Current stats */}
                 {currentStarData && (

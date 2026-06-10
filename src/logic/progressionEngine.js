@@ -232,12 +232,13 @@ export function calculateEffectiveStats(hero, skillDefinitions = SKILLS, runBuff
   let defence = 0;
   let critChance = agility * 0.005;
   let dodge = agility * 0.005;
+  let bagSlots = 0;
   const gearSpecials = [];
   const passives = {};
 
   // --- 1. Gear bonuses -----------------------------------------------------
-  // hero.gear looks like: { weapon, head, chest, legs, gloves, boots, trinket1, trinket2 }
-  const gearSlots = ['weapon', 'head', 'chest', 'legs', 'gloves', 'boots', 'trinket1', 'trinket2'];
+  // hero.gear looks like: { weapon, head, chest, legs, gloves, boots, trinket, storage }
+  const gearSlots = ['weapon', 'head', 'chest', 'legs', 'gloves', 'boots', 'trinket', 'storage'];
 
   let gearHp = 0;
   for (const slot of gearSlots) {
@@ -253,6 +254,7 @@ export function calculateEffectiveStats(hero, skillDefinitions = SKILLS, runBuff
     if (gearDef.stats.maxHp) gearHp += gearDef.stats.maxHp;
     if (gearDef.stats.critChance) critChance += gearDef.stats.critChance;
     if (gearDef.stats.dodge) dodge += gearDef.stats.dodge;
+    if (gearDef.stats.bagSlots) bagSlots += gearDef.stats.bagSlots;
 
     // Track special gear effects (e.g. "bleed_on_hit")
     if (gearDef.special) {
@@ -374,6 +376,7 @@ export function calculateEffectiveStats(hero, skillDefinitions = SKILLS, runBuff
     dodge,
     gearSpecials,
     passives,
+    bagSlots,
   };
 }
 
@@ -453,13 +456,13 @@ export function canUnlockSkill(skillId, unlockedSkills, skillPoints, allSkills =
  * are currently active (i.e. all pieces of the set are equipped).
  *
  * @param {Object} gear – The hero's gear object: { weapon, head, chest, legs,
- *                        gloves, boots, trinket1, trinket2 } where each value
+ *                        gloves, boots, trinket, storage } where each value
  *                        is a gear id string or null.
  *
  * @returns {Object[]} Array of active set bonus objects from SET_BONUSES.
  *
  * @example
- *   getActiveSetBonuses({ weapon: 'coral_blade', chest: 'coral_mail', trinket1: 'coral_charm' })
+ *   getActiveSetBonuses({ weapon: 'coral_blade', chest: 'coral_mail', trinket: 'coral_charm' })
  *   // → [{ id: 'coral_set', name: 'Coral Set', bonus: { attack: 2, defence: 1 }, ... }]
  */
 export function getActiveSetBonuses(gear) {
@@ -470,7 +473,7 @@ export function getActiveSetBonuses(gear) {
   // Collect all equipped gear ids into a flat array for easy checking
   const equippedIds = [
     gear.weapon, gear.head, gear.chest, gear.legs,
-    gear.gloves, gear.boots, gear.trinket1, gear.trinket2,
+    gear.gloves, gear.boots, gear.trinket, gear.storage,
   ].filter(Boolean);
 
   // Check each set bonus definition
