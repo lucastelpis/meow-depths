@@ -19,6 +19,7 @@ export default function ItemSprite({ spritesheet, frameIndex, displaySize = 36, 
     'equipment-leather': 14,
     'weapons-1': 10,
     'storages-1': 4,
+    'icons-1': 31,
   };
   const totalFrames = FRAMES_MAP[spritesheet] || 1;
   const frameSize = 32;

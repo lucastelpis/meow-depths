@@ -22,7 +22,7 @@ import {
   Animated,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import Svg, { Defs, LinearGradient, RadialGradient, Stop, Rect, Circle } from 'react-native-svg';
+import Svg, { Defs, LinearGradient, RadialGradient, Stop, Rect, Circle, Path } from 'react-native-svg';
 
 // ── Project imports ──────────────────────────────────────────────────────────
 import theme from '../constants/theme';
@@ -34,6 +34,7 @@ import Button from '../components/ui/Button';
 import ResourceBar from '../components/ui/ResourceBar';
 import { HERO_SPRITE } from '../constants/sprites';
 import { SKILLS } from '../data/skills';
+import ItemSprite from '../components/ItemSprite';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const BANNER_WIDTH = SCREEN_WIDTH - 32;
@@ -42,14 +43,72 @@ const BANNER_HEIGHT = BANNER_WIDTH * (1024 / 4128);
 // Display size for Mochi's home screen avatar sprite (set higher to zoom in and crop padding)
 const HERO_AVATAR_DISPLAY_SIZE = 90;
 
+// ─── SVG Wood Texture Background Component ───────────────────────────────────
+function WoodSpriteBackground({ width, height, borderRadius = 8, borderColor = '#4A3917' }) {
+  return (
+    <View style={{ ...StyleSheet.absoluteFillObject, borderRadius, overflow: 'hidden' }}>
+      <Svg width={width} height={height} viewBox="0 0 100 100" preserveAspectRatio="none">
+        {/* Solid wood brown background */}
+        <Rect width="100" height="100" fill="#825324" />
+        
+        {/* Dark wood grain lines */}
+        <Path d="M0,20 Q30,22 50,18 T100,20" stroke="#5C3A16" strokeWidth="2.5" fill="none" opacity="0.5" />
+        <Path d="M0,50 Q45,46 70,54 T100,50" stroke="#5C3A16" strokeWidth="2.5" fill="none" opacity="0.5" />
+        <Path d="M0,80 Q25,84 60,78 T100,80" stroke="#5C3A16" strokeWidth="2.5" fill="none" opacity="0.5" />
+        
+        {/* Light wood highlights */}
+        <Path d="M0,35 Q20,32 55,38 T100,35" stroke="#A87543" strokeWidth="2" fill="none" opacity="0.3" />
+        <Path d="M0,65 Q35,68 65,62 T100,65" stroke="#A87543" strokeWidth="2" fill="none" opacity="0.3" />
+        
+        {/* Outer border */}
+        <Rect x="1" y="1" width="98" height="98" stroke={borderColor} strokeWidth="3" fill="none" rx={5} />
+      </Svg>
+    </View>
+  );
+}
 
-// ─── Nav button metadata ────────────────────────────────────────────────────
-const NAV_ITEMS = [
-  { key: 'WorldMap',  icon: '🚪', label: 'Enter the Depths', sub: 'Conquer Zones',  color: '#B5701A' }, // torchOrange / primary
-  { key: 'Shop',      icon: '🏪', label: 'Shop',             sub: 'Prepare for Battle', color: '#5CC489' }, // buffMint
-  { key: 'SkillTree', icon: '🌟', label: 'Skills',           sub: 'Unlock Talents', color: '#A98EE0' }, // skillPurple
-  { key: 'Loadout',   icon: '🎒', label: 'Loadout',          sub: 'Manage Gear',    color: '#5A9FE0' }, // coldBlue
-];
+// ─── SVG Parchment Texture Background Component ─────────────────────────────
+function ParchmentBackground({ variant = 'parchment' }) {
+  const isPrimary = variant === 'primary';
+  const baseColor = isPrimary ? '#B5701A' : '#F3E2BD';
+  const edgeColor = isPrimary ? '#8E520E' : '#DFCCA6';
+  const fiberColor = isPrimary ? '#724009' : '#D3BF98';
+  const speckleColor = isPrimary ? '#663705' : '#CBB68E';
+
+  return (
+    <View style={StyleSheet.absoluteFillObject}>
+      <Svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none">
+        {/* Base Background Color */}
+        <Rect width="100" height="100" fill={baseColor} />
+        
+        {/* Radial Shading Gradient */}
+        <Defs>
+          <RadialGradient id={`parchGrad-${variant}`} cx="50%" cy="50%" rx="50%" ry="50%">
+            <Stop offset="45%" stopColor={baseColor} stopOpacity="0" />
+            <Stop offset="100%" stopColor={edgeColor} stopOpacity="0.75" />
+          </RadialGradient>
+        </Defs>
+        <Rect width="100" height="100" fill={`url(#parchGrad-${variant})`} />
+        
+        {/* Wrinkles / Creases */}
+        <Path d="M8,18 Q32,15 42,28 T92,18" stroke={fiberColor} strokeWidth="1.2" fill="none" opacity="0.4" />
+        <Path d="M5,45 Q42,35 62,45 T95,35" stroke={fiberColor} strokeWidth="1.2" fill="none" opacity="0.4" />
+        <Path d="M8,80 Q38,76 68,86 T92,76" stroke={fiberColor} strokeWidth="1.2" fill="none" opacity="0.4" />
+        
+        {/* Vertical creases */}
+        <Path d="M28,8 Q24,38 32,68 T26,92" stroke={fiberColor} strokeWidth="0.9" fill="none" opacity="0.25" />
+        <Path d="M72,12 Q78,42 68,72 T76,88" stroke={fiberColor} strokeWidth="0.9" fill="none" opacity="0.25" />
+        
+        {/* Aged spots */}
+        <Circle cx="18" cy="26" r="1.5" fill={speckleColor} opacity="0.4" />
+        <Circle cx="84" cy="24" r="1.2" fill={speckleColor} opacity="0.3" />
+        <Circle cx="46" cy="74" r="1.8" fill={speckleColor} opacity="0.4" />
+        <Circle cx="24" cy="62" r="1" fill={speckleColor} opacity="0.3" />
+        <Circle cx="86" cy="74" r="1.5" fill={speckleColor} opacity="0.4" />
+      </Svg>
+    </View>
+  );
+}
 
 export default function CampScreen({ navigation }) {
   const { state, dispatch } = useGame();
@@ -255,6 +314,7 @@ export default function CampScreen({ navigation }) {
     <ScreenLoader assets={[
       require('../../assets/top_banner.png'),
       HERO_SPRITE.idle.source,
+      require('../../assets/sprites/items/icons-1.png'),
     ]}>
     <SafeAreaView style={styles.container}>
       <ScrollView
@@ -417,42 +477,74 @@ export default function CampScreen({ navigation }) {
         {/* ═══════════════════════════════════════════════════════════════════
             NAVIGATION GRID — Glassmorphic Grid Layout
             ═══════════════════════════════════════════════════════════════════ */}
+        {/* ═══════════════════════════════════════════════════════════════════
+            NAVIGATION GRID — Asymmetric Cozy Layout
+            ═══════════════════════════════════════════════════════════════════ */}
         <View style={styles.navGrid}>
-          {NAV_ITEMS.map(item => (
+          {/* Enter Dungeons (WorldMap) — Full Width */}
+          <TouchableOpacity
+            style={styles.dungeonCard}
+            activeOpacity={0.8}
+            onPress={() => navigation.navigate('WorldMap')}
+          >
+            <ParchmentBackground variant="primary" />
+            <View style={styles.dungeonSpriteContainer}>
+              <WoodSpriteBackground width={56} height={56} borderRadius={10} borderColor={theme.COLORS.candleGold} />
+              <ItemSprite spritesheet="icons-1" frameIndex={30} displaySize={44} />
+            </View>
+            <View style={styles.dungeonTextContainer}>
+              <Text style={styles.dungeonLabel}>ENTER DUNGEONS</Text>
+              <Text style={styles.dungeonSub}>Conquer Zones</Text>
+            </View>
+          </TouchableOpacity>
+
+          {/* Shopping, Skills, Loadout — Row of 3 */}
+          <View style={styles.subButtonsRow}>
+            {/* Shopping */}
             <TouchableOpacity
-              key={item.key}
-              style={[
-                styles.navCard,
-                item.key === 'WorldMap' && styles.navCardPrimary
-              ]}
+              style={styles.subCard}
               activeOpacity={0.8}
-              onPress={() => navigation.navigate(item.key)}
+              onPress={() => navigation.navigate('Shop')}
             >
-              <View style={styles.navHeaderRow}>
-                <View style={[
-                  styles.navIconContainer,
-                  { backgroundColor: item.key === 'WorldMap' ? 'rgba(255, 255, 255, 0.2)' : `${item.color}28` }
-                ]}>
-                  <Text style={[
-                    styles.navIcon,
-                    { color: item.key === 'WorldMap' ? '#FFF3DA' : item.color }
-                  ]}>{item.icon}</Text>
-                </View>
-                <Text style={[
-                  styles.navCardArrow,
-                  item.key === 'WorldMap' && { color: '#FFF3DA' }
-                ]}>→</Text>
+              <ParchmentBackground variant="parchment" />
+              <View style={styles.subSpriteContainer}>
+                <WoodSpriteBackground width={44} height={44} borderRadius={8} borderColor="#4A3917" />
+                <ItemSprite spritesheet="icons-1" frameIndex={29} displaySize={36} />
               </View>
-              <Text style={[
-                styles.navLabel,
-                item.key === 'WorldMap' && { color: '#FFF3DA' }
-              ]}>{item.label}</Text>
-              <Text style={[
-                styles.navSub,
-                item.key === 'WorldMap' && { color: '#FFEED0' }
-              ]}>{item.sub}</Text>
+              <Text style={styles.subCardLabel}>SHOPPING</Text>
+              <Text style={styles.subCardSub}>Buy Stuff</Text>
             </TouchableOpacity>
-          ))}
+
+            {/* Skills */}
+            <TouchableOpacity
+              style={styles.subCard}
+              activeOpacity={0.8}
+              onPress={() => navigation.navigate('SkillTree')}
+            >
+              <ParchmentBackground variant="parchment" />
+              <View style={styles.subSpriteContainer}>
+                <WoodSpriteBackground width={44} height={44} borderRadius={8} borderColor="#4A3917" />
+                <ItemSprite spritesheet="icons-1" frameIndex={26} displaySize={36} />
+              </View>
+              <Text style={styles.subCardLabel}>SKILLS</Text>
+              <Text style={styles.subCardSub}>Unlock Talents</Text>
+            </TouchableOpacity>
+
+            {/* Loadout */}
+            <TouchableOpacity
+              style={styles.subCard}
+              activeOpacity={0.8}
+              onPress={() => navigation.navigate('Loadout')}
+            >
+              <ParchmentBackground variant="parchment" />
+              <View style={styles.subSpriteContainer}>
+                <WoodSpriteBackground width={44} height={44} borderRadius={8} borderColor="#4A3917" />
+                <ItemSprite spritesheet="icons-1" frameIndex={18} displaySize={36} />
+              </View>
+              <Text style={styles.subCardLabel}>LOADOUT</Text>
+              <Text style={styles.subCardSub}>Manage Gear</Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
         {/* ═══════════════════════════════════════════════════════════════════
@@ -970,55 +1062,90 @@ const styles = StyleSheet.create({
 
   /* ═══ Navigation Grid ══════════════════════════════════════════════════════ */
   navGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
+    width: '100%',
     marginBottom: 24,
   },
-  navCard: {
-    width: (SCREEN_WIDTH - 44) / 2,
-    backgroundColor: theme.COLORS.emberBrown,
-    borderRadius: theme.BORDER_RADIUS.card,
-    paddingVertical: 20,
-    paddingHorizontal: 16,
-    borderWidth: 1,
-    borderColor: '#57431A',
-    position: 'relative',
-  },
-  navCardPrimary: {
+  dungeonCard: {
+    width: '100%',
     backgroundColor: theme.COLORS.primary,
     borderColor: theme.COLORS.candleGold,
-  },
-  navHeaderRow: {
+    borderWidth: 2,
+    borderRadius: theme.BORDER_RADIUS.card,
+    paddingVertical: 14,
+    paddingHorizontal: 20,
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    justifyContent: 'flex-start',
+    gap: 16,
+    marginBottom: 16,
+    position: 'relative',
+    overflow: 'hidden',
   },
-  navIconContainer: {
-    width: 40,
-    height: 40,
+  dungeonSpriteContainer: {
+    padding: 6,
     borderRadius: 10,
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  dungeonTextContainer: {
     justifyContent: 'center',
-    alignItems: 'center',
+    alignItems: 'flex-start',
   },
-  navIcon: {
+  dungeonLabel: {
+    fontFamily: 'PixelifySans-Medium',
+    fontWeight: 'normal',
     fontSize: 20,
+    color: '#FFF3DA',
+    textTransform: 'uppercase',
   },
-  navCardArrow: {
-    color: theme.COLORS.candleGold,
-    fontSize: 16,
-    fontWeight: 'bold',
+  dungeonSub: {
+    fontFamily: 'Silkscreen-Regular',
+    fontWeight: 'normal',
+    fontSize: 10,
+    color: '#FFEED0',
+    marginTop: 2,
   },
-  navLabel: {
-    ...theme.FONTS.heading,
-    color: theme.COLORS.parchment,
-    marginBottom: 4,
+  subButtonsRow: {
+    flexDirection: 'row',
+    width: '100%',
+    gap: 12,
   },
-  navSub: {
-    ...theme.FONTS.body,
-    fontSize: 11,
-    color: theme.COLORS.warmGlow,
+  subCard: {
+    flex: 1,
+    backgroundColor: '#F3E2BD',
+    borderColor: '#4A3917',
+    borderWidth: 2,
+    borderRadius: theme.BORDER_RADIUS.card,
+    paddingTop: 16,
+    paddingBottom: 12,
+    paddingHorizontal: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  subSpriteContainer: {
+    padding: 4,
+    borderRadius: 8,
+    overflow: 'hidden',
+    position: 'relative',
+    marginBottom: 8,
+  },
+  subCardLabel: {
+    fontFamily: 'PixelifySans-Medium',
+    fontWeight: 'normal',
+    fontSize: 13,
+    color: '#2A1A0C',
+    textAlign: 'center',
+    textTransform: 'uppercase',
+  },
+  subCardSub: {
+    fontFamily: 'Silkscreen-Regular',
+    fontWeight: 'normal',
+    fontSize: 9,
+    color: '#57431A',
+    textAlign: 'center',
+    marginTop: 2,
   },
 
   /* ═══ Floating CurrenciesDisplay Chip Row ══════════════════════════════════ */
