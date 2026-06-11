@@ -442,8 +442,7 @@ export default function CampScreen({ navigation }) {
             onPress={() => navigation.navigate('WorldMap')}
           >
             <View style={styles.dungeonSpriteContainer}>
-              <WoodSpriteBackground borderRadius={8} />
-              <ItemSprite spritesheet="icons-1" frameIndex={30} displaySize={44} />
+              <ItemSprite spritesheet="icons-1" frameIndex={30} displaySize={56} />
             </View>
             <View style={styles.dungeonTextContainer}>
               <Text style={styles.dungeonLabel}>ENTER DUNGEONS</Text>
@@ -460,8 +459,7 @@ export default function CampScreen({ navigation }) {
               onPress={() => navigation.navigate('Shop')}
             >
               <View style={styles.subSpriteContainer}>
-                <WoodSpriteBackground borderRadius={6} />
-                <ItemSprite spritesheet="icons-1" frameIndex={29} displaySize={36} />
+                <ItemSprite spritesheet="icons-1" frameIndex={29} displaySize={48} />
               </View>
               <Text style={styles.subCardLabel}>SHOPPING</Text>
               <Text style={styles.subCardSub}>Buy Stuff</Text>
@@ -474,8 +472,7 @@ export default function CampScreen({ navigation }) {
               onPress={() => navigation.navigate('SkillTree')}
             >
               <View style={styles.subSpriteContainer}>
-                <WoodSpriteBackground borderRadius={6} />
-                <ItemSprite spritesheet="icons-1" frameIndex={26} displaySize={36} />
+                <ItemSprite spritesheet="icons-1" frameIndex={26} displaySize={48} />
               </View>
               <Text style={styles.subCardLabel}>SKILLS</Text>
               <Text style={styles.subCardSub}>Unlock Talents</Text>
@@ -488,8 +485,7 @@ export default function CampScreen({ navigation }) {
               onPress={() => navigation.navigate('Loadout')}
             >
               <View style={styles.subSpriteContainer}>
-                <WoodSpriteBackground borderRadius={6} />
-                <ItemSprite spritesheet="icons-1" frameIndex={18} displaySize={36} />
+                <ItemSprite spritesheet="icons-1" frameIndex={18} displaySize={48} />
               </View>
               <Text style={styles.subCardLabel}>LOADOUT</Text>
               <Text style={styles.subCardSub}>Manage Gear</Text>
@@ -1030,12 +1026,9 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   dungeonSpriteContainer: {
-    padding: 6,
-    borderRadius: 10,
-    overflow: 'hidden',
-    position: 'relative',
-    borderWidth: 3,
-    borderColor: theme.COLORS.candleGold,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 4,
   },
   dungeonTextContainer: {
     justifyContent: 'center',
@@ -1073,13 +1066,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   subSpriteContainer: {
-    padding: 4,
-    borderRadius: 8,
-    overflow: 'hidden',
-    position: 'relative',
+    justifyContent: 'center',
+    alignItems: 'center',
     marginBottom: 8,
-    borderWidth: 3,
-    borderColor: '#4A3917',
   },
   subCardLabel: {
     fontFamily: 'PixelifySans-Medium',
