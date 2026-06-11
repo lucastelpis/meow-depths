@@ -67,49 +67,6 @@ function WoodSpriteBackground({ width, height, borderRadius = 8, borderColor = '
   );
 }
 
-// ─── SVG Parchment Texture Background Component ─────────────────────────────
-function ParchmentBackground({ variant = 'parchment' }) {
-  const isPrimary = variant === 'primary';
-  const baseColor = isPrimary ? '#B5701A' : '#F3E2BD';
-  const edgeColor = isPrimary ? '#8E520E' : '#DFCCA6';
-  const fiberColor = isPrimary ? '#724009' : '#D3BF98';
-  const speckleColor = isPrimary ? '#663705' : '#CBB68E';
-
-  return (
-    <View style={StyleSheet.absoluteFillObject}>
-      <Svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none">
-        {/* Base Background Color */}
-        <Rect width="100" height="100" fill={baseColor} />
-        
-        {/* Radial Shading Gradient */}
-        <Defs>
-          <RadialGradient id={`parchGrad-${variant}`} cx="50%" cy="50%" rx="50%" ry="50%">
-            <Stop offset="45%" stopColor={baseColor} stopOpacity="0" />
-            <Stop offset="100%" stopColor={edgeColor} stopOpacity="0.75" />
-          </RadialGradient>
-        </Defs>
-        <Rect width="100" height="100" fill={`url(#parchGrad-${variant})`} />
-        
-        {/* Wrinkles / Creases */}
-        <Path d="M8,18 Q32,15 42,28 T92,18" stroke={fiberColor} strokeWidth="1.2" fill="none" opacity="0.4" />
-        <Path d="M5,45 Q42,35 62,45 T95,35" stroke={fiberColor} strokeWidth="1.2" fill="none" opacity="0.4" />
-        <Path d="M8,80 Q38,76 68,86 T92,76" stroke={fiberColor} strokeWidth="1.2" fill="none" opacity="0.4" />
-        
-        {/* Vertical creases */}
-        <Path d="M28,8 Q24,38 32,68 T26,92" stroke={fiberColor} strokeWidth="0.9" fill="none" opacity="0.25" />
-        <Path d="M72,12 Q78,42 68,72 T76,88" stroke={fiberColor} strokeWidth="0.9" fill="none" opacity="0.25" />
-        
-        {/* Aged spots */}
-        <Circle cx="18" cy="26" r="1.5" fill={speckleColor} opacity="0.4" />
-        <Circle cx="84" cy="24" r="1.2" fill={speckleColor} opacity="0.3" />
-        <Circle cx="46" cy="74" r="1.8" fill={speckleColor} opacity="0.4" />
-        <Circle cx="24" cy="62" r="1" fill={speckleColor} opacity="0.3" />
-        <Circle cx="86" cy="74" r="1.5" fill={speckleColor} opacity="0.4" />
-      </Svg>
-    </View>
-  );
-}
-
 export default function CampScreen({ navigation }) {
   const { state, dispatch } = useGame();
   const { hero } = state;
@@ -487,7 +444,6 @@ export default function CampScreen({ navigation }) {
             activeOpacity={0.8}
             onPress={() => navigation.navigate('WorldMap')}
           >
-            <ParchmentBackground variant="primary" />
             <View style={styles.dungeonSpriteContainer}>
               <WoodSpriteBackground width={56} height={56} borderRadius={10} borderColor={theme.COLORS.candleGold} />
               <ItemSprite spritesheet="icons-1" frameIndex={30} displaySize={44} />
@@ -506,7 +462,6 @@ export default function CampScreen({ navigation }) {
               activeOpacity={0.8}
               onPress={() => navigation.navigate('Shop')}
             >
-              <ParchmentBackground variant="parchment" />
               <View style={styles.subSpriteContainer}>
                 <WoodSpriteBackground width={44} height={44} borderRadius={8} borderColor="#4A3917" />
                 <ItemSprite spritesheet="icons-1" frameIndex={29} displaySize={36} />
@@ -521,7 +476,6 @@ export default function CampScreen({ navigation }) {
               activeOpacity={0.8}
               onPress={() => navigation.navigate('SkillTree')}
             >
-              <ParchmentBackground variant="parchment" />
               <View style={styles.subSpriteContainer}>
                 <WoodSpriteBackground width={44} height={44} borderRadius={8} borderColor="#4A3917" />
                 <ItemSprite spritesheet="icons-1" frameIndex={26} displaySize={36} />
@@ -536,7 +490,6 @@ export default function CampScreen({ navigation }) {
               activeOpacity={0.8}
               onPress={() => navigation.navigate('Loadout')}
             >
-              <ParchmentBackground variant="parchment" />
               <View style={styles.subSpriteContainer}>
                 <WoodSpriteBackground width={44} height={44} borderRadius={8} borderColor="#4A3917" />
                 <ItemSprite spritesheet="icons-1" frameIndex={18} displaySize={36} />
@@ -1078,8 +1031,6 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-start',
     gap: 16,
     marginBottom: 16,
-    position: 'relative',
-    overflow: 'hidden',
   },
   dungeonSpriteContainer: {
     padding: 6,
@@ -1121,8 +1072,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     alignItems: 'center',
     justifyContent: 'center',
-    position: 'relative',
-    overflow: 'hidden',
   },
   subSpriteContainer: {
     padding: 4,
