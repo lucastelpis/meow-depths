@@ -1013,7 +1013,7 @@ const styles = StyleSheet.create({
   bannerTagText: {
     fontFamily: 'Silkscreen-Regular',
     fontSize: 10,
-    letterSpacing: 0.5,
+    letterSpacing: 0,
     color: '#2A1A0C',
   },
   bannerTagClickableWrapper: {
