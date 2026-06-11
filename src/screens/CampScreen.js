@@ -46,7 +46,7 @@ const HERO_AVATAR_DISPLAY_SIZE = 90;
 // ─── Nav button metadata ────────────────────────────────────────────────────
 const NAV_ITEMS = [
   { key: 'WorldMap',  icon: '🚪', label: 'Enter the Depths', sub: 'Conquer Zones',  color: '#B5701A' }, // torchOrange / primary
-  { key: 'Shop',      icon: '🏛️', label: 'Town Hall',        sub: 'Buy & Craft',    color: '#5CC489' }, // buffMint
+  { key: 'Shop',      icon: '🏪', label: 'Shop',             sub: 'Prepare for Battle', color: '#5CC489' }, // buffMint
   { key: 'SkillTree', icon: '🌟', label: 'Skills',           sub: 'Unlock Talents', color: '#A98EE0' }, // skillPurple
   { key: 'Loadout',   icon: '🎒', label: 'Loadout',          sub: 'Manage Gear',    color: '#5A9FE0' }, // coldBlue
 ];
@@ -517,15 +517,15 @@ export default function CampScreen({ navigation }) {
                 <Text style={styles.modalCloseText}>✕</Text>
               </TouchableOpacity>
 
-              <Text style={styles.modalTitle}>📊 Mochi's Base Stats</Text>
+              <Text style={styles.modalTitle}>📊 {hero.name || 'Mochi'}'s Base Stats</Text>
               
               {hero.statPoints > 0 ? (
                 <Text style={styles.modalPointsText}>
-                  Allocate your stat points to increase Mochi's combat performance.
+                  Allocate your stat points to increase {hero.name || 'Mochi'}'s combat performance.
                 </Text>
               ) : (
                 <Text style={styles.modalPointsText}>
-                  Mochi has allocated all stat points. Level up to earn more points!
+                  {hero.name || 'Mochi'} has allocated all stat points. Level up to earn more points!
                 </Text>
               )}
 

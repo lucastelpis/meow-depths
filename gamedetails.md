@@ -184,7 +184,7 @@ Requires parent T1 active skill at **★5**, and the following level and materia
 
 Mochi has **eight equipment slots**: **Weapon**, **Head**, **Chest**, **Legs**, **Gloves**, **Boots**, **Trinket**, and **Storage**. All slots now have gear defined for them. 
 
-Rather than crafting gear at a forge, **all equipment is purchased with Gold from the Town Hall Armory Shop or dropped in dungeons**. Crystals are now used exclusively for unlocking and upgrading skills.
+Rather than crafting gear at a forge, **all equipment is purchased with Gold from the Armory Shop or dropped in dungeons**. Crystals are now used exclusively for unlocking and upgrading skills.
 
 ### 🎒 Dynamic Dungeon Bag Slots
 By default, Mochi starts with **0 base bag slots** and cannot bring any consumables into dungeon runs. However, Mochi starts the game with a **Small Pouch** (+3 bag slots) already equipped. Equipping certain items increases the number of bag slots available:
@@ -477,14 +477,26 @@ Common enemies have their base HP, Attack, and Defense scaled by room star ratin
 
 After defeating an encounter, Mochi gathers materials, Gold, and XP.
 
-### Drop Pool Floor Restrictions
-To control skill progression, only specific materials drop within certain floor ranges:
+### Dynamic Crystal Drops by Enemy Star Level & Profile
+Instead of floor-restricted drops, normal monsters drop standard crystals dynamically depending on their Star Level (1–5), Zone ID, and Monster Profile. Floor-based material pools are bypassed for regular monster drops.
 
-| Zone | Floors 1–3 Allowed | Floors 4–6 Allowed | Floors 7–9 Allowed | Floor 10 (Boss) |
-| :---: | :--- | :--- | :--- | :--- |
-| **Zone 1** | Black Shard | Black Shard, Small Crystal | Small Crystal, Big Crystal | Unrestricted (Allows Cores) |
-| **Zone 2** | Green Shard | Green Shard, Small Crystal | Small Crystal, Big Crystal | Unrestricted (Allows Cores) |
-| **Zone 3** | Yellow Shard | Yellow Shard, Small Crystal | Small Crystal, Big Crystal | Unrestricted (Allows Cores) |
+#### 1. Crystal Types by Star Level
+The tier of crystals dropped is determined by the monster's Star Level:
+* **Star Level 1**: 100% Shards.
+* **Star Level 2**: 80% Shards, 20% Small Crystals.
+* **Star Level 3**: 70% Small Crystals, 30% Big Crystals.
+* **Star Level 4**: 100% Big Crystals.
+* **Star Level 5**: 95% Big Crystals, 5% Crystal Cores.
+* **Bosses**: Always drop exactly 3 Big Crystals and 1 Crystal Core (in addition to custom fangs, hearts, or elemental shards).
+
+#### 2. Drop Quantity by Monster Profile
+The number of items dropped scales proportionally with the monster's Star Level according to their profile:
+* **Rat Profile** (`sewer_rat`, `thorn_sprite`, `barnacle_crab`):
+  $$\text{Quantity} = \text{Star Level}$$
+* **Frog / Slime Profile** (default fallback for other common monsters):
+  $$\text{Quantity} = \text{Star Level} + (50\% \text{ chance of } +1)$$
+* **Cockroach Profile** (`cockroach_knight`, `giant_beetle`):
+  $$\text{Quantity} = \text{Star Level} + 1$$
 
 ### XP & Gold Generation Formulas
 XP and Gold values are rolled per enemy and summed at the end of combat:
@@ -494,3 +506,33 @@ XP and Gold values are rolled per enemy and summed at the end of combat:
 - **Bosses (5★)**:
   - XP: Flat values (e.g. King Rat = 500 XP, Captain Moray = 1000 XP).
   - Gold: Rolled randomly in range (e.g. Rootmother = $200-350$g, Captain Moray = $500-800$g).
+
+### 💎 Treasure Room Drops
+Treasure chests found in the dungeon (and Double Treasure gamble jackpot outcomes) scale their rewards dynamically depending on the current floor number (1–10).
+
+#### 1. Materials Dropped by Floor
+* **Floor 1**: 1–5 Shards
+* **Floor 2**: 5–10 Shards, 1–2 Small Crystals
+* **Floor 3**: 10–15 Shards, 3–5 Small Crystals
+* **Floor 4**: 5–10 Small Crystals
+* **Floor 5**: 10–15 Small Crystals, 1–2 Big Crystals
+* **Floor 6**: 15–20 Small Crystals, 3–5 Big Crystals
+* **Floor 7**: 5–8 Big Crystals
+* **Floor 8**: 9–12 Big Crystals
+* **Floor 9**: 12–15 Big Crystals
+* **Floor 10**: 15–20 Big Crystals, 0–1 Crystal Cores
+*Note: Crystal prefixes match the zone (black for Zone 1, green for Zone 2, yellow for Zone 3).*
+
+#### 2. Gold & Potions by Floor
+* **Floor 1**: 50–100 Gold, 1 Potion
+* **Floor 2**: 100–150 Gold, 1–2 Potions
+* **Floor 3**: 150–200 Gold, 2–3 Potions
+* **Floor 4**: 200–250 Gold, 3–4 Potions
+* **Floor 5**: 250–300 Gold, 4–5 Potions
+* **Floor 6**: 300–400 Gold, 1–2 Super Potions
+* **Floor 7**: 400–500 Gold, 2–3 Super Potions
+* **Floor 8**: 500–600 Gold, 3–4 Super Potions
+* **Floor 9**: 600–700 Gold, 4–5 Super Potions
+* **Floor 10**: 700–800 Gold, 1–2 Ultra Potions
+
+*Note: Double Treasure outcomes on Gamble tiles double all material, gold, and potion quantities rolled for the current floor.*

@@ -298,7 +298,7 @@ const swiftness = {
   cooldown: 0,
   unlockedBy: null,
   icon: '🍃',
-  description: 'Passive — permanently increases Mochi\'s dodge chance while equipped.',
+  description: 'Passive — permanently increases dodge chance while equipped.',
   stars: {
     1: { dodgeBonus: 0.02 },
     2: { dodgeBonus: 0.04 },

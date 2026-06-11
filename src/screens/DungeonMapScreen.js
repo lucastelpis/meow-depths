@@ -40,6 +40,7 @@ import { ZONES } from '../data/zones';
 import { ZONE_COMBAT_POOLS } from '../logic/dungeonGenerator';
 import { MATERIALS, CONSUMABLES } from '../data/gear';
 import { calculateEffectiveStats, getXpForLevel, applyHealingEfficiency } from '../logic/progressionEngine';
+import { generateTreasureDrops } from '../logic/lootEngine';
 import Button from '../components/ui/Button';
 import ResourceBar from '../components/ui/ResourceBar';
 
@@ -269,7 +270,7 @@ export default function DungeonMapScreen({ navigation }) {
   const handleUseItemOnMap = (item) => {
     if (['potion', 'super_potion', 'mega_potion', 'ultra_potion'].includes(item.id)) {
       if (hero.hp >= effectiveStats.maxHp) {
-        Alert.alert('Full Health', 'Mochi is already at full health!');
+        Alert.alert('Full Health', `${hero.name || 'Mochi'} is already at full health!`);
         return;
       }
 
@@ -279,7 +280,7 @@ export default function DungeonMapScreen({ navigation }) {
       const actualHealed = Math.min(finalHeal, effectiveStats.maxHp - hero.hp);
 
       dispatch({ type: 'USE_RUN_CONSUMABLE', payload: { consumableId: item.id } });
-      Alert.alert('Item Used', `Mochi consumed ${item.name} and recovered ${actualHealed} HP!`);
+      Alert.alert('Item Used', `${hero.name || 'Mochi'} consumed ${item.name} and recovered ${actualHealed} HP!`);
     } else if (item.id === 'mystery_chest') {
       Alert.alert('Mystery Chest', 'You can open this chest from your inventory bag back at camp.');
     } else {
@@ -378,21 +379,17 @@ export default function DungeonMapScreen({ navigation }) {
       });
       setActiveModal('rest');
     } else if (type === 'treasure') {
-      const rolledGold = Math.floor(Math.random() * 31) + 20; 
-      const matCount = Math.floor(Math.random() * 3) + 2; 
-      const pool = ZONE_MATERIAL_POOLS[currentRun.zoneId] || [];
-      const rolledMats = {};
-      
-      for (let i = 0; i < matCount; i++) {
-        const matId = pool[Math.floor(Math.random() * pool.length)];
-        rolledMats[matId] = (rolledMats[matId] || 0) + 1;
-      }
+      const loot = generateTreasureDrops(currentRun.zoneId, currentRun.floorNumber, false);
 
-      dispatch({ type: 'ADD_RUN_LOOT', payload: { gold: rolledGold, materials: rolledMats } });
+      dispatch({
+        type: 'ADD_RUN_LOOT',
+        payload: { gold: loot.gold, materials: loot.materials, consumables: loot.consumables }
+      });
 
       setModalData({
-        gold: rolledGold,
-        materials: rolledMats,
+        gold: loot.gold,
+        materials: loot.materials,
+        consumables: loot.consumables,
       });
       setActiveModal('treasure');
     } else if (type === 'gamble') {
@@ -415,25 +412,21 @@ export default function DungeonMapScreen({ navigation }) {
         });
         setActiveModal('gamble');
       } else if (roll < 0.66) {
-        const rolledGold = Math.floor(Math.random() * 51) + 50; 
-        const matCount = Math.floor(Math.random() * 5) + 4; 
-        const pool = ZONE_MATERIAL_POOLS[currentRun.zoneId] || [];
-        const rolledMats = {};
-        
-        for (let i = 0; i < matCount; i++) {
-          const matId = pool[Math.floor(Math.random() * pool.length)];
-          rolledMats[matId] = (rolledMats[matId] || 0) + 1;
-        }
+        const loot = generateTreasureDrops(currentRun.zoneId, currentRun.floorNumber, true);
 
-        dispatch({ type: 'ADD_RUN_LOOT', payload: { gold: rolledGold, materials: rolledMats } });
+        dispatch({
+          type: 'ADD_RUN_LOOT',
+          payload: { gold: loot.gold, materials: loot.materials, consumables: loot.consumables }
+        });
 
         const flavor = TREASURE_FLAVORS[Math.floor(Math.random() * TREASURE_FLAVORS.length)];
 
         setModalData({
           outcome: 'treasure',
           flavor,
-          gold: rolledGold,
-          materials: rolledMats,
+          gold: loot.gold,
+          materials: loot.materials,
+          consumables: loot.consumables,
         });
         setActiveModal('gamble');
       } else {
@@ -689,13 +682,24 @@ export default function DungeonMapScreen({ navigation }) {
     return <View style={styles.gridContainer}>{rows}</View>;
   };
 
-  const renderLootItems = (lootMats) => {
-    return Object.entries(lootMats || {}).map(([id, qty]) => {
-      const def = MATERIALS[id];
+  const renderLootItems = (lootMats, lootConsumables = {}) => {
+    const items = [];
+    for (const [id, qty] of Object.entries(lootMats || {})) {
+      if (qty > 0) items.push({ id, qty, isConsumable: false });
+    }
+    for (const [id, qty] of Object.entries(lootConsumables || {})) {
+      if (qty > 0) items.push({ id, qty, isConsumable: true });
+    }
+
+    if (items.length === 0) return null;
+
+    return items.map(({ id, qty, isConsumable }) => {
+      const def = isConsumable ? CONSUMABLES[id] : MATERIALS[id];
       let emoji = '💎';
-      if (id.startsWith('black')) emoji = '🖤';
-      if (id.startsWith('green')) emoji = '💚';
-      if (id.startsWith('yellow')) emoji = '💛';
+      if (id.includes('potion')) emoji = '🧪';
+      else if (id.startsWith('black')) emoji = '🖤';
+      else if (id.startsWith('green')) emoji = '💚';
+      else if (id.startsWith('yellow')) emoji = '💛';
       return (
         <Text key={id} style={styles.lootItemText}>
           {emoji} {def?.name || id} ×{qty}
@@ -963,7 +967,7 @@ export default function DungeonMapScreen({ navigation }) {
 
               <View style={styles.lootRewardBox}>
                 <Text style={styles.lootGoldText}>💰 +{modalData?.gold} Gold</Text>
-                {renderLootItems(modalData?.materials)}
+                {renderLootItems(modalData?.materials, modalData?.consumables)}
               </View>
 
               <Button
@@ -1004,7 +1008,7 @@ export default function DungeonMapScreen({ navigation }) {
                   <Text style={styles.outcomeTitle}>It's a Trap!</Text>
                   <Text style={styles.outcomeFlavor}>"{modalData.flavor}"</Text>
                   <Text style={styles.trapDamageText}>
-                    Mochi lost {modalData.pct}% max HP (-{modalData.damage} HP)
+                    {hero.name || 'Mochi'} lost {modalData.pct}% max HP (-{modalData.damage} HP)
                   </Text>
                   {modalData.survived ? (
                     <Text style={styles.outcomeSubText}>
@@ -1025,7 +1029,7 @@ export default function DungeonMapScreen({ navigation }) {
                   <Text style={styles.outcomeFlavor}>"{modalData.flavor}"</Text>
                   <View style={styles.lootRewardBox}>
                     <Text style={styles.lootGoldText}>💰 +{modalData.gold} Gold (Double Treasure!)</Text>
-                    {renderLootItems(modalData.materials)}
+                    {renderLootItems(modalData.materials, modalData.consumables)}
                   </View>
                 </View>
               )}
@@ -1068,15 +1072,16 @@ export default function DungeonMapScreen({ navigation }) {
             <View style={styles.modalCardInner}>
               <Text style={[styles.modalTitle, { color: theme.COLORS.danger }]}>💀 Defeated…</Text>
               <Text style={styles.modalSubtitle}>
-                Mochi fell to the dangers of the dungeon and was forced to retreat.
+                {hero.name || 'Mochi'} fell to the dangers of the dungeon and was forced to retreat.
               </Text>
 
               <View style={styles.deathLootLostBox}>
                 <Text style={styles.lostLootTitle}>Loot Lost in the Depths:</Text>
                 {currentRun.lootCollected.gold === 0 &&
                 Object.keys(currentRun.lootCollected.materials).length === 0 &&
+                Object.keys(currentRun.lootCollected.consumables || {}).length === 0 &&
                 (currentRun.lootCollected.xp || 0) === 0 ? (
-                  <Text style={styles.noLostLootText}>No materials, gold, or XP were collected this run.</Text>
+                  <Text style={styles.noLostLootText}>No materials, gold, XP, or consumables were collected this run.</Text>
                 ) : (
                   <>
                     {currentRun.lootCollected.xp > 0 && (
@@ -1085,13 +1090,13 @@ export default function DungeonMapScreen({ navigation }) {
                     {currentRun.lootCollected.gold > 0 && (
                       <Text style={styles.lostLootGold}>💰 {currentRun.lootCollected.gold} Gold</Text>
                     )}
-                    {renderLootItems(currentRun.lootCollected.materials)}
+                    {renderLootItems(currentRun.lootCollected.materials, currentRun.lootCollected.consumables)}
                   </>
                 )}
               </View>
 
               <Text style={styles.deathRecoverMsg}>
-                Mochi wakes up back at camp, fully recovered but empty-handed.
+                {hero.name || 'Mochi'} wakes up back at camp, fully recovered but empty-handed.
               </Text>
 
               <Button
@@ -1124,32 +1129,45 @@ export default function DungeonMapScreen({ navigation }) {
 
               <View style={styles.fleeCostBox}>
                 <Text style={styles.fleeCostWarning}>
-                  ⚠️ You will lose HALF of all gold and materials collected during this run!
+                  ⚠️ You will lose HALF of all gold, materials, and consumables collected during this run!
                 </Text>
                 
                 <View style={styles.fleeLootPreview}>
                   <Text style={styles.fleeLootPreviewTitle}>Estimated Retained Loot:</Text>
-                  {Math.floor(currentRun.lootCollected.gold / 2) === 0 && Object.keys(currentRun.lootCollected.materials).length === 0 ? (
-                    <Text style={styles.noLostLootText}>No materials or gold will be kept.</Text>
+                  {Math.floor(currentRun.lootCollected.gold / 2) === 0 &&
+                  Object.keys(currentRun.lootCollected.materials).length === 0 &&
+                  Object.keys(currentRun.lootCollected.consumables || {}).length === 0 ? (
+                    <Text style={styles.noLostLootText}>No loot will be kept.</Text>
                   ) : (
                     <>
                       {Math.floor(currentRun.lootCollected.gold / 2) > 0 && (
                         <Text style={styles.retainedGold}>💰 {Math.floor(currentRun.lootCollected.gold / 2)} Gold</Text>
                       )}
-                      {Object.entries(currentRun.lootCollected.materials || {}).map(([id, qty]) => {
-                        const keptQty = Math.floor(qty / 2);
-                        if (keptQty <= 0) return null;
-                        const def = MATERIALS[id];
-                        let emoji = '💎';
-                        if (id.startsWith('black')) emoji = '🖤';
-                        if (id.startsWith('green')) emoji = '💚';
-                        if (id.startsWith('yellow')) emoji = '💛';
-                        return (
-                          <Text key={id} style={styles.retainedLootItemText}>
-                            {emoji} {def?.name || id} ×{keptQty}
-                          </Text>
-                        );
-                      })}
+                      {(() => {
+                        const items = [];
+                        for (const [id, qty] of Object.entries(currentRun.lootCollected.materials || {})) {
+                          const keptQty = Math.floor(qty / 2);
+                          if (keptQty > 0) items.push({ id, keptQty, isConsumable: false });
+                        }
+                        for (const [id, qty] of Object.entries(currentRun.lootCollected.consumables || {})) {
+                          const keptQty = Math.floor(qty / 2);
+                          if (keptQty > 0) items.push({ id, keptQty, isConsumable: true });
+                        }
+                        if (items.length === 0) return null;
+                        return items.map(({ id, keptQty, isConsumable }) => {
+                          const def = isConsumable ? CONSUMABLES[id] : MATERIALS[id];
+                          let emoji = '💎';
+                          if (id.includes('potion')) emoji = '🧪';
+                          else if (id.startsWith('black')) emoji = '🖤';
+                          else if (id.startsWith('green')) emoji = '💚';
+                          else if (id.startsWith('yellow')) emoji = '💛';
+                          return (
+                            <Text key={id} style={styles.retainedLootItemText}>
+                              {emoji} {def?.name || id} ×{keptQty}
+                            </Text>
+                          );
+                        });
+                      })()}
                     </>
                   )}
                 </View>
@@ -1198,7 +1216,7 @@ export default function DungeonMapScreen({ navigation }) {
               </Text>
               <Text style={styles.modalSubtitle}>
                 {currentRun.floorNumber === 10
-                  ? 'You have conquered the entire zone. The dungeon trembles before Mochi!'
+                  ? `You have conquered the entire zone. The dungeon trembles before ${hero.name || 'Mochi'}!`
                   : 'Every room on this floor has been explored. Return to camp and prepare for the next descent.'}
               </Text>
 
@@ -1207,9 +1225,9 @@ export default function DungeonMapScreen({ navigation }) {
                 {currentRun.lootCollected.gold > 0 && (
                   <Text style={styles.lootGoldText}>💰 +{currentRun.lootCollected.gold} Gold</Text>
                 )}
-                {Object.keys(currentRun.lootCollected.materials).length > 0
-                  ? renderLootItems(currentRun.lootCollected.materials)
-                  : <Text style={styles.noLostLootText}>No materials collected.</Text>
+                {(Object.keys(currentRun.lootCollected.materials).length > 0 || Object.keys(currentRun.lootCollected.consumables || {}).length > 0)
+                  ? renderLootItems(currentRun.lootCollected.materials, currentRun.lootCollected.consumables)
+                  : <Text style={styles.noLostLootText}>No loot collected.</Text>
                 }
               </View>
 

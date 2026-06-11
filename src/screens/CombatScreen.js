@@ -498,7 +498,7 @@ export default function CombatScreen() {
         updatedHero.playerHoT = null;
       }
 
-      addLog(`💧 Healing Current tick: Mochi recovers ${finalHeal} HP!`);
+      addLog(`💧 Healing Current tick: ${updatedHero.name || 'Mochi'} recovers ${finalHeal} HP!`);
       logged = true;
     }
 
@@ -857,7 +857,7 @@ export default function CombatScreen() {
 
     } else if (skillId === 'healing_current') {
       const hcStars = (state.hero.unlockedSkills[skillId]?.stars) || 1;
-      const hc = executeHealingCurrent(skillDef, hcStars);
+      const hc = executeHealingCurrent(skillDef, hcStars, updatedHero.name);
       updatedHero = {
         ...updatedHero,
         playerHoT: hc.playerHoT,
@@ -1334,7 +1334,7 @@ export default function CombatScreen() {
     // ── Check if the hero is stunned ────────────────────────────────────────
     const isHeroStunned = updatedHero.effects?.some(e => e.type === 'stun');
     if (isHeroStunned) {
-      addLog('Mochi is stunned and can\'t move!');
+      addLog(`${updatedHero.name || 'Mochi'} is stunned and can't move!`);
 
       // Tick hero's status effects (which handles bleed and decrements stun)
       const { updatedHero: finalHero } = tickHeroStatusEffects(updatedHero);
@@ -1514,7 +1514,8 @@ export default function CombatScreen() {
     let color = '#CBD5E1'; // Cool parchment default
     const lower = msg.toLowerCase();
 
-    if (lower.includes('mochi attacks') || lower.includes('crit!') || lower.includes('critical')) {
+    const heroNameLower = (heroState?.name || 'Mochi').toLowerCase();
+    if (lower.includes(`${heroNameLower} attacks`) || lower.includes('crit!') || lower.includes('critical')) {
       color = '#F5CF4A'; // treasureGold — hero actions
     } else if (lower.includes('takes') || lower.includes('damaged') || lower.includes('fells') || lower.includes('dies')) {
       color = '#D8483F'; // damageRed
@@ -1889,7 +1890,7 @@ export default function CombatScreen() {
 
               {/* HUD Tray (Bottom 30%) */}
               <View style={styles.hudTray}>
-                <Text style={styles.enemyName}>Mochi</Text>
+                <Text style={styles.enemyName}>{heroState.name || 'Mochi'}</Text>
                 <View style={{ width: '100%' }}>
                   <ResourceBar variant="heroHp" current={heroState.hp} max={heroState.maxHp} />
                 </View>
@@ -2128,7 +2129,7 @@ export default function CombatScreen() {
               <View style={styles.overlayInner}>
                 <Text style={styles.defeatTitle}>💀 Defeated…</Text>
                 <Text style={styles.defeatSubtext}>
-                  Mochi retreats to camp, battered but alive.
+                  {heroState.name || 'Mochi'} retreats to camp, battered but alive.
                 </Text>
 
                 <View style={styles.lostLootBox}>

@@ -34,9 +34,7 @@ const sewer_rat = {
   isElite: false,
   baseXp: 20,
   baseGold: 6,
-  drops: [
-    { itemId: 'black_shard', chance: 0.10, count: 1 },
-  ],
+  drops: [],
   moves: [
     { name: 'Gnaw', damage: 5, minStars: 1 },
     {
@@ -65,9 +63,7 @@ const slimeling = {
   isElite: false,
   baseXp: 25,
   baseGold: 6,
-  drops: [
-    { itemId: 'black_shard', chance: 0.10, count: 1 },
-  ],
+  drops: [],
   moves: [
     {
       name: 'Ooze Splash',
@@ -100,10 +96,7 @@ const cockroach_knight = {
   isElite: false,
   baseXp: 30,
   baseGold: 8,
-  drops: [
-    { itemId: 'black_shard', chance: 0.35, count: 2 },
-    { itemId: 'black_crystal_small', chance: 0.20 },
-  ],
+  drops: [],
   moves: [
     {
       name: 'Shell Bash',
@@ -144,9 +137,7 @@ const plague_frog = {
   isElite: false,
   baseXp: 25,
   baseGold: 7,
-  drops: [
-    { itemId: 'black_shard', chance: 0.10, count: 1 },
-  ],
+  drops: [],
   moves: [
     {
       name: 'Hop',
@@ -183,9 +174,6 @@ const king_rat = {
   goldMin: 80,
   goldMax: 120,
   drops: [
-    { itemId: 'black_crystal_big', chance: 1.0, count: 3 },
-    { itemId: 'black_crystal_small', chance: 1.0, count: 4 },
-    { itemId: 'black_crystal_core', chance: 0.6, count: 1 },
     { itemId: 'gnarlcrown_shard', chance: 1.0 },
     { itemId: 'black_shard_fire', chance: 1.0, count: 2 },
     { itemId: 'black_shard_water', chance: 1.0, count: 2 },
@@ -262,10 +250,7 @@ const giant_beetle = {
   isElite: false,
   baseXp: 55,
   baseGold: 22,
-  drops: [
-    { itemId: 'green_shard', chance: 0.75, count: 2 },
-    { itemId: 'green_crystal_small', chance: 0.55 },
-  ],
+  drops: [],
   moves: [
     { name: 'Crush', damage: 10 },
   ],
@@ -287,9 +272,7 @@ const mushroom_puffer = {
   isElite: false,
   baseXp: 42,
   baseGold: 17,
-  drops: [
-    { itemId: 'green_crystal_small', chance: 0.35 },
-  ],
+  drops: [],
   moves: [
     { name: 'Spore Cloud', damage: 9, effect: { type: "atk_reduce", chance: 0.50, value: 0.20, duration: 2 } },
   ],
@@ -311,10 +294,7 @@ const vine_lurker = {
   isElite: false,
   baseXp: 50,
   baseGold: 20,
-  drops: [
-    { itemId: 'green_shard', chance: 0.75, count: 2 },
-    { itemId: 'green_crystal_small', chance: 0.45 },
-  ],
+  drops: [],
   moves: [
     { name: 'Constrict', damage: 13, effect: { type: "dodge_reduce", chance: 1.0, value: 0.15, duration: 2 } },
   ],
@@ -338,8 +318,6 @@ const rootmother = {
   goldMin: 200,
   goldMax: 350,
   drops: [
-    { itemId: 'green_crystal_big', chance: 1.0, count: 3 },
-    { itemId: 'green_crystal_small', chance: 1.0, count: 4 },
     { itemId: 'rootmother_heart', chance: 1.0 },
     { itemId: 'green_crystal_fire', chance: 1.0, count: 2 },
     { itemId: 'green_crystal_water', chance: 1.0, count: 2 },
@@ -400,10 +378,7 @@ const sea_witch_eel = {
   isElite: false,
   baseXp: 150,
   baseGold: 60,
-  drops: [
-    { itemId: 'yellow_shard', chance: 0.75, count: 2 },
-    { itemId: 'yellow_crystal_small', chance: 0.55 },
-  ],
+  drops: [],
   moves: [
     { name: 'Hex', damage: 20, effect: { type: "crit_reduce", chance: 1.0, value: 0.15, duration: 2 } },
   ],
@@ -451,9 +426,7 @@ const pufferfish_bomb = {
   isElite: false,
   baseXp: 115,
   baseGold: 46,
-  drops: [
-    { itemId: 'yellow_crystal_small', chance: 0.35 },
-  ],
+  drops: [],
   moves: [
     { name: 'Explode', damage: 25, effect: { type: "self_destruct", chance: 1.0 } },
   ],
@@ -477,8 +450,6 @@ const captain_moray = {
   goldMin: 500,
   goldMax: 800,
   drops: [
-    { itemId: 'yellow_crystal_big', chance: 1.0, count: 3 },
-    { itemId: 'yellow_crystal_small', chance: 1.0, count: 4 },
     { itemId: 'morays_fang', chance: 1.0 },
     { itemId: 'yellow_crystal_fire', chance: 1.0, count: 2 },
     { itemId: 'yellow_crystal_water', chance: 1.0, count: 2 },

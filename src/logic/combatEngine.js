@@ -686,7 +686,7 @@ export function executeEnemyTurn(enemy, enemyState, target, targetState) {
     return {
       damage: 0,
       effects: [],
-      log: `Mochi dodged ${enemy.name}'s ${move.name}!`,
+      log: `${targetState.name || 'Mochi'} dodged ${enemy.name}'s ${move.name}!`,
       selfDestruct: false,
     };
   }
@@ -1166,7 +1166,7 @@ export function executeTidalWave(skillDef, stars, heroState, enemies, targetIdx)
 /**
  * Execute Healing Current: applies HoT buff to Mochi for N turns.
  */
-export function executeHealingCurrent(skillDef, stars) {
+export function executeHealingCurrent(skillDef, stars, heroName = 'Mochi') {
   const starData = skillDef.stars[stars];
   return {
     playerHoT: {
@@ -1174,7 +1174,7 @@ export function executeHealingCurrent(skillDef, stars) {
       duration: starData.duration,
       turnsRemaining: starData.duration,
     },
-    log: `💧 Healing Current active! Mochi will restore HP each turn for ${starData.duration} turns.`,
+    log: `💧 Healing Current active! ${heroName} will restore HP each turn for ${starData.duration} turns.`,
   };
 }
 

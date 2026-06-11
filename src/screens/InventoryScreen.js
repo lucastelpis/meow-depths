@@ -245,7 +245,7 @@ export default function InventoryScreen() {
         <View style={styles.emptyBox}>
           <Text style={styles.emptyEmoji}>🧪</Text>
           <Text style={styles.emptyTitle}>Bag Empty</Text>
-          <Text style={styles.emptyDesc}>Visit the Town Hall to stock up on potions and supplies.</Text>
+          <Text style={styles.emptyDesc}>Visit the Shop to stock up on potions and supplies.</Text>
         </View>
       );
     }
@@ -384,7 +384,7 @@ export default function InventoryScreen() {
         <View style={styles.emptyBox}>
           <Text style={styles.emptyEmoji}>⚒️</Text>
           <Text style={styles.emptyTitle}>No Gear Crafted</Text>
-          <Text style={styles.emptyDesc}>Visit the Town Hall to forge equipment from your materials.</Text>
+          <Text style={styles.emptyDesc}>Visit the Shop to forge equipment from your materials.</Text>
         </View>
       ) : (
         <View style={styles.gridContainer}>
@@ -698,7 +698,7 @@ export default function InventoryScreen() {
 
                         {itemType === 'material' && (
                           <Text style={styles.modalGuideText}>
-                            ⚒️ Visit the Town Hall forge to craft this into powerful equipment.
+                            ⚒️ Visit the Shop forge to craft this into powerful equipment.
                           </Text>
                         )}
                         {itemType === 'consumable' && !showOpenChestBtn && (

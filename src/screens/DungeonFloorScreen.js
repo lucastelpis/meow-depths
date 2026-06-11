@@ -599,7 +599,7 @@ export default function DungeonFloorScreen() {
                 {maxSlots === 0 ? (
                   <Text style={styles.emptyText}>⚠️ No bag slots. Buy & equip a belt/bag in your loadout to bring items!</Text>
                 ) : state.hero.inventory.consumables.filter(c => c.quantity > 0).length === 0 ? (
-                  <Text style={styles.emptyText}>No items — visit the Town Hall!</Text>
+                  <Text style={styles.emptyText}>No items — visit the Shop!</Text>
                 ) : (
                   state.hero.inventory.consumables
                     .filter(e => e.quantity > 0)

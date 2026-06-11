@@ -131,7 +131,7 @@ const initialState = {
     roomsCleared: 0,
     totalRooms: 9,
     consumables: [],          // consumables brought into this run (array of item ID strings)
-    lootCollected: { materials: {}, gold: 0, xp: 0 }, // loot accumulated during the run
+    lootCollected: { materials: {}, gold: 0, xp: 0, consumables: {} }, // loot accumulated during the run
     heroBackup: null,         // backup of hero stats before the run starts
     runBuffs: {               // run-only buffs from rest rooms
       attackBonus: 0,
@@ -455,7 +455,7 @@ function gameReducer(state, action) {
           roomsCleared: 1, // Start room is cleared
           totalRooms: gridWidth * gridHeight,
           consumables: consumables || [],
-          lootCollected: { materials: {}, gold: 0, xp: 0 },
+          lootCollected: { materials: {}, gold: 0, xp: 0, consumables: {} },
           heroBackup: {
             level: state.hero.level,
             xp: state.hero.xp,
@@ -540,17 +540,24 @@ function gameReducer(state, action) {
     }
 
     // -----------------------------------------------------------------------
-    // ADD_RUN_LOOT — add gold and materials collected in this run
-    // Payload: { gold: number, materials: { itemId: qty } }
+    // ADD_RUN_LOOT — add gold, materials, and consumables collected in this run
+    // Payload: { gold: number, materials: { itemId: qty }, consumables: { itemId: qty } }
     // -----------------------------------------------------------------------
     case 'ADD_RUN_LOOT': {
-      const { gold, materials, xp } = action.payload;
+      const { gold, materials, xp, consumables } = action.payload;
       const newLootGold = state.currentRun.lootCollected.gold + (gold || 0);
       const newLootXp = (state.currentRun.lootCollected.xp || 0) + (xp || 0);
+      
       const newLootMaterials = { ...state.currentRun.lootCollected.materials };
       for (const [id, qty] of Object.entries(materials || {})) {
         newLootMaterials[id] = (newLootMaterials[id] || 0) + qty;
       }
+
+      const newLootConsumables = { ...(state.currentRun.lootCollected.consumables || {}) };
+      for (const [id, qty] of Object.entries(consumables || {})) {
+        newLootConsumables[id] = (newLootConsumables[id] || 0) + qty;
+      }
+
       return {
         ...state,
         currentRun: {
@@ -558,7 +565,8 @@ function gameReducer(state, action) {
           lootCollected: {
             materials: newLootMaterials,
             gold: newLootGold,
-            xp: newLootXp
+            xp: newLootXp,
+            consumables: newLootConsumables
           }
         }
       };
@@ -622,6 +630,7 @@ function gameReducer(state, action) {
 
       let updatedGold = state.hero.gold;
       const updatedMaterials = { ...state.hero.inventory.materials };
+      let updatedInventoryConsumables = [...state.hero.inventory.consumables];
       let heroStats = { ...state.hero };
 
       if (outcome === 'win') {
@@ -629,12 +638,43 @@ function gameReducer(state, action) {
         for (const [id, qty] of Object.entries(state.currentRun.lootCollected.materials)) {
           updatedMaterials[id] = (updatedMaterials[id] || 0) + qty;
         }
+
+        // Add 100% of newly collected consumables
+        const lootConsumables = state.currentRun.lootCollected.consumables || {};
+        for (const [id, qty] of Object.entries(lootConsumables)) {
+          const existingIdx = updatedInventoryConsumables.findIndex(c => c.id === id);
+          if (existingIdx >= 0) {
+            updatedInventoryConsumables[existingIdx] = {
+              ...updatedInventoryConsumables[existingIdx],
+              quantity: updatedInventoryConsumables[existingIdx].quantity + qty,
+            };
+          } else {
+            updatedInventoryConsumables.push({ id, quantity: qty });
+          }
+        }
       } else if (outcome === 'flee') {
         updatedGold += Math.floor(state.currentRun.lootCollected.gold / 2);
         for (const [id, qty] of Object.entries(state.currentRun.lootCollected.materials)) {
           const keptQty = Math.floor(qty / 2);
           if (keptQty > 0) {
             updatedMaterials[id] = (updatedMaterials[id] || 0) + keptQty;
+          }
+        }
+
+        // Add 50% of newly collected consumables (rounded down)
+        const lootConsumables = state.currentRun.lootCollected.consumables || {};
+        for (const [id, qty] of Object.entries(lootConsumables)) {
+          const keptQty = Math.floor(qty / 2);
+          if (keptQty > 0) {
+            const existingIdx = updatedInventoryConsumables.findIndex(c => c.id === id);
+            if (existingIdx >= 0) {
+              updatedInventoryConsumables[existingIdx] = {
+                ...updatedInventoryConsumables[existingIdx],
+                quantity: updatedInventoryConsumables[existingIdx].quantity + keptQty,
+              };
+            } else {
+              updatedInventoryConsumables.push({ id, quantity: keptQty });
+            }
           }
         }
       } else if (outcome === 'lose') {
@@ -656,7 +696,6 @@ function gameReducer(state, action) {
       }
 
       // Return any unused consumables from the run bag back to permanent inventory
-      let updatedInventoryConsumables = [...state.hero.inventory.consumables];
       for (const id of (state.currentRun.consumables || [])) {
         const existingIdx = updatedInventoryConsumables.findIndex(c => c.id === id);
         if (existingIdx >= 0) {
@@ -716,7 +755,7 @@ function gameReducer(state, action) {
           roomsCleared: 0,
           totalRooms: 9,
           consumables: [],
-          lootCollected: { materials: {}, gold: 0, xp: 0 },
+          lootCollected: { materials: {}, gold: 0, xp: 0, consumables: {} },
           heroBackup: null,
           runBuffs: {
             attackBonus: 0,

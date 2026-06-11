@@ -88,6 +88,7 @@ function formatStats(stats) {
     stunChance:      'stun',
     skillDamage:     'skill dmg',
     bleedExtraDamage: 'bleed dmg',
+    bagSlots:        'bag slots',
   };
 
   return Object.entries(stats)
@@ -246,7 +247,7 @@ export default function ShopScreen() {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn} activeOpacity={0.7}>
           <Text style={styles.backText}>← Hub</Text>
         </TouchableOpacity>
-        <Text style={styles.title}>🏛️ Town Hall</Text>
+        <Text style={styles.title}>🏪 Shop</Text>
         <View style={[styles.goldBadge, theme.SHADOWS.glowPrimary]}>
           <Text style={styles.goldBadgeIcon}>💰</Text>
           <Text style={styles.goldBadgeText}>{hero.gold}g</Text>
@@ -299,7 +300,7 @@ export default function ShopScreen() {
             </View>
           )}
           <Text style={[styles.tabButtonText, activeTab === 'supplies' && styles.tabButtonTextActive, activeTab === 'supplies' && { color: '#10B981' }]}>
-            🧪 Apothecary
+            🧪 Consumables
           </Text>
         </TouchableOpacity>
 
@@ -323,7 +324,7 @@ export default function ShopScreen() {
             </View>
           )}
           <Text style={[styles.tabButtonText, activeTab === 'armory' && styles.tabButtonTextActive, activeTab === 'armory' && { color: '#D4A754' }]}>
-            ⚔️ Armory Shop
+            ⚔️ Equipment
           </Text>
         </TouchableOpacity>
       </View>
@@ -338,7 +339,7 @@ export default function ShopScreen() {
         {activeTab === 'supplies' && (
           <View style={styles.tabContent}>
             <View style={styles.suppliesIntro}>
-              <Text style={styles.introTitle}>Apothecary & Provisions</Text>
+              <Text style={styles.introTitle}>Consumables & Provisions</Text>
               <Text style={styles.introDesc}>Purchase healing reagents and items to aid your dungeon runs.</Text>
             </View>
 
@@ -442,7 +443,7 @@ export default function ShopScreen() {
         {activeTab === 'armory' && (
           <View style={styles.tabContent}>
             <View style={styles.suppliesIntro}>
-              <Text style={styles.introTitle}>⚔️ Armory Shop</Text>
+              <Text style={styles.introTitle}>⚔️ Equipment</Text>
               <Text style={styles.introDesc}>Purchase equipment and weapons with Gold. Owned gear cannot be bought again.</Text>
             </View>
 
@@ -487,7 +488,7 @@ export default function ShopScreen() {
                             </View>
                           </View>
                           <Text style={styles.statPreview}>🛡️ {formatStats(item.stats)}</Text>
-                          {!!item.description && (
+                          {!!item.description && item.type !== 'storage' && (
                             <Text style={styles.shopRowDesc}>{item.description}</Text>
                           )}
                         </View>
@@ -901,16 +902,16 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(212, 167, 84, 0.08)',
     borderWidth: 1,
     borderColor: 'rgba(212, 167, 84, 0.2)',
-    borderRadius: 6,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
+    borderRadius: 5,
+    paddingHorizontal: 5,
+    paddingVertical: 1,
   },
   gearTypeBadgeText: {
     fontFamily: 'System',
-    fontSize: 9,
+    fontSize: 8,
     fontWeight: 'bold',
     color: '#D4A754',
-    letterSpacing: 0.5,
+    letterSpacing: 0.3,
   },
   statPreview: {
     fontFamily: 'System',
