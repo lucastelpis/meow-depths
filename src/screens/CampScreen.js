@@ -408,12 +408,8 @@ export default function CampScreen({ navigation }) {
                   },
             ]}
           >
-            <View style={[
-              styles.dailyRewardSpriteContainer,
-              hasClaimedToday() ? styles.dailyRewardSpriteContainerClaimed : styles.dailyRewardSpriteContainerActive
-            ]}>
-              <WoodSpriteBackground borderRadius={8} />
-              <ItemSprite spritesheet="icons-1" frameIndex={25} displaySize={44} />
+            <View style={styles.dailyRewardSpriteContainer}>
+              <ItemSprite spritesheet="icons-1" frameIndex={25} displaySize={56} />
             </View>
             <View style={styles.dailyRewardTextContainer}>
               <Text style={[
@@ -1130,17 +1126,9 @@ const styles = StyleSheet.create({
     opacity: 0.65,
   },
   dailyRewardSpriteContainer: {
-    padding: 6,
-    borderRadius: 10,
-    overflow: 'hidden',
-    position: 'relative',
-    borderWidth: 3,
-  },
-  dailyRewardSpriteContainerActive: {
-    borderColor: theme.COLORS.candleGold,
-  },
-  dailyRewardSpriteContainerClaimed: {
-    borderColor: '#3A3A3C',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 4,
   },
   dailyRewardTextContainer: {
     flex: 1,
