@@ -44,10 +44,10 @@ const BANNER_HEIGHT = BANNER_WIDTH * (1024 / 4128);
 const HERO_AVATAR_DISPLAY_SIZE = 90;
 
 // ─── SVG Wood Texture Background Component ───────────────────────────────────
-function WoodSpriteBackground({ width, height, borderRadius = 8, borderColor = '#4A3917' }) {
+function WoodSpriteBackground({ borderRadius = 8 }) {
   return (
     <View style={{ ...StyleSheet.absoluteFillObject, borderRadius, overflow: 'hidden' }}>
-      <Svg width={width} height={height} viewBox="0 0 100 100" preserveAspectRatio="none">
+      <Svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none">
         {/* Solid wood brown background */}
         <Rect width="100" height="100" fill="#825324" />
         
@@ -59,9 +59,6 @@ function WoodSpriteBackground({ width, height, borderRadius = 8, borderColor = '
         {/* Light wood highlights */}
         <Path d="M0,35 Q20,32 55,38 T100,35" stroke="#A87543" strokeWidth="2" fill="none" opacity="0.3" />
         <Path d="M0,65 Q35,68 65,62 T100,65" stroke="#A87543" strokeWidth="2" fill="none" opacity="0.3" />
-        
-        {/* Outer border */}
-        <Rect x="1" y="1" width="98" height="98" stroke={borderColor} strokeWidth="3" fill="none" rx={5} />
       </Svg>
     </View>
   );
@@ -445,7 +442,7 @@ export default function CampScreen({ navigation }) {
             onPress={() => navigation.navigate('WorldMap')}
           >
             <View style={styles.dungeonSpriteContainer}>
-              <WoodSpriteBackground width={56} height={56} borderRadius={10} borderColor={theme.COLORS.candleGold} />
+              <WoodSpriteBackground borderRadius={8} />
               <ItemSprite spritesheet="icons-1" frameIndex={30} displaySize={44} />
             </View>
             <View style={styles.dungeonTextContainer}>
@@ -463,7 +460,7 @@ export default function CampScreen({ navigation }) {
               onPress={() => navigation.navigate('Shop')}
             >
               <View style={styles.subSpriteContainer}>
-                <WoodSpriteBackground width={44} height={44} borderRadius={8} borderColor="#4A3917" />
+                <WoodSpriteBackground borderRadius={6} />
                 <ItemSprite spritesheet="icons-1" frameIndex={29} displaySize={36} />
               </View>
               <Text style={styles.subCardLabel}>SHOPPING</Text>
@@ -477,7 +474,7 @@ export default function CampScreen({ navigation }) {
               onPress={() => navigation.navigate('SkillTree')}
             >
               <View style={styles.subSpriteContainer}>
-                <WoodSpriteBackground width={44} height={44} borderRadius={8} borderColor="#4A3917" />
+                <WoodSpriteBackground borderRadius={6} />
                 <ItemSprite spritesheet="icons-1" frameIndex={26} displaySize={36} />
               </View>
               <Text style={styles.subCardLabel}>SKILLS</Text>
@@ -491,7 +488,7 @@ export default function CampScreen({ navigation }) {
               onPress={() => navigation.navigate('Loadout')}
             >
               <View style={styles.subSpriteContainer}>
-                <WoodSpriteBackground width={44} height={44} borderRadius={8} borderColor="#4A3917" />
+                <WoodSpriteBackground borderRadius={6} />
                 <ItemSprite spritesheet="icons-1" frameIndex={18} displaySize={36} />
               </View>
               <Text style={styles.subCardLabel}>LOADOUT</Text>
@@ -1037,6 +1034,8 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     overflow: 'hidden',
     position: 'relative',
+    borderWidth: 3,
+    borderColor: theme.COLORS.candleGold,
   },
   dungeonTextContainer: {
     justifyContent: 'center',
@@ -1079,6 +1078,8 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     position: 'relative',
     marginBottom: 8,
+    borderWidth: 3,
+    borderColor: '#4A3917',
   },
   subCardLabel: {
     fontFamily: 'PixelifySans-Medium',
