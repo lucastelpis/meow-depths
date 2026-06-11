@@ -27,21 +27,14 @@ import Svg, { Defs, LinearGradient, RadialGradient, Stop, Rect, Circle, Path } f
 // ── Project imports ──────────────────────────────────────────────────────────
 import theme from '../constants/theme';
 import { useGame } from '../state/gameState';
-import { getXpForLevel, calculateEffectiveStats } from '../logic/progressionEngine';
-import AnimatedSprite from '../components/AnimatedSprite';
+import { calculateEffectiveStats } from '../logic/progressionEngine';
 import ScreenLoader from '../components/ScreenLoader';
 import Button from '../components/ui/Button';
-import ResourceBar from '../components/ui/ResourceBar';
-import { HERO_SPRITE } from '../constants/sprites';
 import { SKILLS } from '../data/skills';
 import ItemSprite from '../components/ItemSprite';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const BANNER_WIDTH = SCREEN_WIDTH - 32;
-const BANNER_HEIGHT = BANNER_WIDTH * (1024 / 4128);
-
-// Display size for Mochi's home screen avatar sprite (set higher to zoom in and crop padding)
-const HERO_AVATAR_DISPLAY_SIZE = 90;
 
 // ─── SVG Wood Texture Background Component ───────────────────────────────────
 function WoodSpriteBackground({ borderRadius = 8 }) {
@@ -60,6 +53,34 @@ function WoodSpriteBackground({ borderRadius = 8 }) {
         <Path d="M0,35 Q20,32 55,38 T100,35" stroke="#A87543" strokeWidth="2" fill="none" opacity="0.3" />
         <Path d="M0,65 Q35,68 65,62 T100,65" stroke="#A87543" strokeWidth="2" fill="none" opacity="0.3" />
       </Svg>
+    </View>
+  );
+}
+
+// ─── Animated Hub Background Component ───────────────────────────────────────
+function AnimatedHubBackground({ width, height }) {
+  const [frame, setFrame] = React.useState(0);
+  
+  React.useEffect(() => {
+    const interval = setInterval(() => {
+      setFrame(prev => (prev + 1) % 4);
+    }, 250); // 4 FPS (250ms per frame)
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <View style={{ width, height, overflow: 'hidden', position: 'absolute' }}>
+      <Image
+        source={require('../../assets/sprites/background-hub.png')}
+        style={{
+          width: width * 4,
+          height: height,
+          position: 'absolute',
+          left: -(frame * width),
+          top: 0,
+        }}
+        resizeMode="stretch"
+      />
     </View>
   );
 }
@@ -135,33 +156,7 @@ export default function CampScreen({ navigation }) {
     setShowStatModal(true);
   };
 
-  // ── Derived values ────────────────────────────────────────────────────────
-  const xpForCurrent   = getXpForLevel(hero.level);
-  const xpForNext      = getXpForLevel(hero.level + 1);
-  const xpIntoLevel    = hero.xp - xpForCurrent;
-  const xpNeeded       = xpForNext - xpForCurrent;
 
-  // Calculate Mochi's primary path for cozy visual title
-  const primaryPath = React.useMemo(() => {
-    let ironPawCount = 0;
-    let stonefurCount = 0;
-    let shadowClawCount = 0;
-
-    Object.keys(hero.unlockedSkills || {}).forEach(skillId => {
-      const skill = SKILLS[skillId];
-      if (skill) {
-        if (skill.path === 'ironPaw') ironPawCount++;
-        else if (skill.path === 'stonefur') stonefurCount++;
-        else if (skill.path === 'shadowClaw') shadowClawCount++;
-      }
-    });
-
-    const max = Math.max(ironPawCount, stonefurCount, shadowClawCount);
-    if (max === 0) return 'Novice Adventurer 🐱';
-    if (max === ironPawCount) return 'Iron Paw Path 🐾';
-    if (max === stonefurCount) return 'Stonefur Path 🪨';
-    return 'Shadow Claw Path 🌙';
-  }, [hero.unlockedSkills]);
 
   // ── Daily Reward Claiming Logic ───────────────────────────────────────────
   const hasClaimedToday = React.useCallback(() => {
@@ -266,8 +261,7 @@ export default function CampScreen({ navigation }) {
 
   return (
     <ScreenLoader assets={[
-      require('../../assets/top_banner.png'),
-      HERO_SPRITE.idle.source,
+      require('../../assets/sprites/background-hub.png'),
       require('../../assets/sprites/items/icons-1.png'),
     ]}>
     <SafeAreaView style={styles.container}>
@@ -276,112 +270,52 @@ export default function CampScreen({ navigation }) {
         showsVerticalScrollIndicator={false}
       >
         {/* ═══════════════════════════════════════════════════════════════════
-            TOP BANNER
+            ANIMATED HUB BANNER
             ═══════════════════════════════════════════════════════════════════ */}
-        <Image
-          source={require('../../assets/top_banner.png')}
-          style={[styles.hubBanner, theme.SHADOWS.cardShadow]}
-          resizeMode="cover"
-        />
+        <View style={[styles.bannerContainer, theme.SHADOWS.cardShadow]}>
+          <AnimatedHubBackground width={BANNER_WIDTH - 6} height={174} />
+          <View style={styles.bannerOverlayContent}>
+            {/* Title */}
+            <Text style={styles.bannerTitleText}>Meow Dungeons</Text>
 
-        {/* ═══════════════════════════════════════════════════════════════════
-            HERO CARD — Premium Split Layout (Cozy & Compact)
-            ═══════════════════════════════════════════════════════════════════ */}
-        <View style={[styles.heroBanner, theme.SHADOWS.cardShadow]}>
-          {/* Warm gradient background — camp is a safe, cozy zone */}
-          <View style={StyleSheet.absoluteFill}>
-            <Svg width="100%" height="100%">
-              <Defs>
-                <LinearGradient id="cardGrad" x1="0" y1="0" x2="0" y2="1">
-                  <Stop offset="0%" stopColor="#2A1E0A" stopOpacity="1" />
-                  <Stop offset="100%" stopColor="#1A1200" stopOpacity="1" />
-                </LinearGradient>
-                <RadialGradient id="avatarGlow" cx="22%" cy="50%" rx="35%" ry="60%">
-                  <Stop offset="0%" stopColor="#E8A73A" stopOpacity="0.12" />
-                  <Stop offset="100%" stopColor="#E8A73A" stopOpacity="0" />
-                </RadialGradient>
-              </Defs>
-              <Rect width="100%" height="100%" fill="url(#cardGrad)" rx={20} />
-              <Rect width="100%" height="100%" fill="url(#avatarGlow)" rx={20} />
-            </Svg>
-          </View>
+            {/* Tags Stack */}
+            <View style={styles.bannerTagsRow}>
+              {/* Tag 1: Gold */}
+              <View style={styles.bannerTag}>
+                <ItemSprite spritesheet="icons-1" frameIndex={19} displaySize={18} />
+                <Text style={styles.bannerTagText}>{hero.gold}</Text>
+              </View>
 
-          {/* Decorative SVG Corner Borders */}
-          <View style={styles.cardBorderOverlay}>
-            <Svg width="100%" height="100%">
-              <Rect x="6" y="6" width="96%" height="91%" rx={14} fill="none" stroke="rgba(212, 167, 84, 0.08)" strokeWidth="1" />
-            </Svg>
-          </View>
+              {/* Tag 2: Level */}
+              <View style={styles.bannerTag}>
+                <ItemSprite spritesheet="icons-1" frameIndex={2} displaySize={18} />
+                <Text style={styles.bannerTagText}>LV {hero.level}</Text>
+              </View>
 
-          {/* Floating Currencies Display Chip Row */}
-          <View style={styles.currencyRow}>
-            <View style={styles.goldChip}>
-              <Text style={styles.goldChipText}>💰 {hero.gold}</Text>
-            </View>
-          </View>
-
-          {/* Left Column: Avatar & Level Badge */}
-          <View style={styles.avatarContainer}>
-            <View style={styles.avatarCircle}>
-              <AnimatedSprite
-                {...HERO_SPRITE.idle}
-                fps={8}
-                loop={true}
-                displaySize={HERO_AVATAR_DISPLAY_SIZE}
-              />
-            </View>
-            <View style={styles.levelBadge}>
-              <Text style={styles.levelBadgeText}>{hero.level}</Text>
-            </View>
-          </View>
-
-          {/* Right Column: Identity & Stacked Pill Gauges */}
-          <View style={styles.heroDetails}>
-            <View style={styles.identityRow}>
-              <Text style={styles.heroName}>{hero.name}</Text>
-              <Text style={styles.heroPathText}>{primaryPath}</Text>
-            </View>
-
-            <View style={styles.gaugesStack}>
-              {/* HP Bar */}
-              <ResourceBar
-                variant="heroHp"
-                label="HP"
-                current={hero.hp}
-                max={effectiveMaxHp}
-              />
-
-              {/* XP Bar */}
-              <ResourceBar
-                variant="xp"
-                label="XP"
-                current={xpIntoLevel}
-                max={xpNeeded}
-              />
-            </View>
-
-            {/* Stat Points / Inspect Stats Action Button */}
-            <TouchableOpacity
-              style={[
-                styles.statPointsBtn,
-                (hero.statPoints || 0) > 0 ? styles.statPointsBtnGlow : styles.statPointsBtnNormal
-              ]}
-              onPress={handleOpenStatModal}
-              activeOpacity={0.8}
-            >
-              {(hero.statPoints || 0) > 0 ? (
-                <View style={styles.glowDotContainer}>
-                  <View style={styles.glowDot} />
-                  <Text style={styles.statPointsBtnTextGlow}>
-                    ✨ {hero.statPoints} Stat Point{(hero.statPoints || 0) > 1 ? 's' : ''} Available ›
+              {/* Tag 3: Stats (Clickable) */}
+              <Animated.View
+                style={[
+                  styles.bannerTagClickableWrapper,
+                  (hero.statPoints || 0) > 0
+                    ? { backgroundColor: bgPulseColor, borderColor: borderPulseColor }
+                    : { backgroundColor: '#F3E2BD', borderColor: '#4A3917' }
+                ]}
+              >
+                <TouchableOpacity
+                  style={styles.bannerTagClickableInner}
+                  onPress={handleOpenStatModal}
+                  activeOpacity={0.7}
+                >
+                  <ItemSprite spritesheet="icons-1" frameIndex={28} displaySize={18} />
+                  <Text style={[
+                    styles.bannerTagText,
+                    (hero.statPoints || 0) > 0 ? { color: '#FFF3DA' } : { color: '#2A1A0C' }
+                  ]}>
+                    {(hero.statPoints || 0) > 0 ? `STATS (${hero.statPoints})` : "STATS"}
                   </Text>
-                </View>
-              ) : (
-                <Text style={styles.statPointsBtnTextNormal}>
-                  📊 Inspect Base Stats ›
-                </Text>
-              )}
-            </TouchableOpacity>
+                </TouchableOpacity>
+              </Animated.View>
+            </View>
           </View>
         </View>
 
@@ -814,148 +748,7 @@ const styles = StyleSheet.create({
     pointerEvents: 'none',
   },
 
-  /* ═══ Top Banner ═════════════════════════════════════════════════════════ */
-  hubBanner: {
-    width: BANNER_WIDTH,
-    height: BANNER_HEIGHT,
-    borderRadius: 16,
-    marginBottom: 20,
-    borderWidth: 1,
-    borderColor: 'rgba(232, 167, 58, 0.3)',
-    overflow: 'hidden',
-  },
 
-  /* ═══ Hero Card ══════════════════════════════════════════════════════════ */
-  heroBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 18,
-    paddingHorizontal: 16,
-    borderRadius: 20,
-    position: 'relative',
-    overflow: 'hidden',
-    marginBottom: 20,
-    borderWidth: 1,
-    borderColor: 'rgba(232, 167, 58, 0.3)',
-  },
-
-  goldChip: {
-    position: 'absolute',
-    top: 12,
-    right: 12,
-    backgroundColor: 'rgba(251, 191, 36, 0.08)',
-    borderColor: 'rgba(251, 191, 36, 0.2)',
-    borderWidth: 1,
-    borderRadius: 12,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    zIndex: 3,
-  },
-  goldChipText: {
-    fontFamily: 'Silkscreen-Regular',
-    fontWeight: 'normal',
-    fontSize: 11,
-    color: '#FBBF24',
-  },
-  avatarContainer: {
-    position: 'relative',
-    width: 74,
-    height: 74,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  avatarCircle: {
-    width: 74,
-    height: 74,
-    borderRadius: 37,
-    borderWidth: 1.5,
-    borderColor: '#D4A754',
-    backgroundColor: 'rgba(0, 0, 0, 0.25)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    overflow: 'hidden',
-  },
-  levelBadge: {
-    position: 'absolute',
-    bottom: -2,
-    right: -2,
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    backgroundColor: '#D4A754',
-    borderWidth: 1.5,
-    borderColor: '#171725',
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 3,
-  },
-  levelBadgeText: {
-    fontFamily: 'Silkscreen-Regular',
-    color: '#1A1200',
-    fontWeight: 'normal',
-    fontSize: 9,
-    textAlign: 'center',
-  },
-  heroDetails: {
-    flex: 1,
-    marginLeft: 14,
-    justifyContent: 'center',
-  },
-  identityRow: {
-    marginBottom: 8,
-  },
-  heroName: {
-    ...theme.FONTS.display,
-    fontSize: 18,
-    color: theme.COLORS.ghostWhite,
-  },
-  heroPathText: {
-    ...theme.FONTS.label,
-    color: theme.COLORS.torchOrange,
-    marginTop: 2,
-  },
-  gaugesStack: {
-    gap: theme.SPACING.tight,
-  },
-  gaugeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  gaugeLabel: {
-    fontFamily: 'Silkscreen-Regular',
-    fontSize: 9,
-    fontWeight: 'normal',
-    color: '#707F94',
-    width: 18,
-  },
-  gaugeTrack: {
-    flex: 1,
-    height: 8,
-    backgroundColor: 'rgba(0, 0, 0, 0.45)',
-    borderRadius: 4,
-    overflow: 'hidden',
-    marginHorizontal: 8,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.02)',
-  },
-  gaugeFill: {
-    height: '100%',
-    borderRadius: 4,
-  },
-  hpFillGrad: {
-    backgroundColor: '#EF4444',
-  },
-  xpFillGrad: {
-    backgroundColor: '#3B82F6',
-  },
-  gaugeValue: {
-    fontFamily: 'Silkscreen-Regular',
-    fontSize: 9,
-    fontWeight: 'normal',
-    color: '#F8FAFC',
-    width: 44,
-    textAlign: 'right',
-  },
 
   /* ═══ Dungeon CTA ══════════════════════════════════════════════════════════ */
   dungeonCTA: {
@@ -1150,46 +943,63 @@ const styles = StyleSheet.create({
   },
 
   /* ═══ Stat Point Buttons & Badge ══════════════════════════════════════════ */
-  statPointsBtn: {
+  /* ═══ Animated Hub Banner ═════════════════════════════════════════════════ */
+  bannerContainer: {
+    width: BANNER_WIDTH,
+    height: 180,
+    borderRadius: theme.BORDER_RADIUS.card,
+    borderWidth: 3,
+    borderColor: '#4A3917',
+    overflow: 'hidden',
+    position: 'relative',
+    marginBottom: 20,
+  },
+  bannerOverlayContent: {
+    ...StyleSheet.absoluteFillObject,
+    padding: 16,
+    justifyContent: 'space-between',
+  },
+  bannerTitleText: {
+    fontFamily: 'PressStart2P-Regular',
+    fontSize: 20,
+    color: '#FFF3DA',
+    textShadowColor: '#1A1200',
+    textShadowOffset: { width: 2, height: 2 },
+    textShadowRadius: 1,
     marginTop: 8,
-    borderRadius: 10,
-    borderWidth: 1,
-    paddingVertical: 5,
-    paddingHorizontal: 10,
-    alignSelf: 'flex-start',
   },
-  statPointsBtnGlow: {
-    backgroundColor: 'rgba(212, 167, 84, 0.12)',
-    borderColor: 'rgba(212, 167, 84, 0.4)',
+  bannerTagsRow: {
+    flexDirection: 'row',
+    alignSelf: 'flex-end',
+    gap: 8,
   },
-  statPointsBtnNormal: {
-    backgroundColor: 'rgba(255, 255, 255, 0.02)',
-    borderColor: 'rgba(255, 255, 255, 0.08)',
-  },
-  glowDotContainer: {
+  bannerTag: {
     flexDirection: 'row',
     alignItems: 'center',
+    backgroundColor: '#F3E2BD',
+    borderColor: '#4A3917',
+    borderWidth: 2,
+    borderRadius: 8,
+    paddingVertical: 4,
+    paddingHorizontal: 8,
     gap: 6,
   },
-  glowDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: '#E8A73A',
+  bannerTagText: {
+    fontFamily: 'PixelifySans-Medium',
+    fontSize: 12,
+    color: '#2A1A0C',
   },
-  statPointsBtnTextGlow: {
-    fontFamily: 'Silkscreen-Regular',
-    color: '#D4A754',
-    fontWeight: 'normal',
-    fontSize: 10,
-    letterSpacing: 0.2,
+  bannerTagClickableWrapper: {
+    borderWidth: 2,
+    borderRadius: 8,
+    overflow: 'hidden',
   },
-  statPointsBtnTextNormal: {
-    fontFamily: 'Silkscreen-Regular',
-    color: 'rgba(255, 255, 255, 0.5)',
-    fontWeight: 'normal',
-    fontSize: 10,
-    letterSpacing: 0.2,
+  bannerTagClickableInner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    gap: 6,
   },
 
   /* ═══ Modal Styles ════════════════════════════════════════════════════════ */
