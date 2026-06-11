@@ -34,7 +34,7 @@ import { SKILLS } from '../data/skills';
 import ItemSprite from '../components/ItemSprite';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const BANNER_WIDTH = SCREEN_WIDTH - 32;
+const BANNER_WIDTH = SCREEN_WIDTH - 40;
 
 // ─── SVG Wood Texture Background Component ───────────────────────────────────
 function WoodSpriteBackground({ borderRadius = 8 }) {
@@ -52,6 +52,25 @@ function WoodSpriteBackground({ borderRadius = 8 }) {
         {/* Light wood highlights */}
         <Path d="M0,35 Q20,32 55,38 T100,35" stroke="#A87543" strokeWidth="2" fill="none" opacity="0.3" />
         <Path d="M0,65 Q35,68 65,62 T100,65" stroke="#A87543" strokeWidth="2" fill="none" opacity="0.3" />
+      </Svg>
+    </View>
+  );
+}
+
+// ─── SVG Soft Icon Glow Background Component ─────────────────────────────────
+function IconGlowBackground({ size = 56 }) {
+  const radius = size / 2;
+  return (
+    <View style={{ ...StyleSheet.absoluteFillObject, justifyContent: 'center', alignItems: 'center' }}>
+      <Svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+        <Defs>
+          <RadialGradient id={`iconGlowGrad-${size}`} cx="50%" cy="50%" rx="50%" ry="50%">
+            <Stop offset="0%" stopColor="#FFF3DA" stopOpacity="0.65" />
+            <Stop offset="50%" stopColor="#E8A73A" stopOpacity="0.25" />
+            <Stop offset="100%" stopColor="#E8A73A" stopOpacity="0" />
+          </RadialGradient>
+        </Defs>
+        <Circle cx={radius} cy={radius} r={radius} fill={`url(#iconGlowGrad-${size})`} />
       </Svg>
     </View>
   );
@@ -375,11 +394,12 @@ export default function CampScreen({ navigation }) {
             onPress={() => navigation.navigate('WorldMap')}
           >
             <View style={styles.dungeonSpriteContainer}>
+              <IconGlowBackground size={64} />
               <ItemSprite spritesheet="icons-1" frameIndex={30} displaySize={56} />
             </View>
             <View style={styles.dungeonTextContainer}>
-              <Text style={styles.dungeonLabel}>ENTER DUNGEONS</Text>
-              <Text style={styles.dungeonSub}>Conquer Zones</Text>
+              <Text style={styles.dungeonLabel}>START ADVENTURES</Text>
+              <Text style={styles.dungeonSub}>EXPLORE THE DUNGEONS</Text>
             </View>
           </TouchableOpacity>
 
@@ -391,7 +411,9 @@ export default function CampScreen({ navigation }) {
               activeOpacity={0.8}
               onPress={() => navigation.navigate('Shop')}
             >
+              <WoodSpriteBackground borderRadius={theme.BORDER_RADIUS.card} />
               <View style={styles.subSpriteContainer}>
+                <IconGlowBackground size={56} />
                 <ItemSprite spritesheet="icons-1" frameIndex={29} displaySize={48} />
               </View>
               <Text style={styles.subCardLabel}>SHOPPING</Text>
@@ -404,7 +426,9 @@ export default function CampScreen({ navigation }) {
               activeOpacity={0.8}
               onPress={() => navigation.navigate('SkillTree')}
             >
+              <WoodSpriteBackground borderRadius={theme.BORDER_RADIUS.card} />
               <View style={styles.subSpriteContainer}>
+                <IconGlowBackground size={56} />
                 <ItemSprite spritesheet="icons-1" frameIndex={26} displaySize={48} />
               </View>
               <Text style={styles.subCardLabel}>SKILLS</Text>
@@ -417,7 +441,9 @@ export default function CampScreen({ navigation }) {
               activeOpacity={0.8}
               onPress={() => navigation.navigate('Loadout')}
             >
+              <WoodSpriteBackground borderRadius={theme.BORDER_RADIUS.card} />
               <View style={styles.subSpriteContainer}>
+                <IconGlowBackground size={56} />
                 <ItemSprite spritesheet="icons-1" frameIndex={18} displaySize={48} />
               </View>
               <Text style={styles.subCardLabel}>LOADOUT</Text>
@@ -735,11 +761,11 @@ export default function CampScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: theme.COLORS.hearthBlack,
+    backgroundColor: '#133131',
   },
   scroll: {
     paddingBottom: 40,
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
     paddingTop: 16,
   },
   cardBorderOverlay: {
@@ -820,7 +846,9 @@ const styles = StyleSheet.create({
   dungeonSpriteContainer: {
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 4,
+    width: 64,
+    height: 64,
+    position: 'relative',
   },
   dungeonTextContainer: {
     justifyContent: 'center',
@@ -829,7 +857,7 @@ const styles = StyleSheet.create({
   dungeonLabel: {
     fontFamily: 'PixelifySans-Medium',
     fontWeight: 'normal',
-    fontSize: 20,
+    fontSize: 24,
     color: '#FFF3DA',
     textTransform: 'uppercase',
   },
@@ -847,8 +875,8 @@ const styles = StyleSheet.create({
   },
   subCard: {
     flex: 1,
-    backgroundColor: '#F3E2BD',
-    borderColor: '#4A3917',
+    backgroundColor: '#825324',
+    borderColor: theme.COLORS.candleGold,
     borderWidth: 3,
     borderRadius: theme.BORDER_RADIUS.card,
     paddingTop: 16,
@@ -860,13 +888,16 @@ const styles = StyleSheet.create({
   subSpriteContainer: {
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 10,
+    width: 56,
+    height: 56,
+    position: 'relative',
   },
   subCardLabel: {
     fontFamily: 'PixelifySans-Medium',
     fontWeight: 'normal',
-    fontSize: 13,
-    color: '#2A1A0C',
+    fontSize: 16,
+    color: '#FFF3DA',
     textAlign: 'center',
     textTransform: 'uppercase',
   },
@@ -874,7 +905,7 @@ const styles = StyleSheet.create({
     fontFamily: 'Silkscreen-Regular',
     fontWeight: 'normal',
     fontSize: 9,
-    color: '#57431A',
+    color: '#FFEED0',
     textAlign: 'center',
     marginTop: 2,
   },
@@ -977,12 +1008,12 @@ const styles = StyleSheet.create({
     borderColor: '#D4A754',
     borderRadius: 5,
     backgroundColor: '#1E1E20',
-    paddingVertical: 6,
-    paddingHorizontal: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 18,
   },
   bannerTitleText: {
     fontFamily: 'PressStart2P-Regular',
-    fontSize: 15,
+    fontSize: 18,
     color: '#FFF3DA',
     textAlign: 'center',
     textShadowColor: '#000',
