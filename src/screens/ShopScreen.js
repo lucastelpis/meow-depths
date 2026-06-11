@@ -765,7 +765,7 @@ const styles = StyleSheet.create({
   },
   shopRowName: {
     fontFamily: 'PixelifySans-Medium',
-    fontSize: 15,
+    fontSize: 13,
     color: '#F8FAFC',
     fontWeight: 'normal',
   },
@@ -779,7 +779,8 @@ const styles = StyleSheet.create({
   },
   shopOwnedPillText: {
     fontFamily: 'Silkscreen-Regular',
-    fontSize: 9,
+    fontSize: 8,
+    letterSpacing: 0,
     fontWeight: 'normal',
     color: '#10B981',
   },
@@ -894,7 +895,7 @@ const styles = StyleSheet.create({
   },
   gearName: {
     fontFamily: 'PixelifySans-Medium',
-    fontSize: 15,
+    fontSize: 13,
     color: '#F8FAFC',
     fontWeight: 'normal',
   },
@@ -908,14 +909,15 @@ const styles = StyleSheet.create({
   },
   gearTypeBadgeText: {
     fontFamily: 'Silkscreen-Regular',
-    fontSize: 8,
+    fontSize: 7,
     fontWeight: 'normal',
     color: '#D4A754',
-    letterSpacing: 0.3,
+    letterSpacing: 0,
   },
   statPreview: {
-    fontFamily: 'PixelifySans-Medium',
-    fontSize: 12,
+    fontFamily: 'Silkscreen-Regular',
+    fontSize: 10,
+    letterSpacing: 0,
     color: '#10B981',
     fontWeight: 'normal',
     marginTop: 4,
