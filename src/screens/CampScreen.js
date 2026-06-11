@@ -297,28 +297,23 @@ export default function CampScreen({ navigation }) {
               </View>
 
               {/* Tag 3: Stats (Clickable) */}
-              <Animated.View
-                style={[
-                  styles.bannerTagClickableWrapper,
-                  (hero.statPoints || 0) > 0
-                    ? { backgroundColor: bgPulseColor, borderColor: borderPulseColor }
-                    : { backgroundColor: '#F3E2BD', borderColor: '#4A3917' }
-                ]}
-              >
+              <View style={styles.bannerTagClickableWrapper}>
                 <TouchableOpacity
                   style={styles.bannerTagClickableInner}
                   onPress={handleOpenStatModal}
                   activeOpacity={0.7}
                 >
                   <ItemSprite spritesheet="icons-1" frameIndex={28} displaySize={18} />
-                  <Text style={[
-                    styles.bannerTagText,
-                    (hero.statPoints || 0) > 0 ? { color: '#FFF3DA' } : { color: '#2A1A0C' }
-                  ]}>
-                    {(hero.statPoints || 0) > 0 ? `STATS (${hero.statPoints})` : "STATS"}
-                  </Text>
+                  <Text style={styles.bannerTagText}>STATS</Text>
                 </TouchableOpacity>
-              </Animated.View>
+
+                {/* Exclamation badge when stats are available */}
+                {(hero.statPoints || 0) > 0 && (
+                  <View style={styles.bannerTagBadge}>
+                    <Text style={styles.bannerTagBadgeText}>!</Text>
+                  </View>
+                )}
+              </View>
             </View>
           </View>
         </View>
@@ -1017,9 +1012,11 @@ const styles = StyleSheet.create({
     color: '#2A1A0C',
   },
   bannerTagClickableWrapper: {
+    position: 'relative',
+    backgroundColor: '#F3E2BD',
+    borderColor: '#4A3917',
     borderWidth: 2,
     borderRadius: 8,
-    overflow: 'hidden',
   },
   bannerTagClickableInner: {
     flexDirection: 'row',
@@ -1027,6 +1024,29 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     paddingHorizontal: 8,
     gap: 6,
+  },
+  bannerTagBadge: {
+    position: 'absolute',
+    top: -6,
+    right: -6,
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    backgroundColor: '#D8483F', // damageRed (retro red)
+    borderColor: '#4A3917',
+    borderWidth: 1.5,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10,
+  },
+  bannerTagBadgeText: {
+    fontFamily: 'PressStart2P-Regular',
+    fontSize: 8,
+    color: '#FFF3DA',
+    fontWeight: 'bold',
+    textAlign: 'center',
+    lineHeight: 8,
+    marginTop: -1,
   },
 
   /* ═══ Modal Styles ════════════════════════════════════════════════════════ */
