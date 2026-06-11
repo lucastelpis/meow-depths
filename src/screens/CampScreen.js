@@ -206,12 +206,12 @@ export default function CampScreen({ navigation }) {
 
   const borderPulseColor = pulseAnim.interpolate({
     inputRange: [0.3, 1],
-    outputRange: ['rgba(212, 167, 84, 0.2)', 'rgba(212, 167, 84, 0.95)'],
+    outputRange: ['rgba(232, 167, 58, 0.35)', 'rgba(232, 167, 58, 0.95)'],
   });
   
   const bgPulseColor = pulseAnim.interpolate({
     inputRange: [0.3, 1],
-    outputRange: ['rgba(36, 26, 12, 0.85)', 'rgba(60, 44, 20, 0.95)'],
+    outputRange: ['rgba(20, 44, 28, 0.85)', 'rgba(32, 74, 46, 0.95)'],
   });
 
   const glowShadowRadius = pulseAnim.interpolate({
@@ -400,7 +400,7 @@ export default function CampScreen({ navigation }) {
                 : {
                     backgroundColor: bgPulseColor,
                     borderColor: borderPulseColor,
-                    shadowColor: '#D4A754',
+                    shadowColor: '#E8A73A',
                     shadowOffset: { width: 0, height: 0 },
                     shadowOpacity: pulseAnim,
                     shadowRadius: glowShadowRadius,
@@ -408,22 +408,26 @@ export default function CampScreen({ navigation }) {
                   },
             ]}
           >
-            <View style={styles.dailyRewardInner}>
-              <Text style={styles.dailyRewardEmoji}>🎁</Text>
-              <View style={styles.dailyRewardTexts}>
-                <Text style={[
-                  styles.dailyRewardTitle,
-                  hasClaimedToday() ? styles.dailyRewardTitleClaimed : styles.dailyRewardTitleActive
-                ]}>
-                  {hasClaimedToday() ? "Daily Reward Claimed" : "Claim Daily Reward"}
-                </Text>
-                <Text style={[styles.dailyRewardSub, hasClaimedToday() && styles.dailyRewardSubClaimed]}>
-                  {hasClaimedToday()
-                    ? "You've already collected today's goods."
-                    : "Click to collect your daily bonus!"}
-                </Text>
-              </View>
-              {!hasClaimedToday() && <Text style={styles.dailyRewardArrow}>›</Text>}
+            <View style={[
+              styles.dailyRewardSpriteContainer,
+              hasClaimedToday() ? styles.dailyRewardSpriteContainerClaimed : styles.dailyRewardSpriteContainerActive
+            ]}>
+              <WoodSpriteBackground borderRadius={8} />
+              <ItemSprite spritesheet="icons-1" frameIndex={25} displaySize={44} />
+            </View>
+            <View style={styles.dailyRewardTextContainer}>
+              <Text style={[
+                styles.dailyRewardTitle,
+                hasClaimedToday() ? styles.dailyRewardTitleClaimed : styles.dailyRewardTitleActive
+              ]}>
+                {hasClaimedToday() ? "DAILY REWARD CLAIMED" : "CLAIM DAILY REWARD"}
+              </Text>
+              <Text style={[
+                styles.dailyRewardSub,
+                hasClaimedToday() ? styles.dailyRewardSubClaimed : styles.dailyRewardSubActive
+              ]}>
+                {hasClaimedToday() ? "Come Back Tomorrow" : "Collect Gold & Potions"}
+              </Text>
             </View>
           </Animated.View>
         </TouchableOpacity>
@@ -1110,53 +1114,62 @@ const styles = StyleSheet.create({
 
   /* ═══ Daily Reward Button ══════════════════════════════════════════════════ */
   dailyRewardBtn: {
-    marginBottom: 20,
-    borderRadius: theme.BORDER_RADIUS.button,
-    borderWidth: 3,
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-  },
-  dailyRewardBtnActive: {
-    backgroundColor: '#241A0C', // Secondary button
-    borderColor: '#4A3917',
-  },
-  dailyRewardBtnClaimed: {
-    backgroundColor: '#1A1A1A', // Disabled button
-    borderColor: '#2A2A2A',
-  },
-  dailyRewardInner: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'flex-start',
+    gap: 16,
+    marginBottom: 20,
+    borderRadius: theme.BORDER_RADIUS.card,
+    borderWidth: 3,
+    paddingVertical: 14,
+    paddingHorizontal: 20,
   },
-  dailyRewardEmoji: {
-    fontSize: 22,
-    marginRight: 14,
+  dailyRewardBtnClaimed: {
+    backgroundColor: '#1E1E20',
+    borderColor: '#3A3A3C',
+    opacity: 0.65,
   },
-  dailyRewardTexts: {
+  dailyRewardSpriteContainer: {
+    padding: 6,
+    borderRadius: 10,
+    overflow: 'hidden',
+    position: 'relative',
+    borderWidth: 3,
+  },
+  dailyRewardSpriteContainerActive: {
+    borderColor: theme.COLORS.candleGold,
+  },
+  dailyRewardSpriteContainerClaimed: {
+    borderColor: '#3A3A3C',
+  },
+  dailyRewardTextContainer: {
     flex: 1,
+    justifyContent: 'center',
+    alignItems: 'flex-start',
   },
   dailyRewardTitle: {
-    ...theme.FONTS.heading,
+    fontFamily: 'PixelifySans-Medium',
+    fontWeight: 'normal',
+    fontSize: 20,
+    textTransform: 'uppercase',
   },
   dailyRewardTitleActive: {
-    color: '#F0E0BD', // Secondary text
+    color: '#FFF3DA',
   },
   dailyRewardTitleClaimed: {
-    color: '#8A8A8A', // Better contrast disabled text
+    color: '#6E6E73',
   },
   dailyRewardSub: {
-    ...theme.FONTS.body,
-    fontSize: 11,
-    color: '#F0E0BD',
-    opacity: 0.8,
+    fontFamily: 'Silkscreen-Regular',
+    fontWeight: 'normal',
+    fontSize: 10,
     marginTop: 2,
   },
-  dailyRewardSubClaimed: {
-    color: '#8A8A8A',
+  dailyRewardSubActive: {
+    color: '#FFEED0',
   },
-  dailyRewardArrow: {
-    fontSize: 24,
-    color: theme.COLORS.warmGlow,
+  dailyRewardSubClaimed: {
+    color: '#6E6E73',
   },
 
   /* ═══ Stat Point Buttons & Badge ══════════════════════════════════════════ */
