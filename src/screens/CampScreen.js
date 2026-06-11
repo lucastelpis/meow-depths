@@ -22,7 +22,7 @@ import {
   Animated,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import Svg, { Defs, LinearGradient, RadialGradient, Stop, Rect, Circle, Path } from 'react-native-svg';
+import Svg, { Defs, LinearGradient, RadialGradient, Stop, Rect, Circle, Path, G } from 'react-native-svg';
 
 // ── Project imports ──────────────────────────────────────────────────────────
 import theme from '../constants/theme';
@@ -52,6 +52,80 @@ function WoodSpriteBackground({ borderRadius = 8 }) {
         {/* Light wood highlights */}
         <Path d="M0,35 Q20,32 55,38 T100,35" stroke="#A87543" strokeWidth="2" fill="none" opacity="0.3" />
         <Path d="M0,65 Q35,68 65,62 T100,65" stroke="#A87543" strokeWidth="2" fill="none" opacity="0.3" />
+      </Svg>
+    </View>
+  );
+}
+
+// ─── SVG Rugged Border Background Component ──────────────────────────────────
+function RuggedBorderBackground({ width, height }) {
+  if (!width || !height) return null;
+  
+  const notch = 6; // corner notch size
+  const shadowHeight = 5; // bottom shadow bevel height
+  const strokePadding = 3; // padding to prevent stroke clipping
+  
+  // Coordinates for the notched rectangle shape (straight sides)
+  const path = `M ${notch} 0 
+                L ${width - notch} 0 
+                L ${width - notch} ${notch} 
+                L ${width} ${notch} 
+                L ${width} ${height - notch} 
+                L ${width - notch} ${height - notch} 
+                L ${width - notch} ${height} 
+                L ${notch} ${height} 
+                L ${notch} ${height - notch} 
+                L 0 ${height - notch} 
+                L 0 ${notch} 
+                L ${notch} ${notch} Z`;
+
+  // Inner line inset coordinates (shifted inwards by 3 pixels)
+  const inset = 3;
+  const innerPath = `M ${notch + inset} ${inset} 
+                     L ${width - notch - inset} ${inset} 
+                     L ${width - notch - inset} ${notch + inset} 
+                     L ${width - inset} ${notch + inset} 
+                     L ${width - inset} ${height - notch - inset} 
+                     L ${width - notch - inset} ${height - notch - inset} 
+                     L ${width - notch - inset} ${height - inset} 
+                     L ${notch + inset} ${height - inset} 
+                     L ${notch + inset} ${height - notch - inset} 
+                     L ${inset} ${height - notch - inset} 
+                     L ${inset} ${notch + inset} 
+                     L ${notch + inset} ${notch + inset} Z`;
+
+  return (
+    <View style={StyleSheet.absoluteFillObject}>
+      <Svg 
+        width={width + strokePadding * 2} 
+        height={height + shadowHeight + strokePadding * 2} 
+        style={{ 
+          position: 'absolute', 
+          top: -strokePadding, 
+          left: -strokePadding 
+        }}
+      >
+        <G transform={`translate(${strokePadding}, ${strokePadding})`}>
+          {/* 1. 3D Under-Shadow */}
+          <Path d={path} fill="#4E1D0C" transform={`translate(0, ${shadowHeight})`} />
+
+          {/* 2. Main Button Face with Dark Outline */}
+          <Path 
+            d={path} 
+            fill="#A84C27" 
+            stroke="#4E1D0C" 
+            strokeWidth={3} 
+            strokeLinejoin="miter" 
+          />
+          {/* 3. Inner line border highlight */}
+          <Path 
+            d={innerPath} 
+            fill="none" 
+            stroke="#D67545" 
+            strokeWidth={1.5} 
+            opacity={0.75} 
+          />
+        </G>
       </Svg>
     </View>
   );
@@ -107,6 +181,8 @@ function AnimatedHubBackground({ width, height }) {
 export default function CampScreen({ navigation }) {
   const { state, dispatch } = useGame();
   const { hero } = state;
+
+  const [dungeonCardLayout, setDungeonCardLayout] = React.useState({ width: 0, height: 0 });
 
   // ── State for Stat Allocation Modal ───────────────────────────────────────
   const [showStatModal, setShowStatModal] = React.useState(false);
@@ -305,13 +381,13 @@ export default function CampScreen({ navigation }) {
             <View style={styles.bannerTagsRow}>
               {/* Tag 1: Gold */}
               <View style={styles.bannerTag}>
-                <ItemSprite spritesheet="icons-1" frameIndex={19} displaySize={18} />
+                <ItemSprite spritesheet="icons-1" frameIndex={11} displaySize={18} />
                 <Text style={styles.bannerTagText}>{hero.gold}</Text>
               </View>
 
               {/* Tag 2: Level */}
               <View style={styles.bannerTag}>
-                <ItemSprite spritesheet="icons-1" frameIndex={2} displaySize={18} />
+                <ItemSprite spritesheet="icons-1" frameIndex={28} displaySize={18} />
                 <Text style={styles.bannerTagText}>LV {hero.level}</Text>
               </View>
 
@@ -361,7 +437,7 @@ export default function CampScreen({ navigation }) {
             ]}
           >
             <View style={styles.dailyRewardSpriteContainer}>
-              <ItemSprite spritesheet="icons-1" frameIndex={25} displaySize={56} />
+              <ItemSprite spritesheet="icons-1" frameIndex={5} displaySize={56} />
             </View>
             <View style={styles.dailyRewardTextContainer}>
               <Text style={[
@@ -392,18 +468,23 @@ export default function CampScreen({ navigation }) {
             style={styles.dungeonCard}
             activeOpacity={0.8}
             onPress={() => navigation.navigate('WorldMap')}
+            onLayout={(e) => {
+              const { width, height } = e.nativeEvent.layout;
+              setDungeonCardLayout({ width, height });
+            }}
           >
+            <RuggedBorderBackground width={dungeonCardLayout.width} height={dungeonCardLayout.height} />
             <View style={styles.dungeonSpriteContainer}>
               <IconGlowBackground size={64} />
-              <ItemSprite spritesheet="icons-1" frameIndex={30} displaySize={56} />
+              <ItemSprite spritesheet="icons-1" frameIndex={0} displaySize={56} />
             </View>
             <View style={styles.dungeonTextContainer}>
-              <Text style={styles.dungeonLabel}>START ADVENTURES</Text>
-              <Text style={styles.dungeonSub}>EXPLORE THE DUNGEONS</Text>
+              <Text style={styles.dungeonLabel}>START ADVENTURE</Text>
+              <Text style={styles.dungeonSub}>EXPLORE ZONES</Text>
             </View>
           </TouchableOpacity>
 
-          {/* Shopping, Skills, Loadout — Row of 3 */}
+          {/* Sub Navigation Cards Row */}
           <View style={styles.subButtonsRow}>
             {/* Shopping */}
             <TouchableOpacity
@@ -413,11 +494,10 @@ export default function CampScreen({ navigation }) {
             >
               <WoodSpriteBackground borderRadius={theme.BORDER_RADIUS.card} />
               <View style={styles.subSpriteContainer}>
-                <IconGlowBackground size={56} />
-                <ItemSprite spritesheet="icons-1" frameIndex={29} displaySize={48} />
+                <IconGlowBackground size={44} />
+                <ItemSprite spritesheet="icons-1" frameIndex={1} displaySize={38} />
               </View>
-              <Text style={styles.subCardLabel}>SHOPPING</Text>
-              <Text style={styles.subCardSub}>Buy Stuff</Text>
+              <Text style={styles.subCardLabel}>MARKET</Text>
             </TouchableOpacity>
 
             {/* Skills */}
@@ -428,11 +508,10 @@ export default function CampScreen({ navigation }) {
             >
               <WoodSpriteBackground borderRadius={theme.BORDER_RADIUS.card} />
               <View style={styles.subSpriteContainer}>
-                <IconGlowBackground size={56} />
-                <ItemSprite spritesheet="icons-1" frameIndex={26} displaySize={48} />
+                <IconGlowBackground size={44} />
+                <ItemSprite spritesheet="icons-1" frameIndex={4} displaySize={38} />
               </View>
               <Text style={styles.subCardLabel}>SKILLS</Text>
-              <Text style={styles.subCardSub}>Unlock Talents</Text>
             </TouchableOpacity>
 
             {/* Loadout */}
@@ -443,11 +522,24 @@ export default function CampScreen({ navigation }) {
             >
               <WoodSpriteBackground borderRadius={theme.BORDER_RADIUS.card} />
               <View style={styles.subSpriteContainer}>
-                <IconGlowBackground size={56} />
-                <ItemSprite spritesheet="icons-1" frameIndex={18} displaySize={48} />
+                <IconGlowBackground size={44} />
+                <ItemSprite spritesheet="icons-1" frameIndex={12} displaySize={38} />
               </View>
               <Text style={styles.subCardLabel}>LOADOUT</Text>
-              <Text style={styles.subCardSub}>Manage Gear</Text>
+            </TouchableOpacity>
+
+            {/* Profile */}
+            <TouchableOpacity
+              style={styles.subCard}
+              activeOpacity={0.8}
+              onPress={() => navigation.navigate('Profile')}
+            >
+              <WoodSpriteBackground borderRadius={theme.BORDER_RADIUS.card} />
+              <View style={styles.subSpriteContainer}>
+                <IconGlowBackground size={44} />
+                <ItemSprite spritesheet="icons-1" frameIndex={28} displaySize={38} />
+              </View>
+              <Text style={styles.subCardLabel}>PROFILE</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -459,7 +551,6 @@ export default function CampScreen({ navigation }) {
           title="Reset Save Data"
           icon="⚠️"
           variant="danger"
-          style={{ marginTop: 12 }}
           onPress={() => {
             Alert.alert(
               'Reset Game Data',
@@ -827,21 +918,17 @@ const styles = StyleSheet.create({
   /* ═══ Navigation Grid ══════════════════════════════════════════════════════ */
   navGrid: {
     width: '100%',
-    marginBottom: 24,
+    marginBottom: theme.SPACING.section,
   },
   dungeonCard: {
     width: '100%',
-    backgroundColor: theme.COLORS.primary,
-    borderColor: theme.COLORS.candleGold,
-    borderWidth: 3,
-    borderRadius: theme.BORDER_RADIUS.card,
     paddingVertical: 14,
     paddingHorizontal: 20,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'flex-start',
     gap: 16,
-    marginBottom: 16,
+    marginBottom: theme.SPACING.section + 5, // 16px visual gap + 5px shadow height offset
   },
   dungeonSpriteContainer: {
     justifyContent: 'center',
@@ -871,43 +958,38 @@ const styles = StyleSheet.create({
   subButtonsRow: {
     flexDirection: 'row',
     width: '100%',
-    gap: 12,
+    gap: 8,
   },
   subCard: {
     flex: 1,
     backgroundColor: '#825324',
     borderColor: theme.COLORS.candleGold,
-    borderWidth: 3,
+    borderWidth: 2,
     borderRadius: theme.BORDER_RADIUS.card,
-    paddingTop: 16,
-    paddingBottom: 12,
-    paddingHorizontal: 8,
+    paddingTop: 10,
+    paddingBottom: 8,
+    paddingHorizontal: 4,
     alignItems: 'center',
     justifyContent: 'center',
+    position: 'relative',
+    overflow: 'hidden',
   },
   subSpriteContainer: {
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 10,
-    width: 56,
-    height: 56,
+    marginBottom: 6,
+    width: 44,
+    height: 44,
     position: 'relative',
   },
   subCardLabel: {
     fontFamily: 'PixelifySans-Medium',
     fontWeight: 'normal',
-    fontSize: 16,
+    fontSize: 11,
+    lineHeight: 12,
     color: '#FFF3DA',
     textAlign: 'center',
     textTransform: 'uppercase',
-  },
-  subCardSub: {
-    fontFamily: 'Silkscreen-Regular',
-    fontWeight: 'normal',
-    fontSize: 9,
-    color: '#FFEED0',
-    textAlign: 'center',
-    marginTop: 2,
   },
 
   /* ═══ Floating CurrenciesDisplay Chip Row ══════════════════════════════════ */
@@ -926,7 +1008,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'flex-start',
     gap: 16,
-    marginBottom: 20,
+    marginBottom: theme.SPACING.section,
     borderRadius: theme.BORDER_RADIUS.card,
     borderWidth: 3,
     paddingVertical: 14,
@@ -982,7 +1064,7 @@ const styles = StyleSheet.create({
     borderColor: '#4A3917',
     overflow: 'hidden',
     position: 'relative',
-    marginBottom: 20,
+    marginBottom: theme.SPACING.section,
   },
   bannerOverlayContent: {
     ...StyleSheet.absoluteFillObject,

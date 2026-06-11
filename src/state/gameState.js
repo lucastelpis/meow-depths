@@ -367,6 +367,33 @@ function gameReducer(state, action) {
     }
 
     // -----------------------------------------------------------------------
+    // FORGE_CRYSTAL — craft higher-tier crystals from lower-tier crystals
+    // Payload: { inputId: string, outputId: string }
+    // -----------------------------------------------------------------------
+    case 'FORGE_CRYSTAL': {
+      const { inputId, outputId } = action.payload;
+      const currentInputQty = state.hero.inventory.materials[inputId] || 0;
+      if (currentInputQty < 10) return state;
+
+      const newMaterials = { ...state.hero.inventory.materials };
+      newMaterials[inputId] = currentInputQty - 10;
+      if (newMaterials[inputId] <= 0) delete newMaterials[inputId];
+
+      newMaterials[outputId] = (newMaterials[outputId] || 0) + 1;
+
+      return {
+        ...state,
+        hero: {
+          ...state.hero,
+          inventory: {
+            ...state.hero.inventory,
+            materials: newMaterials,
+          },
+        },
+      };
+    }
+
+    // -----------------------------------------------------------------------
     // EQUIP_SKILL — assign a skill to a combat slot
     // Payload: { slotIndex: 0|1, skillId: string|null }
     // -----------------------------------------------------------------------

@@ -134,6 +134,18 @@ Requires parent T1 active skill at **★5**, and the following level and materia
 - **★4**: Level 14 + 45x Big Black Crystal
 - **★5**: Level 15 + 60x Big Black Crystal + 1x Crystal Core
 
+##### **Crystal Fusion & Forging**
+To help players acquire higher-tier crystals, they can use the **Forge** tab in the Market (Shop) to combine lower-tier crystals into higher-tier ones:
+- **Small Crystal Fusion**: 10x Crystal Shards ➔ 1x Small Crystal of the same color.
+- **Big Crystal Fusion**: 10x Small Crystals ➔ 1x Big Crystal of the same color.
+- **Crystal Cores** are exceptionally rare and **cannot** be forged; they must be obtained as drops from bosses or mystery chests.
+
+###### **Progression Lock**
+Crystals and fusion recipes are locked by dungeon progression to match the active zone:
+1. **Black Crystals** (Zone 1 - Soggy Sewers): Always unlocked and available from the start.
+2. **Green Crystals** (Zone 2 - Twisted Garden): Visible in the Forge and inventory only after Zone 1 is cleared.
+3. **Yellow Crystals** (Zone 3 - Sunken Docks): Visible in the Forge and inventory only after Zone 2 is cleared.
+
 ---
 
 ### Skill Data Sheets

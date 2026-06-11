@@ -26,10 +26,12 @@ import ItemSprite from '../components/ItemSprite';
 
 // ─── Tabs ────────────────────────────────────────────────────────────────────
 const TABS = [
-  { key: 'consumables', icon: '🧪', label: 'Consumables' },
-  { key: 'gear',        icon: '⚒️', label: 'Equipment'  },
-  { key: 'crafting',    icon: '💎', label: 'Miscellaneous' },
+  { key: 'consumables', frameIndex: 26, label: 'Consumables' },
+  { key: 'gear',        frameIndex: 10, label: 'Equipment'  },
+  { key: 'crafting',    frameIndex: 29, label: 'Materials'  },
 ];
+
+
 
 const GEAR_TYPE_ICON = {
   weapon:  '⚔️',
@@ -284,10 +286,19 @@ export default function InventoryScreen() {
     );
   };
 
+  const isMaterialZoneOpened = (zoneIndex) => {
+    if (zoneIndex === 0) return true;
+    if (zoneIndex === 1) return !!state.progress.zone1Cleared;
+    if (zoneIndex === 2) return !!state.progress.zone2Cleared;
+    return false;
+  };
+
   const renderCrafting = () => {
-    const materials = hero.inventory.materials;
+    const materials = hero.inventory.materials || {};
     const allMaterials = [];
-    MATERIAL_ZONES.forEach((zone) => {
+    MATERIAL_ZONES.forEach((zone, zIdx) => {
+      if (!isMaterialZoneOpened(zIdx)) return;
+
       zone.ids.forEach((id) => {
         const qty = materials[id] || 0;
         if (qty > 0) {
@@ -452,17 +463,24 @@ export default function InventoryScreen() {
       {/* Tab bar */}
       <View style={styles.tabBarContainer}>
         <View style={styles.tabBar}>
-          {TABS.map(({ key, icon, label }) => {
+          {TABS.map(({ key, frameIndex, label }) => {
             const isActive = activeTab === key;
             return (
               <TouchableOpacity
                 key={key}
-                style={[styles.tabBtn, isActive && styles.tabBtnActive]}
+                style={[styles.tabBtn, isActive ? styles.tabBtnActive : styles.tabBtnInactive]}
                 onPress={() => setActiveTab(key)}
                 activeOpacity={0.8}
               >
-                <Text style={[styles.tabIcon, !isActive && styles.tabIconDim]}>{icon}</Text>
-                <Text style={[styles.tabLabel, isActive && styles.tabLabelActive]}>{label}</Text>
+                <ItemSprite
+                  spritesheet="icons-1"
+                  frameIndex={frameIndex}
+                  displaySize={18}
+                  opacity={isActive ? 1.0 : 0.6}
+                />
+                <Text style={[styles.tabLabel, isActive ? styles.tabLabelActive : styles.tabLabelInactive]}>
+                  {label}
+                </Text>
               </TouchableOpacity>
             );
           })}
@@ -807,43 +825,43 @@ const styles = StyleSheet.create({
   },
   tabBar: {
     flexDirection: 'row',
-    backgroundColor: 'rgba(255,255,255,0.015)',
-    borderRadius: 14,
-    padding: 4,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.04)',
+    gap: 8,
+    backgroundColor: 'transparent',
+    borderRadius: 0,
+    padding: 0,
+    borderWidth: 0,
   },
   tabBtn: {
     flex: 1,
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 10,
+    borderRadius: 8,
     paddingVertical: 8,
-    gap: 3,
-    position: 'relative',
-    overflow: 'hidden',
+    paddingHorizontal: 4,
+    gap: 6,
+    borderWidth: 2,
   },
   tabBtnActive: {
-    backgroundColor: 'rgba(212,167,84,0.10)',
-    borderWidth: 1,
-    borderColor: 'rgba(212,167,84,0.35)',
+    backgroundColor: '#F3E2BD',
+    borderColor: '#4A3917',
   },
-  tabIcon: {
-    fontSize: 16,
-  },
-  tabIconDim: {
-    opacity: 0.45,
+  tabBtnInactive: {
+    backgroundColor: '#3C2D1E',
+    borderColor: '#4A3917',
   },
   tabLabel: {
     fontFamily: 'Silkscreen-Regular',
     fontSize: 10,
     fontWeight: 'normal',
-    color: '#707F94',
-    letterSpacing: 0.2,
+    letterSpacing: 0,
   },
   tabLabelActive: {
-    color: '#F8FAFC',
-    fontWeight: '800',
+    color: '#2A1A0C',
+  },
+  tabLabelInactive: {
+    color: '#F3E2BD',
+    opacity: 0.6,
   },
 
   /* ── Scroll ──────────────────────────────────────────────── */
@@ -1488,3 +1506,4 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
   },
 });
+
