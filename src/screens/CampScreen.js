@@ -275,8 +275,12 @@ export default function CampScreen({ navigation }) {
         <View style={[styles.bannerContainer, theme.SHADOWS.cardShadow]}>
           <AnimatedHubBackground width={BANNER_WIDTH - 6} height={BANNER_WIDTH - 6} />
           <View style={styles.bannerOverlayContent}>
-            {/* Title */}
-            <Text style={styles.bannerTitleText}>Meow Dungeons</Text>
+            {/* Centered Plaque Title */}
+            <View style={styles.bannerTitleOuterBorder}>
+              <View style={styles.bannerTitleInnerBorder}>
+                <Text style={styles.bannerTitleText}>Meow Dungeons</Text>
+              </View>
+            </View>
 
             {/* Tags Stack */}
             <View style={styles.bannerTagsRow}>
@@ -959,14 +963,36 @@ const styles = StyleSheet.create({
     padding: 16,
     justifyContent: 'space-between',
   },
+  bannerTitleOuterBorder: {
+    alignSelf: 'center',
+    borderWidth: 3,
+    borderColor: '#4A3917',
+    borderRadius: 8,
+    backgroundColor: 'transparent',
+    padding: 2,
+    marginTop: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 3,
+    elevation: 4,
+  },
+  bannerTitleInnerBorder: {
+    borderWidth: 2,
+    borderColor: '#D4A754',
+    borderRadius: 5,
+    backgroundColor: '#1E1E20',
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+  },
   bannerTitleText: {
     fontFamily: 'PressStart2P-Regular',
-    fontSize: 20,
+    fontSize: 15,
     color: '#FFF3DA',
-    textShadowColor: '#1A1200',
-    textShadowOffset: { width: 2, height: 2 },
+    textAlign: 'center',
+    textShadowColor: '#000',
+    textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 1,
-    marginTop: 8,
   },
   bannerTagsRow: {
     flexDirection: 'row',
