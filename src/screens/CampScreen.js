@@ -1011,8 +1011,9 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   bannerTagText: {
-    fontFamily: 'PixelifySans-Medium',
-    fontSize: 12,
+    fontFamily: 'Silkscreen-Regular',
+    fontSize: 10,
+    letterSpacing: 0.5,
     color: '#2A1A0C',
   },
   bannerTagClickableWrapper: {
