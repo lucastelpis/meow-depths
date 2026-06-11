@@ -576,14 +576,14 @@ const styles = StyleSheet.create({
   },
   backText: {
     color: '#D4A754',
-    fontFamily: 'System',
-    fontWeight: 'bold',
+    fontFamily: 'PixelifySans-Medium',
+    fontWeight: 'normal',
     fontSize: 16,
     letterSpacing: 0.5,
   },
   title: {
-    fontFamily: 'System',
-    fontWeight: 'bold',
+    fontFamily: 'PixelifySans-Medium',
+    fontWeight: 'normal',
     fontSize: 20,
     color: '#F8FAFC',
     flex: 1,
@@ -607,9 +607,9 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
   goldBadgeText: {
-    fontFamily: 'System',
+    fontFamily: 'PixelifySans-Medium',
     fontSize: 12,
-    fontWeight: 'bold',
+    fontWeight: 'normal',
     color: '#FFD700',
   },
 
@@ -622,9 +622,9 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.2)',
   },
   materialsLabel: {
-    fontFamily: 'System',
+    fontFamily: 'Silkscreen-Regular',
     fontSize: 10,
-    fontWeight: '900',
+    fontWeight: 'normal',
     color: '#707F94',
     textTransform: 'uppercase',
     letterSpacing: 1.2,
@@ -634,7 +634,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
   },
   emptyMaterials: {
-    fontFamily: 'System',
+    fontFamily: 'PixelifySans-Regular',
     fontSize: 12,
     color: 'rgba(255, 255, 255, 0.25)',
     fontStyle: 'italic',
@@ -657,16 +657,16 @@ const styles = StyleSheet.create({
     marginRight: 6,
   },
   materialName: {
-    fontFamily: 'System',
+    fontFamily: 'PixelifySans-Regular',
     fontSize: 12,
     color: 'rgba(255, 255, 255, 0.7)',
     marginRight: 8,
   },
   materialQty: {
-    fontFamily: 'System',
+    fontFamily: 'PixelifySans-Medium',
     fontSize: 12,
     color: '#D4A754',
-    fontWeight: 'bold',
+    fontWeight: 'normal',
   },
 
   /* ── Tab Switcher ────────────────────────────────────────── */
@@ -690,9 +690,9 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   tabButtonText: {
-    fontFamily: 'System',
+    fontFamily: 'PixelifySans-Medium',
     fontSize: 12,
-    fontWeight: 'bold',
+    fontWeight: 'normal',
     color: 'rgba(255, 255, 255, 0.35)',
     zIndex: 2,
   },
@@ -709,13 +709,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
   },
   introTitle: {
-    fontFamily: 'System',
+    fontFamily: 'PixelifySans-Medium',
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: 'normal',
     color: '#F8FAFC',
   },
   introDesc: {
-    fontFamily: 'System',
+    fontFamily: 'PixelifySans-Regular',
     fontSize: 12,
     color: '#707F94',
     marginTop: 3,
@@ -764,10 +764,10 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   shopRowName: {
-    fontFamily: 'System',
+    fontFamily: 'PixelifySans-Medium',
     fontSize: 15,
     color: '#F8FAFC',
-    fontWeight: 'bold',
+    fontWeight: 'normal',
   },
   shopOwnedPill: {
     backgroundColor: 'rgba(16, 185, 129, 0.1)',
@@ -778,13 +778,13 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
   },
   shopOwnedPillText: {
-    fontFamily: 'System',
+    fontFamily: 'Silkscreen-Regular',
     fontSize: 9,
-    fontWeight: 'bold',
+    fontWeight: 'normal',
     color: '#10B981',
   },
   shopRowDesc: {
-    fontFamily: 'System',
+    fontFamily: 'PixelifySans-Regular',
     fontSize: 12,
     color: '#707F94',
     marginTop: 4,
@@ -844,9 +844,9 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255, 255, 255, 0.05)',
   },
   buyBtnText: {
-    fontFamily: 'System',
+    fontFamily: 'PixelifySans-Medium',
     fontSize: 12,
-    fontWeight: 'bold',
+    fontWeight: 'normal',
     zIndex: 2,
   },
   buyBtnTextActive: {
@@ -861,9 +861,9 @@ const styles = StyleSheet.create({
     marginTop: 18,
   },
   zoneHeader: {
-    fontFamily: 'System',
+    fontFamily: 'PixelifySans-Medium',
     fontSize: 15,
-    fontWeight: '800',
+    fontWeight: 'normal',
     color: '#D4A754',
     marginBottom: 12,
     letterSpacing: 0.5,
@@ -893,10 +893,10 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   gearName: {
-    fontFamily: 'System',
+    fontFamily: 'PixelifySans-Medium',
     fontSize: 15,
     color: '#F8FAFC',
-    fontWeight: 'bold',
+    fontWeight: 'normal',
   },
   gearTypeBadge: {
     backgroundColor: 'rgba(212, 167, 84, 0.08)',
@@ -907,17 +907,17 @@ const styles = StyleSheet.create({
     paddingVertical: 1,
   },
   gearTypeBadgeText: {
-    fontFamily: 'System',
+    fontFamily: 'Silkscreen-Regular',
     fontSize: 8,
-    fontWeight: 'bold',
+    fontWeight: 'normal',
     color: '#D4A754',
     letterSpacing: 0.3,
   },
   statPreview: {
-    fontFamily: 'System',
+    fontFamily: 'PixelifySans-Medium',
     fontSize: 12,
     color: '#10B981',
-    fontWeight: '600',
+    fontWeight: 'normal',
     marginTop: 4,
   },
   armoryBuyBtn: {
@@ -935,9 +935,9 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255, 255, 255, 0.05)',
   },
   armoryBuyBtnText: {
-    fontFamily: 'System',
+    fontFamily: 'PixelifySans-Medium',
     fontSize: 12,
-    fontWeight: 'bold',
+    fontWeight: 'normal',
     zIndex: 2,
     color: '#1A1200',
   },
@@ -956,9 +956,9 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(92, 196, 137, 0.2)',
   },
   armoryBuyBtnOwnedText: {
-    fontFamily: 'System',
+    fontFamily: 'PixelifySans-Medium',
     fontSize: 12,
-    fontWeight: 'bold',
+    fontWeight: 'normal',
     color: '#5CC489',
   },
   zoneHeaderLocked: {
@@ -975,7 +975,7 @@ const styles = StyleSheet.create({
     minHeight: 80,
   },
   lockedZoneText: {
-    fontFamily: 'System',
+    fontFamily: 'PixelifySans-Regular',
     fontSize: 12,
     color: 'rgba(255, 255, 255, 0.25)',
     fontStyle: 'italic',

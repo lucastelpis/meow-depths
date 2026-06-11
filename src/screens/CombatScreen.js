@@ -2445,10 +2445,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   loadingText: {
-    fontFamily: 'System',
+    fontFamily: 'PixelifySans-Medium',
     fontSize: 16,
     color: '#707F94',
-    fontWeight: 'bold',
+    fontWeight: 'normal',
   },
 
   /* ── Combat Header ─────────────────────────────────────────── */
@@ -2839,10 +2839,10 @@ const styles = StyleSheet.create({
     zIndex: 2,
   },
   modalTitle: {
-    fontFamily: 'System',
+    fontFamily: 'PixelifySans-Medium',
     fontSize: 18,
     color: '#F8FAFC',
-    fontWeight: 'bold',
+    fontWeight: 'normal',
     textAlign: 'center',
     marginBottom: 14,
   },

@@ -83,33 +83,33 @@ const SHADOWS = {
 // ─── Font Presets ───────────────────────────────────────────────────────────────
 const FONTS = {
   display: {
-    fontFamily: 'Courier New', // Fallback for pixel font until loaded natively
-    fontWeight: '700',
-    fontSize: 24,
+    fontFamily: 'PressStart2P-Regular', // Retro 8-bit NES display font
+    fontWeight: 'normal',
+    fontSize: 18, // Decreased from 24 as Press Start is wider and taller
   },
   heading: {
-    fontFamily: 'System',
-    fontWeight: '500',
+    fontFamily: 'PixelifySans-Medium', // Proportional clean pixel font for headers
+    fontWeight: 'normal',
     fontSize: 16,
   },
   body: {
-    fontFamily: 'System',
-    fontWeight: '400',
+    fontFamily: 'PixelifySans-Regular', // High legibility proportional pixel font
+    fontWeight: 'normal',
     fontSize: 13,
     lineHeight: 19.5, // 1.5x of 13px
   },
   label: {
-    fontFamily: 'System',
-    fontWeight: '500',
-    fontSize: 11,
-    letterSpacing: 0.66, // ~0.06em
+    fontFamily: 'Silkscreen-Regular', // Crisp micro pixel font
+    fontWeight: 'normal',
+    fontSize: 10,
+    letterSpacing: 0.5,
     textTransform: 'uppercase',
   },
   small: {
-    fontFamily: 'System',
-    fontWeight: '400',
-    fontSize: 11,
-    lineHeight: 16,
+    fontFamily: 'Silkscreen-Regular', // Crisp micro pixel font
+    fontWeight: 'normal',
+    fontSize: 10,
+    lineHeight: 14,
   },
 };
 

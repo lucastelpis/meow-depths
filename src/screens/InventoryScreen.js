@@ -835,9 +835,9 @@ const styles = StyleSheet.create({
     opacity: 0.45,
   },
   tabLabel: {
-    fontFamily: 'System',
+    fontFamily: 'Silkscreen-Regular',
     fontSize: 10,
-    fontWeight: '600',
+    fontWeight: 'normal',
     color: '#707F94',
     letterSpacing: 0.2,
   },
@@ -892,13 +892,13 @@ const styles = StyleSheet.create({
   cardIcon: { fontSize: 22 },
   cardInfo: { flex: 1, justifyContent: 'center' },
   cardName: {
-    fontFamily: 'System',
+    fontFamily: 'PixelifySans-Medium',
     fontSize: 14,
     color: '#F8FAFC',
-    fontWeight: 'bold',
+    fontWeight: 'normal',
   },
   cardDesc: {
-    fontFamily: 'System',
+    fontFamily: 'Silkscreen-Regular',
     fontSize: 11,
     color: '#707F94',
     marginTop: 2,
@@ -914,10 +914,10 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(212,167,84,0.2)',
   },
   qtyText: {
-    fontFamily: 'System',
+    fontFamily: 'PixelifySans-Medium',
     fontSize: 14,
     color: '#D4A754',
-    fontWeight: 'bold',
+    fontWeight: 'normal',
   },
   openChestBtn: {
     height: 34,
@@ -929,9 +929,9 @@ const styles = StyleSheet.create({
     flexShrink: 0,
   },
   openChestText: {
-    fontFamily: 'System',
+    fontFamily: 'PixelifySans-Medium',
     fontSize: 12,
-    fontWeight: 'bold',
+    fontWeight: 'normal',
     color: '#1A1200',
     zIndex: 2,
   },
@@ -953,9 +953,9 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   materialGroupLabel: {
-    fontFamily: 'System',
+    fontFamily: 'Silkscreen-Regular',
     fontSize: 11,
-    fontWeight: '900',
+    fontWeight: 'normal',
     letterSpacing: 0.8,
     textTransform: 'uppercase',
   },
@@ -982,11 +982,11 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   materialName: {
-    fontFamily: 'System',
+    fontFamily: 'PixelifySans-Medium',
     fontSize: 13,
     color: '#CFE0EE',
     flex: 1,
-    fontWeight: '500',
+    fontWeight: 'normal',
   },
   materialQtyBadge: {
     borderRadius: 8,
@@ -995,9 +995,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   materialQty: {
-    fontFamily: 'System',
+    fontFamily: 'PixelifySans-Medium',
     fontSize: 12,
-    fontWeight: 'bold',
+    fontWeight: 'normal',
   },
 
   /* ── Owned Gear tab ──────────────────────────────────────── */
@@ -1005,8 +1005,8 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   subSectionTitle: {
-    fontFamily: 'System',
-    fontWeight: '800',
+    fontFamily: 'PixelifySans-Medium',
+    fontWeight: 'normal',
     fontSize: 13,
     color: '#D4A754',
     letterSpacing: 1,
@@ -1023,13 +1023,13 @@ const styles = StyleSheet.create({
     zIndex: 2,
   },
   setBonusName: {
-    fontFamily: 'System',
+    fontFamily: 'PixelifySans-Medium',
     fontSize: 14,
     color: '#D4A754',
-    fontWeight: 'bold',
+    fontWeight: 'normal',
   },
   setBonusDesc: {
-    fontFamily: 'System',
+    fontFamily: 'PixelifySans-Regular',
     fontSize: 12,
     color: 'rgba(255,255,255,0.5)',
     marginTop: 5,
@@ -1045,9 +1045,9 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   gearZoneTag: {
-    fontFamily: 'System',
+    fontFamily: 'Silkscreen-Regular',
     fontSize: 8,
-    fontWeight: '900',
+    fontWeight: 'normal',
     color: '#D4A754',
     backgroundColor: 'rgba(212,167,84,0.08)',
     paddingHorizontal: 5,
@@ -1057,11 +1057,11 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(212,167,84,0.15)',
   },
   gearStats: {
-    fontFamily: 'System',
+    fontFamily: 'PixelifySans-Medium',
     fontSize: 12,
     color: '#D4A754',
     marginTop: 3,
-    fontWeight: '500',
+    fontWeight: 'normal',
   },
   equipBtn: {
     backgroundColor: 'rgba(255,255,255,0.06)',
@@ -1073,10 +1073,10 @@ const styles = StyleSheet.create({
     flexShrink: 0,
   },
   equipBtnText: {
-    fontFamily: 'System',
+    fontFamily: 'PixelifySans-Medium',
     fontSize: 12,
     color: '#F8FAFC',
-    fontWeight: 'bold',
+    fontWeight: 'normal',
   },
   unequipBtnGear: {
     backgroundColor: 'rgba(16,185,129,0.14)',
@@ -1090,16 +1090,16 @@ const styles = StyleSheet.create({
     flexShrink: 0,
   },
   unequipBtnGearStatus: {
-    fontFamily: 'System',
+    fontFamily: 'Silkscreen-Regular',
     fontSize: 11,
     color: '#10B981',
-    fontWeight: 'bold',
+    fontWeight: 'normal',
   },
   unequipBtnGearAction: {
-    fontFamily: 'System',
+    fontFamily: 'Silkscreen-Regular',
     fontSize: 9,
     color: '#D8483F',
-    fontWeight: '600',
+    fontWeight: 'normal',
     opacity: 0.85,
   },
 
@@ -1119,14 +1119,14 @@ const styles = StyleSheet.create({
     opacity: 0.4,
   },
   emptyTitle: {
-    fontFamily: 'System',
+    fontFamily: 'PixelifySans-Medium',
     fontSize: 15,
-    fontWeight: 'bold',
+    fontWeight: 'normal',
     color: 'rgba(255,255,255,0.3)',
     marginBottom: 6,
   },
   emptyDesc: {
-    fontFamily: 'System',
+    fontFamily: 'PixelifySans-Regular',
     fontSize: 12,
     color: 'rgba(255,255,255,0.2)',
     textAlign: 'center',
@@ -1168,10 +1168,10 @@ const styles = StyleSheet.create({
     fontSize: 28,
   },
   gridName: {
-    fontFamily: 'System',
+    fontFamily: 'Silkscreen-Regular',
     fontSize: 11,
     color: '#F8FAFC',
-    fontWeight: 'bold',
+    fontWeight: 'normal',
     textAlign: 'center',
     lineHeight: 14,
     height: 28, // height for 2 lines
@@ -1189,9 +1189,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   gridTagText: {
-    fontFamily: 'System',
+    fontFamily: 'Silkscreen-Regular',
     fontSize: 8,
-    fontWeight: 'bold',
+    fontWeight: 'normal',
     letterSpacing: 0.3,
   },
   gridQtyBadge: {
@@ -1274,9 +1274,9 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   rarityText: {
-    fontFamily: 'System',
+    fontFamily: 'Silkscreen-Regular',
     fontSize: 8,
-    fontWeight: '900',
+    fontWeight: 'normal',
     letterSpacing: 0.8,
   },
   modalIconContainer: {
@@ -1302,9 +1302,9 @@ const styles = StyleSheet.create({
     zIndex: 15,
   },
   modalTitleText: {
-    fontFamily: 'System',
+    fontFamily: 'PixelifySans-Medium',
     fontSize: 22,
-    fontWeight: '900',
+    fontWeight: 'normal',
     color: '#FFFFFF',
     textAlign: 'center',
     marginBottom: 6,
@@ -1314,10 +1314,10 @@ const styles = StyleSheet.create({
     textShadowRadius: 4,
   },
   modalStatusText: {
-    fontFamily: 'System',
+    fontFamily: 'PixelifySans-Medium',
     fontSize: 12,
     color: 'rgba(255, 255, 255, 0.5)',
-    fontWeight: 'bold',
+    fontWeight: 'normal',
     marginBottom: 16,
   },
   modalStatsGrid: {
@@ -1353,15 +1353,15 @@ const styles = StyleSheet.create({
     width: 3,
   },
   modalStatLabel: {
-    fontFamily: 'System',
+    fontFamily: 'Silkscreen-Regular',
     fontSize: 10,
-    fontWeight: 'bold',
+    fontWeight: 'normal',
     color: 'rgba(255, 255, 255, 0.45)',
   },
   modalStatValue: {
-    fontFamily: 'System',
+    fontFamily: 'Silkscreen-Regular',
     fontSize: 11,
-    fontWeight: '900',
+    fontWeight: 'normal',
   },
   ornateDividerContainer: {
     flexDirection: 'row',
@@ -1391,9 +1391,9 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   modalLoreBoxHeader: {
-    fontFamily: 'System',
+    fontFamily: 'Silkscreen-Regular',
     fontSize: 9,
-    fontWeight: '900',
+    fontWeight: 'normal',
     color: '#D4A754',
     letterSpacing: 1.5,
     textAlign: 'center',
@@ -1401,9 +1401,9 @@ const styles = StyleSheet.create({
     opacity: 0.7,
   },
   modalLoreHeader: {
-    fontFamily: 'System',
+    fontFamily: 'Silkscreen-Regular',
     fontSize: 9,
-    fontWeight: '900',
+    fontWeight: 'normal',
     color: '#D4A754',
     letterSpacing: 1.5,
     textAlign: 'center',
@@ -1411,7 +1411,7 @@ const styles = StyleSheet.create({
     opacity: 0.7,
   },
   modalLoreText: {
-    fontFamily: 'System',
+    fontFamily: 'Silkscreen-Regular',
     fontSize: 11,
     color: '#E2E8F0',
     fontStyle: 'italic',
@@ -1419,7 +1419,7 @@ const styles = StyleSheet.create({
     lineHeight: 16,
   },
   modalGuideText: {
-    fontFamily: 'System',
+    fontFamily: 'Silkscreen-Regular',
     fontSize: 10,
     color: 'rgba(255, 255, 255, 0.3)',
     textAlign: 'center',
@@ -1445,10 +1445,10 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   modalCloseText: {
-    fontFamily: 'System',
+    fontFamily: 'PixelifySans-Medium',
     fontSize: 13,
     color: 'rgba(255, 255, 255, 0.65)',
-    fontWeight: 'bold',
+    fontWeight: 'normal',
   },
   modalConfirmBtn: {
     height: 46,
@@ -1463,10 +1463,10 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   modalConfirmText: {
-    fontFamily: 'System',
+    fontFamily: 'PixelifySans-Medium',
     fontSize: 13,
     color: '#120C00',
-    fontWeight: '900',
+    fontWeight: 'normal',
     zIndex: 2,
     letterSpacing: 0.3,
   },
@@ -1481,10 +1481,10 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   modalUnequipText: {
-    fontFamily: 'System',
+    fontFamily: 'PixelifySans-Medium',
     fontSize: 13,
     color: '#EF4444',
-    fontWeight: 'bold',
+    fontWeight: 'normal',
     letterSpacing: 0.3,
   },
 });

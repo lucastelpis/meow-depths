@@ -22,6 +22,7 @@
 
 import { useState, useEffect } from 'react';
 import { Image } from 'react-native';
+import * as Font from 'expo-font';
 
 export default function usePreloadAssets(sources = []) {
   const [ready, setReady] = useState(false);
@@ -30,27 +31,30 @@ export default function usePreloadAssets(sources = []) {
     // Filter out any falsy values (undefined skills, etc.)
     const valid = sources.filter(Boolean);
 
-    if (!valid.length) {
-      setReady(true);
-      return;
-    }
-
     let cancelled = false;
 
     const prefetchAll = async () => {
       try {
-        await Promise.all(
-          valid.map((src) => {
-            // Local require() assets → resolve to a file:// URI first
+        await Promise.all([
+          // Load retro pixel fonts
+          Font.loadAsync({
+            'PressStart2P-Regular': require('../../assets/fonts/PressStart2P-Regular.ttf'),
+            'PixelifySans-Regular': require('../../assets/fonts/PixelifySans-Regular.ttf'),
+            'PixelifySans-Medium': require('../../assets/fonts/PixelifySans-Medium.ttf'),
+            'Silkscreen-Regular': require('../../assets/fonts/Silkscreen-Regular.ttf'),
+          }),
+          // Prefetch sprite/image assets
+          ...valid.map((src) => {
             const resolved = Image.resolveAssetSource(src);
             if (resolved?.uri) {
               return Image.prefetch(resolved.uri);
             }
             return Promise.resolve();
           }),
-        );
-      } catch {
+        ]);
+      } catch (err) {
         // Fail-open: if any asset can't be prefetched, unblock anyway
+        console.warn('Failed to preload fonts or images:', err);
       } finally {
         if (!cancelled) setReady(true);
       }
