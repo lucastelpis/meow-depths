@@ -68,16 +68,21 @@ function AnimatedHubBackground({ width, height }) {
     return () => clearInterval(interval);
   }, []);
 
+  // To retain the 1:1 aspect ratio of the 256x256 frames,
+  // we set the image height equal to its single-frame width,
+  // and offset it vertically to center the crop.
+  const imageOffsetY = -(width - height) / 2;
+
   return (
     <View style={{ width, height, overflow: 'hidden', position: 'absolute' }}>
       <Image
         source={require('../../assets/sprites/background-hub.png')}
         style={{
           width: width * 4,
-          height: height,
+          height: width,
           position: 'absolute',
           left: -(frame * width),
-          top: 0,
+          top: imageOffsetY,
         }}
         resizeMode="stretch"
       />
