@@ -68,21 +68,16 @@ function AnimatedHubBackground({ width, height }) {
     return () => clearInterval(interval);
   }, []);
 
-  // To retain the 1:1 aspect ratio of the 256x256 frames,
-  // we set the image height equal to its single-frame width,
-  // and offset it vertically to center the crop.
-  const imageOffsetY = -(width - height) / 2;
-
   return (
     <View style={{ width, height, overflow: 'hidden', position: 'absolute' }}>
       <Image
         source={require('../../assets/sprites/background-hub.png')}
         style={{
           width: width * 4,
-          height: width,
+          height: height,
           position: 'absolute',
           left: -(frame * width),
-          top: imageOffsetY,
+          top: 0,
         }}
         resizeMode="stretch"
       />
@@ -278,7 +273,7 @@ export default function CampScreen({ navigation }) {
             ANIMATED HUB BANNER
             ═══════════════════════════════════════════════════════════════════ */}
         <View style={[styles.bannerContainer, theme.SHADOWS.cardShadow]}>
-          <AnimatedHubBackground width={BANNER_WIDTH - 6} height={174} />
+          <AnimatedHubBackground width={BANNER_WIDTH - 6} height={BANNER_WIDTH - 6} />
           <View style={styles.bannerOverlayContent}>
             {/* Title */}
             <Text style={styles.bannerTitleText}>Meow Dungeons</Text>
@@ -951,7 +946,7 @@ const styles = StyleSheet.create({
   /* ═══ Animated Hub Banner ═════════════════════════════════════════════════ */
   bannerContainer: {
     width: BANNER_WIDTH,
-    height: 180,
+    height: BANNER_WIDTH,
     borderRadius: theme.BORDER_RADIUS.card,
     borderWidth: 3,
     borderColor: '#4A3917',
