@@ -21,7 +21,7 @@ import {
   Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import Svg, { Rect, Path, G } from 'react-native-svg';
+import Svg, { Path, G } from 'react-native-svg';
 
 import theme from '../constants/theme';
 
@@ -30,27 +30,6 @@ const { width: W } = Dimensions.get('window');
 // measurement (which can lock it too narrow on a remount, e.g. after a
 // "Reset Save Data" → onboarding remount).
 const PLAQUE_WIDTH = Math.min(W - 80, 320);
-
-// ─── SVG Wood Texture Background Component (matches CampScreen) ──────────────
-function WoodSpriteBackground({ borderRadius = 8 }) {
-  return (
-    <View style={{ ...StyleSheet.absoluteFillObject, borderRadius, overflow: 'hidden' }}>
-      <Svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none">
-        {/* Solid wood brown background */}
-        <Rect width="100" height="100" fill="#825324" />
-
-        {/* Dark wood grain lines */}
-        <Path d="M0,20 Q30,22 50,18 T100,20" stroke="#5C3A16" strokeWidth="2.5" fill="none" opacity="0.5" />
-        <Path d="M0,50 Q45,46 70,54 T100,50" stroke="#5C3A16" strokeWidth="2.5" fill="none" opacity="0.5" />
-        <Path d="M0,80 Q25,84 60,78 T100,80" stroke="#5C3A16" strokeWidth="2.5" fill="none" opacity="0.5" />
-
-        {/* Light wood highlights */}
-        <Path d="M0,35 Q20,32 55,38 T100,35" stroke="#A87543" strokeWidth="2" fill="none" opacity="0.3" />
-        <Path d="M0,65 Q35,68 65,62 T100,65" stroke="#A87543" strokeWidth="2" fill="none" opacity="0.3" />
-      </Svg>
-    </View>
-  );
-}
 
 // ─── SVG Rugged Border Background Component (matches CampScreen) ─────────────
 function RuggedBorderBackground({ width, height }) {
@@ -178,9 +157,8 @@ export default function NameInputScreen({ navigation }) {
 
           {/* Name input */}
           <View style={styles.section}>
-            <Text style={styles.nameQuestion}>WHAT'S YOUR NAME, KITTY?</Text>
+            <Text style={styles.nameQuestion}>WHAT'S YOUR NAME, RECRUIT?</Text>
             <View style={styles.nameInputWrapper}>
-              <WoodSpriteBackground borderRadius={theme.BORDER_RADIUS.card} />
               <TextInput
                 style={styles.nameInput}
                 value={heroName}
@@ -189,6 +167,9 @@ export default function NameInputScreen({ navigation }) {
                 placeholderTextColor="rgba(255, 243, 218, 0.4)"
                 maxLength={16}
                 selectTextOnFocus
+                textAlign="center"
+                cursorColor="#E8A73A"
+                selectionColor="rgba(232, 167, 58, 0.4)"
               />
             </View>
           </View>
@@ -338,22 +319,28 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
 
-  /* Name input */
+  /* Name input — centered name on a fill-in-the-blank gold underline */
   nameInputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
     borderRadius: theme.BORDER_RADIUS.card,
-    borderWidth: 2,
-    borderColor: theme.COLORS.candleGold,
-    overflow: 'hidden',
-    position: 'relative',
+    borderWidth: 3,
+    borderColor: '#E8A73A',
+    backgroundColor: 'rgba(20, 44, 28, 0.9)',
+    paddingVertical: 16,
+    paddingHorizontal: 20,
   },
   nameInput: {
-    paddingHorizontal: 14,
-    paddingVertical: 12,
+    minWidth: 140,
+    maxWidth: 240,
+    paddingBottom: 5,
+    borderBottomWidth: 2,
+    borderBottomColor: 'rgba(232, 167, 58, 0.55)',
     fontFamily: 'PixelifySans-Medium',
-    fontSize: 16,
+    fontSize: 22,
     fontWeight: 'normal',
     color: '#FFF3DA',
-    zIndex: 2,
   },
 
   /* Bottom Pinned Button container */
