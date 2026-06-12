@@ -4,6 +4,9 @@
 Meow Depths is an RPG/dungeon-crawler game built using React Native and Expo, featuring turn-based combat, skills, equipment, progression, and a town hub.
 
 ## Key Screens
+- **Onboarding Flow (First Launch)**: Shown when `hero.element` is null.
+  - **Name Input Screen**: The player enters their character's name (defaults to "Mochi").
+  - **Element Selection Screen**: A horizontal snap-carousel where players choose their starting element path (Fire, Water, Earth, Wind). Confirming dispatches the `SELECT_ELEMENT` action, locking in their choice and transitioning to the main game.
 - **Camp Hub (Main Screen)**: The player can navigate to the Dungeon Map, Loadout (Inventory), Skills, and Market (Shop).
 - **Inventory/Loadout Screen**: Accessible from the hub. Contains three tabs (Consumables, Equipment, Materials) styled as cozy parchment/wood tabs.
 - **Market (Shop) Screen**: Accessible from the hub. Contains three tabs (Consumables shop, Equipment armory, Forge fusion) styled as cozy parchment/wood tabs.
@@ -26,3 +29,21 @@ Players can fuse lower-tier crystal shards and crystals into higher-tier ones in
 - **Equipment**: Frame index 10 (Frame 11)
 - **Forge**: Frame index 9 (Frame 10)
 - **Materials**: Frame index 29 (Frame 30)
+
+## Crystals Spritesheet Reference (crystals-1 spritesheet)
+Crystals and shards use frames from the `crystals-1` spritesheet:
+- **Black Crystal family (Zone 1)**:
+  - Shard: Frame index 0
+  - Small: Frame index 1
+  - Big: Frame index 2
+  - Core: Frame index 3
+- **Green Crystal family (Zone 2)**:
+  - Shard: Frame index 4
+  - Small: Frame index 5
+  - Big: Frame index 6
+  - Core: Frame index 7
+- **Yellow Crystal family (Zone 3)**:
+  - Shard: Frame index 8
+  - Small: Frame index 9
+  - Big: Frame index 10
+  - Core: Frame index 11

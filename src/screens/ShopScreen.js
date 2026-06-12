@@ -347,7 +347,17 @@ export default function ShopScreen() {
 
                       return (
                         <View key={id} style={styles.vaultItemBox}>
-                          <Text style={styles.vaultItemEmoji}>{icon}</Text>
+                          {MATERIALS[id]?.spritesheet ? (
+                            <View style={{ marginBottom: 4 }}>
+                              <ItemSprite
+                                spritesheet={MATERIALS[id].spritesheet}
+                                frameIndex={MATERIALS[id].frameIndex}
+                                displaySize={24}
+                              />
+                            </View>
+                          ) : (
+                            <Text style={styles.vaultItemEmoji}>{icon}</Text>
+                          )}
                           <Text style={styles.vaultItemName}>{shortName}</Text>
                           <View style={[styles.vaultItemQtyBadge, qty > 0 ? { borderColor: zone.zoneColor + '40', backgroundColor: zone.zoneColor + '08' } : styles.vaultItemQtyBadgeEmpty]}>
                             <Text style={[styles.vaultItemQtyText, qty > 0 ? { color: zone.zoneColor } : styles.vaultItemQtyTextEmpty]}>×{qty}</Text>
@@ -383,7 +393,17 @@ export default function ShopScreen() {
                   <View style={styles.recipeFlow}>
                     {/* Input Material */}
                     <View style={styles.recipeMaterialCol}>
-                      <Text style={styles.recipeEmoji}>{recipe.inputIcon}</Text>
+                      {MATERIALS[recipe.inputId]?.spritesheet ? (
+                        <View style={{ marginBottom: 4 }}>
+                          <ItemSprite
+                            spritesheet={MATERIALS[recipe.inputId].spritesheet}
+                            frameIndex={MATERIALS[recipe.inputId].frameIndex}
+                            displaySize={24}
+                          />
+                        </View>
+                      ) : (
+                        <Text style={styles.recipeEmoji}>{recipe.inputIcon}</Text>
+                      )}
                       <Text style={styles.recipeMaterialName} numberOfLines={1}>{recipe.inputName}</Text>
                       <Text style={[styles.recipeQtyLabel, inputQty >= 10 ? { color: '#3FB56E' } : { color: '#707F94' }]}>
                         {inputQty} / 10
@@ -398,7 +418,17 @@ export default function ShopScreen() {
 
                     {/* Output Material */}
                     <View style={styles.recipeMaterialCol}>
-                      <Text style={styles.recipeEmoji}>{recipe.outputIcon}</Text>
+                      {MATERIALS[recipe.outputId]?.spritesheet ? (
+                        <View style={{ marginBottom: 4 }}>
+                          <ItemSprite
+                            spritesheet={MATERIALS[recipe.outputId].spritesheet}
+                            frameIndex={MATERIALS[recipe.outputId].frameIndex}
+                            displaySize={24}
+                          />
+                        </View>
+                      ) : (
+                        <Text style={styles.recipeEmoji}>{recipe.outputIcon}</Text>
+                      )}
                       <Text style={styles.recipeMaterialName} numberOfLines={1}>{recipe.outputName}</Text>
                       <Text style={[styles.recipeQtyLabel, { color: zone.zoneColor }]}>Owned: {outputQty}</Text>
                     </View>

@@ -18,7 +18,7 @@ No test runner or lint script is configured. There is no CI pipeline.
 
 ## Architecture Overview
 
-**Meow Depths** is an Expo + React Native mobile RPG. Mochi (the hero cat) explores grid-based dungeons across three zones, fighting enemies in a turn-based combat system.
+**Meow Depths** is an Expo + React Native mobile RPG. Mochi (the hero cat) explores grid-based dungeons across three zones, fighting enemies in a turn-based combat system. Summary of it can be seen in [gamedetails.md](gamedetails.md)
 
 ### State management
 

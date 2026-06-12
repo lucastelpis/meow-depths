@@ -11,22 +11,22 @@
 
 export const MATERIALS = {
   // Zone 1 — Soggy Sewers (Black Crystals)
-  black_shard:         { name: 'Black Crystal Shard' },
-  black_crystal_small: { name: 'Small Black Crystal' },
-  black_crystal_big:   { name: 'Big Black Crystal' },
-  black_crystal_core:  { name: 'Black Crystal Core' },
+  black_shard:         { name: 'Black Crystal Shard', spritesheet: 'crystals-1', frameIndex: 0 },
+  black_crystal_small: { name: 'Small Black Crystal', spritesheet: 'crystals-1', frameIndex: 1 },
+  black_crystal_big:   { name: 'Big Black Crystal', spritesheet: 'crystals-1', frameIndex: 2 },
+  black_crystal_core:  { name: 'Black Crystal Core', spritesheet: 'crystals-1', frameIndex: 3 },
 
   // Zone 2 — Twisted Garden (Green Crystals)
-  green_shard:         { name: 'Green Crystal Shard' },
-  green_crystal_small: { name: 'Small Green Crystal' },
-  green_crystal_big:   { name: 'Big Green Crystal' },
-  green_crystal_core:  { name: 'Green Crystal Core' },
+  green_shard:         { name: 'Green Crystal Shard', spritesheet: 'crystals-1', frameIndex: 4 },
+  green_crystal_small: { name: 'Small Green Crystal', spritesheet: 'crystals-1', frameIndex: 5 },
+  green_crystal_big:   { name: 'Big Green Crystal', spritesheet: 'crystals-1', frameIndex: 6 },
+  green_crystal_core:  { name: 'Green Crystal Core', spritesheet: 'crystals-1', frameIndex: 7 },
 
   // Zone 3 — Sunken Docks (Yellow Crystals)
-  yellow_shard:         { name: 'Yellow Crystal Shard' },
-  yellow_crystal_small: { name: 'Small Yellow Crystal' },
-  yellow_crystal_big:   { name: 'Big Yellow Crystal' },
-  yellow_crystal_core:  { name: 'Yellow Crystal Core' },
+  yellow_shard:         { name: 'Yellow Crystal Shard', spritesheet: 'crystals-1', frameIndex: 8 },
+  yellow_crystal_small: { name: 'Small Yellow Crystal', spritesheet: 'crystals-1', frameIndex: 9 },
+  yellow_crystal_big:   { name: 'Big Yellow Crystal', spritesheet: 'crystals-1', frameIndex: 10 },
+  yellow_crystal_core:  { name: 'Yellow Crystal Core', spritesheet: 'crystals-1', frameIndex: 11 },
 };
 
 // ─────────────────────────────────────────────────────────────────────────────

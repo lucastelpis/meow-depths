@@ -20,6 +20,7 @@ export default function ItemSprite({ spritesheet, frameIndex, displaySize = 36, 
     'weapons-1': 10,
     'storages-1': 4,
     'icons-1': 37,
+    'crystals-1': 12,
   };
   const totalFrames = FRAMES_MAP[spritesheet] || 1;
   const frameSize = 32;

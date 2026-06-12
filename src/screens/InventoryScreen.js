@@ -348,7 +348,15 @@ export default function InventoryScreen() {
               <View style={styles.gridCardInner}>
                 <Text style={styles.gridName} numberOfLines={2}>{mat.name}</Text>
                 <View style={styles.gridIconWrap}>
-                  <Text style={styles.gridIcon}>{icon}</Text>
+                  {MATERIALS[mat.id]?.spritesheet ? (
+                    <ItemSprite
+                      spritesheet={MATERIALS[mat.id].spritesheet}
+                      frameIndex={MATERIALS[mat.id].frameIndex}
+                      displaySize={36}
+                    />
+                  ) : (
+                    <Text style={styles.gridIcon}>{icon}</Text>
+                  )}
                 </View>
                 <View style={styles.gridTagSlot}>
                   <View style={[styles.gridTagBadge, styles.gridQtyBadge, { borderColor: mat.zone.zoneColor + '30', backgroundColor: mat.zone.zoneColor + '08' }]}>

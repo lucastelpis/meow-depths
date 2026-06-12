@@ -43,6 +43,7 @@ import { calculateEffectiveStats, getXpForLevel, applyHealingEfficiency } from '
 import { generateTreasureDrops } from '../logic/lootEngine';
 import Button from '../components/ui/Button';
 import ResourceBar from '../components/ui/ResourceBar';
+import ItemSprite from '../components/ItemSprite';
 
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -701,9 +702,20 @@ export default function DungeonMapScreen({ navigation }) {
       else if (id.startsWith('green')) emoji = '💚';
       else if (id.startsWith('yellow')) emoji = '💛';
       return (
-        <Text key={id} style={styles.lootItemText}>
-          {emoji} {def?.name || id} ×{qty}
-        </Text>
+        <View key={id} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginVertical: 2 }}>
+          {def?.spritesheet ? (
+            <ItemSprite
+              spritesheet={def.spritesheet}
+              frameIndex={def.frameIndex}
+              displaySize={18}
+            />
+          ) : (
+            <Text style={{ fontSize: 13 }}>{emoji}</Text>
+          )}
+          <Text style={styles.lootItemText}>
+            {def?.name || id} ×{qty}
+          </Text>
+        </View>
       );
     });
   };
@@ -1162,9 +1174,20 @@ export default function DungeonMapScreen({ navigation }) {
                           else if (id.startsWith('green')) emoji = '💚';
                           else if (id.startsWith('yellow')) emoji = '💛';
                           return (
-                            <Text key={id} style={styles.retainedLootItemText}>
-                              {emoji} {def?.name || id} ×{keptQty}
-                            </Text>
+                            <View key={id} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginVertical: 2 }}>
+                              {def?.spritesheet ? (
+                                <ItemSprite
+                                  spritesheet={def.spritesheet}
+                                  frameIndex={def.frameIndex}
+                                  displaySize={18}
+                                />
+                              ) : (
+                                <Text style={{ fontSize: 13 }}>{emoji}</Text>
+                              )}
+                              <Text style={styles.retainedLootItemText}>
+                                {def?.name || id} ×{keptQty}
+                              </Text>
+                            </View>
                           );
                         });
                       })()}
@@ -1321,7 +1344,17 @@ export default function DungeonMapScreen({ navigation }) {
                       if (id.startsWith('yellow')) emoji = '💛';
                       return (
                         <View key={id} style={styles.bagLootRow}>
-                          <Text style={styles.bagLootEmoji}>{emoji}</Text>
+                          {def?.spritesheet ? (
+                            <View style={{ marginRight: 6 }}>
+                              <ItemSprite
+                                spritesheet={def.spritesheet}
+                                frameIndex={def.frameIndex}
+                                displaySize={18}
+                              />
+                            </View>
+                          ) : (
+                            <Text style={styles.bagLootEmoji}>{emoji}</Text>
+                          )}
                           <Text style={styles.bagLootText}>
                             {def?.name || id.replace(/_/g, ' ').toUpperCase()}: {qty}
                           </Text>

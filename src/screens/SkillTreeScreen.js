@@ -29,6 +29,8 @@ import Svg, { Defs, LinearGradient, RadialGradient, Stop, Rect, Path } from 'rea
 import { useGame } from '../state/gameState';
 import { SKILLS, ELEMENT_SKILLS, canUnlockElementSkill, canStarUpSkill, getSkillUpgradeCost } from '../data/skills';
 import { STANCES, getStanceBonus } from '../logic/progressionEngine';
+import ItemSprite from '../components/ItemSprite';
+import { MATERIALS } from '../data/gear';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -412,10 +414,21 @@ export default function SkillTreeScreen() {
               if (!nextCost) return null;
               const [matId, matQty] = Object.entries(nextCost.materials)[0];
               return (
-                <Text style={styles.cardCostText} numberOfLines={1}>
-                  ★{stars + 1}: {CRYSTAL_INFO[matId]?.icon} {matQty}
-                  {Object.keys(nextCost.materials).length > 1 ? '+' : ''} · Lv.{nextCost.requiredLevel}
-                </Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3, marginTop: 4 }}>
+                  <Text style={[styles.cardCostText, { marginTop: 0 }]}>★{stars + 1}:</Text>
+                  {MATERIALS[matId]?.spritesheet ? (
+                    <ItemSprite
+                      spritesheet={MATERIALS[matId].spritesheet}
+                      frameIndex={MATERIALS[matId].frameIndex}
+                      displaySize={10}
+                    />
+                  ) : (
+                    <Text style={{ fontSize: 9 }}>{CRYSTAL_INFO[matId]?.icon}</Text>
+                  )}
+                  <Text style={[styles.cardCostText, { marginTop: 0 }]} numberOfLines={1}>
+                    {matQty}{Object.keys(nextCost.materials).length > 1 ? '+' : ''} · Lv.{nextCost.requiredLevel}
+                  </Text>
+                </View>
               );
             })()}
           </>
@@ -425,9 +438,21 @@ export default function SkillTreeScreen() {
               const cost = getSkillUpgradeCost(skill, 1);
               const [matId, matQty] = Object.entries(cost.materials)[0];
               return (
-                <Text style={[styles.cardLockText, { color: '#FFC107', fontWeight: 'bold' }]} numberOfLines={1}>
-                  🔓 {CRYSTAL_INFO[matId]?.icon} {matQty} · Lv.{cost.requiredLevel}
-                </Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3, marginTop: 4 }}>
+                  <Text style={[styles.cardLockText, { color: '#FFC107', fontWeight: 'bold', marginTop: 0 }]}>🔓</Text>
+                  {MATERIALS[matId]?.spritesheet ? (
+                    <ItemSprite
+                      spritesheet={MATERIALS[matId].spritesheet}
+                      frameIndex={MATERIALS[matId].frameIndex}
+                      displaySize={10}
+                    />
+                  ) : (
+                    <Text style={{ fontSize: 9 }}>{CRYSTAL_INFO[matId]?.icon}</Text>
+                  )}
+                  <Text style={[styles.cardLockText, { color: '#FFC107', fontWeight: 'bold', marginTop: 0 }]} numberOfLines={1}>
+                    {matQty} · Lv.{cost.requiredLevel}
+                  </Text>
+                </View>
               );
             })() : (
               <Text style={styles.cardLockText} numberOfLines={1}>
@@ -504,7 +529,17 @@ export default function SkillTreeScreen() {
           const owned = materials[itemId] || 0;
           return (
             <View key={itemId} style={styles.crystalChip}>
-              <Text style={styles.crystalChipIcon}>{info.icon}</Text>
+              {MATERIALS[itemId]?.spritesheet ? (
+                <View style={{ marginRight: 4 }}>
+                  <ItemSprite
+                    spritesheet={MATERIALS[itemId].spritesheet}
+                    frameIndex={MATERIALS[itemId].frameIndex}
+                    displaySize={14}
+                  />
+                </View>
+              ) : (
+                <Text style={styles.crystalChipIcon}>{info.icon}</Text>
+              )}
               <Text style={styles.crystalChipCount}>{owned}</Text>
             </View>
           );
@@ -839,7 +874,18 @@ export default function SkillTreeScreen() {
                       const info = CRYSTAL_INFO[itemId] || { icon: '✨', name: itemId };
                       return (
                         <View key={itemId} style={styles.modalCostMatRow}>
-                          <Text style={styles.modalCostMatName}>{info.icon} {info.name}</Text>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                            {MATERIALS[itemId]?.spritesheet ? (
+                              <ItemSprite
+                                spritesheet={MATERIALS[itemId].spritesheet}
+                                frameIndex={MATERIALS[itemId].frameIndex}
+                                displaySize={14}
+                              />
+                            ) : (
+                              <Text style={{ fontSize: 12 }}>{info.icon}</Text>
+                            )}
+                            <Text style={styles.modalCostMatName}>{info.name}</Text>
+                          </View>
                           <Text style={[styles.modalCostMatValue, { color: enough ? '#7CFFB2' : '#FF8A8A' }]}>
                             {owned} / {qty}
                           </Text>
