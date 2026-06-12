@@ -430,7 +430,7 @@ export default function ProfileScreen() {
             <View style={styles.attributeGrid}>
               {/* Strength Card */}
               <View style={[styles.attributeCard, { borderColor: 'rgba(212, 167, 84, 0.25)' }]}>
-                <ItemSprite spritesheet="icons-1" frameIndex={20} displaySize={20} />
+                <ItemSprite spritesheet="icons-1" frameIndex={21} displaySize={20} />
                 <Text style={[styles.attributeLabel, { color: '#F9D99A', marginTop: 4 }]}>STR</Text>
                 <Text style={styles.attributeValue}>
                   {hero.strength || 10}
@@ -461,7 +461,7 @@ export default function ProfileScreen() {
 
               {/* Agility Card */}
               <View style={[styles.attributeCard, { borderColor: 'rgba(6, 182, 212, 0.25)' }]}>
-                <ItemSprite spritesheet="icons-1" frameIndex={21} displaySize={20} />
+                <ItemSprite spritesheet="icons-1" frameIndex={22} displaySize={20} />
                 <Text style={[styles.attributeLabel, { color: '#06B6D4', marginTop: 4 }]}>AGI</Text>
                 <Text style={styles.attributeValue}>
                   {hero.agility || 10}
@@ -492,7 +492,7 @@ export default function ProfileScreen() {
 
               {/* Vitality Card */}
               <View style={[styles.attributeCard, { borderColor: 'rgba(92, 196, 137, 0.25)' }]}>
-                <ItemSprite spritesheet="icons-1" frameIndex={19} displaySize={20} />
+                <ItemSprite spritesheet="icons-1" frameIndex={20} displaySize={20} />
                 <Text style={[styles.attributeLabel, { color: '#5CC489', marginTop: 4 }]}>VIT</Text>
                 <Text style={styles.attributeValue}>
                   {hero.vitality || 10}
