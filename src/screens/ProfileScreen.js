@@ -431,7 +431,7 @@ export default function ProfileScreen() {
               {/* Strength Card */}
               <View style={[styles.attributeCard, { borderColor: 'rgba(212, 167, 84, 0.25)' }]}>
                 <View style={styles.attributeHeader}>
-                  <ItemSprite spritesheet="icons-1" frameIndex={21} displaySize={16} />
+                  <ItemSprite spritesheet="icons-1" frameIndex={21} displaySize={20} />
                   <Text style={[styles.attributeLabel, { color: '#F9D99A' }]}>STR</Text>
                 </View>
                 <Text style={styles.attributeValue}>
@@ -464,7 +464,7 @@ export default function ProfileScreen() {
               {/* Agility Card */}
               <View style={[styles.attributeCard, { borderColor: 'rgba(6, 182, 212, 0.25)' }]}>
                 <View style={styles.attributeHeader}>
-                  <ItemSprite spritesheet="icons-1" frameIndex={20} displaySize={16} />
+                  <ItemSprite spritesheet="icons-1" frameIndex={20} displaySize={20} />
                   <Text style={[styles.attributeLabel, { color: '#06B6D4' }]}>AGI</Text>
                 </View>
                 <Text style={styles.attributeValue}>
@@ -497,7 +497,7 @@ export default function ProfileScreen() {
               {/* Vitality Card */}
               <View style={[styles.attributeCard, { borderColor: 'rgba(92, 196, 137, 0.25)' }]}>
                 <View style={styles.attributeHeader}>
-                  <ItemSprite spritesheet="icons-1" frameIndex={22} displaySize={16} />
+                  <ItemSprite spritesheet="icons-1" frameIndex={22} displaySize={20} />
                   <Text style={[styles.attributeLabel, { color: '#5CC489' }]}>VIT</Text>
                 </View>
                 <Text style={styles.attributeValue}>
@@ -982,7 +982,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
     alignItems: 'center',
     justifyContent: 'space-between',
-    minHeight: 100,
+    minHeight: 115,
   },
   attributeHeader: {
     flexDirection: 'row',
@@ -992,14 +992,14 @@ const styles = StyleSheet.create({
   },
   attributeLabel: {
     fontFamily: 'Silkscreen-Regular',
-    fontSize: 11,
+    fontSize: 13,
     fontWeight: 'normal',
     letterSpacing: 0.5,
     textTransform: 'uppercase',
   },
   attributeValue: {
     fontFamily: 'PixelifySans-Medium',
-    fontSize: 16,
+    fontSize: 22,
     fontWeight: 'normal',
     color: '#F8FAFC',
     marginVertical: 4,
