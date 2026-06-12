@@ -7,7 +7,10 @@ Meow Depths is an RPG/dungeon-crawler game built using React Native and Expo, fe
 - **Onboarding Flow (First Launch)**: Shown when `hero.element` is null.
   - **Name Input Screen**: The player enters their character's name (defaults to "Mochi").
   - **Element Selection Screen**: A horizontal snap-carousel where players choose their starting element path (Fire, Water, Earth, Wind). Confirming dispatches the `SELECT_ELEMENT` action, locking in their choice and transitioning to the main game.
-- **Camp Hub (Main Screen)**: The player can navigate to the Dungeon Map, Loadout (Inventory), Skills, and Market (Shop).
+- **Camp Hub (Main Screen)**: The player can navigate to the Dungeon Map, Loadout (Inventory), Skills, Market (Shop), and Profile.
+- **Profile Screen**: Accessible from the hub. Split into two tabs:
+  - **Stats tab**: Displays base attributes (STR, AGI, VIT) where players allocate points earned from leveling up, previews and displays effective combat stats (ATK, DEF, HP, etc.), and describes their current elemental stance.
+  - **Equipment tab**: Displays equipped gear across 8 slots (Head, Chest, Gloves, Legs, Boots, Weapon, Trinket, Storage) and displays active set bonuses.
 - **Inventory/Loadout Screen**: Accessible from the hub. Contains three tabs (Consumables, Equipment, Materials) styled as cozy parchment/wood tabs.
 - **Market (Shop) Screen**: Accessible from the hub. Contains three tabs (Consumables shop, Equipment armory, Forge fusion) styled as cozy parchment/wood tabs.
 - **Dungeon Map Screen**: Allows entering zones to fight enemies.

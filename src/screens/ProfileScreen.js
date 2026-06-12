@@ -16,12 +16,12 @@ import {
   Pressable,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import Svg, { Defs, LinearGradient, RadialGradient, Stop, Rect } from 'react-native-svg';
 
 import theme from '../constants/theme';
 import { useGame } from '../state/gameState';
-import { calculateEffectiveStats, getXpForLevel } from '../logic/progressionEngine';
+import { calculateEffectiveStats, getXpForLevel, getActiveSetBonuses, STANCES, getStanceBonus } from '../logic/progressionEngine';
 import AnimatedSprite from '../components/AnimatedSprite';
 import ResourceBar from '../components/ui/ResourceBar';
 import { HERO_SPRITE } from '../constants/sprites';
@@ -52,6 +52,11 @@ const WEAPONS_SHEET = require('../../assets/sprites/items/weapons-1.png');
 const WEAPONS_FRAME_SIZE = 32;
 const WEAPONS_FRAMES = 7;
 
+const TABS = [
+  { key: 'stats',     frameIndex: 28, label: 'Stats' },
+  { key: 'equipment', frameIndex: 10, label: 'Equipment' },
+];
+
 // ─── Equipment slot config ────────────────────────────────────────────────────
 const SLOT_CONFIG = [
   { key: 'head',     label: 'Head',     emoji: '🪖' },
@@ -74,8 +79,12 @@ const SLOT_ROWS = [
 
 export default function ProfileScreen() {
   const navigation = useNavigation();
+  const route = useRoute();
   const { state, dispatch } = useGame();
   const { hero } = state;
+
+  const initialTab = route.params?.initialTab || 'stats';
+  const [activeTab, setActiveTab] = useState(initialTab);
 
   const [selectedSlot, setSelectedSlot] = useState(null);
   const [modalData, setModalData] = useState({
@@ -86,7 +95,73 @@ export default function ProfileScreen() {
     candidates: [],
   });
 
+  // ── Stat Allocation Local State ──
+  const [tempStrAlloc, setTempStrAlloc] = useState(0);
+  const [tempAgiAlloc, setTempAgiAlloc] = useState(0);
+  const [tempVitAlloc, setTempVitAlloc] = useState(0);
+
+  const totalAllocated = tempStrAlloc + tempAgiAlloc + tempVitAlloc;
+  const remainingPoints = (hero.statPoints || 0) - totalAllocated;
+  const previewStr = (hero.strength || 10) + tempStrAlloc;
+  const previewAgi = (hero.agility || 10) + tempAgiAlloc;
+  const previewVit = (hero.vitality || 10) + tempVitAlloc;
+
+  const showControls = (hero.statPoints || 0) > 0;
+
+  const adjustStat = (statType, amount) => {
+    if (statType === 'str') {
+      if (amount > 0 && remainingPoints > 0) {
+        setTempStrAlloc(prev => prev + 1);
+      } else if (amount < 0 && tempStrAlloc > 0) {
+        setTempStrAlloc(prev => prev - 1);
+      }
+    } else if (statType === 'agi') {
+      if (amount > 0 && remainingPoints > 0) {
+        setTempAgiAlloc(prev => prev + 1);
+      } else if (amount < 0 && tempAgiAlloc > 0) {
+        setTempAgiAlloc(prev => prev - 1);
+      }
+    } else if (statType === 'vit') {
+      if (amount > 0 && remainingPoints > 0) {
+        setTempVitAlloc(prev => prev + 1);
+      } else if (amount < 0 && tempVitAlloc > 0) {
+        setTempVitAlloc(prev => prev - 1);
+      }
+    }
+  };
+
+  const handleConfirmAllocation = () => {
+    if (totalAllocated === 0) return;
+    dispatch({
+      type: 'ALLOCATE_STAT_POINTS',
+      payload: {
+        strInc: tempStrAlloc,
+        agiInc: tempAgiAlloc,
+        vitInc: tempVitAlloc,
+      },
+    });
+    setTempStrAlloc(0);
+    setTempAgiAlloc(0);
+    setTempVitAlloc(0);
+  };
+
   const effectiveStats = useMemo(() => calculateEffectiveStats(hero), [hero]);
+
+  // Preview hero with allocated points
+  const previewHero = useMemo(() => {
+    return {
+      ...hero,
+      strength: previewStr,
+      agility: previewAgi,
+      vitality: previewVit,
+    };
+  }, [hero, previewStr, previewAgi, previewVit]);
+
+  const previewEffectiveStats = useMemo(() => {
+    return calculateEffectiveStats(previewHero);
+  }, [previewHero]);
+
+  const activeSets = useMemo(() => getActiveSetBonuses(hero.gear), [hero.gear]);
 
   const xpForCurrent = getXpForLevel(hero.level);
   const xpForNext    = getXpForLevel(hero.level + 1);
@@ -106,6 +181,40 @@ export default function ProfileScreen() {
       bagSlots: 0,
     };
   }, [hero.strength, hero.agility, hero.vitality]);
+
+  // Preview Base stats (no gear) for the "+gear bonus" annotations
+  const previewBaseStats = useMemo(() => {
+    return {
+      attack: previewStr * 1,
+      defence: 0,
+      critChance: previewAgi * 0.005,
+      dodge: previewAgi * 0.005,
+      maxHp: previewVit * 5,
+      bagSlots: 0,
+    };
+  }, [previewStr, previewAgi, previewVit]);
+
+  const stance = useMemo(() => {
+    return hero.element ? STANCES[hero.element.toLowerCase()] : null;
+  }, [hero.element]);
+
+  const stanceBonusText = useMemo(() => {
+    if (!hero.element) return '';
+    const bonus = getStanceBonus(hero.element.toLowerCase(), hero.level);
+    if (hero.element.toLowerCase() === 'fire') {
+      return `+${Math.round((bonus.atkPercent || 0) * 100)}% ATK (Burn Damage +${bonus.burnTickBonus || 0})`;
+    }
+    if (hero.element.toLowerCase() === 'water') {
+      return `+${Math.round((bonus.maxHpPercent || 0) * 100)}% Max HP`;
+    }
+    if (hero.element.toLowerCase() === 'earth') {
+      return `+${bonus.defBonus || 0} DEF`;
+    }
+    if (hero.element.toLowerCase() === 'wind') {
+      return `+${bonus.agiBonus || 0} Agility (+${((bonus.agiBonus || 0) * 0.5).toFixed(1)}% Crit/Dodge)`;
+    }
+    return '';
+  }, [hero.element, hero.level]);
 
   const pct = (v) => `${Math.round((v || 0) * 100)}%`;
 
@@ -192,10 +301,10 @@ export default function ProfileScreen() {
         <Defs>
           <RadialGradient id="profileGlow" cx="50%" cy="0%" rx="80%" ry="40%">
             <Stop offset="0%" stopColor={theme.COLORS.candleGold} stopOpacity="0.10" />
-            <Stop offset="100%" stopColor={theme.COLORS.hearthBlack} stopOpacity="0" />
+            <Stop offset="100%" stopColor="#133131" stopOpacity="0" />
           </RadialGradient>
         </Defs>
-        <Rect width="100%" height="100%" fill={theme.COLORS.hearthBlack} />
+        <Rect width="100%" height="100%" fill="#133131" />
         <Rect width="100%" height="100%" fill="url(#profileGlow)" />
       </Svg>
 
@@ -215,12 +324,12 @@ export default function ProfileScreen() {
             <Svg width="100%" height="100%">
               <Defs>
                 <LinearGradient id="heroCardGrad" x1="0" y1="0" x2="0" y2="1">
-                  <Stop offset="0%" stopColor="#2A1E0A" stopOpacity="1" />
-                  <Stop offset="100%" stopColor="#1A1200" stopOpacity="1" />
+                  <Stop offset="0%" stopColor="#102719" stopOpacity="1" />
+                  <Stop offset="100%" stopColor="#0A160F" stopOpacity="1" />
                 </LinearGradient>
                 <RadialGradient id="heroAvatarGlow" cx="22%" cy="50%" rx="35%" ry="60%">
-                  <Stop offset="0%" stopColor="#E8A73A" stopOpacity="0.12" />
-                  <Stop offset="100%" stopColor="#E8A73A" stopOpacity="0" />
+                  <Stop offset="0%" stopColor="#4FB286" stopOpacity="0.15" />
+                  <Stop offset="100%" stopColor="#4FB286" stopOpacity="0" />
                 </RadialGradient>
               </Defs>
               <Rect width="100%" height="100%" fill="url(#heroCardGrad)" rx={20} />
@@ -274,134 +383,362 @@ export default function ProfileScreen() {
           </View>
         </View>
 
-        {/* ── Section 2: Attributes & Stats ── */}
-        <Text style={styles.sectionTitle}>Attributes &amp; Stats</Text>
-        <View style={styles.statsRow}>
-          <StatBox label="STR" value={hero.strength || 10} variant="attribute" />
-          <StatBox label="AGI" value={hero.agility || 10} variant="attribute" />
-          <StatBox label="VIT" value={hero.vitality || 10} variant="attribute" />
-        </View>
-        <View style={[styles.statsRow, { marginBottom: 12 }]}>
-          <StatBox
-            flex={0.85}
-            label="ATK"
-            value={effectiveStats.attack}
-            bonus={effectiveStats.attack - baseStats.attack}
-          />
-          <StatBox
-            flex={0.85}
-            label="DEF"
-            value={effectiveStats.defence}
-            bonus={effectiveStats.defence - baseStats.defence}
-          />
-          <StatBox
-            flex={0.85}
-            label="HP"
-            value={effectiveStats.maxHp}
-            bonus={effectiveStats.maxHp - baseStats.maxHp}
-          />
-          <StatBox
-            flex={1.15}
-            label="CRIT RATE"
-            value={pct(effectiveStats.critChance)}
-            bonus={effectiveStats.critChance - baseStats.critChance}
-            isPercent
-          />
-          <StatBox
-            flex={1.15}
-            label="DODGE RATE"
-            value={pct(effectiveStats.dodge)}
-            bonus={effectiveStats.dodge - baseStats.dodge}
-            isPercent
-          />
-          <StatBox
-            flex={1.15}
-            label="BAG SLOTS"
-            value={effectiveStats.bagSlots}
-            bonus={effectiveStats.bagSlots - baseStats.bagSlots}
-          />
+        {/* ── Section 2: Tab Bar Switcher ── */}
+        <View style={styles.tabContainer}>
+          {TABS.map(({ key, frameIndex, label }) => {
+            const isActive = activeTab === key;
+            return (
+              <TouchableOpacity
+                key={key}
+                style={[styles.tabButton, isActive ? styles.tabBtnActive : styles.tabBtnInactive]}
+                activeOpacity={0.8}
+                onPress={() => {
+                  setActiveTab(key);
+                  setTempStrAlloc(0);
+                  setTempAgiAlloc(0);
+                  setTempVitAlloc(0);
+                }}
+              >
+                <ItemSprite
+                  spritesheet="icons-1"
+                  frameIndex={frameIndex}
+                  displaySize={18}
+                  opacity={isActive ? 1.0 : 0.6}
+                />
+                <Text style={[styles.tabLabel, isActive ? styles.tabLabelActive : styles.tabLabelInactive]}>
+                  {label}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
         </View>
 
-        {/* ── Section 3: Equipment Grid ── */}
-        <Text style={styles.sectionTitle}>Equipment</Text>
-        <View style={styles.equipmentGrid}>
-          {SLOT_ROWS.map((row, rowIdx) => (
-            <View key={rowIdx} style={styles.slotRow}>
-              {row.map((slotKey) => {
-                const slotConfig = SLOT_CONFIG.find((s) => s.key === slotKey);
-                const gearId = hero.gear?.[slotKey];
-                const gearDef = gearId ? GEAR[gearId] : null;
-                const isEmpty = !gearDef;
-                const isWeapon = slotKey === 'weapon';
+        {/* ── Tab Contents ── */}
+        {activeTab === 'stats' ? (
+          <View style={styles.tabContent}>
+            {/* Stat Points Available Banner */}
+            {(hero.statPoints || 0) > 0 && (
+              <View style={styles.pointsBadge}>
+                <Text style={styles.pointsBadgeText}>
+                  Stat Points Available: <Text style={styles.pointsBadgeNumber}>{remainingPoints}</Text>
+                </Text>
+              </View>
+            )}
 
-                return (
-                  <TouchableOpacity
-                    key={slotKey}
-                    style={[
-                      styles.slotCard,
-                      isEmpty ? styles.slotCardEmpty : styles.slotCardEquipped,
-                    ]}
-                    onPress={() => handleOpenSlot(slotKey)}
-                    activeOpacity={0.8}
-                  >
-                    <View style={styles.slotCardInfo}>
-                      <Text style={styles.slotLabel}>{slotConfig.label}</Text>
-                      <Text
-                        style={isEmpty ? styles.slotEmptyText : styles.slotItemName}
-                        numberOfLines={2}
-                      >
-                        {isEmpty ? 'Empty' : gearDef.name}
-                      </Text>
-                      <Text style={styles.slotItemStats} numberOfLines={1}>
-                        {isEmpty ? ' ' : (statSummary(gearDef) || ' ')}
-                      </Text>
-                    </View>
-                    <View style={[
-                      styles.slotIconBox,
-                      isEmpty ? styles.slotIconBoxEmpty : styles.slotIconBoxEquipped,
-                    ]}>
-                      {isEmpty ? (
-                        isWeapon ? (
-                          <SpriteFrame
-                            source={WEAPONS_SHEET}
-                            frameIndex={0}
-                            frameSize={WEAPONS_FRAME_SIZE}
-                            totalFrames={WEAPONS_FRAMES}
-                            displaySize={36}
-                            opacity={0.18}
-                          />
-                        ) : SLOT_EMPTY_FRAME[slotKey] !== undefined && (
-                          <SpriteFrame
-                            source={EQUIPMENT_LEATHER_SHEET}
-                            frameIndex={SLOT_EMPTY_FRAME[slotKey]}
-                            frameSize={EQUIPMENT_LEATHER_FRAME_SIZE}
-                            totalFrames={EQUIPMENT_LEATHER_FRAMES}
-                            displaySize={36}
-                            opacity={0.18}
-                          />
-                        )
-                      ) : (
-                        gearDef.spritesheet ? (
-                          <ItemSprite
-                            spritesheet={gearDef.spritesheet}
-                            frameIndex={gearDef.frameIndex}
-                            displaySize={36}
-                          />
-                        ) : (
-                          <Image
-                            source={GEAR_ICON_PLACEHOLDER}
-                            style={styles.slotIconImage}
-                            resizeMode="contain"
-                          />
-                        )
-                      )}
-                    </View>
-                  </TouchableOpacity>
-                );
-              })}
+            {/* Core Attributes Grid */}
+            <Text style={styles.sectionTitle}>Attributes</Text>
+            <View style={styles.attributeGrid}>
+              {/* Strength Card */}
+              <View style={[styles.attributeCard, { borderColor: 'rgba(212, 167, 84, 0.25)' }]}>
+                <Text style={[styles.attributeLabel, { color: '#F9D99A' }]}>💪 STR</Text>
+                <Text style={styles.attributeValue}>
+                  {hero.strength || 10}
+                  {tempStrAlloc > 0 && <Text style={styles.attributeValueHighlight}> ➔ {previewStr}</Text>}
+                </Text>
+                
+                {showControls && (
+                  <View style={styles.attributeControls}>
+                    <TouchableOpacity
+                      style={[styles.attrControlBtn, tempStrAlloc === 0 && styles.attrControlBtnDisabled]}
+                      disabled={tempStrAlloc === 0}
+                      onPress={() => adjustStat('str', -1)}
+                    >
+                      <Text style={styles.attrControlBtnText}>-</Text>
+                    </TouchableOpacity>
+                    <Text style={styles.attrAllocatedText}>{tempStrAlloc}</Text>
+                    <TouchableOpacity
+                      style={[styles.attrControlBtn, remainingPoints === 0 && styles.attrControlBtnDisabled]}
+                      disabled={remainingPoints === 0}
+                      onPress={() => adjustStat('str', 1)}
+                    >
+                      <Text style={styles.attrControlBtnText}>+</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
+                <Text style={styles.attributeSubLabel}>+1 ATK/pt</Text>
+              </View>
+
+              {/* Agility Card */}
+              <View style={[styles.attributeCard, { borderColor: 'rgba(6, 182, 212, 0.25)' }]}>
+                <Text style={[styles.attributeLabel, { color: '#06B6D4' }]}>🏃 AGI</Text>
+                <Text style={styles.attributeValue}>
+                  {hero.agility || 10}
+                  {tempAgiAlloc > 0 && <Text style={styles.attributeValueHighlight}> ➔ {previewAgi}</Text>}
+                </Text>
+                
+                {showControls && (
+                  <View style={styles.attributeControls}>
+                    <TouchableOpacity
+                      style={[styles.attrControlBtn, tempAgiAlloc === 0 && styles.attrControlBtnDisabled]}
+                      disabled={tempAgiAlloc === 0}
+                      onPress={() => adjustStat('agi', -1)}
+                    >
+                      <Text style={styles.attrControlBtnText}>-</Text>
+                    </TouchableOpacity>
+                    <Text style={styles.attrAllocatedText}>{tempAgiAlloc}</Text>
+                    <TouchableOpacity
+                      style={[styles.attrControlBtn, remainingPoints === 0 && styles.attrControlBtnDisabled]}
+                      disabled={remainingPoints === 0}
+                      onPress={() => adjustStat('agi', 1)}
+                    >
+                      <Text style={styles.attrControlBtnText}>+</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
+                <Text style={styles.attributeSubLabel}>+0.5% CRT/DDG</Text>
+              </View>
+
+              {/* Vitality Card */}
+              <View style={[styles.attributeCard, { borderColor: 'rgba(92, 196, 137, 0.25)' }]}>
+                <Text style={[styles.attributeLabel, { color: '#5CC489' }]}>💚 VIT</Text>
+                <Text style={styles.attributeValue}>
+                  {hero.vitality || 10}
+                  {tempVitAlloc > 0 && <Text style={styles.attributeValueHighlight}> ➔ {previewVit}</Text>}
+                </Text>
+                
+                {showControls && (
+                  <View style={styles.attributeControls}>
+                    <TouchableOpacity
+                      style={[styles.attrControlBtn, tempVitAlloc === 0 && styles.attrControlBtnDisabled]}
+                      disabled={tempVitAlloc === 0}
+                      onPress={() => adjustStat('vit', -1)}
+                    >
+                      <Text style={styles.attrControlBtnText}>-</Text>
+                    </TouchableOpacity>
+                    <Text style={styles.attrAllocatedText}>{tempVitAlloc}</Text>
+                    <TouchableOpacity
+                      style={[styles.attrControlBtn, remainingPoints === 0 && styles.attrControlBtnDisabled]}
+                      disabled={remainingPoints === 0}
+                      onPress={() => adjustStat('vit', 1)}
+                    >
+                      <Text style={styles.attrControlBtnText}>+</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
+                <Text style={styles.attributeSubLabel}>+5 HP</Text>
+              </View>
             </View>
-          ))}
-        </View>
+
+            {/* Confirm Allocation Button */}
+            {totalAllocated > 0 && (
+              <TouchableOpacity
+                style={styles.confirmBtn}
+                onPress={handleConfirmAllocation}
+                activeOpacity={0.8}
+              >
+                <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
+                  <Defs>
+                    <LinearGradient id="confirmBtnGrad" x1="0" y1="0" x2="1" y2="0">
+                      <Stop offset="0%" stopColor="#F9D99A" />
+                      <Stop offset="100%" stopColor="#D4A754" />
+                    </LinearGradient>
+                  </Defs>
+                  <Rect width="100%" height="100%" fill="url(#confirmBtnGrad)" rx={12} />
+                </Svg>
+                <Text style={styles.confirmBtnText}>Confirm Allocation</Text>
+              </TouchableOpacity>
+            )}
+
+            {/* Combat Stats Grid */}
+            <Text style={[styles.sectionTitle, { marginTop: 14 }]}>Combat Stats</Text>
+            <View style={[styles.statsRow, { marginBottom: 16 }]}>
+              <StatBox
+                flex={0.85}
+                label="ATK"
+                value={previewEffectiveStats.attack}
+                bonus={previewEffectiveStats.attack - previewBaseStats.attack}
+                highlighted={previewEffectiveStats.attack !== effectiveStats.attack}
+              />
+              <StatBox
+                flex={0.85}
+                label="DEF"
+                value={previewEffectiveStats.defence}
+                bonus={previewEffectiveStats.defence - previewBaseStats.defence}
+                highlighted={previewEffectiveStats.defence !== effectiveStats.defence}
+              />
+              <StatBox
+                flex={0.85}
+                label="HP"
+                value={previewEffectiveStats.maxHp}
+                bonus={previewEffectiveStats.maxHp - previewBaseStats.maxHp}
+                highlighted={previewEffectiveStats.maxHp !== effectiveStats.maxHp}
+              />
+              <StatBox
+                flex={1.15}
+                label="CRIT RATE"
+                value={pct(previewEffectiveStats.critChance)}
+                bonus={previewEffectiveStats.critChance - previewBaseStats.critChance}
+                isPercent
+                highlighted={previewEffectiveStats.critChance !== effectiveStats.critChance}
+              />
+              <StatBox
+                flex={1.15}
+                label="DODGE RATE"
+                value={pct(previewEffectiveStats.dodge)}
+                bonus={previewEffectiveStats.dodge - previewBaseStats.dodge}
+                isPercent
+                highlighted={previewEffectiveStats.dodge !== effectiveStats.dodge}
+              />
+              <StatBox
+                flex={1.15}
+                label="BAG SLOTS"
+                value={previewEffectiveStats.bagSlots}
+                bonus={previewEffectiveStats.bagSlots - previewBaseStats.bagSlots}
+                highlighted={previewEffectiveStats.bagSlots !== effectiveStats.bagSlots}
+              />
+            </View>
+
+            {/* Stance details */}
+            {stance && (
+              <View style={styles.stanceSection}>
+                <Text style={styles.sectionTitle}>Innate Ability</Text>
+                <View style={styles.stanceCard}>
+                  <View style={StyleSheet.absoluteFill}>
+                    <Svg width="100%" height="100%">
+                      <Defs>
+                        <LinearGradient id="stanceGrad" x1="0" y1="0" x2="0" y2="1">
+                          <Stop offset="0%" stopColor="#102719" stopOpacity="1" />
+                          <Stop offset="100%" stopColor="#0A160F" stopOpacity="1" />
+                        </LinearGradient>
+                      </Defs>
+                      <Rect width="100%" height="100%" fill="url(#stanceGrad)" rx={14} />
+                      <Rect x="1" y="1" width="98%" height="98%" rx={13} fill="none" stroke="rgba(212, 167, 84, 0.15)" strokeWidth={1} />
+                    </Svg>
+                  </View>
+                  <View style={styles.stanceCardInner}>
+                    <View style={styles.stanceHeaderRow}>
+                      <View style={styles.stanceEmojiWrapper}>
+                        <Text style={styles.stanceEmoji}>
+                          {hero.element === 'fire' ? '🔥' : hero.element === 'water' ? '💧' : hero.element === 'earth' ? '🪨' : '💨'}
+                        </Text>
+                      </View>
+                      <View>
+                        <Text style={styles.stanceName}>{stance.name}</Text>
+                        <Text style={styles.stanceElement}>Path of {hero.element.toUpperCase()}</Text>
+                      </View>
+                    </View>
+                    <Text style={styles.stanceDesc}>{stance.description}</Text>
+                    {stanceBonusText ? (
+                      <View style={styles.stanceBonusBox}>
+                        <Text style={styles.stanceBonusLabel}>Current Level Bonus:</Text>
+                        <Text style={styles.stanceBonusVal}>{stanceBonusText}</Text>
+                      </View>
+                    ) : null}
+                  </View>
+                </View>
+              </View>
+            )}
+          </View>
+        ) : (
+          <View style={styles.tabContent}>
+            {/* Active Set Bonuses */}
+            {activeSets.length > 0 && (
+              <View style={styles.statsSection}>
+                <Text style={styles.subSectionTitle}>✨ Active Set Bonuses</Text>
+                {activeSets.map((set) => (
+                  <View key={set.name} style={styles.setBonusCard}>
+                    <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
+                      <Defs>
+                        <LinearGradient id={`setGrad_${set.name}`} x1="0" y1="0" x2="1" y2="0">
+                          <Stop offset="0%" stopColor="#102418" />
+                          <Stop offset="100%" stopColor="#060F0A" />
+                        </LinearGradient>
+                      </Defs>
+                      <Rect width="100%" height="100%" fill={`url(#setGrad_${set.name})`} rx={12} />
+                      <Rect x="1" y="1" width="99%" height="98%" rx={11} fill="none"
+                        stroke="rgba(212,167,84,0.25)" strokeWidth={1} />
+                    </Svg>
+                    <View style={styles.setBonusInner}>
+                      <Text style={styles.setBonusName}>🔗 {set.name}</Text>
+                      <Text style={styles.setBonusDesc}>{set.bonus}</Text>
+                    </View>
+                  </View>
+                ))}
+              </View>
+            )}
+
+            {/* Equipment Grid */}
+            <Text style={styles.sectionTitle}>Equipped Gear</Text>
+            <View style={styles.equipmentGrid}>
+              {SLOT_ROWS.map((row, rowIdx) => (
+                <View key={rowIdx} style={styles.slotRow}>
+                  {row.map((slotKey) => {
+                    const slotConfig = SLOT_CONFIG.find((s) => s.key === slotKey);
+                    const gearId = hero.gear?.[slotKey];
+                    const gearDef = gearId ? GEAR[gearId] : null;
+                    const isEmpty = !gearDef;
+                    const isWeapon = slotKey === 'weapon';
+
+                    return (
+                      <TouchableOpacity
+                        key={slotKey}
+                        style={[
+                          styles.slotCard,
+                          isEmpty ? styles.slotCardEmpty : styles.slotCardEquipped,
+                        ]}
+                        onPress={() => handleOpenSlot(slotKey)}
+                        activeOpacity={0.8}
+                      >
+                        <View style={styles.slotCardInfo}>
+                          <Text style={styles.slotLabel}>{slotConfig.label}</Text>
+                          <Text
+                            style={isEmpty ? styles.slotEmptyText : styles.slotItemName}
+                            numberOfLines={2}
+                          >
+                            {isEmpty ? 'Empty' : gearDef.name}
+                          </Text>
+                          <Text style={styles.slotItemStats} numberOfLines={1}>
+                            {isEmpty ? ' ' : (statSummary(gearDef) || ' ')}
+                          </Text>
+                        </View>
+                        <View style={[
+                          styles.slotIconBox,
+                          isEmpty ? styles.slotIconBoxEmpty : styles.slotIconBoxEquipped,
+                        ]}>
+                          {isEmpty ? (
+                            isWeapon ? (
+                              <SpriteFrame
+                                source={WEAPONS_SHEET}
+                                frameIndex={0}
+                                frameSize={WEAPONS_FRAME_SIZE}
+                                totalFrames={WEAPONS_FRAMES}
+                                displaySize={36}
+                                opacity={0.18}
+                              />
+                            ) : SLOT_EMPTY_FRAME[slotKey] !== undefined && (
+                              <SpriteFrame
+                                source={EQUIPMENT_LEATHER_SHEET}
+                                frameIndex={SLOT_EMPTY_FRAME[slotKey]}
+                                frameSize={EQUIPMENT_LEATHER_FRAME_SIZE}
+                                totalFrames={EQUIPMENT_LEATHER_FRAMES}
+                                displaySize={36}
+                                opacity={0.18}
+                              />
+                            )
+                          ) : (
+                            gearDef.spritesheet ? (
+                              <ItemSprite
+                                spritesheet={gearDef.spritesheet}
+                                frameIndex={gearDef.frameIndex}
+                                displaySize={36}
+                              />
+                            ) : (
+                              <Image
+                                source={GEAR_ICON_PLACEHOLDER}
+                                style={styles.slotIconImage}
+                                resizeMode="contain"
+                              />
+                            )
+                          )}
+                        </View>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              ))}
+            </View>
+          </View>
+        )}
       </ScrollView>
 
       {/* ── Equipment Slot Popup ── */}
@@ -527,14 +864,18 @@ function SpriteFrame({ source, frameIndex, frameSize, totalFrames, displaySize =
 }
 
 // ─── StatBox ─────────────────────────────────────────────────────────────────
-function StatBox({ label, value, bonus, isPercent, variant, flex = 1 }) {
+function StatBox({ label, value, bonus, isPercent, variant, flex = 1, highlighted }) {
   const showBonus = bonus !== undefined && Math.abs(bonus) > 0.0001;
   const bonusText = isPercent ? `+${Math.round(bonus * 100)}%` : `+${bonus}`;
   const isAttribute = variant === 'attribute';
   return (
     <View style={[styles.statBox, { flex }, isAttribute && styles.statBoxAttribute]}>
       <Text style={styles.statLabel} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>{label}</Text>
-      <Text style={[styles.statValue, isAttribute && styles.statValueAttribute]}>{value}</Text>
+      <Text style={[
+        styles.statValue, 
+        isAttribute && styles.statValueAttribute,
+        highlighted && { color: '#5CC489' }
+      ]}>{value}</Text>
       <Text style={styles.statBonus}>{showBonus ? bonusText : ' '}</Text>
     </View>
   );
@@ -543,7 +884,268 @@ function StatBox({ label, value, bonus, isPercent, variant, flex = 1 }) {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: theme.COLORS.hearthBlack,
+    backgroundColor: '#133131',
+  },
+  tabContainer: {
+    flexDirection: 'row',
+    gap: 8,
+    backgroundColor: 'transparent',
+    borderRadius: 0,
+    padding: 0,
+    marginTop: 6,
+    marginBottom: 14,
+    borderWidth: 0,
+  },
+  tabButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 4,
+    gap: 6,
+    borderWidth: 2,
+  },
+  tabBtnActive: {
+    backgroundColor: '#F3E2BD',
+    borderColor: '#4A3917',
+  },
+  tabBtnInactive: {
+    backgroundColor: '#0D2216',
+    borderColor: '#183C25',
+  },
+  tabLabel: {
+    fontFamily: 'Silkscreen-Regular',
+    fontSize: 10,
+    fontWeight: 'normal',
+    letterSpacing: 0,
+  },
+  tabLabelActive: {
+    color: '#2A1A0C',
+  },
+  tabLabelInactive: {
+    color: '#F3E2BD',
+    opacity: 0.6,
+  },
+  tabContent: {
+    marginTop: 4,
+  },
+  pointsBadge: {
+    backgroundColor: 'rgba(212, 167, 84, 0.08)',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(212, 167, 84, 0.2)',
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    marginBottom: 16,
+    alignItems: 'center',
+  },
+  pointsBadgeText: {
+    fontFamily: 'PixelifySans-Medium',
+    fontSize: 13,
+    color: 'rgba(255, 255, 255, 0.8)',
+    fontWeight: 'normal',
+  },
+  pointsBadgeNumber: {
+    color: '#D4A754',
+    fontWeight: 'bold',
+  },
+  attributeGrid: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 14,
+  },
+  attributeCard: {
+    flex: 1,
+    backgroundColor: 'rgba(16, 44, 28, 0.35)',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(92, 196, 137, 0.18)',
+    paddingVertical: 12,
+    paddingHorizontal: 4,
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    minHeight: 110,
+  },
+  attributeLabel: {
+    fontFamily: 'Silkscreen-Regular',
+    fontSize: 11,
+    fontWeight: 'normal',
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+  },
+  attributeValue: {
+    fontFamily: 'PixelifySans-Medium',
+    fontSize: 16,
+    fontWeight: 'normal',
+    color: '#F8FAFC',
+    marginVertical: 4,
+  },
+  attributeValueHighlight: {
+    color: '#D4A754',
+    fontWeight: 'bold',
+  },
+  attributeControls: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    marginVertical: 4,
+  },
+  attrControlBtn: {
+    width: 22,
+    height: 22,
+    borderRadius: 6,
+    backgroundColor: 'rgba(212, 167, 84, 0.15)',
+    borderWidth: 1,
+    borderColor: 'rgba(212, 167, 84, 0.3)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  attrControlBtnDisabled: {
+    opacity: 0.2,
+    backgroundColor: 'rgba(255, 255, 255, 0.02)',
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+  },
+  attrControlBtnText: {
+    fontFamily: 'PixelifySans-Medium',
+    color: '#D4A754',
+    fontSize: 14,
+    fontWeight: 'normal',
+    marginTop: -2,
+  },
+  attrAllocatedText: {
+    fontFamily: 'PixelifySans-Medium',
+    color: '#F8FAFC',
+    fontSize: 12,
+    fontWeight: 'normal',
+    minWidth: 14,
+    textAlign: 'center',
+  },
+  attributeSubLabel: {
+    fontFamily: 'Silkscreen-Regular',
+    fontSize: 9,
+    color: '#64748B',
+    marginTop: 2,
+    textAlign: 'center',
+  },
+  confirmBtn: {
+    height: 44,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+    width: '100%',
+    marginBottom: 14,
+  },
+  confirmBtnText: {
+    fontFamily: 'PixelifySans-Medium',
+    fontSize: 14,
+    fontWeight: 'normal',
+    color: '#1A1200',
+    zIndex: 2,
+  },
+  stanceSection: {
+    marginTop: 6,
+    marginBottom: 16,
+  },
+  stanceCard: {
+    borderRadius: 14,
+    overflow: 'hidden',
+    backgroundColor: '#0A160F',
+  },
+  stanceCardInner: {
+    padding: 16,
+    zIndex: 2,
+  },
+  stanceHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 8,
+  },
+  stanceEmojiWrapper: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(212, 167, 84, 0.12)',
+    borderWidth: 1,
+    borderColor: 'rgba(212, 167, 84, 0.3)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  stanceEmoji: {
+    fontSize: 18,
+  },
+  stanceName: {
+    fontFamily: 'PixelifySans-Medium',
+    fontSize: 15,
+    fontWeight: 'normal',
+    color: '#F8FAFC',
+  },
+  stanceElement: {
+    fontFamily: 'Silkscreen-Regular',
+    fontSize: 8,
+    color: '#D4A754',
+    letterSpacing: 0.5,
+    marginTop: 1,
+  },
+  stanceDesc: {
+    fontFamily: 'Silkscreen-Regular',
+    fontSize: 11,
+    color: '#94A3B8',
+    lineHeight: 16,
+  },
+  stanceBonusBox: {
+    marginTop: 10,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255,255,255,0.05)',
+  },
+  stanceBonusLabel: {
+    fontFamily: 'Silkscreen-Regular',
+    fontSize: 9,
+    color: '#64748B',
+  },
+  stanceBonusVal: {
+    fontFamily: 'PixelifySans-Medium',
+    fontSize: 13,
+    color: '#5CC489',
+    marginTop: 2,
+  },
+  statsSection: {
+    marginBottom: 14,
+  },
+  subSectionTitle: {
+    fontFamily: 'PixelifySans-Medium',
+    fontWeight: 'normal',
+    fontSize: 13,
+    color: '#D4A754',
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+    marginBottom: 8,
+  },
+  setBonusCard: {
+    borderRadius: 12,
+    overflow: 'hidden',
+    marginBottom: 8,
+  },
+  setBonusInner: {
+    padding: 12,
+    zIndex: 2,
+  },
+  setBonusName: {
+    fontFamily: 'PixelifySans-Medium',
+    fontSize: 13,
+    fontWeight: 'normal',
+    color: '#F8FAFC',
+    marginBottom: 2,
+  },
+  setBonusDesc: {
+    fontFamily: 'Silkscreen-Regular',
+    fontSize: 10,
+    color: '#94A3B8',
   },
   header: {
     flexDirection: 'row',
@@ -631,7 +1233,7 @@ const styles = StyleSheet.create({
     borderRadius: 11,
     backgroundColor: '#D4A754',
     borderWidth: 1.5,
-    borderColor: '#1A1200',
+    borderColor: '#133131',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -678,9 +1280,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 1,
-    backgroundColor: 'rgba(255,255,255,0.02)',
+    backgroundColor: 'rgba(16, 44, 28, 0.35)',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.06)',
+    borderColor: 'rgba(92, 196, 137, 0.18)',
   },
   statBoxAttribute: {
     backgroundColor: 'rgba(92,196,137,0.08)',

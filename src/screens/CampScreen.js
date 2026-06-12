@@ -36,26 +36,6 @@ import ItemSprite from '../components/ItemSprite';
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const BANNER_WIDTH = SCREEN_WIDTH - 40;
 
-// ─── SVG Wood Texture Background Component ───────────────────────────────────
-function WoodSpriteBackground({ borderRadius = 8 }) {
-  return (
-    <View style={{ ...StyleSheet.absoluteFillObject, borderRadius, overflow: 'hidden' }}>
-      <Svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none">
-        {/* Solid wood brown background */}
-        <Rect width="100" height="100" fill="#825324" />
-        
-        {/* Dark wood grain lines */}
-        <Path d="M0,20 Q30,22 50,18 T100,20" stroke="#5C3A16" strokeWidth="2.5" fill="none" opacity="0.5" />
-        <Path d="M0,50 Q45,46 70,54 T100,50" stroke="#5C3A16" strokeWidth="2.5" fill="none" opacity="0.5" />
-        <Path d="M0,80 Q25,84 60,78 T100,80" stroke="#5C3A16" strokeWidth="2.5" fill="none" opacity="0.5" />
-        
-        {/* Light wood highlights */}
-        <Path d="M0,35 Q20,32 55,38 T100,35" stroke="#A87543" strokeWidth="2" fill="none" opacity="0.3" />
-        <Path d="M0,65 Q35,68 65,62 T100,65" stroke="#A87543" strokeWidth="2" fill="none" opacity="0.3" />
-      </Svg>
-    </View>
-  );
-}
 
 // ─── SVG Rugged Border Background Component ──────────────────────────────────
 function RuggedBorderBackground({ width, height }) {
@@ -184,72 +164,7 @@ export default function CampScreen({ navigation }) {
 
   const [dungeonCardLayout, setDungeonCardLayout] = React.useState({ width: 0, height: 0 });
 
-  // ── State for Stat Allocation Modal ───────────────────────────────────────
-  const [showStatModal, setShowStatModal] = React.useState(false);
-  const [tempStrAlloc, setTempStrAlloc] = React.useState(0);
-  const [tempAgiAlloc, setTempAgiAlloc] = React.useState(0);
-  const [tempVitAlloc, setTempVitAlloc] = React.useState(0);
-
-  const remainingPoints = (hero.statPoints || 0) - (tempStrAlloc + tempAgiAlloc + tempVitAlloc);
-  const previewStr = (hero.strength || 10) + tempStrAlloc;
-  const previewAgi = (hero.agility || 10) + tempAgiAlloc;
-  const previewVit = (hero.vitality || 10) + tempVitAlloc;
-
   const effectiveStats = calculateEffectiveStats(hero);
-  const effectiveMaxHp = effectiveStats.maxHp;
-
-  const previewMaxHp = effectiveMaxHp + tempVitAlloc * 5;
-  const previewAttack = effectiveStats.attack + tempStrAlloc * 1;
-  const previewDefence = effectiveStats.defence;
-  const previewCritChance = effectiveStats.critChance + tempAgiAlloc * 0.005;
-  const previewDodge = effectiveStats.dodge + tempAgiAlloc * 0.005;
-
-  const showControls = (hero.statPoints || 0) > 0;
-
-  const adjustStat = (statType, amount) => {
-    if (statType === 'str') {
-      if (amount > 0 && remainingPoints > 0) {
-        setTempStrAlloc(prev => prev + 1);
-      } else if (amount < 0 && tempStrAlloc > 0) {
-        setTempStrAlloc(prev => prev - 1);
-      }
-    } else if (statType === 'agi') {
-      if (amount > 0 && remainingPoints > 0) {
-        setTempAgiAlloc(prev => prev + 1);
-      } else if (amount < 0 && tempAgiAlloc > 0) {
-        setTempAgiAlloc(prev => prev - 1);
-      }
-    } else if (statType === 'vit') {
-      if (amount > 0 && remainingPoints > 0) {
-        setTempVitAlloc(prev => prev + 1);
-      } else if (amount < 0 && tempVitAlloc > 0) {
-        setTempVitAlloc(prev => prev - 1);
-      }
-    }
-  };
-
-  const handleConfirmAllocation = () => {
-    if (tempStrAlloc + tempAgiAlloc + tempVitAlloc === 0) {
-      setShowStatModal(false);
-      return;
-    }
-    dispatch({
-      type: 'ALLOCATE_STAT_POINTS',
-      payload: {
-        strInc: tempStrAlloc,
-        agiInc: tempAgiAlloc,
-        vitInc: tempVitAlloc,
-      },
-    });
-    setShowStatModal(false);
-  };
-
-  const handleOpenStatModal = () => {
-    setTempStrAlloc(0);
-    setTempAgiAlloc(0);
-    setTempVitAlloc(0);
-    setShowStatModal(true);
-  };
 
 
 
@@ -395,7 +310,7 @@ export default function CampScreen({ navigation }) {
               <View style={styles.bannerTagClickableWrapper}>
                 <TouchableOpacity
                   style={styles.bannerTagClickableInner}
-                  onPress={handleOpenStatModal}
+                  onPress={() => navigation.navigate('Profile', { initialTab: 'stats' })}
                   activeOpacity={0.7}
                 >
                   <ItemSprite spritesheet="icons-1" frameIndex={28} displaySize={18} />
@@ -492,7 +407,6 @@ export default function CampScreen({ navigation }) {
               activeOpacity={0.8}
               onPress={() => navigation.navigate('Shop')}
             >
-              <WoodSpriteBackground borderRadius={theme.BORDER_RADIUS.card} />
               <View style={styles.subSpriteContainer}>
                 <IconGlowBackground size={44} />
                 <ItemSprite spritesheet="icons-1" frameIndex={1} displaySize={38} />
@@ -506,7 +420,6 @@ export default function CampScreen({ navigation }) {
               activeOpacity={0.8}
               onPress={() => navigation.navigate('SkillTree')}
             >
-              <WoodSpriteBackground borderRadius={theme.BORDER_RADIUS.card} />
               <View style={styles.subSpriteContainer}>
                 <IconGlowBackground size={44} />
                 <ItemSprite spritesheet="icons-1" frameIndex={4} displaySize={38} />
@@ -520,7 +433,6 @@ export default function CampScreen({ navigation }) {
               activeOpacity={0.8}
               onPress={() => navigation.navigate('Loadout')}
             >
-              <WoodSpriteBackground borderRadius={theme.BORDER_RADIUS.card} />
               <View style={styles.subSpriteContainer}>
                 <IconGlowBackground size={44} />
                 <ItemSprite spritesheet="icons-1" frameIndex={12} displaySize={38} />
@@ -534,7 +446,6 @@ export default function CampScreen({ navigation }) {
               activeOpacity={0.8}
               onPress={() => navigation.navigate('Profile')}
             >
-              <WoodSpriteBackground borderRadius={theme.BORDER_RADIUS.card} />
               <View style={styles.subSpriteContainer}>
                 <IconGlowBackground size={44} />
                 <ItemSprite spritesheet="icons-1" frameIndex={28} displaySize={38} />
@@ -568,279 +479,7 @@ export default function CampScreen({ navigation }) {
         />
       </ScrollView>
 
-      {/* ═══════════════════════════════════════════════════════════════════
-          STAT ALLOCATION MODAL
-          ═══════════════════════════════════════════════════════════════════ */}
-      <Modal
-        visible={showStatModal}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowStatModal(false)}
-      >
-        <Pressable
-          style={styles.modalBackdrop}
-          onPress={() => setShowStatModal(false)}
-        >
-          <Pressable style={styles.modalCard}>
-            {/* Modal Ambient Glow */}
-            <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
-              <Defs>
-                <RadialGradient id="modalCardGlow" cx="50%" cy="0%" rx="80%" ry="50%">
-                  <Stop offset="0%" stopColor="#D4A754" stopOpacity="0.08" />
-                  <Stop offset="100%" stopColor="#14161C" stopOpacity="0" />
-                </RadialGradient>
-              </Defs>
-              <Rect width="100%" height="100%" fill="#14161C" rx={20} />
-              <Rect width="100%" height="100%" fill="url(#modalCardGlow)" rx={20} />
-              <Rect x="1" y="1" width="98%" height="98%" rx={19} fill="none" stroke="rgba(212, 167, 84, 0.15)" strokeWidth={1} />
-            </Svg>
 
-            <View style={styles.modalInner}>
-              {/* Close Button */}
-              <TouchableOpacity
-                style={styles.modalCloseBtn}
-                onPress={() => setShowStatModal(false)}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.modalCloseText}>✕</Text>
-              </TouchableOpacity>
-
-              <Text style={styles.modalTitle}>📊 {hero.name || 'Mochi'}'s Base Stats</Text>
-              
-              {hero.statPoints > 0 ? (
-                <Text style={styles.modalPointsText}>
-                  Allocate your stat points to increase {hero.name || 'Mochi'}'s combat performance.
-                </Text>
-              ) : (
-                <Text style={styles.modalPointsText}>
-                  {hero.name || 'Mochi'} has allocated all stat points. Level up to earn more points!
-                </Text>
-              )}
-
-              {/* Stat Points Available Badge */}
-              <View style={styles.pointsBadge}>
-                <Text style={styles.pointsBadgeText}>
-                  Stat Points Available: <Text style={styles.pointsBadgeNumber}>{remainingPoints}</Text>
-                </Text>
-              </View>
-
-              {/* CORE ATTRIBUTES GRID */}
-              <View style={styles.attributeGrid}>
-                {/* Strength Card */}
-                <View style={[styles.attributeCard, { borderColor: 'rgba(212, 167, 84, 0.25)' }]}>
-                  <Text style={[styles.attributeLabel, { color: '#F9D99A' }]}>💪 STR</Text>
-                  <Text style={styles.attributeValue}>
-                    {hero.strength || 10}
-                    {tempStrAlloc > 0 && <Text style={styles.attributeValueHighlight}> ➔ {previewStr}</Text>}
-                  </Text>
-                  
-                  {showControls && (
-                    <View style={styles.attributeControls}>
-                      <TouchableOpacity
-                        style={[styles.attrControlBtn, tempStrAlloc === 0 && styles.attrControlBtnDisabled]}
-                        disabled={tempStrAlloc === 0}
-                        onPress={() => adjustStat('str', -1)}
-                      >
-                        <Text style={styles.attrControlBtnText}>-</Text>
-                      </TouchableOpacity>
-                      <Text style={styles.attrAllocatedText}>{tempStrAlloc}</Text>
-                      <TouchableOpacity
-                        style={[styles.attrControlBtn, remainingPoints === 0 && styles.attrControlBtnDisabled]}
-                        disabled={remainingPoints === 0}
-                        onPress={() => adjustStat('str', 1)}
-                      >
-                        <Text style={styles.attrControlBtnText}>+</Text>
-                      </TouchableOpacity>
-                    </View>
-                  )}
-                  <Text style={styles.attributeSubLabel}>+1 ATK/pt</Text>
-                </View>
-
-                {/* Agility Card */}
-                <View style={[styles.attributeCard, { borderColor: 'rgba(6, 182, 212, 0.25)' }]}>
-                  <Text style={[styles.attributeLabel, { color: '#06B6D4' }]}>🏃 AGI</Text>
-                  <Text style={styles.attributeValue}>
-                    {hero.agility || 10}
-                    {tempAgiAlloc > 0 && <Text style={styles.attributeValueHighlight}> ➔ {previewAgi}</Text>}
-                  </Text>
-                  
-                  {showControls && (
-                    <View style={styles.attributeControls}>
-                      <TouchableOpacity
-                        style={[styles.attrControlBtn, tempAgiAlloc === 0 && styles.attrControlBtnDisabled]}
-                        disabled={tempAgiAlloc === 0}
-                        onPress={() => adjustStat('agi', -1)}
-                      >
-                        <Text style={styles.attrControlBtnText}>-</Text>
-                      </TouchableOpacity>
-                      <Text style={styles.attrAllocatedText}>{tempAgiAlloc}</Text>
-                      <TouchableOpacity
-                        style={[styles.attrControlBtn, remainingPoints === 0 && styles.attrControlBtnDisabled]}
-                        disabled={remainingPoints === 0}
-                        onPress={() => adjustStat('agi', 1)}
-                      >
-                        <Text style={styles.attrControlBtnText}>+</Text>
-                      </TouchableOpacity>
-                    </View>
-                  )}
-                  <Text style={styles.attributeSubLabel}>+0.5% CRT/DDG</Text>
-                </View>
-
-                {/* Vitality Card */}
-                <View style={[styles.attributeCard, { borderColor: 'rgba(92, 196, 137, 0.25)' }]}>
-                  <Text style={[styles.attributeLabel, { color: '#5CC489' }]}>💚 VIT</Text>
-                  <Text style={styles.attributeValue}>
-                    {hero.vitality || 10}
-                    {tempVitAlloc > 0 && <Text style={styles.attributeValueHighlight}> ➔ {previewVit}</Text>}
-                  </Text>
-                  
-                  {showControls && (
-                    <View style={styles.attributeControls}>
-                      <TouchableOpacity
-                        style={[styles.attrControlBtn, tempVitAlloc === 0 && styles.attrControlBtnDisabled]}
-                        disabled={tempVitAlloc === 0}
-                        onPress={() => adjustStat('vit', -1)}
-                      >
-                        <Text style={styles.attrControlBtnText}>-</Text>
-                      </TouchableOpacity>
-                      <Text style={styles.attrAllocatedText}>{tempVitAlloc}</Text>
-                      <TouchableOpacity
-                        style={[styles.attrControlBtn, remainingPoints === 0 && styles.attrControlBtnDisabled]}
-                        disabled={remainingPoints === 0}
-                        onPress={() => adjustStat('vit', 1)}
-                      >
-                        <Text style={styles.attrControlBtnText}>+</Text>
-                      </TouchableOpacity>
-                    </View>
-                  )}
-                  <Text style={styles.attributeSubLabel}>+5 HP</Text>
-                </View>
-              </View>
-
-              {/* SECONDARY STAT BREAKDOWN TABLE */}
-              <View style={styles.breakdownTable}>
-                {/* Table Headers */}
-                <View style={styles.tableHeaderRow}>
-                  <Text style={[styles.headerLabel, styles.headerColStat]}>Stat Breakdown</Text>
-                  <Text style={[styles.headerLabel, styles.headerColCurrent]}>Current</Text>
-                  <Text style={[styles.headerLabel, styles.headerColNew]}>New</Text>
-                </View>
-
-                {/* Attack Row */}
-                <View style={styles.tableRow}>
-                  <View style={styles.colStat}>
-                    <Text style={styles.statEmoji}>⚔️</Text>
-                    <Text style={styles.statLabel}>Attack</Text>
-                  </View>
-                  <Text style={styles.colCurrent}>{effectiveStats.attack}</Text>
-                  <Text style={[
-                    styles.colNew, 
-                    tempStrAlloc > 0 ? styles.colNewHighlighted : styles.colNewMuted
-                  ]}>
-                    {tempStrAlloc > 0 ? previewAttack : '—'}
-                  </Text>
-                </View>
-
-                {/* Defense Row */}
-                <View style={styles.tableRow}>
-                  <View style={styles.colStat}>
-                    <Text style={styles.statEmoji}>🛡️</Text>
-                    <Text style={styles.statLabel}>Defense</Text>
-                  </View>
-                  <Text style={styles.colCurrent}>{effectiveStats.defence}</Text>
-                  <Text style={[styles.colNew, styles.colNewMuted]}>—</Text>
-                </View>
-
-                {/* HP Row */}
-                <View style={styles.tableRow}>
-                  <View style={styles.colStat}>
-                    <Text style={styles.statEmoji}>❤️</Text>
-                    <Text style={styles.statLabel}>Max HP</Text>
-                  </View>
-                  <Text style={styles.colCurrent}>{effectiveMaxHp}</Text>
-                  <Text style={[
-                    styles.colNew, 
-                    tempVitAlloc > 0 ? styles.colNewHighlighted : styles.colNewMuted
-                  ]}>
-                    {tempVitAlloc > 0 ? previewMaxHp : '—'}
-                  </Text>
-                </View>
-
-                {/* Crit Row */}
-                <View style={styles.tableRow}>
-                  <View style={styles.colStat}>
-                    <Text style={styles.statEmoji}>💥</Text>
-                    <Text style={styles.statLabel}>Crit Chance</Text>
-                  </View>
-                  <Text style={styles.colCurrent}>{Math.round(effectiveStats.critChance * 1000) / 10}%</Text>
-                  <Text style={[
-                    styles.colNew, 
-                    tempAgiAlloc > 0 ? styles.colNewHighlighted : styles.colNewMuted
-                  ]}>
-                    {tempAgiAlloc > 0 ? `${Math.round(previewCritChance * 1000) / 10}%` : '—'}
-                  </Text>
-                </View>
-
-                {/* Dodge Row */}
-                <View style={[styles.tableRow, { borderBottomWidth: 0 }]}>
-                  <View style={styles.colStat}>
-                    <Text style={styles.statEmoji}>💨</Text>
-                    <Text style={styles.statLabel}>Dodge Chance</Text>
-                  </View>
-                  <Text style={styles.colCurrent}>{Math.round(effectiveStats.dodge * 1000) / 10}%</Text>
-                  <Text style={[
-                    styles.colNew, 
-                    tempAgiAlloc > 0 ? styles.colNewHighlighted : styles.colNewMuted
-                  ]}>
-                    {tempAgiAlloc > 0 ? `${Math.round(previewDodge * 1000) / 10}%` : '—'}
-                  </Text>
-                </View>
-              </View>
-
-              {/* ACTION BUTTONS */}
-              {hero.statPoints > 0 ? (
-                <View style={styles.modalActions}>
-                  <TouchableOpacity
-                    style={[
-                      styles.confirmBtn,
-                      (tempStrAlloc + tempAgiAlloc + tempVitAlloc === 0) && styles.confirmBtnDisabled
-                    ]}
-                    disabled={tempStrAlloc + tempAgiAlloc + tempVitAlloc === 0}
-                    onPress={handleConfirmAllocation}
-                    activeOpacity={0.8}
-                  >
-                    <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
-                      <Defs>
-                        <LinearGradient id="confirmBtnGrad" x1="0" y1="0" x2="1" y2="0">
-                          <Stop offset="0%" stopColor="#F9D99A" />
-                          <Stop offset="100%" stopColor="#D4A754" />
-                        </LinearGradient>
-                      </Defs>
-                      <Rect width="100%" height="100%" fill={(tempStrAlloc + tempAgiAlloc + tempVitAlloc === 0) ? "#333" : "url(#confirmBtnGrad)"} rx={10} />
-                    </Svg>
-                    <Text style={[
-                      styles.confirmBtnText,
-                      (tempStrAlloc + tempAgiAlloc + tempVitAlloc === 0) && { color: '#666' }
-                    ]}>
-                      Confirm Allocation
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-              ) : (
-                <View style={styles.modalActions}>
-                  <TouchableOpacity
-                    style={styles.closeModalBtn}
-                    onPress={() => setShowStatModal(false)}
-                    activeOpacity={0.8}
-                  >
-                    <Text style={styles.closeModalBtnText}>Close</Text>
-                  </TouchableOpacity>
-                </View>
-              )}
-            </View>
-          </Pressable>
-        </Pressable>
-      </Modal>
     </SafeAreaView>
     </ScreenLoader>
   );
@@ -962,7 +601,7 @@ const styles = StyleSheet.create({
   },
   subCard: {
     flex: 1,
-    backgroundColor: '#825324',
+    backgroundColor: '#142C1C',
     borderColor: theme.COLORS.candleGold,
     borderWidth: 2,
     borderRadius: theme.BORDER_RADIUS.card,
@@ -1162,271 +801,5 @@ const styles = StyleSheet.create({
     marginTop: -1,
   },
 
-  /* ═══ Modal Styles ════════════════════════════════════════════════════════ */
-  modalBackdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.82)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  modalCard: {
-    width: '100%',
-    maxWidth: 380,
-    borderRadius: 20,
-    overflow: 'hidden',
-    backgroundColor: '#14161C',
-  },
-  modalInner: {
-    padding: 24,
-    position: 'relative',
-    zIndex: 5,
-  },
-  modalCloseBtn: {
-    position: 'absolute',
-    top: 20,
-    right: 20,
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: 'rgba(255, 255, 255, 0.03)',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 10,
-  },
-  modalCloseText: {
-    color: 'rgba(255, 255, 255, 0.4)',
-    fontSize: 14,
-    fontWeight: 'bold',
-  },
-  modalTitle: {
-    fontFamily: 'PixelifySans-Medium',
-    fontSize: 18,
-    fontWeight: 'normal',
-    color: '#F8FAFC',
-    marginBottom: 8,
-    letterSpacing: 0.5,
-  },
-  modalPointsText: {
-    fontFamily: 'PixelifySans-Regular',
-    fontSize: 12,
-    color: '#707F94',
-    lineHeight: 16,
-    marginBottom: 16,
-  },
-  pointsBadge: {
-    backgroundColor: 'rgba(212, 167, 84, 0.08)',
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: 'rgba(212, 167, 84, 0.2)',
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-    marginBottom: 20,
-    alignItems: 'center',
-  },
-  pointsBadgeText: {
-    fontFamily: 'PixelifySans-Medium',
-    fontSize: 13,
-    color: 'rgba(255, 255, 255, 0.8)',
-    fontWeight: 'normal',
-  },
-  pointsBadgeNumber: {
-    color: '#D4A754',
-    fontWeight: 'bold',
-  },
-  attributeGrid: {
-    flexDirection: 'row',
-    gap: 8,
-    marginBottom: 20,
-  },
-  attributeCard: {
-    flex: 1,
-    backgroundColor: 'rgba(255, 255, 255, 0.02)',
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.05)',
-    paddingVertical: 12,
-    paddingHorizontal: 6,
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    minHeight: 105,
-  },
-  attributeLabel: {
-    fontFamily: 'Silkscreen-Regular',
-    fontSize: 11,
-    fontWeight: 'normal',
-    letterSpacing: 0.5,
-    textTransform: 'uppercase',
-  },
-  attributeValue: {
-    fontFamily: 'PixelifySans-Medium',
-    fontSize: 16,
-    fontWeight: 'normal',
-    color: '#F8FAFC',
-    marginVertical: 4,
-  },
-  attributeValueHighlight: {
-    color: '#D4A754',
-    fontWeight: 'bold',
-  },
-  attributeControls: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    marginVertical: 4,
-  },
-  attrControlBtn: {
-    width: 22,
-    height: 22,
-    borderRadius: 6,
-    backgroundColor: 'rgba(212, 167, 84, 0.15)',
-    borderWidth: 1,
-    borderColor: 'rgba(212, 167, 84, 0.3)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  attrControlBtnDisabled: {
-    opacity: 0.2,
-    backgroundColor: 'rgba(255, 255, 255, 0.02)',
-    borderColor: 'rgba(255, 255, 255, 0.08)',
-  },
-  attrControlBtnText: {
-    fontFamily: 'PixelifySans-Medium',
-    color: '#D4A754',
-    fontSize: 14,
-    fontWeight: 'normal',
-    marginTop: -2,
-  },
-  attrAllocatedText: {
-    fontFamily: 'PixelifySans-Medium',
-    color: '#F8FAFC',
-    fontSize: 12,
-    fontWeight: 'normal',
-    minWidth: 14,
-    textAlign: 'center',
-  },
-  attributeSubLabel: {
-    fontFamily: 'Silkscreen-Regular',
-    fontSize: 9,
-    color: '#64748B',
-    marginTop: 2,
-    textAlign: 'center',
-  },
-  breakdownTable: {
-    backgroundColor: 'rgba(255, 255, 255, 0.02)',
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.04)',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    marginBottom: 20,
-  },
-  tableHeaderRow: {
-    flexDirection: 'row',
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.08)',
-    marginBottom: 4,
-  },
-  tableRow: {
-    flexDirection: 'row',
-    paddingVertical: 10,
-    alignItems: 'center',
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.03)',
-  },
-  colStat: {
-    flex: 2.2,
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  colCurrent: {
-    flex: 1,
-    textAlign: 'right',
-    fontFamily: 'PixelifySans-Regular',
-    fontSize: 13,
-    color: '#94A3B8',
-  },
-  colNew: {
-    flex: 1,
-    textAlign: 'right',
-    fontFamily: 'PixelifySans-Medium',
-    fontSize: 13,
-    fontWeight: 'normal',
-  },
-  colNewHighlighted: {
-    color: '#D4A754',
-  },
-  colNewMuted: {
-    color: '#94A3B8',
-  },
-  headerLabel: {
-    fontFamily: 'Silkscreen-Regular',
-    fontSize: 10,
-    color: '#64748B',
-    fontWeight: 'normal',
-    letterSpacing: 0.5,
-    textTransform: 'uppercase',
-  },
-  headerColStat: {
-    flex: 2.2,
-  },
-  headerColCurrent: {
-    flex: 1,
-    textAlign: 'right',
-  },
-  headerColNew: {
-    flex: 1,
-    textAlign: 'right',
-  },
-  statEmoji: {
-    fontSize: 14,
-    marginRight: 6,
-  },
-  statLabel: {
-    fontFamily: 'PixelifySans-Medium',
-    fontSize: 13,
-    color: '#E2E8F0',
-    fontWeight: 'normal',
-  },
-  modalActions: {
-    marginTop: 8,
-  },
-  confirmBtn: {
-    height: 48,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
-    width: '100%',
-  },
-  confirmBtnDisabled: {
-    backgroundColor: '#222',
-  },
-  confirmBtnText: {
-    fontFamily: 'PixelifySans-Medium',
-    fontSize: 15,
-    fontWeight: 'normal',
-    color: '#1A1200',
-    zIndex: 2,
-  },
-  closeModalBtn: {
-    height: 44,
-    borderRadius: 12,
-    backgroundColor: 'rgba(255, 255, 255, 0.03)',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: '100%',
-  },
-  closeModalBtnText: {
-    fontFamily: 'PixelifySans-Medium',
-    fontSize: 14,
-    fontWeight: 'normal',
-    color: 'rgba(255, 255, 255, 0.6)',
-  },
+
 });
