@@ -978,11 +978,11 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     borderWidth: 1,
     borderColor: 'rgba(92, 196, 137, 0.18)',
-    paddingVertical: 12,
+    paddingVertical: 10,
     paddingHorizontal: 4,
     alignItems: 'center',
     justifyContent: 'space-between',
-    minHeight: 115,
+    minHeight: 100,
   },
   attributeHeader: {
     flexDirection: 'row',
@@ -1002,7 +1002,7 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: 'normal',
     color: '#F8FAFC',
-    marginVertical: 4,
+    marginVertical: 0,
   },
   attributeValueHighlight: {
     color: '#D4A754',
