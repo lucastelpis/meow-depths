@@ -345,17 +345,17 @@ export default function ProfileScreen() {
 
           {/* Gold chip */}
           <View style={styles.goldChip}>
-            <Text style={styles.goldChipText}>💰 {hero.gold}</Text>
+            <ItemSprite spritesheet="icons-1" frameIndex={11} displaySize={14} />
+            <Text style={[styles.goldChipText, { marginLeft: 4 }]}>{hero.gold}</Text>
           </View>
 
           {/* Avatar & level badge */}
           <View style={styles.avatarContainer}>
             <View style={styles.avatarCircle}>
-              <AnimatedSprite
-                {...HERO_SPRITE.idle}
-                fps={8}
-                loop={true}
-                displaySize={HERO_AVATAR_DISPLAY_SIZE}
+              <Image
+                source={require('../../assets/sprites/units/hero/hero_idle1.png')}
+                style={{ width: 70, height: 70 }}
+                resizeMode="contain"
               />
             </View>
             <View style={styles.levelBadge}>
@@ -430,7 +430,8 @@ export default function ProfileScreen() {
             <View style={styles.attributeGrid}>
               {/* Strength Card */}
               <View style={[styles.attributeCard, { borderColor: 'rgba(212, 167, 84, 0.25)' }]}>
-                <Text style={[styles.attributeLabel, { color: '#F9D99A' }]}>💪 STR</Text>
+                <ItemSprite spritesheet="icons-1" frameIndex={20} displaySize={20} />
+                <Text style={[styles.attributeLabel, { color: '#F9D99A', marginTop: 4 }]}>STR</Text>
                 <Text style={styles.attributeValue}>
                   {hero.strength || 10}
                   {tempStrAlloc > 0 && <Text style={styles.attributeValueHighlight}> ➔ {previewStr}</Text>}
@@ -460,7 +461,8 @@ export default function ProfileScreen() {
 
               {/* Agility Card */}
               <View style={[styles.attributeCard, { borderColor: 'rgba(6, 182, 212, 0.25)' }]}>
-                <Text style={[styles.attributeLabel, { color: '#06B6D4' }]}>🏃 AGI</Text>
+                <ItemSprite spritesheet="icons-1" frameIndex={21} displaySize={20} />
+                <Text style={[styles.attributeLabel, { color: '#06B6D4', marginTop: 4 }]}>AGI</Text>
                 <Text style={styles.attributeValue}>
                   {hero.agility || 10}
                   {tempAgiAlloc > 0 && <Text style={styles.attributeValueHighlight}> ➔ {previewAgi}</Text>}
@@ -490,7 +492,8 @@ export default function ProfileScreen() {
 
               {/* Vitality Card */}
               <View style={[styles.attributeCard, { borderColor: 'rgba(92, 196, 137, 0.25)' }]}>
-                <Text style={[styles.attributeLabel, { color: '#5CC489' }]}>💚 VIT</Text>
+                <ItemSprite spritesheet="icons-1" frameIndex={19} displaySize={20} />
+                <Text style={[styles.attributeLabel, { color: '#5CC489', marginTop: 4 }]}>VIT</Text>
                 <Text style={styles.attributeValue}>
                   {hero.vitality || 10}
                   {tempVitAlloc > 0 && <Text style={styles.attributeValueHighlight}> ➔ {previewVit}</Text>}
@@ -608,9 +611,16 @@ export default function ProfileScreen() {
                   <View style={styles.stanceCardInner}>
                     <View style={styles.stanceHeaderRow}>
                       <View style={styles.stanceEmojiWrapper}>
-                        <Text style={styles.stanceEmoji}>
-                          {hero.element === 'fire' ? '🔥' : hero.element === 'water' ? '💧' : hero.element === 'earth' ? '🪨' : '💨'}
-                        </Text>
+                        <ItemSprite
+                          spritesheet="icons-1"
+                          frameIndex={
+                            (hero.element || '').toLowerCase() === 'fire' ? 33 :
+                            (hero.element || '').toLowerCase() === 'wind' ? 34 :
+                            (hero.element || '').toLowerCase() === 'water' ? 35 :
+                            36 // earth fallback
+                          }
+                          displaySize={24}
+                        />
                       </View>
                       <View>
                         <Text style={styles.stanceName}>{stance.name}</Text>
@@ -1199,6 +1209,8 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingHorizontal: 8,
     paddingVertical: 4,
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   goldChipText: {
     fontFamily: 'Silkscreen-Regular',
