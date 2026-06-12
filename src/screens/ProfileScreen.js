@@ -566,14 +566,14 @@ export default function ProfileScreen() {
                 highlighted={previewEffectiveStats.defence !== effectiveStats.defence}
               />
               <StatBox
-                flex={0.85}
-                label="HP"
+                flex={1.0}
+                label="MAX HP"
                 value={previewEffectiveStats.maxHp}
                 bonus={previewEffectiveStats.maxHp - previewBaseStats.maxHp}
                 highlighted={previewEffectiveStats.maxHp !== effectiveStats.maxHp}
               />
               <StatBox
-                flex={1.15}
+                flex={1.1}
                 label="CRIT RATE"
                 value={pct(previewEffectiveStats.critChance)}
                 bonus={previewEffectiveStats.critChance - previewBaseStats.critChance}
@@ -581,7 +581,7 @@ export default function ProfileScreen() {
                 highlighted={previewEffectiveStats.critChance !== effectiveStats.critChance}
               />
               <StatBox
-                flex={1.15}
+                flex={1.1}
                 label="DODGE RATE"
                 value={pct(previewEffectiveStats.dodge)}
                 bonus={previewEffectiveStats.dodge - previewBaseStats.dodge}
@@ -589,7 +589,7 @@ export default function ProfileScreen() {
                 highlighted={previewEffectiveStats.dodge !== effectiveStats.dodge}
               />
               <StatBox
-                flex={1.15}
+                flex={1.1}
                 label="BAG SLOTS"
                 value={previewEffectiveStats.bagSlots}
                 bonus={previewEffectiveStats.bagSlots - previewBaseStats.bagSlots}
