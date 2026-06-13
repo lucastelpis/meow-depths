@@ -311,10 +311,13 @@ export default function ProfileScreen() {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn} activeOpacity={0.7}>
-          <Text style={styles.backText}>‹</Text>
+          <Text style={styles.backText}>← Hub</Text>
         </TouchableOpacity>
-        <Text style={styles.title}>Profile</Text>
-        <View style={{ width: 36 }} />
+        <View style={styles.titleContainer}>
+          <ItemSprite spritesheet="icons-1" frameIndex={28} displaySize={24} />
+          <Text style={styles.titleText}>Profile</Text>
+        </View>
+        <View style={styles.headerSpacer} />
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
@@ -765,7 +768,8 @@ export default function ProfileScreen() {
         onRequestClose={() => setSelectedSlot(null)}
       >
         <Pressable style={styles.modalBackdrop} onPress={() => setSelectedSlot(null)}>
-          <Pressable style={styles.modalCard} onPress={(e) => e.stopPropagation()}>
+          <Pressable style={styles.modalCardOuter} onPress={(e) => e.stopPropagation()}>
+            <View style={styles.modalCardInner}>
             <View style={styles.modalHeaderRow}>
               <Text style={styles.modalTitle}>
                 {modalData.candidates.length > 0 ? `Choose a ${modalData.slotConfig?.label}` : `No ${modalData.slotConfig?.label} Yet`}
@@ -852,6 +856,7 @@ export default function ProfileScreen() {
                 <Text style={styles.unequipBtnText}>Unequip {modalData.slotConfig?.label}</Text>
               </TouchableOpacity>
             )}
+            </View>
           </Pressable>
         </Pressable>
       </Modal>
@@ -1174,24 +1179,31 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 14,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(212,167,84,0.12)',
+    borderBottomColor: 'rgba(255, 255, 255, 0.04)',
   },
-  backBtn: { width: 36, paddingVertical: 6 },
+  backBtn: { width: 70, paddingVertical: 6 },
   backText: {
-    color: theme.COLORS.candleGold,
-    fontWeight: 'bold',
-    fontSize: 26,
-    lineHeight: 26,
+    color: '#D4A754',
+    fontFamily: 'PixelifySans-Medium',
+    fontSize: 16,
+    letterSpacing: 0.5,
   },
-  title: {
-    ...theme.FONTS.display,
-    fontSize: 20,
-    color: theme.COLORS.parchment,
+  titleContainer: {
     flex: 1,
-    textAlign: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
   },
+  titleText: {
+    fontFamily: 'PixelifySans-Medium',
+    fontSize: 20,
+    color: '#F8FAFC',
+    letterSpacing: 0.8,
+  },
+  headerSpacer: { width: 70 },
   scrollContent: {
     paddingHorizontal: 16,
     paddingTop: 16,
@@ -1426,20 +1438,28 @@ const styles = StyleSheet.create({
   },
   modalBackdrop: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.6)',
+    backgroundColor: 'rgba(0,0,0,0.85)',
     justifyContent: 'center',
     alignItems: 'center',
     padding: 24,
   },
-  modalCard: {
+  modalCardOuter: {
     width: '100%',
     maxWidth: 420,
     maxHeight: '80%',
-    backgroundColor: '#1A1200',
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor: 'rgba(212,167,84,0.25)',
+    backgroundColor: '#4A3917',
+    borderRadius: 16,
+    borderWidth: 3,
+    borderColor: '#4A3917',
+    padding: 3,
+  },
+  modalCardInner: {
+    backgroundColor: '#1E1E20',
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: 'rgba(212,167,84,0.5)',
     padding: 16,
+    overflow: 'hidden',
   },
   modalHeaderRow: {
     flexDirection: 'row',
@@ -1448,32 +1468,32 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   modalTitle: {
-    ...theme.FONTS.display,
-    fontSize: 16,
-    color: theme.COLORS.parchment,
+    fontFamily: 'PixelifySans-Medium',
+    fontSize: 17,
+    color: '#FFF3DA',
     flex: 1,
     marginRight: 8,
   },
   modalCloseText: {
-    color: theme.COLORS.candleGold,
-    fontSize: 18,
-    fontWeight: 'bold',
+    fontFamily: 'PixelifySans-Medium',
+    color: 'rgba(255, 243, 218, 0.6)',
+    fontSize: 16,
   },
   modalList: {
     maxHeight: 400,
   },
   compareRow: {
-    borderRadius: 12,
+    borderRadius: 10,
     padding: 12,
     marginBottom: 8,
-    backgroundColor: 'rgba(255,255,255,0.03)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.06)',
+    backgroundColor: '#142C1C',
+    borderWidth: 2,
+    borderColor: 'rgba(74,57,23,0.6)',
     gap: 4,
   },
   compareRowEquipped: {
-    backgroundColor: 'rgba(212,167,84,0.08)',
-    borderColor: 'rgba(212,167,84,0.3)',
+    backgroundColor: '#1C2E1B',
+    borderColor: '#E8A73A',
   },
   compareRowHeader: {
     flexDirection: 'row',
@@ -1489,12 +1509,12 @@ const styles = StyleSheet.create({
   compareItemStats: {
     fontFamily: 'Silkscreen-Regular',
     fontSize: 11,
-    color: '#A8B0BD',
+    color: '#E8A73A',
   },
   compareItemDesc: {
     fontFamily: 'Silkscreen-Regular',
     fontSize: 11,
-    color: '#707F94',
+    color: 'rgba(255, 243, 218, 0.45)',
     marginTop: 2,
   },
   equippedBadge: {

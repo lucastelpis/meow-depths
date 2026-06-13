@@ -288,7 +288,7 @@ export default function CampScreen({ navigation }) {
             {/* Centered Plaque Title */}
             <View style={styles.bannerTitleOuterBorder}>
               <View style={styles.bannerTitleInnerBorder}>
-                <Text style={styles.bannerTitleText}>Meow Dungeons</Text>
+                <Text style={styles.bannerTitleText}>MEOW DUNGEONS</Text>
               </View>
             </View>
 

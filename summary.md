@@ -9,7 +9,7 @@ Meow Depths is an RPG/dungeon-crawler game built using React Native and Expo, fe
   - **Element Selection Screen**: A horizontal snap-carousel where players choose their starting element path (Fire, Water, Earth, Wind). Confirming dispatches the `SELECT_ELEMENT` action, locking in their choice and transitioning to the main game.
 - **Camp Hub (Main Screen)**: The player can navigate to the Dungeon Map, Loadout (Inventory), Skills, Market (Shop), and Profile.
 - **Profile Screen**: Accessible from the hub. Split into two tabs:
-  - **Stats tab**: Displays base attributes (STR, AGI, VIT) where players allocate points earned from leveling up, previews and displays effective combat stats (ATK, DEF, HP, etc.), and describes their current elemental stance.
+  - **Stats tab**: Displays base attributes (STR, AGI, VIT) where players allocate points earned from leveling up, previews and displays effective combat stats (ATK, DEF, MAX HP, etc.), and describes their current elemental stance.
   - **Equipment tab**: Displays equipped gear across 8 slots (Head, Chest, Gloves, Legs, Boots, Weapon, Trinket, Storage) and displays active set bonuses.
 - **Inventory/Loadout Screen**: Accessible from the hub. Contains three tabs (Consumables, Equipment, Materials) styled as cozy parchment/wood tabs.
 - **Market (Shop) Screen**: Accessible from the hub. Contains three tabs (Consumables shop, Equipment armory, Forge fusion) styled as cozy parchment/wood tabs.
@@ -50,3 +50,31 @@ Crystals and shards use frames from the `crystals-1` spritesheet:
   - Small: Frame index 9
   - Big: Frame index 10
   - Core: Frame index 11
+
+## Consumables Spritesheet Reference (consumables-1 spritesheet)
+- **Potion**: Frame index 0
+- **Super Potion**: Frame index 1
+- **Mega Potion**: Frame index 2
+- **Ultra Potion**: Frame index 3
+- **Antidote**: Frame index 7
+- **Smoke Vial**: Frame index 9
+*Note: Mystery Chest uses `icons-1` frame index 5.*
+
+## Skill Icons Spritesheet Reference (skill-icons-1 spritesheet)
+- **Fire Slash** (Fire Active Tier 1): Frame index 0
+- **Smoldering** (Fire Passive Tier 1): Frame index 1
+- **Fire Burst** (Fire Active Tier 2): Frame index 2
+- **Flame Guard** (Fire Passive Tier 2): Frame index 3
+- **Tidal Strike** (Water Active Tier 1): Frame index 4
+- **Hydration** (Water Passive Tier 1): Frame index 5
+- **Tidal Wave** (Water Active Tier 2): Frame index 6
+- **Healing Current** (Water Passive Tier 2): Frame index 7
+- **Boulder Slash** (Earth Active Tier 1): Frame index 8
+- **Fortitude** (Earth Passive Tier 1): Frame index 9
+- **Fortify** (Earth Active Tier 2): Frame index 10
+- **Stone Thorns** (Earth Passive Tier 2): Frame index 11
+- **Dual Slash** (Wind Active Tier 1): Frame index 12
+- **Swiftness** (Wind Passive Tier 1): Frame index 13
+- **Whirlwind Strike** (Wind Active Tier 2): Frame index 14
+- **Critical Wind** (Wind Passive Tier 2): Frame index 15
+

@@ -17,7 +17,7 @@ import {
   Pressable,
   Dimensions,
 } from 'react-native';
-import Svg, { Defs, LinearGradient, RadialGradient, Stop, Rect, Circle, Path } from 'react-native-svg';
+import Svg, { Defs, LinearGradient, RadialGradient, Stop, Rect, Circle } from 'react-native-svg';
 
 import { useGame } from '../state/gameState';
 import { GEAR, CONSUMABLES, MATERIALS } from '../data/gear';
@@ -256,6 +256,7 @@ export default function InventoryScreen() {
         {items.map((entry) => {
           const def     = CONSUMABLES.find(c => c.id === entry.id);
           const icon    = CONSUMABLE_ICONS[entry.id] || '🧪';
+          const iconSize = def?.spritesheet === 'icons-1' ? 48 : 42;
           return (
             <TouchableOpacity
               key={entry.id}
@@ -269,9 +270,13 @@ export default function InventoryScreen() {
                   stroke="rgba(255,255,255,0.04)" strokeWidth={1} />
               </Svg>
               <View style={styles.gridCardInner}>
-                <Text style={styles.gridName} numberOfLines={2}>{def?.name || entry.id}</Text>
+                <Text style={styles.gridName} numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.8}>{def?.name || entry.id}</Text>
                 <View style={styles.gridIconWrap}>
-                  <Text style={styles.gridIcon}>{icon}</Text>
+                  {def?.spritesheet ? (
+                    <ItemSprite spritesheet={def.spritesheet} frameIndex={def.frameIndex} displaySize={iconSize} />
+                  ) : (
+                    <Text style={styles.gridIcon}>{icon}</Text>
+                  )}
                 </View>
                 <View style={styles.gridTagSlot}>
                   <View style={[styles.gridTagBadge, styles.gridQtyBadge]}>
@@ -346,7 +351,7 @@ export default function InventoryScreen() {
                   stroke={mat.zone.zoneColor + '15'} strokeWidth={1} />
               </Svg>
               <View style={styles.gridCardInner}>
-                <Text style={styles.gridName} numberOfLines={2}>{mat.name}</Text>
+                <Text style={styles.gridName} numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.8}>{mat.name}</Text>
                 <View style={styles.gridIconWrap}>
                   {MATERIALS[mat.id]?.spritesheet ? (
                     <ItemSprite
@@ -437,7 +442,7 @@ export default function InventoryScreen() {
                       stroke={isEquipped ? 'rgba(212,167,84,0.4)' : 'rgba(255,255,255,0.04)'} strokeWidth={isEquipped ? 1.5 : 1} />
                   </Svg>
                   <View style={styles.gridCardInner}>
-                    <Text style={styles.gridName} numberOfLines={2}>{gearDef.name}</Text>
+                    <Text style={styles.gridName} numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.8}>{gearDef.name}</Text>
                     <View style={styles.gridIconWrap}>
                       {gearDef.spritesheet ? (
                         <ItemSprite
@@ -519,6 +524,8 @@ export default function InventoryScreen() {
               (() => {
                 let title = '';
                 let icon = '';
+                let spritesheet = null;
+                let frameIndex = 0;
                 let category = '';
                 let categoryColor = '#D4A754';
                 let lore = LORE_DESCRIPTIONS[selectedItem.id] || '';
@@ -532,6 +539,8 @@ export default function InventoryScreen() {
                   const def = CONSUMABLES.find(c => c.id === selectedItem.id);
                   title = def?.name || selectedItem.id;
                   icon = CONSUMABLE_ICONS[selectedItem.id] || '🧪';
+                  spritesheet = def?.spritesheet || null;
+                  frameIndex = def?.frameIndex || 0;
                   category = 'Consumable';
                   categoryColor = '#3FB56E';
                   statusText = `Owned: ${selectedItem.quantity}`;
@@ -541,12 +550,16 @@ export default function InventoryScreen() {
                 } else if (itemType === 'material') {
                   title = selectedItem.name;
                   icon = MATERIAL_ICONS[selectedItem.id] || selectedItem.zone.emoji;
+                  spritesheet = MATERIALS[selectedItem.id]?.spritesheet || null;
+                  frameIndex = MATERIALS[selectedItem.id]?.frameIndex || 0;
                   category = 'Crafting Material';
                   categoryColor = selectedItem.zone.zoneColor;
                   statusText = `Owned: ${selectedItem.qty}`;
                 } else if (itemType === 'gear') {
                   title = selectedItem.name;
                   icon = GEAR_ICONS[selectedItem.id] || GEAR_TYPE_ICON[selectedItem.type] || '🎒';
+                  spritesheet = selectedItem.spritesheet || null;
+                  frameIndex = selectedItem.frameIndex || 0;
                   category = selectedItem.type;
                   categoryColor = selectedItem.zone === 1 ? '#3FB56E' : selectedItem.zone === 2 ? '#A855F7' : selectedItem.zone === 3 ? '#06B6D4' : '#707F94';
                   isCurrentlyEquipped = Object.values(hero.gear).includes(selectedItem.id);
@@ -613,37 +626,14 @@ export default function InventoryScreen() {
                       <Defs>
                         <RadialGradient id="modalGlow" cx="50%" cy="0%" rx="80%" ry="60%">
                           <Stop offset="0%" stopColor={rarity.color} stopOpacity="0.18" />
-                          <Stop offset="100%" stopColor="#0D0D12" stopOpacity="0" />
+                          <Stop offset="100%" stopColor="#1E1E20" stopOpacity="0" />
                         </RadialGradient>
                       </Defs>
-                      <Rect width="100%" height="100%" fill="#0D0D12" rx={22} />
-                      <Rect width="100%" height="100%" fill="url(#modalGlow)" rx={22} />
-
-                      {/* Sparkles */}
-                      <Text x="12%" y="15%" fill="#D4A754" fontSize="12" opacity="0.3">✦</Text>
-                      <Text x="88%" y="22%" fill={rarity.color} fontSize="14" opacity="0.25">✦</Text>
-                      <Text x="16%" y="78%" fill={rarity.color} fontSize="10" opacity="0.2">✦</Text>
-                      <Text x="84%" y="82%" fill="#D4A754" fontSize="12" opacity="0.3">✦</Text>
+                      <Rect width="100%" height="100%" fill="#1E1E20" rx={14} />
+                      <Rect width="100%" height="100%" fill="url(#modalGlow)" rx={14} />
                     </Svg>
 
                     <View style={styles.modalInnerFrame}>
-                      {/* Corner Brackets */}
-                      <View style={[styles.cornerBracket, { top: -1, left: -1 }]}>
-                        <Svg width="16" height="16" viewBox="0 0 16 16">
-                          <Path d="M16 2 H2 V16" fill="none" stroke="#D4A754" strokeWidth={1.5} />
-                        </Svg>
-                      </View>
-                      <View style={[styles.cornerBracket, { bottom: -1, left: -1 }]}>
-                        <Svg width="16" height="16" viewBox="0 0 16 16">
-                          <Path d="M16 14 H2 V0" fill="none" stroke="#D4A754" strokeWidth={1.5} />
-                        </Svg>
-                      </View>
-                      <View style={[styles.cornerBracket, { bottom: -1, right: -1 }]}>
-                        <Svg width="16" height="16" viewBox="0 0 16 16">
-                          <Path d="M0 14 H14 V0" fill="none" stroke="#D4A754" strokeWidth={1.5} />
-                        </Svg>
-                      </View>
-
                       {/* Close button acting as top-right ornament */}
                       <TouchableOpacity
                         style={styles.modalCloseCorner}
@@ -675,11 +665,11 @@ export default function InventoryScreen() {
                               <Circle cx="45" cy="45" r="37" fill="none" stroke={rarity.color + '25'} strokeWidth={1} strokeDasharray="3 3" />
                               <Circle cx="45" cy="45" r="31" fill="none" stroke="#D4A754" strokeWidth={1} opacity={0.6} />
                             </Svg>
-                            {selectedItem.spritesheet ? (
+                            {spritesheet ? (
                               <ItemSprite
-                                spritesheet={selectedItem.spritesheet}
-                                frameIndex={selectedItem.frameIndex}
-                                displaySize={48}
+                                spritesheet={spritesheet}
+                                frameIndex={frameIndex}
+                                displaySize={spritesheet === 'icons-1' ? 56 : 50}
                               />
                             ) : (
                               <Text style={styles.modalIconText}>{icon}</Text>
@@ -820,16 +810,17 @@ export default function InventoryScreen() {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: '#1A1200',
+    backgroundColor: '#133131',
   },
 
   /* ── Tab bar ─────────────────────────────────────────────── */
   tabBarContainer: {
     paddingHorizontal: 16,
-    paddingVertical: 10,
-    backgroundColor: 'rgba(0,0,0,0.2)',
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.04)',
+    paddingTop: 4,
+    paddingBottom: 12,
+    backgroundColor: 'transparent',
+    borderBottomWidth: 2,
+    borderBottomColor: 'rgba(74,57,23,0.5)',
   },
   tabBar: {
     flexDirection: 'row',
@@ -1133,28 +1124,28 @@ const styles = StyleSheet.create({
   emptyBox: {
     paddingVertical: 36,
     paddingHorizontal: 24,
-    backgroundColor: 'rgba(255,255,255,0.01)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.04)',
-    borderRadius: 16,
+    backgroundColor: '#142C1C',
+    borderWidth: 2,
+    borderColor: 'rgba(74,57,23,0.6)',
+    borderRadius: 14,
     alignItems: 'center',
   },
   emptyEmoji: {
     fontSize: 36,
     marginBottom: 10,
-    opacity: 0.4,
+    opacity: 0.5,
   },
   emptyTitle: {
     fontFamily: 'PixelifySans-Medium',
     fontSize: 15,
     fontWeight: 'normal',
-    color: 'rgba(255,255,255,0.3)',
+    color: 'rgba(255,243,218,0.6)',
     marginBottom: 6,
   },
   emptyDesc: {
     fontFamily: 'PixelifySans-Regular',
     fontSize: 12,
-    color: 'rgba(255,255,255,0.2)',
+    color: 'rgba(255,243,218,0.4)',
     textAlign: 'center',
     fontStyle: 'italic',
     lineHeight: 17,
@@ -1168,15 +1159,16 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   gridCard: {
-    borderRadius: 14,
+    borderRadius: 12,
     overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
+    borderWidth: 2,
+    borderColor: 'rgba(74,57,23,0.6)',
+    backgroundColor: '#142C1C',
   },
   gridCardGearEquipped: {
-    backgroundColor: 'rgba(212,167,84,0.06)',
-    borderColor: 'rgba(212,167,84,0.45)',
-    borderWidth: 1.5,
+    backgroundColor: '#1C2E1B',
+    borderColor: '#E8A73A',
+    borderWidth: 2,
   },
   gridCardInner: {
     flex: 1,
@@ -1195,12 +1187,12 @@ const styles = StyleSheet.create({
   },
   gridName: {
     fontFamily: 'Silkscreen-Regular',
-    fontSize: 11,
-    color: '#F8FAFC',
+    fontSize: 10,
+    color: '#FFF3DA',
     fontWeight: 'normal',
     textAlign: 'center',
-    lineHeight: 14,
-    height: 28, // height for 2 lines
+    lineHeight: 12.5,
+    height: 30, // room for 2 lines
     width: '100%',
   },
   gridTagSlot: {
@@ -1221,11 +1213,11 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
   },
   gridQtyBadge: {
-    borderColor: 'rgba(255,255,255,0.15)',
-    backgroundColor: 'rgba(255,255,255,0.03)',
+    borderColor: 'rgba(232,167,58,0.4)',
+    backgroundColor: 'rgba(232,167,58,0.12)',
   },
   gridQtyText: {
-    color: 'rgba(255,255,255,0.6)',
+    color: '#E8A73A',
   },
   equippedBadge: {
     borderColor: 'rgba(212,167,84,0.4)',
@@ -1245,26 +1237,21 @@ const styles = StyleSheet.create({
   },
   modalCard: {
     width: '100%',
-    maxWidth: 320,
-    borderRadius: 22,
+    maxWidth: 340,
+    borderRadius: 16,
     overflow: 'hidden',
-    backgroundColor: '#0D0D12',
-    borderWidth: 1.5,
-    padding: 8,
+    backgroundColor: '#1E1E20',
+    borderWidth: 3,
+    borderColor: '#4A3917',
+    padding: 10,
   },
   modalInnerFrame: {
-    borderWidth: 1.2,
-    borderColor: 'rgba(212, 167, 84, 0.25)',
-    borderRadius: 14,
+    borderWidth: 2,
+    borderColor: 'rgba(212, 167, 84, 0.5)',
+    borderRadius: 12,
     paddingVertical: 20,
     paddingHorizontal: 12,
     position: 'relative',
-  },
-  cornerBracket: {
-    position: 'absolute',
-    width: 16,
-    height: 16,
-    zIndex: 20,
   },
   modalContent: {
     alignItems: 'center',
@@ -1280,8 +1267,8 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: 'rgba(15, 15, 22, 0.9)',
-    borderWidth: 1.2,
+    backgroundColor: '#0F2417',
+    borderWidth: 1.5,
     borderColor: '#D4A75460',
     alignItems: 'center',
     justifyContent: 'center',
@@ -1358,9 +1345,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    backgroundColor: '#0F2417',
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.05)',
+    borderColor: 'rgba(74, 57, 23, 0.6)',
     borderRadius: 8,
     paddingLeft: 12,
     paddingRight: 10,
@@ -1408,9 +1395,9 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   modalLoreBox: {
-    backgroundColor: 'rgba(0, 0, 0, 0.35)',
+    backgroundColor: '#0F2417',
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.03)',
+    borderColor: 'rgba(74, 57, 23, 0.6)',
     borderRadius: 10,
     padding: 14,
     width: '100%',

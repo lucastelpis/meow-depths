@@ -138,7 +138,7 @@ export default function NameInputScreen({ navigation }) {
               <View style={styles.titlePlaqueOuter}>
                 <View style={styles.titlePlaqueInner}>
                   <Text style={styles.titlePlaqueText}>
-                    Welcome to the{'\n'}Meow Dungeons
+                    WELCOME TO THE{'\n'}MEOW DUNGEONS
                   </Text>
                 </View>
                 <View style={styles.topTagOverlay}>

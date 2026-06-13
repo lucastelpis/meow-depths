@@ -275,7 +275,7 @@ export default function ElementSelectionScreen({ route, navigation }) {
                     <View style={styles.titlePlaqueOuter}>
                         <View style={styles.titlePlaqueInner}>
                             <Text style={styles.titlePlaqueText}>
-                                Choose your{'\n'}Fighting Style
+                                CHOOSE YOUR{'\n'}FIGHTING STYLE
                             </Text>
                         </View>
                         <View style={styles.topTagOverlay}>

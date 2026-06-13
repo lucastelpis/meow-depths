@@ -21,6 +21,8 @@ export default function ItemSprite({ spritesheet, frameIndex, displaySize = 36, 
     'storages-1': 4,
     'icons-1': 37,
     'crystals-1': 12,
+    'skill-icons-1': 16,
+    'consumables-1': 12,
   };
   const totalFrames = FRAMES_MAP[spritesheet] || 1;
   const frameSize = 32;

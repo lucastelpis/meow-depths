@@ -376,6 +376,8 @@ export const CONSUMABLES = [
     minLevel: 1,
     effect: { type: 'heal', amount: 50 },
     description: 'Restore 50 HP',
+    spritesheet: 'consumables-1',
+    frameIndex: 0,
   },
   {
     id: 'super_potion',
@@ -384,6 +386,8 @@ export const CONSUMABLES = [
     minLevel: 10,
     effect: { type: 'heal', amount: 100 },
     description: 'Restore 100 HP',
+    spritesheet: 'consumables-1',
+    frameIndex: 1,
   },
   {
     id: 'mega_potion',
@@ -392,6 +396,8 @@ export const CONSUMABLES = [
     minLevel: 20,
     effect: { type: 'heal', amount: 150 },
     description: 'Restore 150 HP',
+    spritesheet: 'consumables-1',
+    frameIndex: 2,
   },
   {
     id: 'ultra_potion',
@@ -400,6 +406,8 @@ export const CONSUMABLES = [
     minLevel: 30,
     effect: { type: 'heal', amount: 200 },
     description: 'Restore 200 HP',
+    spritesheet: 'consumables-1',
+    frameIndex: 3,
   },
   {
     id: 'antidote',
@@ -407,6 +415,8 @@ export const CONSUMABLES = [
     cost: 25,
     effect: { type: 'remove_bleed' },
     description: 'Remove all Bleed stacks',
+    spritesheet: 'consumables-1',
+    frameIndex: 7,
   },
   {
     id: 'smoke_vial',
@@ -414,6 +424,8 @@ export const CONSUMABLES = [
     cost: 40,
     effect: { type: 'debuff_attack', reduction: 0.3, duration: 2 },
     description: 'Reduce all enemy Attack by 30% for 2 turns',
+    spritesheet: 'consumables-1',
+    frameIndex: 9,
   },
   {
     id: 'mystery_chest',
@@ -421,6 +433,8 @@ export const CONSUMABLES = [
     cost: 50,
     effect: { type: 'lootbox' },
     description: 'Open to receive random crystals, with a small chance for a Crystal Core!',
+    spritesheet: 'icons-1',
+    frameIndex: 5,
   },
 ];
 

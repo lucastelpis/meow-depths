@@ -234,7 +234,7 @@ const fortify = {
   cooldown: 5, // base cooldown (★1-2); overridden per star in combat
   unlockedBy: 'boulder_slash',
   icon: '⛰️',
-  description: 'No damage — self only. Instantly boosts DEF for 1 turn. Can reduce incoming damage to 0.',
+  description: 'Substantialy boosts DEF for 1 turn, greatly reducing incoming damage.',
   stars: {
     1: { defBoostPercent: 0.50, cooldown: 5 },
     2: { defBoostPercent: 0.75, cooldown: 5 },
@@ -256,11 +256,11 @@ const stone_thorns = {
   icon: '🌵',
   description: 'Passive — reflects a portion of raw incoming damage (before DEF reduction) back to attackers. Minimum 1.',
   stars: {
-    1: { reflectPercent: 0.07 },
-    2: { reflectPercent: 0.14 },
-    3: { reflectPercent: 0.21 },
-    4: { reflectPercent: 0.28 },
-    5: { reflectPercent: 0.35 },
+    1: { reflectPercent: 0.05 },
+    2: { reflectPercent: 0.10 },
+    3: { reflectPercent: 0.15 },
+    4: { reflectPercent: 0.20 },
+    5: { reflectPercent: 0.25 },
   },
 };
 
@@ -309,8 +309,8 @@ const swiftness = {
 };
 
 const whirlwind = {
-  id: 'whirlwind',
-  name: 'Whirlwind',
+  id: 'whirlwind_strike',
+  name: 'Whirlwind Strike',
   element: 'wind',
   tier: 2,
   type: 'active',
@@ -375,6 +375,26 @@ export const SKILLS = {
   swiftness,
   whirlwind,
   critical_wind,
+};
+
+// Skill icon sprite frames (horizontal sheet: assets/sprites/items/skill-icons-1.png, 16 frames)
+export const SKILL_SPRITE_FRAMES = {
+  fire_slash: 0,
+  smoldering: 1,
+  fire_burst: 2,
+  flame_guard: 3,
+  tidal_strike: 4,
+  hydration: 5,
+  tidal_wave: 6,
+  healing_current: 7,
+  boulder_slash: 8,
+  fortitude: 9,
+  fortify: 10,
+  stone_thorns: 11,
+  dual_slash: 12,
+  swiftness: 13,
+  whirlwind_strike: 14,
+  critical_wind: 15,
 };
 
 // Per-element ordered list: [T1 active, T1 passive, T2 active, T2 passive]
