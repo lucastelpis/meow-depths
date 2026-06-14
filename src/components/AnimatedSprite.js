@@ -22,7 +22,7 @@
  */
 
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Image } from 'react-native';
+import { View, Image, Animated } from 'react-native';
 
 export default function AnimatedSprite({
   source,
@@ -37,6 +37,8 @@ export default function AnimatedSprite({
   active      = true,
   pointerEvents,
   style,
+  tintColor,
+  tintOpacity = 0,
 }) {
   const finalTotalFrames = totalFrames || frames || 1;
 
@@ -134,6 +136,22 @@ export default function AnimatedSprite({
         }}
         resizeMode="stretch"
       />
+      {!!tintColor && (
+        <Animated.Image
+          source={source}
+          fadeDuration={0}
+          style={{
+            width:    frameSize * finalTotalFrames * scale,
+            height:   displaySize,
+            position: 'absolute',
+            left:     -(currentFrame * displaySize),
+            top:      0,
+            tintColor: tintColor,
+            opacity: tintOpacity,
+          }}
+          resizeMode="stretch"
+        />
+      )}
     </View>
   );
 }

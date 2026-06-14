@@ -78,3 +78,8 @@ Crystals and shards use frames from the `crystals-1` spritesheet:
 - **Whirlwind Strike** (Wind Active Tier 2): Frame index 14
 - **Critical Wind** (Wind Passive Tier 2): Frame index 15
 
+## Combat Movement Animations
+- **Attack/Skill Lunge**: Attacking characters lunge forward snappily (24px right for hero, 24px left for enemies) on their turn. The timing split is 30% lunge forward and 70% return.
+- **Damage Recoil**: Characters move backward subtly (12px left for hero, 12px right for enemies) when taking damage. The timing split matches the attack's: 30% recoil backward and 70% return recovery.
+- **Red Damage Overlay Tint**: When taking damage, a red color flash overlay (using `#ff3333` tint) is rendered over the unit, fading in to `0.75` opacity during the recoil phase and fading back to `0` opacity during the recovery phase.
+- **Synchronized Duration**: Both animations dynamically synchronize their durations to match the visual frame length of the active sprite sheet at 10 FPS.

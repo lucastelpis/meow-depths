@@ -30,6 +30,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   View,
   Text,
+  Image,
   ScrollView,
   TouchableOpacity,
   StyleSheet,
@@ -39,7 +40,7 @@ import {
   Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import Svg, { Defs, LinearGradient, RadialGradient, Stop, Rect } from 'react-native-svg';
+import Svg, { Defs, LinearGradient, RadialGradient, Stop, Rect, Ellipse } from 'react-native-svg';
 import { useNavigation, useRoute } from '@react-navigation/native';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -90,9 +91,42 @@ const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 // ---------------------------------------------------------------------------
 
 // Sprite display sizes in combat (can be tweaked to scale characters up or down)
-const HERO_DISPLAY_SIZE = 140;
-const ENEMY_DISPLAY_SIZE = 130;
-const BOSS_DISPLAY_SIZE = 165;
+const ENEMY_DISPLAY_SIZE = 150;
+const HERO_DISPLAY_SIZE = ENEMY_DISPLAY_SIZE; // hero matches enemy size for cohesion
+const BOSS_DISPLAY_SIZE = 160;
+
+// Width of an enemy node (info block + sprite) on the stage
+const ENEMY_NODE_WIDTH = 120;
+
+// ---------------------------------------------------------------------------
+// Enemy stage layout — where each enemy stands given the total count.
+// Coordinates are percentages of the enemy stage half; each node is centered
+// on its point (see ENEMY_NODE_WIDTH + marginLeft offset in styles).
+// ---------------------------------------------------------------------------
+const ENEMY_LAYOUTS = {
+  1: [{ left: '50%', top: '32%', zIndex: 2 }],
+  2: [
+    { left: '34%', top: '26%', zIndex: 2 },
+    { left: '64%', top: '46%', zIndex: 3 },
+  ],
+  3: [
+    { left: '28%', top: '30%', zIndex: 2 },
+    { left: '60%', top: '18%', zIndex: 3 },
+    { left: '74%', top: '42%', zIndex: 4 },
+  ],
+  4: [
+    { left: '32%', top: '18%', zIndex: 2 },
+    { left: '66%', top: '30%', zIndex: 3 },
+    { left: '28%', top: '42%', zIndex: 4 },
+    { left: '62%', top: '54%', zIndex: 5 },
+  ],
+};
+
+/** Return the positioning slots for a given enemy count (clamped 1-4). */
+function getEnemyLayout(count) {
+  const clamped = Math.max(1, Math.min(4, count));
+  return ENEMY_LAYOUTS[clamped] || ENEMY_LAYOUTS[4];
+}
 
 
 /** Map enemy ids (or keywords) to display emojis */
@@ -337,6 +371,8 @@ export default function CombatScreen() {
 
   const [heroState, setHeroState] = useState(null);
   const [selectedEnemyIndex, setSelectedEnemyIndex] = useState(0);
+  // uid of the enemy currently taking its turn — drives the "acting" highlight
+  const [activeEnemyUid, setActiveEnemyUid] = useState(null);
   const [cooldowns, setCooldowns] = useState({});
   const [combatLog, setCombatLog] = useState([]);
   const [lootResult, setLootResult] = useState(null);
@@ -352,11 +388,139 @@ export default function CombatScreen() {
   // { [enemy.uid]: 'idle' | 'attack' }  — per-enemy animation state
   const [enemyAnims, setEnemyAnims] = useState({});
 
+  // Translation values for lunge animation when attacking
+  const heroTranslateX = useRef(new Animated.Value(0)).current;
+  const enemyTranslatesRef = useRef({});
+
+  const getEnemyTranslateX = useCallback((uid) => {
+    if (!enemyTranslatesRef.current[uid]) {
+      enemyTranslatesRef.current[uid] = new Animated.Value(0);
+    }
+    return enemyTranslatesRef.current[uid];
+  }, []);
+
+  // Damage red overlay opacity values
+  const heroDamageOpacity = useRef(new Animated.Value(0)).current;
+  const enemyDamageOpacitiesRef = useRef({});
+
+  const getEnemyDamageOpacity = useCallback((uid) => {
+    if (!enemyDamageOpacitiesRef.current[uid]) {
+      enemyDamageOpacitiesRef.current[uid] = new Animated.Value(0);
+    }
+    return enemyDamageOpacitiesRef.current[uid];
+  }, []);
+
+  const triggerHeroAttackLunge = useCallback((duration) => {
+    const totalTime = duration || 800;
+    const forwardTime = Math.round(totalTime * 0.3);
+    const backTime = Math.round(totalTime * 0.7);
+
+    Animated.sequence([
+      Animated.timing(heroTranslateX, {
+        toValue: 24, // Slide 24px forward (right)
+        duration: forwardTime,
+        useNativeDriver: true,
+      }),
+      Animated.timing(heroTranslateX, {
+        toValue: 0, // Return back
+        duration: backTime,
+        useNativeDriver: true,
+      })
+    ]).start();
+  }, [heroTranslateX]);
+
+  const triggerEnemyAttackLunge = useCallback((uid, duration) => {
+    const anim = getEnemyTranslateX(uid);
+    const totalTime = duration || 500;
+    const forwardTime = Math.round(totalTime * 0.3);
+    const backTime = Math.round(totalTime * 0.7);
+
+    Animated.sequence([
+      Animated.timing(anim, {
+        toValue: -24, // Slide 24px forward (left, since enemies face left)
+        duration: forwardTime,
+        useNativeDriver: true,
+      }),
+      Animated.timing(anim, {
+        toValue: 0, // Return back
+        duration: backTime,
+        useNativeDriver: true,
+      })
+    ]).start();
+  }, [getEnemyTranslateX]);
+
+  const triggerHeroRecoil = useCallback((duration) => {
+    const totalTime = duration || 800;
+    const recoilTime = Math.round(totalTime * 0.3); // 30% of time recoiling back
+    const recoverTime = Math.round(totalTime * 0.7); // 70% of time recovering
+
+    Animated.parallel([
+      Animated.sequence([
+        Animated.timing(heroTranslateX, {
+          toValue: -12, // Recoil backward (left)
+          duration: recoilTime,
+          useNativeDriver: true,
+        }),
+        Animated.timing(heroTranslateX, {
+          toValue: 0, // Return back
+          duration: recoverTime,
+          useNativeDriver: true,
+        })
+      ]),
+      Animated.sequence([
+        Animated.timing(heroDamageOpacity, {
+          toValue: 0.75, // Flash red
+          duration: recoilTime,
+          useNativeDriver: true,
+        }),
+        Animated.timing(heroDamageOpacity, {
+          toValue: 0, // Fade out
+          duration: recoverTime,
+          useNativeDriver: true,
+        })
+      ])
+    ]).start();
+  }, [heroTranslateX, heroDamageOpacity]);
+
+  const triggerEnemyRecoil = useCallback((uid, duration) => {
+    const anim = getEnemyTranslateX(uid);
+    const opac = getEnemyDamageOpacity(uid);
+    const totalTime = duration || 500;
+    const recoilTime = Math.round(totalTime * 0.3); // 30% of time recoiling back
+    const recoverTime = Math.round(totalTime * 0.7); // 70% of time recovering
+
+    Animated.parallel([
+      Animated.sequence([
+        Animated.timing(anim, {
+          toValue: 12, // Recoil backward (right)
+          duration: recoilTime,
+          useNativeDriver: true,
+        }),
+        Animated.timing(anim, {
+          toValue: 0, // Return back
+          duration: recoverTime,
+          useNativeDriver: true,
+        })
+      ]),
+      Animated.sequence([
+        Animated.timing(opac, {
+          toValue: 0.75, // Flash red
+          duration: recoilTime,
+          useNativeDriver: true,
+        }),
+        Animated.timing(opac, {
+          toValue: 0, // Fade out
+          duration: recoverTime,
+          useNativeDriver: true,
+        })
+      ])
+    ]).start();
+  }, [getEnemyTranslateX, getEnemyDamageOpacity]);
+
 
   // Track defeated enemies for loot calculation at the end
   const defeatedEnemiesRef = useRef([]);
   const scrollViewRef = useRef(null);
-  const enemyScrollViewRef = useRef(null);
 
   // ── Damage Popups State & Animators ───────────────────────────────────────
   const [popups, setPopups] = useState([]);
@@ -371,37 +535,6 @@ export default function CombatScreen() {
   const removePopup = useCallback((id) => {
     setPopups((prev) => prev.filter((p) => p.id !== id));
   }, []);
-
-  // Center an enemy card in the horizontal ScrollView
-  const scrollToEnemy = useCallback((enemyUid, currentEnemies = enemiesState.alive) => {
-    if (!enemyScrollViewRef.current) return;
-    const combined = [
-      ...currentEnemies.map(e => ({ ...e, isDying: false })),
-      ...enemiesState.dying.map(e => ({ ...e, isDying: true })),
-    ];
-    combined.sort((a, b) => (a.spawnIndex ?? 0) - (b.spawnIndex ?? 0));
-    const idx = combined.findIndex(e => e.uid === enemyUid);
-    if (idx === -1) return;
-
-    let offset = 16;
-    for (let j = 0; j < idx; j++) {
-      const item = combined[j];
-      const itemWidth = item.isBoss ? 170 : 140;
-      offset += itemWidth + 16;
-    }
-    const currentWidth = combined[idx].isBoss ? 170 : 140;
-    const cardCenter = offset + 8 + currentWidth / 2;
-    const scrollToX = Math.max(0, cardCenter - SCREEN_WIDTH / 2);
-
-    enemyScrollViewRef.current.scrollTo({ x: scrollToX, y: 0, animated: true });
-  }, [enemiesState.alive, enemiesState.dying]);
-
-  // Auto-scroll to selected enemy when selection changes during player's turn
-  useEffect(() => {
-    if (combatPhase === 'playerTurn' && enemies[selectedEnemyIndex]) {
-      scrollToEnemy(enemies[selectedEnemyIndex].uid);
-    }
-  }, [selectedEnemyIndex, combatPhase, enemies, scrollToEnemy]);
 
   // Monitor Hero HP changes for damage and healing popups
   useEffect(() => {
@@ -658,8 +791,17 @@ export default function CombatScreen() {
     // Play hero attack animation (auto-returns to idle via onComplete)
     setHeroAnim('attack');
 
+    // Calculate animation length
+    const attackFrames = HERO_SPRITE.attack?.frames || 4;
+    const animDuration = Math.round((attackFrames / 10) * 1000);
+
+    triggerHeroAttackLunge(animDuration);
+
     // Execute the attack
     const result = executeAttack(heroState, target, heroState);
+    if (result.damage > 0) {
+      triggerEnemyRecoil(target.uid, animDuration);
+    }
     addLog(result.log);
 
     // Apply damage + effects to enemy
@@ -684,10 +826,6 @@ export default function CombatScreen() {
     const attackDeadRes = processDeadEnemies(updatedEnemies);
     updatedEnemies = attackDeadRes.alive;
     updateEnemiesAndDyingEnemies(updatedEnemies, attackDeadRes.dead);
-
-    // Calculate animation length
-    const attackFrames = HERO_SPRITE.attack?.frames || 4;
-    const animDuration = Math.round((attackFrames / 10) * 1000);
 
     // Wait for the attack animation to finish
     await delay(animDuration + 200);
@@ -739,6 +877,12 @@ export default function CombatScreen() {
   // =========================================================================
   const handleSkill = async (slotIndex) => {
     if (combatPhase !== 'playerTurn' || !heroState) return;
+
+    // Record pre-skill HP values for recoil detection
+    const preSkillHps = {};
+    enemies.forEach(e => {
+      preSkillHps[e.uid] = e.hp;
+    });
 
     const skillId = state.hero.equippedSkills[slotIndex];
     if (!skillId) {
@@ -958,6 +1102,19 @@ export default function CombatScreen() {
     const animData = HERO_SPRITE[skillId] || HERO_SPRITE.attack;
     const animDuration = Math.round((animData.frames / 10) * 1000);
 
+    // Trigger hero lunge if the skill is targeted
+    if (isTargeted) {
+      triggerHeroAttackLunge(animDuration);
+    }
+
+    // Trigger enemy damage recoil for any enemy whose HP decreased
+    [...updatedEnemies, ...skillDeadRes.dead].forEach(e => {
+      const preHp = preSkillHps[e.uid];
+      if (preHp !== undefined && e.hp < preHp) {
+        triggerEnemyRecoil(e.uid, animDuration);
+      }
+    });
+
     // Wait for the skill animation to finish
     await delay(animDuration + 200);
 
@@ -1094,8 +1251,8 @@ export default function CombatScreen() {
       if (!enemy || enemy.hp <= 0) continue;
 
       // Focus on the active enemy currently taking their turn/attacking
-      scrollToEnemy(enemy.uid, updatedEnemies);
-      await delay(350); // Camera pan delay for high-fidelity combat feel
+      setActiveEnemyUid(enemy.uid);
+      await delay(350); // Beat before the enemy acts, for high-fidelity combat feel
 
       const enemyData = ENEMIES[enemy.id] || enemy;
 
@@ -1119,6 +1276,11 @@ export default function CombatScreen() {
         const spriteDef = getEnemySprite(enemy);
         const attackFrames = spriteDef.attack?.frames || 4;
         animDuration = Math.round((attackFrames / 10) * 1000);
+        triggerEnemyAttackLunge(enemyUid, animDuration);
+      }
+
+      if (turnResult.damage > 0) {
+        triggerHeroRecoil(animDuration);
       }
 
       addLog(turnResult.log);
@@ -1171,12 +1333,12 @@ export default function CombatScreen() {
           const resistChance = updatedHero.passives?.statusResistChance || 0;
           const effectsToApply = resistChance > 0
             ? turnResult.effects.filter(effect => {
-                if (Math.random() < resistChance) {
-                  addLog(`🛡️ Fortitude resisted ${effect.type.replace(/_/g, ' ')}!`);
-                  return false;
-                }
-                return true;
-              })
+              if (Math.random() < resistChance) {
+                addLog(`🛡️ Fortitude resisted ${effect.type.replace(/_/g, ' ')}!`);
+                return false;
+              }
+              return true;
+            })
             : turnResult.effects;
           if (effectsToApply.length > 0) {
             updatedHero = {
@@ -1248,6 +1410,9 @@ export default function CombatScreen() {
       // Pause to let the action finish and create a cozy 1-second interval between unit actions
       await delay(animDuration + 1000);
     }
+
+    // Clear the acting-enemy highlight now that every enemy has moved
+    setActiveEnemyUid(null);
 
     // Pause briefly before processing status effects so there is a clean beat
     await delay(200);
@@ -1509,6 +1674,10 @@ export default function CombatScreen() {
     0,
   );
 
+  // Dungeon info for the battlefield info bar
+  const zone = ZONES[state.currentRun.zoneId];
+  const floorNumber = state.currentRun.floorNumber || 1;
+
   // Syntax highlighting parser for combat logs
   const renderLogText = (msg, index) => {
     let color = '#CBD5E1'; // Cool parchment default
@@ -1547,445 +1716,134 @@ export default function CombatScreen() {
           <Rect width="100%" height="100%" fill="url(#combatGlow)" />
         </Svg>
 
-        {/* ── Combat Header ──────────────────────────────────────────── */}
-        <View style={styles.combatHeader}>
-          <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
-            <Rect width="100%" height="100%" fill="rgba(255,255,255,0.02)" rx={14} />
-            <Rect x="1" y="1" width="99%" height="98%" rx={13} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth={1} />
-          </Svg>
-          <View style={styles.combatHeaderRow}>
-            <View style={styles.combatHeaderLeft}>
-              <Text style={styles.encounterTypeLabel}>
-                {roomType === 'boss' ? '☠️  BOSS BATTLE' : roomType === 'ambush' ? '👺  AMBUSH!' : '⚔️  COMBAT'}
-              </Text>
-              <Text style={styles.narratorFlavor} numberOfLines={1}>{narratorText}</Text>
-            </View>
-            <View style={styles.turnPill}>
-              <Text style={styles.turnPillText}>Turn {turnCount + 1}</Text>
-            </View>
-          </View>
-        </View>
-
-        {/* ── Enemy Section ────────────────────────────────────────────── */}
-        <View style={styles.enemySectionWrapper}>
-          <ScrollView
-            ref={enemyScrollViewRef}
-            horizontal
-            contentContainerStyle={styles.enemyRow}
-            showsHorizontalScrollIndicator={false}
-          >
-            {(() => {
-              const combined = [
-                ...enemies.map(e => ({ ...e, isDying: false })),
-                ...dyingEnemies.map(e => ({ ...e, isDying: true })),
-              ];
-              combined.sort((a, b) => (a.spawnIndex ?? 0) - (b.spawnIndex ?? 0));
-
-              return combined.map((enemy) => {
-                if (enemy.isDying) {
-                  return (
-                    <DyingEnemyCard
-                      key={`dying_${enemy.uid}`}
-                      enemy={enemy}
-                      popups={popups}
-                      removePopup={removePopup}
-                    />
-                  );
-                }
-
-                const idx = enemies.findIndex(e => e.uid === enemy.uid);
-                const isSelected = idx === selectedEnemyIndex;
-                const spriteDef = getEnemySprite(enemy);
-                const displaySize = enemy.isBoss ? BOSS_DISPLAY_SIZE : ENEMY_DISPLAY_SIZE;
-                const platformBottom = Math.round(displaySize * (spriteDef.platformOffsetFactor || 0.25));
-
-                return (
-                  <TouchableOpacity
-                    key={enemy.uid}
-                    style={[
-                      styles.enemyCard,
-                      isSelected && styles.enemyCardSelected,
-                      enemy.isBoss && styles.enemyCardBoss,
-                    ]}
-                    onPress={() => setSelectedEnemyIndex(idx)}
-                    activeOpacity={0.8}
-                  >
-                    {/* Canvas Viewport (Top 70%) */}
-                    <View style={styles.spriteCanvas}>
-                      {/* Subtle backlight halo behind enemy */}
-                      <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
-                        <Defs>
-                          <RadialGradient id={`enemyBacklight_${enemy.uid}`} cx="50%" cy="50%" r="50%">
-                            <Stop offset="0%" stopColor={isSelected ? '#F5CF4A' : '#707F94'} stopOpacity={isSelected ? 0.12 : 0.04} />
-                            <Stop offset="100%" stopColor="transparent" stopOpacity="0" />
-                          </RadialGradient>
-                        </Defs>
-                        <Rect width="100%" height="100%" fill={`url(#enemyBacklight_${enemy.uid})`} />
-                      </Svg>
-
-                      <View style={[styles.spriteWrapper, { height: displaySize }]}>
-                        {/* Stage platform below enemy — scaled proportionally to displaySize */}
-                        <View style={[styles.stagePlatform, { bottom: platformBottom }]}>
-                          <Svg width={Math.round(displaySize * 0.9)} height={Math.round(displaySize * 0.15)}>
-                            <Defs>
-                              <RadialGradient id={`stageGlow_${enemy.uid}`} cx="50%" cy="50%" r="50%">
-                                <Stop offset="0%" stopColor={isSelected ? '#F5CF4A' : '#707F94'} stopOpacity="0.25" />
-                                <Stop offset="100%" stopColor="transparent" stopOpacity="0" />
-                              </RadialGradient>
-                            </Defs>
-                            <Rect width="100%" height="100%" fill={`url(#stageGlow_${enemy.uid})`} rx={8} />
-                          </Svg>
-                        </View>
-
-                        {/* Animated Enemy Sprite */}
-                        {(() => {
-                          const animKey = enemyAnims[enemy.uid] || 'idle';
-                          return (
-                            <>
-                              <AnimatedSprite
-                                key={`${enemy.uid}_idle`}
-                                source={spriteDef.idle.source}
-                                frameSize={spriteDef.idle.frameSize}
-                                totalFrames={spriteDef.idle.frames}
-                                fps={8}
-                                loop={true}
-                                active={animKey === 'idle'}
-                                displaySize={displaySize}
-                                flipX
-                                pointerEvents={animKey === 'idle' ? 'auto' : 'none'}
-                                style={[
-                                  styles.enemySprite,
-                                  { position: 'absolute', opacity: animKey === 'idle' ? 1 : 0 }
-                                ]}
-                              />
-                              <AnimatedSprite
-                                key={`${enemy.uid}_attack`}
-                                source={spriteDef.attack.source}
-                                frameSize={spriteDef.attack.frameSize}
-                                totalFrames={spriteDef.attack.frames}
-                                fps={10}
-                                loop={false}
-                                active={animKey === 'attack'}
-                                onComplete={animKey === 'attack'
-                                  ? () => setEnemyAnims(prev => ({ ...prev, [enemy.uid]: 'idle' }))
-                                  : undefined}
-                                displaySize={displaySize}
-                                flipX
-                                pointerEvents={animKey === 'attack' ? 'auto' : 'none'}
-                                style={[
-                                  styles.enemySprite,
-                                  { position: 'absolute', opacity: animKey === 'attack' ? 1 : 0 }
-                                ]}
-                              />
-                            </>
-                          );
-                        })()}
-                        {popups
-                          .filter((p) => p.targetUid === enemy.uid)
-                          .map((p) => (
-                            <DamagePopup
-                              key={p.id}
-                              amount={p.amount}
-                              isHeal={p.isHeal}
-                              onComplete={() => removePopup(p.id)}
-                            />
-                          ))}
-                      </View>
-                    </View>
-
-                    {/* Divider Line */}
-                    <View style={styles.hudDivider} />
-
-                    {/* HUD Tray (Bottom 30%) */}
-                    <View style={styles.hudTray}>
-                      <Text style={styles.enemyName} numberOfLines={1}>
-                        {enemy.name}
-                      </Text>
-                      <View style={{ flexDirection: 'row', justifyContent: 'center' }}>
-                        {Array.from({ length: enemy.isBoss ? 5 : (enemy.stars || 1) }).map((_, i) => (
-                          <Text key={i} style={{
-                            color: enemy.isBoss ? '#F5CF4A' : '#A0AEC0',
-                            fontSize: 10,
-                            textShadowColor: enemy.isBoss ? 'rgba(245, 207, 74, 0.5)' : 'transparent',
-                            textShadowOffset: { width: 0, height: 0 },
-                            textShadowRadius: enemy.isBoss ? 4 : 0
-                          }}>★</Text>
-                        ))}
-                      </View>
-                      <View style={{ width: '100%' }}>
-                        <ResourceBar variant="enemyHp" current={enemy.hp} max={enemy.maxHp} />
-                      </View>
-
-                      {/* Status Row (Always rendered to reserve height, scrollable horizontally) */}
-                      <View style={styles.effectsRowContainer}>
-                        <ScrollView
-                          horizontal
-                          showsHorizontalScrollIndicator={false}
-                          contentContainerStyle={styles.effectsRowScroll}
-                        >
-                          {consolidateEffectsArray(enemy.effects).map((eff, ei) => (
-                            <View
-                              key={`enemy_${enemy.uid}_${eff.type}_${ei}`}
-                              style={[
-                                styles.effectBadge,
-                                { backgroundColor: STATUS_COLORS[eff.type] || '#666' },
-                              ]}
-                            >
-                              <Text style={styles.effectText}>
-                                {STATUS_EMOJIS[eff.type] || '❓'}
-                                {eff.type === 'atk_reduce' ? `${Math.round((eff.value || 0) * 100)}%` : ''}
-                                {eff.duration > 0 ? (eff.type === 'atk_reduce' ? ` ${eff.duration}` : eff.duration) : ''}
-                                {eff.stacks > 1 && (
-                                  <Text style={styles.effectStackText}> x{eff.stacks}</Text>
-                                )}
-                              </Text>
-                            </View>
-                          ))}
-                        </ScrollView>
-                      </View>
-                    </View>
-                  </TouchableOpacity>
-                );
-              });
-            })()}
-          </ScrollView>
-        </View>
-
-        {/* ══ Zone 2: Turn header + Hero card + Actions ════════════════ */}
-        <View style={styles.heroActionSection}>
-
-          {/* ── YOUR TURN / ENEMY TURN header — always visible at top ── */}
-          <View style={styles.sectionDivider}>
-            <View style={styles.dividerLine} />
-            <Text style={[
-              styles.dividerLabel,
-              combatPhase === 'enemyTurn' && { color: theme.COLORS.damageRed },
-            ]}>
-              {combatPhase === 'playerTurn' ? 'YOUR TURN' : 'ENEMY TURN'}
+        {/* ── Info bar: encounter type · dungeon · floor + turn ── */}
+        <View style={styles.infoBar}>
+          <View style={styles.infoBarLeft}>
+            <Text style={styles.encounterTypeLabel}>
+              {roomType === 'boss' ? '☠️  BOSS BATTLE' : roomType === 'ambush' ? '👺  AMBUSH!' : '⚔️  COMBAT'}
             </Text>
-            <View style={styles.dividerLine} />
+            <Text style={styles.infoBarSub} numberOfLines={1}>
+              {zone?.name || 'Unknown Depths'} · Floor {floorNumber}
+            </Text>
           </View>
-
-          {/* ── Hero card + action buttons (same row) ── */}
-          <View style={styles.heroCardAndButtonsRow}>
-
-            {/* Hero card — same structure as enemy cards */}
-            <View style={[
-              styles.heroCard,
-              heroState?.playerHoT && {
-                borderColor: '#3B9EFF',
-                backgroundColor: 'rgba(59, 158, 255, 0.08)',
-                shadowColor: '#3B9EFF',
-              }
-            ]}>
-
-              {/* Sprite backlight — radial gold halo behind Mochi */}
-              <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
-                <Defs>
-                  <RadialGradient id="heroBacklight" cx="50%" cy="40%" r="45%">
-                    <Stop offset="0%" stopColor={heroState?.playerHoT ? "#3B9EFF" : "#F5CF4A"} stopOpacity={heroState?.playerHoT ? 0.25 : 0.14} />
-                    <Stop offset="100%" stopColor="transparent" stopOpacity="0" />
-                  </RadialGradient>
-                </Defs>
-                <Rect width="100%" height="100%" fill="url(#heroBacklight)" />
-              </Svg>
-
-              {/* Canvas Viewport (Top 70%) */}
-              <View style={styles.spriteCanvas}>
-                <View style={[styles.spriteWrapper, { height: HERO_DISPLAY_SIZE }]}>
-                  {/* Stage platform glow — same as enemies, always gold */}
-                  <View style={[styles.heroStagePlatform, { bottom: Math.round(HERO_DISPLAY_SIZE * (HERO_SPRITE.platformOffsetFactor || 0.18)) }]}>
-                    <Svg width={Math.round(HERO_DISPLAY_SIZE * 0.9)} height={Math.round(HERO_DISPLAY_SIZE * 0.15)}>
-                      <Defs>
-                        <RadialGradient id="heroStageGlow" cx="50%" cy="50%" r="50%">
-                          <Stop offset="0%" stopColor={heroState?.playerHoT ? "#3B9EFF" : "#F5CF4A"} stopOpacity={heroState?.playerHoT ? 0.35 : 0.28} />
-                          <Stop offset="100%" stopColor="transparent" stopOpacity="0" />
-                        </RadialGradient>
-                      </Defs>
-                      <Rect width="100%" height="100%" fill="url(#heroStageGlow)" rx={8} />
-                    </Svg>
-                  </View>
-
-                  {(() => {
-                    const isIdle = heroAnim === 'idle';
-                    const isGuard = heroAnim === 'guard';
-                    const isAttack = heroAnim === 'attack';
-                    const isSkill = !isIdle && !isGuard && !isAttack;
-
-                    const skillDef = isSkill ? HERO_SPRITE[heroAnim] : null;
-
-                    return (
-                      <>
-                        <AnimatedSprite
-                          key="hero_sprite_idle"
-                          source={HERO_SPRITE.idle.source}
-                          frameSize={HERO_SPRITE.idle.frameSize}
-                          totalFrames={HERO_SPRITE.idle.frames}
-                          fps={8}
-                          loop={true}
-                          active={isIdle}
-                          displaySize={HERO_DISPLAY_SIZE}
-                          pointerEvents={isIdle ? 'auto' : 'none'}
-                          style={[styles.heroCardSprite, { position: 'absolute', opacity: isIdle ? 1 : 0 }]}
-                        />
-                        <AnimatedSprite
-                          key="hero_sprite_guard"
-                          source={HERO_SPRITE.guard.source}
-                          frameSize={HERO_SPRITE.guard.frameSize}
-                          totalFrames={HERO_SPRITE.guard.frames}
-                          fps={8}
-                          loop={true}
-                          active={isGuard}
-                          displaySize={HERO_DISPLAY_SIZE}
-                          pointerEvents={isGuard ? 'auto' : 'none'}
-                          style={[styles.heroCardSprite, { position: 'absolute', opacity: isGuard ? 1 : 0 }]}
-                        />
-                        <AnimatedSprite
-                          key="hero_sprite_attack"
-                          source={HERO_SPRITE.attack.source}
-                          frameSize={HERO_SPRITE.attack.frameSize}
-                          totalFrames={HERO_SPRITE.attack.frames}
-                          fps={10}
-                          loop={false}
-                          active={isAttack}
-                          onComplete={isAttack ? () => setHeroAnim('idle') : undefined}
-                          displaySize={HERO_DISPLAY_SIZE}
-                          pointerEvents={isAttack ? 'auto' : 'none'}
-                          style={[styles.heroCardSprite, { position: 'absolute', opacity: isAttack ? 1 : 0 }]}
-                        />
-                        {/* Skill Animation — remounts fresh on each skill via key */}
-                        {isSkill && skillDef && (
-                          <AnimatedSprite
-                            key={`hero_sprite_skill_${heroAnim}`}
-                            source={skillDef.source}
-                            frameSize={skillDef.frameSize}
-                            totalFrames={skillDef.frames}
-                            fps={10}
-                            loop={false}
-                            active={true}
-                            onComplete={() => setHeroAnim('idle')}
-                            displaySize={HERO_DISPLAY_SIZE}
-                            pointerEvents="auto"
-                            style={[styles.heroCardSprite, { position: 'absolute' }]}
-                          />
-                        )}
-                      </>
-                    );
-                  })()}
-                  {popups
-                    .filter((p) => p.targetUid === 'hero')
-                    .map((p) => (
-                      <DamagePopup
-                        key={p.id}
-                        amount={p.amount}
-                        isHeal={p.isHeal}
-                        onComplete={() => removePopup(p.id)}
-                      />
-                    ))}
-                </View>
-              </View>
-
-              {/* Divider Line */}
-              <View style={styles.hudDivider} />
-
-              {/* HUD Tray (Bottom 30%) */}
-              <View style={styles.hudTray}>
-                <Text style={styles.enemyName}>{heroState.name || 'Mochi'}</Text>
-                <View style={{ width: '100%' }}>
-                  <ResourceBar variant="heroHp" current={heroState.hp} max={heroState.maxHp} />
-                </View>
-
-                {/* Status Row (Always rendered to reserve height, scrollable horizontally) */}
-                <View style={styles.effectsRowContainer}>
-                  <ScrollView
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    contentContainerStyle={styles.effectsRowScroll}
-                  >
-                    {consolidateEffectsArray(heroState.effects).map((eff, ei) => (
-                      <View
-                        key={`hero_${eff.type}_${ei}`}
-                        style={[
-                          styles.effectBadge,
-                          { backgroundColor: STATUS_COLORS[eff.type] || '#666' },
-                        ]}
-                      >
-                        <Text style={styles.effectText}>
-                          {STATUS_EMOJIS[eff.type] || '❓'}
-                          {eff.type === 'atk_reduce' ? `${Math.round((eff.value || 0) * 100)}%` : ''}
-                          {eff.duration > 0 ? (eff.type === 'atk_reduce' ? ` ${eff.duration}` : eff.duration) : ''}
-                          {eff.stacks > 1 && (
-                            <Text style={styles.effectStackText}> x{eff.stacks}</Text>
-                          )}
-                        </Text>
-                      </View>
-                    ))}
-                  </ScrollView>
-                </View>
-              </View>
-            </View>
-
-            {/* ── Action side ── */}
-            <View style={styles.actionSide}>
-              {combatPhase === 'playerTurn' && (
-                <View style={styles.actionGrid}>
-                  <View style={styles.actionRow}>
-                    <TouchableOpacity
-                      style={[styles.actionBtn, styles.actionBtnAttack]}
-                      onPress={handleAttack}
-                      activeOpacity={0.75}
-                    >
-                      <Text style={styles.actionBtnIcon}>⚔️</Text>
-                      <Text style={[styles.actionBtnTitle, { color: '#5CC489' }]}>ATTACK</Text>
-                      <Text style={styles.actionBtnSub}>Basic Strike</Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                      style={[styles.actionBtn, totalConsumables > 0 ? styles.actionBtnItem : styles.actionBtnEmpty]}
-                      onPress={() => totalConsumables > 0 && setShowItemModal(true)}
-                      activeOpacity={0.75}
-                      disabled={totalConsumables === 0}
-                    >
-                      <Text style={styles.actionBtnIcon}>🧪</Text>
-                      <Text style={[styles.actionBtnTitle, { color: totalConsumables > 0 ? '#F5CF4A' : '#5A5A5A' }]}>ITEMS</Text>
-                      <Text style={styles.actionBtnSub}>{totalConsumables > 0 ? `${totalConsumables} in bag` : 'empty bag'}</Text>
-                    </TouchableOpacity>
-                  </View>
-
-                  <View style={styles.actionRow}>
-                    {renderSkillButton(0)}
-                    {renderSkillButton(1)}
-                  </View>
-                </View>
-              )}
-
-              {combatPhase === 'enemyTurn' && (
-                <View style={styles.enemyTurnBox}>
-                  <Text style={styles.enemyTurnPulse}>⚔️</Text>
-                  <Text style={styles.enemyTurnText}>Enemies are acting…</Text>
-                </View>
-              )}
-            </View>
-
+          <View style={styles.turnPill}>
+            <Text style={styles.turnPillText}>Turn {turnCount + 1}</Text>
           </View>
         </View>
 
-        {/* ══ Zone 3: Battle log — takes all remaining space ══════════════ */}
-        <View style={styles.logSection}>
-          <View style={styles.sectionDivider}>
-            <View style={styles.dividerLine} />
-            <Text style={styles.dividerLabel}>BATTLE LOG</Text>
-            <View style={styles.dividerLine} />
+        {/* ══ Battlefield arena ════════════════════════════════════════ */}
+        <View style={styles.battlefield}>
+          {/* Background image (same for all zones for now) */}
+          <Image
+            source={require('../../assets/sprites/banners/battle_bg_1.png')}
+            style={styles.battlefieldBg}
+            resizeMode="stretch"
+          />
+
+          {/* ── Stage: hero left, enemies right ── */}
+          <View style={styles.stage}>
+            <View style={styles.heroSide}>
+              {renderHeroNode()}
+            </View>
+
+            <View style={styles.enemySide}>
+              {(() => {
+                const combined = [
+                  ...enemies.map(e => ({ ...e, isDying: false })),
+                  ...dyingEnemies.map(e => ({ ...e, isDying: true })),
+                ];
+                combined.sort((a, b) => (a.spawnIndex ?? 0) - (b.spawnIndex ?? 0));
+                const layout = getEnemyLayout(combined.length);
+
+                return combined.map((enemy, slot) => {
+                  const slotStyle = layout[slot] || layout[layout.length - 1];
+                  if (enemy.isDying) {
+                    return (
+                      <DyingEnemyCard
+                        key={`dying_${enemy.uid}`}
+                        enemy={enemy}
+                        slotStyle={slotStyle}
+                        popups={popups}
+                        removePopup={removePopup}
+                      />
+                    );
+                  }
+                  return renderEnemyNode(enemy, slotStyle);
+                });
+              })()}
+            </View>
           </View>
-          <View style={styles.logContainer}>
-            <ScrollView
-              ref={scrollViewRef}
-              contentContainerStyle={styles.logContainerInner}
-              showsVerticalScrollIndicator={true}
-              onContentSizeChange={() => scrollViewRef.current?.scrollToEnd({ animated: true })}
-            >
-              {combatLog.map((msg, i) => renderLogText(msg, i))}
-            </ScrollView>
+        </View>
+
+        {/* ══ Lower 1/3 — Actions line (top) + Battle log (bottom) ═════ */}
+        <View style={styles.lowerContainer}>
+
+          {/* ── Actions line: attack · skills · items, side by side ── */}
+          <View style={styles.actionsLine}>
+            <View style={styles.sectionDivider}>
+              <View style={styles.dividerLine} />
+              <Text style={[
+                styles.dividerLabel,
+                combatPhase === 'enemyTurn' && { color: theme.COLORS.damageRed },
+              ]}>
+                {combatPhase === 'playerTurn' ? 'YOUR TURN' : 'ENEMY TURN'}
+              </Text>
+              <View style={styles.dividerLine} />
+            </View>
+
+            {combatPhase === 'playerTurn' && (
+              <View style={styles.actionRowSingle}>
+                <TouchableOpacity
+                  style={[styles.actionBtn, styles.actionBtnAttack]}
+                  onPress={handleAttack}
+                  activeOpacity={0.75}
+                >
+                  <Text style={styles.actionBtnIcon}>⚔️</Text>
+                  <Text style={[styles.actionBtnTitle, { color: '#5CC489' }]}>ATTACK</Text>
+                  <Text style={styles.actionBtnSub}>Basic Strike</Text>
+                </TouchableOpacity>
+
+                {renderSkillButton(0)}
+                {renderSkillButton(1)}
+
+                <TouchableOpacity
+                  style={[styles.actionBtn, totalConsumables > 0 ? styles.actionBtnItem : styles.actionBtnEmpty]}
+                  onPress={() => totalConsumables > 0 && setShowItemModal(true)}
+                  activeOpacity={0.75}
+                  disabled={totalConsumables === 0}
+                >
+                  <Text style={styles.actionBtnIcon}>🧪</Text>
+                  <Text style={[styles.actionBtnTitle, { color: totalConsumables > 0 ? '#F5CF4A' : '#5A5A5A' }]}>ITEMS</Text>
+                  <Text style={styles.actionBtnSub}>{totalConsumables > 0 ? `${totalConsumables} in bag` : 'empty bag'}</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+
+            {combatPhase === 'enemyTurn' && (
+              <View style={styles.enemyTurnBox}>
+                <Text style={styles.enemyTurnPulse}>⚔️</Text>
+                <Text style={styles.enemyTurnText}>Enemies are acting…</Text>
+              </View>
+            )}
+          </View>
+
+          {/* ── Battle log (full width) ── */}
+          <View style={styles.logLine}>
+            <View style={styles.sectionDivider}>
+              <View style={styles.dividerLine} />
+              <Text style={styles.dividerLabel}>BATTLE LOG</Text>
+              <View style={styles.dividerLine} />
+            </View>
+            <View style={styles.logContainer}>
+              <ScrollView
+                ref={scrollViewRef}
+                contentContainerStyle={styles.logContainerInner}
+                showsVerticalScrollIndicator={true}
+                onContentSizeChange={() => scrollViewRef.current?.scrollToEnd({ animated: true })}
+              >
+                {combatLog.map((msg, i) => renderLogText(msg, i))}
+              </ScrollView>
+            </View>
           </View>
         </View>
 
@@ -2175,6 +2033,341 @@ export default function CombatScreen() {
     </ScreenLoader>
   );
 
+  // ── Status-effect badge row (shared by hero + enemies) ──────────────────
+  function renderEffectsRow(effects, keyPrefix) {
+    const consolidated = consolidateEffectsArray(effects);
+    if (consolidated.length === 0) return null; // collapse when empty — no reserved gap
+    return (
+      <View style={styles.effectsRowContainer}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.effectsRowScroll}
+        >
+          {consolidated.map((eff, ei) => (
+            <View
+              key={`${keyPrefix}_${eff.type}_${ei}`}
+              style={[
+                styles.effectBadge,
+                { backgroundColor: STATUS_COLORS[eff.type] || '#666' },
+              ]}
+            >
+              <Text style={styles.effectText}>
+                {STATUS_EMOJIS[eff.type] || '❓'}
+                {eff.type === 'atk_reduce' ? `${Math.round((eff.value || 0) * 100)}%` : ''}
+                {eff.duration > 0 ? (eff.type === 'atk_reduce' ? ` ${eff.duration}` : eff.duration) : ''}
+                {eff.stacks > 1 && (
+                  <Text style={styles.effectStackText}> x{eff.stacks}</Text>
+                )}
+              </Text>
+            </View>
+          ))}
+        </ScrollView>
+      </View>
+    );
+  }
+
+  // ── Hero node: name + HP + status on top, sprite below ──────────────────
+  function renderHeroNode() {
+    const tintColor = heroState?.playerHoT ? '#3B9EFF' : '#F5CF4A';
+    return (
+      <View style={[styles.charNode, { width: HERO_DISPLAY_SIZE, paddingHorizontal: 0, paddingVertical: 0 }]}>
+        {/* Sprite & Layout Wrapper */}
+        <View style={[styles.spriteWrapper, { width: HERO_DISPLAY_SIZE, height: HERO_DISPLAY_SIZE }]}>
+          {/* Sprite backlight — radial halo behind Mochi */}
+          <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
+            <Defs>
+              <RadialGradient id="heroBacklight" cx="50%" cy="50%" r="50%">
+                <Stop offset="0%" stopColor={tintColor} stopOpacity={heroState?.playerHoT ? 0.25 : 0.14} />
+                <Stop offset="100%" stopColor="transparent" stopOpacity="0" />
+              </RadialGradient>
+            </Defs>
+            <Rect width="100%" height="100%" fill="url(#heroBacklight)" />
+          </Svg>
+
+          {/* Status effects row - locked to the top inside sprite container */}
+          <View style={[styles.enemyEffectsTop, { position: 'absolute', top: 4, left: 0, right: 0 }]}>
+            {renderEffectsRow(heroState.effects, 'hero')}
+          </View>
+
+          {/* Animated View wrapper for lunge/recoil translation */}
+          <Animated.View style={{ transform: [{ translateX: heroTranslateX }], width: '100%', height: '100%', position: 'absolute', justifyContent: 'center', alignItems: 'center' }}>
+            {/* Stage platform below hero — soft radial shadow */}
+            {(() => {
+              const shadowWidth = HERO_DISPLAY_SIZE * 0.38;
+              const shadowHeight = 17;
+              return (
+                <View style={[
+                  styles.heroStagePlatform,
+                  {
+                    bottom: Math.round(HERO_DISPLAY_SIZE * (HERO_SPRITE.platformOffsetFactor || 0.18)),
+                    alignSelf: 'center',
+                  }
+                ]}>
+                  <Svg width={shadowWidth} height={shadowHeight}>
+                    <Defs>
+                      <RadialGradient id="heroShadowGlow" cx="50%" cy="50%" r="50%">
+                        <Stop offset="0%" stopColor="#000000" stopOpacity="0.75" />
+                        <Stop offset="60%" stopColor="#000000" stopOpacity="0.35" />
+                        <Stop offset="100%" stopColor="#000000" stopOpacity="0" />
+                      </RadialGradient>
+                    </Defs>
+                    <Ellipse
+                      cx={shadowWidth / 2}
+                      cy={shadowHeight / 2}
+                      rx={shadowWidth / 2}
+                      ry={shadowHeight / 2}
+                      fill="url(#heroShadowGlow)"
+                    />
+                  </Svg>
+                </View>
+              );
+            })()}
+
+            {(() => {
+              const isIdle = heroAnim === 'idle';
+              const isGuard = heroAnim === 'guard';
+              const isAttack = heroAnim === 'attack';
+              const isSkill = !isIdle && !isGuard && !isAttack;
+
+              const skillDef = isSkill ? HERO_SPRITE[heroAnim] : null;
+
+              return (
+                <>
+                  <AnimatedSprite
+                    key="hero_sprite_idle"
+                    source={HERO_SPRITE.idle.source}
+                    frameSize={HERO_SPRITE.idle.frameSize}
+                    totalFrames={HERO_SPRITE.idle.frames}
+                    fps={8}
+                    loop={true}
+                    active={isIdle}
+                    displaySize={HERO_DISPLAY_SIZE}
+                    pointerEvents={isIdle ? 'auto' : 'none'}
+                    style={[styles.heroCardSprite, { position: 'absolute', opacity: isIdle ? 1 : 0 }]}
+                    tintColor="#ff3333"
+                    tintOpacity={heroDamageOpacity}
+                  />
+                  <AnimatedSprite
+                    key="hero_sprite_guard"
+                    source={HERO_SPRITE.guard.source}
+                    frameSize={HERO_SPRITE.guard.frameSize}
+                    totalFrames={HERO_SPRITE.guard.frames}
+                    fps={8}
+                    loop={true}
+                    active={isGuard}
+                    displaySize={HERO_DISPLAY_SIZE}
+                    pointerEvents={isGuard ? 'auto' : 'none'}
+                    style={[styles.heroCardSprite, { position: 'absolute', opacity: isGuard ? 1 : 0 }]}
+                    tintColor="#ff3333"
+                    tintOpacity={heroDamageOpacity}
+                  />
+                  <AnimatedSprite
+                    key="hero_sprite_attack"
+                    source={HERO_SPRITE.attack.source}
+                    frameSize={HERO_SPRITE.attack.frameSize}
+                    totalFrames={HERO_SPRITE.attack.frames}
+                    fps={10}
+                    loop={false}
+                    active={isAttack}
+                    onComplete={isAttack ? () => setHeroAnim('idle') : undefined}
+                    displaySize={HERO_DISPLAY_SIZE}
+                    pointerEvents={isAttack ? 'auto' : 'none'}
+                    style={[styles.heroCardSprite, { position: 'absolute', opacity: isAttack ? 1 : 0 }]}
+                    tintColor="#ff3333"
+                    tintOpacity={heroDamageOpacity}
+                  />
+                  {/* Skill Animation — remounts fresh on each skill via key */}
+                  {isSkill && skillDef && (
+                    <AnimatedSprite
+                      key={`hero_sprite_skill_${heroAnim}`}
+                      source={skillDef.source}
+                      frameSize={skillDef.frameSize}
+                      totalFrames={skillDef.frames}
+                      fps={10}
+                      loop={false}
+                      active={true}
+                      onComplete={() => setHeroAnim('idle')}
+                      displaySize={HERO_DISPLAY_SIZE}
+                      pointerEvents="auto"
+                      style={[styles.heroCardSprite, { position: 'absolute' }]}
+                      tintColor="#ff3333"
+                      tintOpacity={heroDamageOpacity}
+                    />
+                  )}
+                </>
+              );
+            })()}
+          </Animated.View>
+
+          {/* Info block locked to bottom inside the sprite container */}
+          <View style={[styles.enemyInfoBottom, { position: 'absolute', bottom: 8, left: 0, right: 0 }]}>
+            <View style={[styles.charHpBar, { width: '55%' }]}>
+              <ResourceBar variant="heroHp" current={heroState.hp} max={heroState.maxHp} />
+            </View>
+            <Text style={styles.charName} numberOfLines={1}>{heroState.name || 'Mochi'}</Text>
+          </View>
+
+          {popups
+            .filter((p) => p.targetUid === 'hero')
+            .map((p) => (
+              <DamagePopup
+                key={p.id}
+                amount={p.amount}
+                isHeal={p.isHeal}
+                onComplete={() => removePopup(p.id)}
+              />
+            ))}
+        </View>
+      </View>
+    );
+  }
+
+  // ── Enemy node: name + ★ + HP + status on top, sprite below ─────────────
+  function renderEnemyNode(enemy, slotStyle) {
+    const idx = enemies.findIndex(e => e.uid === enemy.uid);
+    const isSelected = idx === selectedEnemyIndex;
+    const isActing = enemy.uid === activeEnemyUid;
+    const spriteDef = getEnemySprite(enemy);
+    const displaySize = enemy.isBoss ? BOSS_DISPLAY_SIZE : ENEMY_DISPLAY_SIZE;
+    const platformBottom = Math.round(displaySize * (spriteDef.platformOffsetFactor || 0.25));
+    const animKey = enemyAnims[enemy.uid] || 'idle';
+    const glowColor = isSelected ? '#F5CF4A' : isActing ? '#D8483F' : '#707F94';
+
+    return (
+      <TouchableOpacity
+        key={enemy.uid}
+        style={[
+          styles.enemyNode,
+          slotStyle,
+          { width: displaySize, marginLeft: -displaySize / 2 }
+        ]}
+        onPress={() => setSelectedEnemyIndex(idx)}
+        activeOpacity={0.8}
+      >
+        {/* Container 3: Outer wrapper */}
+        <View style={[
+          styles.enemySelectable,
+          isSelected && styles.enemySelectableSelected,
+          !isSelected && isActing && styles.enemySelectableActing,
+          { width: displaySize, paddingHorizontal: 0, paddingVertical: 0 }
+        ]}>
+          {/* Sprite & Layout Wrapper */}
+          <View style={[styles.spriteWrapper, { width: displaySize, height: displaySize }]}>
+            {/* Subtle backlight halo behind enemy */}
+            <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
+              <Defs>
+                <RadialGradient id={`enemyBacklight_${enemy.uid}`} cx="50%" cy="50%" r="50%">
+                  <Stop offset="0%" stopColor={glowColor} stopOpacity={isSelected || isActing ? 0.12 : 0.04} />
+                  <Stop offset="100%" stopColor="transparent" stopOpacity="0" />
+                </RadialGradient>
+              </Defs>
+              <Rect width="100%" height="100%" fill={`url(#enemyBacklight_${enemy.uid})`} />
+            </Svg>
+
+            {/* Status effects row - locked to the top inside sprite container */}
+            <View style={[styles.enemyEffectsTop, { position: 'absolute', top: 4, left: 0, right: 0 }]}>
+              {renderEffectsRow(enemy.effects, `enemy_${enemy.uid}`)}
+            </View>
+
+            {/* Animated View wrapper for lunge/recoil translation */}
+            <Animated.View style={{ transform: [{ translateX: getEnemyTranslateX(enemy.uid) }], width: '100%', height: '100%', position: 'absolute', justifyContent: 'center', alignItems: 'center' }}>
+              {/* Stage platform below enemy — soft radial shadow */}
+              {(() => {
+                const shadowWidth = displaySize * 0.38;
+                const shadowHeight = 17;
+                return (
+                  <View style={[
+                    styles.stagePlatform,
+                    {
+                      bottom: platformBottom,
+                      alignSelf: 'center',
+                    }
+                  ]}>
+                    <Svg width={shadowWidth} height={shadowHeight}>
+                      <Defs>
+                        <RadialGradient id={`enemyShadowGlow_${enemy.uid}`} cx="50%" cy="50%" r="50%">
+                          <Stop offset="0%" stopColor="#000000" stopOpacity="0.75" />
+                          <Stop offset="60%" stopColor="#000000" stopOpacity="0.35" />
+                          <Stop offset="100%" stopColor="#000000" stopOpacity="0" />
+                        </RadialGradient>
+                      </Defs>
+                      <Ellipse
+                        cx={shadowWidth / 2}
+                        cy={shadowHeight / 2}
+                        rx={shadowWidth / 2}
+                        ry={shadowHeight / 2}
+                        fill={`url(#enemyShadowGlow_${enemy.uid})`}
+                      />
+                    </Svg>
+                  </View>
+                );
+              })()}
+
+              {/* Animated Enemy Sprite */}
+              <AnimatedSprite
+                key={`${enemy.uid}_idle`}
+                source={spriteDef.idle.source}
+                frameSize={spriteDef.idle.frameSize}
+                totalFrames={spriteDef.idle.frames}
+                fps={8}
+                loop={true}
+                active={animKey === 'idle'}
+                displaySize={displaySize}
+                flipX
+                pointerEvents={animKey === 'idle' ? 'auto' : 'none'}
+                style={[styles.enemySprite, { position: 'absolute', opacity: animKey === 'idle' ? 1 : 0 }]}
+                tintColor="#ff3333"
+                tintOpacity={getEnemyDamageOpacity(enemy.uid)}
+              />
+              <AnimatedSprite
+                key={`${enemy.uid}_attack`}
+                source={spriteDef.attack.source}
+                frameSize={spriteDef.attack.frameSize}
+                totalFrames={spriteDef.attack.frames}
+                fps={10}
+                loop={false}
+                active={animKey === 'attack'}
+                onComplete={animKey === 'attack'
+                  ? () => setEnemyAnims(prev => ({ ...prev, [enemy.uid]: 'idle' }))
+                  : undefined}
+                displaySize={displaySize}
+                flipX
+                pointerEvents={animKey === 'attack' ? 'auto' : 'none'}
+                style={[styles.enemySprite, { position: 'absolute', opacity: animKey === 'attack' ? 1 : 0 }]}
+                tintColor="#ff3333"
+                tintOpacity={getEnemyDamageOpacity(enemy.uid)}
+              />
+            </Animated.View>
+
+            {/* Info block locked to bottom inside the sprite container */}
+            <View style={[styles.enemyInfoBottom, { position: 'absolute', bottom: 8, left: 0, right: 0 }]}>
+              <View style={[styles.charHpBar, { width: '55%' }]}>
+                <ResourceBar variant="enemyHp" current={enemy.hp} max={enemy.maxHp} />
+              </View>
+              <View style={styles.starsRow}>
+                {Array.from({ length: enemy.isBoss ? 5 : (enemy.stars || 1) }).map((_, i) => (
+                  <Text key={i} style={[styles.starText, enemy.isBoss && styles.starTextBoss]}>★</Text>
+                ))}
+              </View>
+            </View>
+
+            {popups
+              .filter((p) => p.targetUid === enemy.uid)
+              .map((p) => (
+                <DamagePopup
+                  key={p.id}
+                  amount={p.amount}
+                  isHeal={p.isHeal}
+                  onComplete={() => removePopup(p.id)}
+                />
+              ))}
+          </View>
+        </View>
+      </TouchableOpacity>
+    );
+  }
+
   // ── Skill button renderer ──────────────────────────────────────────────
   function renderSkillButton(slotIndex) {
     const skillId = state.hero.equippedSkills[slotIndex];
@@ -2206,7 +2399,7 @@ export default function CombatScreen() {
     const subText = !hasSkill
       ? 'empty slot'
       : isPassive
-        ? 'Passive · always on'
+        ? 'Passive'
         : isOnCooldown
           ? `${cd} turn${cd !== 1 ? 's' : ''}`
           : 'Ready';
@@ -2276,7 +2469,7 @@ export default function CombatScreen() {
 // ============================================================================
 // DyingEnemyCard — collapses and fades out on defeat
 // ============================================================================
-function DyingEnemyCard({ enemy, popups = [], removePopup }) {
+function DyingEnemyCard({ enemy, slotStyle, popups = [], removePopup }) {
   const fadeAnim = useRef(new Animated.Value(1)).current;
   const scaleAnim = useRef(new Animated.Value(1)).current;
   const rotateAnim = useRef(new Animated.Value(0)).current;
@@ -2314,13 +2507,16 @@ function DyingEnemyCard({ enemy, popups = [], removePopup }) {
   const spriteDef = getEnemySprite(enemy);
   const animData = spriteDef.idle;
 
+  const displaySize = enemy.isBoss ? BOSS_DISPLAY_SIZE : ENEMY_DISPLAY_SIZE;
+
   return (
     <Animated.View
       style={[
-        styles.enemyCard,
-        styles.enemyCardDying,
-        enemy.isBoss && styles.enemyCardBoss,
+        styles.enemyNode,
+        slotStyle,
         {
+          width: displaySize,
+          marginLeft: -displaySize / 2,
           opacity: fadeAnim,
           transform: [
             { scale: scaleAnim },
@@ -2331,37 +2527,32 @@ function DyingEnemyCard({ enemy, popups = [], removePopup }) {
       ]}
       pointerEvents="none"
     >
-      <View style={styles.dyingOverlay}>
-        <Text style={styles.dyingOverlayText}>💀</Text>
-      </View>
-      <View style={[styles.spriteWrapper, { height: enemy.isBoss ? BOSS_DISPLAY_SIZE : ENEMY_DISPLAY_SIZE }]}>
-        <AnimatedSprite
-          source={animData.source}
-          frameSize={animData.frameSize}
-          totalFrames={animData.frames}
-          fps={8}
-          loop={false}
-          displaySize={enemy.isBoss ? BOSS_DISPLAY_SIZE : ENEMY_DISPLAY_SIZE}
-          flipX
-        />
-        {popups
-          .filter((p) => p.targetUid === enemy.uid)
-          .map((p) => (
-            <DamagePopup
-              key={p.id}
-              amount={p.amount}
-              isHeal={p.isHeal}
-              onComplete={() => removePopup?.(p.id)}
-            />
-          ))}
-      </View>
-      <View style={styles.hudDivider} />
-      <View style={styles.hudTray}>
-        <Text style={styles.enemyName} numberOfLines={1}>
-          {enemy.name}
-        </Text>
-        <View style={styles.hpPlaceholder} />
-        <View style={styles.effectsRowContainer} />
+      <View style={[styles.enemySelectable, { width: displaySize, paddingHorizontal: 0, paddingVertical: 0 }]}>
+        {/* Sprite, with skull overlay */}
+        <View style={[styles.spriteWrapper, { width: displaySize, height: displaySize }]}>
+          <View style={styles.dyingOverlay}>
+            <Text style={styles.dyingOverlayText}>💀</Text>
+          </View>
+          <AnimatedSprite
+            source={animData.source}
+            frameSize={animData.frameSize}
+            totalFrames={animData.frames}
+            fps={8}
+            loop={false}
+            displaySize={displaySize}
+            flipX
+          />
+          {popups
+            .filter((p) => p.targetUid === enemy.uid)
+            .map((p) => (
+              <DamagePopup
+                key={p.id}
+                amount={p.amount}
+                isHeal={p.isHeal}
+                onComplete={() => removePopup?.(p.id)}
+              />
+            ))}
+        </View>
       </View>
     </Animated.View>
   );
@@ -2451,22 +2642,36 @@ const styles = StyleSheet.create({
     fontWeight: 'normal',
   },
 
-  /* ── Combat Header ─────────────────────────────────────────── */
-  combatHeader: {
+  /* ── Battlefield (upper ~60%) ──────────────────────────────── */
+  battlefield: {
+    flex: 6,
     marginHorizontal: 14,
-    marginTop: 10,
+    marginTop: 4,
     borderRadius: theme.BORDER_RADIUS.card,
     overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.06)',
   },
-  combatHeaderRow: {
+  battlefieldBg: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    width: '100%',
+    height: '100%',
+    backgroundColor: '#000000',
+  },
+
+  /* ── Info bar (above the battlefield container) ─────────────── */
+  infoBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 14,
-    paddingVertical: 10,
+    marginHorizontal: 14,
+    marginTop: 8,
+    paddingVertical: 4,
     gap: 10,
     zIndex: 2,
   },
-  combatHeaderLeft: {
+  infoBarLeft: {
     flex: 1,
   },
   encounterTypeLabel: {
@@ -2476,11 +2681,105 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
     marginBottom: 3,
   },
-  narratorFlavor: {
+  infoBarSub: {
     ...theme.FONTS.small,
     fontSize: 10,
-    color: 'rgba(207,224,238,0.45)',
-    fontStyle: 'italic',
+    color: 'rgba(207,224,238,0.55)',
+  },
+
+  /* ── Stage (bottom half of battlefield) ─────────────────────── */
+  stage: {
+    flex: 1,
+    flexDirection: 'row',
+    zIndex: 2,
+  },
+  heroSide: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  enemySide: {
+    flex: 2,
+    position: 'relative',
+  },
+
+  /* ── Character node (hero + enemy share this shape) ─────────── */
+  charNode: {
+    alignItems: 'center',
+    width: ENEMY_NODE_WIDTH, // same footprint as enemy nodes for cohesion
+    borderWidth: 1.5,        // transparent — matches enemySelectable inset
+    borderColor: 'transparent',
+    paddingHorizontal: 3,
+    paddingVertical: 3,
+  },
+  enemyNode: {
+    position: 'absolute',
+    width: ENEMY_NODE_WIDTH,
+    marginLeft: -ENEMY_NODE_WIDTH / 2,
+    alignItems: 'center',
+  },
+  charInfoTop: {
+    width: '100%',
+    alignItems: 'center',
+    gap: 1,
+    marginBottom: -18, // pull the sprite up so name/stars/HP sit right on it
+    zIndex: 6,
+  },
+  enemyEffectsTop: {
+    width: '100%',
+    alignItems: 'center',
+    zIndex: 6,
+  },
+  enemyInfoBottom: {
+    width: '100%',
+    alignItems: 'center',
+    gap: 2,
+    marginTop: 4,
+    zIndex: 6,
+  },
+  charName: {
+    ...theme.FONTS.body,
+    fontSize: 10,
+    lineHeight: 13,
+    color: theme.COLORS.textBright,
+    fontWeight: 'bold',
+    textAlign: 'center',
+  },
+  charHpBar: {
+    width: '80%',
+  },
+  starsRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginBottom: 3,
+  },
+  starText: {
+    color: '#A0AEC0',
+    fontSize: 6,
+    lineHeight: 8,
+  },
+  starTextBoss: {
+    color: '#F5CF4A',
+    textShadowColor: 'rgba(245, 207, 74, 0.5)',
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 4,
+  },
+  enemySelectable: {
+    width: '100%',
+    alignItems: 'center',
+    borderWidth: 1.5,
+    borderColor: 'transparent',
+    borderRadius: 12,
+    paddingHorizontal: 3,
+    paddingVertical: 3,
+  },
+  enemySelectableSelected: {
+    borderColor: theme.COLORS.treasureGold,
+    backgroundColor: 'rgba(245, 207, 74, 0.06)',
+  },
+  enemySelectableActing: {
+    borderColor: 'rgba(216, 72, 63, 0.6)',
+    backgroundColor: 'rgba(216, 72, 63, 0.05)',
   },
   turnPill: {
     backgroundColor: 'rgba(255,255,255,0.05)',
@@ -2515,72 +2814,12 @@ const styles = StyleSheet.create({
     color: 'rgba(207,224,238,0.35)',
   },
 
-  /* ── Enemy Section ─────────────────────────────────── */
-  enemySectionWrapper: {
-    height: 240,
-    justifyContent: 'center',
-    marginTop: 6,
-  },
-  enemyRow: {
-    flexDirection: 'row',
-    paddingHorizontal: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-    minWidth: SCREEN_WIDTH,
-  },
-  enemyCard: {
-    backgroundColor: 'transparent',
-    borderWidth: 2,
-    borderColor: 'transparent',
-    borderRadius: 16,
-    paddingTop: 32,
-    paddingBottom: 10,
-    paddingHorizontal: 8,
-    marginHorizontal: 8,
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    width: 140,
-    height: 210,
-    position: 'relative',
-  },
-  enemyCardSelected: {
-    borderColor: theme.COLORS.treasureGold,
-    backgroundColor: 'rgba(245, 207, 74, 0.05)',
-    shadowColor: theme.COLORS.treasureGold,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.45,
-    shadowRadius: 10,
-    elevation: 6,
-  },
-  enemyCardBoss: {
-    width: 170,
-    height: 230,
-  },
+  /* ── Sprites & platforms ───────────────────────────── */
   spriteWrapper: {
     position: 'relative',
     alignItems: 'center',
     justifyContent: 'center',
     width: '100%',
-  },
-  spriteCanvas: {
-    flex: 1,
-    width: '100%',
-    justifyContent: 'center',
-    alignItems: 'center',
-    position: 'relative',
-  },
-  hudDivider: {
-    width: '100%',
-    height: 1,
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-    marginVertical: 6,
-  },
-  hudTray: {
-    width: '100%',
-    height: 72,
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 4,
   },
   effectsRowContainer: {
     width: '100%',
@@ -2601,34 +2840,8 @@ const styles = StyleSheet.create({
   enemySprite: {
     zIndex: 5,
   },
-  enemyInfoBlock: {
-    width: '100%',
-    alignItems: 'center',
-    marginTop: 6,
-  },
-  enemyName: {
-    ...theme.FONTS.body,
-    lineHeight: 16,
-    color: theme.COLORS.textBright,
-    fontWeight: 'bold',
-    textAlign: 'center',
-  },
 
   /* ── Status effects ────────────────────────────────────────── */
-  effectsRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'center',
-    marginVertical: 4,
-    gap: 3,
-  },
-  effectsRowHero: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'flex-start',
-    marginTop: 4,
-    gap: 3,
-  },
   effectBadge: {
     borderRadius: 10,
     paddingHorizontal: 6,
@@ -2649,56 +2862,6 @@ const styles = StyleSheet.create({
     color: 'rgba(255, 255, 255, 0.85)',
   },
 
-  /* ── Intent badge ──────────────────────────────────────────── */
-  intentBadge: {
-    backgroundColor: 'rgba(255, 68, 68, 0.08)',
-    borderRadius: 6,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    marginTop: 4,
-    borderWidth: 0.5,
-    borderColor: 'rgba(255, 68, 68, 0.25)',
-  },
-  intentText: {
-    ...theme.FONTS.small,
-    fontSize: 8,
-    color: theme.COLORS.danger,
-    fontWeight: '900',
-  },
-
-
-
-  /* ── Zone 2: Turn section (column) ──────────────────── */
-  heroActionSection: {
-    marginHorizontal: 14,
-    marginTop: 6,
-    marginBottom: 6,
-    gap: 8,
-  },
-  heroCardAndButtonsRow: {
-    flexDirection: 'row',
-    gap: 10,
-    alignItems: 'stretch',
-    height: 240,
-  },
-  heroCard: {
-    width: 140,
-    borderWidth: 2,
-    borderColor: 'rgba(212,167,84,0.35)',
-    borderRadius: 16,
-    paddingTop: 36,
-    paddingBottom: 10,
-    paddingHorizontal: 8,
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: 'rgba(212,167,84,0.04)',
-    position: 'relative',
-    shadowColor: theme.COLORS.treasureGold,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.4,
-    shadowRadius: 10,
-    elevation: 6,
-  },
   heroCardSprite: {
     zIndex: 5,
   },
@@ -2707,17 +2870,26 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     zIndex: 1,
   },
-  actionSide: {
-    flex: 1,
-  },
 
-  /* ── Combat log ────────────────────────────────────────────── */
-  logSection: {
-    flex: 1,
-    minHeight: 70,
+  /* ── Lower ~40%: actions line (top) + battle log (bottom) ────── */
+  lowerContainer: {
+    flex: 4,
+    flexDirection: 'column',
+    gap: 8,
     marginHorizontal: 14,
-    marginTop: 14,
+    marginTop: 10,
     marginBottom: 10,
+  },
+  actionsLine: {
+    // sized to its content (divider + button row)
+  },
+  actionRowSingle: {
+    flexDirection: 'row',
+    gap: 6,
+    height: 84,
+  },
+  logLine: {
+    flex: 1,
   },
   logContainer: {
     flex: 1,
@@ -2742,16 +2914,7 @@ const styles = StyleSheet.create({
     lineHeight: 16,
   },
 
-  /* ── Action buttons (inside actionSide) ──────────────────────── */
-  actionGrid: {
-    flex: 1,
-    gap: 6,
-  },
-  actionRow: {
-    flex: 1,
-    flexDirection: 'row',
-    gap: 6,
-  },
+  /* ── Action buttons ──────────────────────────────────────────── */
   actionBtn: {
     flex: 1,
     borderRadius: 14,
@@ -2798,7 +2961,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
   },
   enemyTurnBox: {
-    flex: 1,
+    height: 84,
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
@@ -2989,10 +3152,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   // ── Dying enemy visual effects ────────────────────────────────────────────
-  enemyCardDying: {
-    borderColor: 'rgba(255, 68, 68, 0.3)',
-    backgroundColor: 'rgba(255, 68, 68, 0.05)',
-  },
   dyingOverlay: {
     ...StyleSheet.absoluteFillObject,
     justifyContent: 'center',
@@ -3004,8 +3163,5 @@ const styles = StyleSheet.create({
     textShadowColor: 'rgba(0, 0, 0, 0.75)',
     textShadowOffset: { width: -1, height: 1 },
     textShadowRadius: 10,
-  },
-  hpPlaceholder: {
-    height: 14,
   },
 });
