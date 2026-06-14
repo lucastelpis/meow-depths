@@ -410,6 +410,47 @@ export default function CombatScreen() {
     return enemyDamageOpacitiesRef.current[uid];
   }, []);
 
+  // Target Selection border/glow pulsing animation value
+  const targetBlinkAnim = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    const anim = Animated.loop(
+      Animated.sequence([
+        Animated.timing(targetBlinkAnim, {
+          toValue: 0.1,
+          duration: 300,
+          useNativeDriver: false,
+        }),
+        Animated.timing(targetBlinkAnim, {
+          toValue: 1.0,
+          duration: 300,
+          useNativeDriver: false,
+        }),
+      ])
+    );
+
+    if (combatPhase === 'playerTurn') {
+      anim.start();
+    } else {
+      anim.stop();
+      targetBlinkAnim.setValue(1);
+    }
+
+    return () => {
+      anim.stop();
+    };
+  }, [combatPhase]);
+
+  const targetBorderColor = targetBlinkAnim.interpolate({
+    inputRange: [0.1, 1.0],
+    outputRange: ['rgba(245, 207, 74, 0.2)', 'rgba(245, 207, 74, 1)'],
+  });
+
+  const targetBackgroundColor = targetBlinkAnim.interpolate({
+    inputRange: [0.1, 1.0],
+    outputRange: ['rgba(245, 207, 74, 0.02)', 'rgba(245, 207, 74, 0.12)'],
+  });
+
   const triggerHeroAttackLunge = useCallback((duration) => {
     const totalTime = duration || 800;
     const forwardTime = Math.round(totalTime * 0.3);
@@ -527,9 +568,9 @@ export default function CombatScreen() {
   const prevHeroHpRef = useRef(undefined);
   const prevEnemiesHpRef = useRef({});
 
-  const triggerDamagePopup = useCallback((targetUid, amount, isHeal = false) => {
+  const triggerDamagePopup = useCallback((targetUid, amount, isHeal = false, isMiss = false) => {
     const id = `${targetUid}_${Date.now()}_${Math.random()}`;
-    setPopups((prev) => [...prev, { id, targetUid, amount, isHeal }]);
+    setPopups((prev) => [...prev, { id, targetUid, amount, isHeal, isMiss }]);
   }, []);
 
   const removePopup = useCallback((id) => {
@@ -802,6 +843,9 @@ export default function CombatScreen() {
     if (result.damage > 0) {
       triggerEnemyRecoil(target.uid, animDuration);
     }
+    if (result.isDodged) {
+      triggerDamagePopup(target.uid, 0, false, true);
+    }
     addLog(result.log);
 
     // Apply damage + effects to enemy
@@ -1066,6 +1110,9 @@ export default function CombatScreen() {
       addLog(skillResult.log);
 
       for (const res of skillResult.results) {
+        if (res.isDodged && res.target !== undefined) {
+          triggerDamagePopup(res.target, 0, false, true);
+        }
         if (res.damage !== undefined && res.target !== undefined) {
           updatedEnemies = updatedEnemies.map((e) => {
             if ((e.uid || e.id) !== res.target) return e;
@@ -1281,6 +1328,9 @@ export default function CombatScreen() {
 
       if (turnResult.damage > 0) {
         triggerHeroRecoil(animDuration);
+      }
+      if (turnResult.isDodged) {
+        triggerDamagePopup('hero', 0, false, true);
       }
 
       addLog(turnResult.log);
@@ -2215,6 +2265,7 @@ export default function CombatScreen() {
                 key={p.id}
                 amount={p.amount}
                 isHeal={p.isHeal}
+                isMiss={p.isMiss}
                 onComplete={() => removePopup(p.id)}
               />
             ))}
@@ -2226,7 +2277,7 @@ export default function CombatScreen() {
   // ── Enemy node: name + ★ + HP + status on top, sprite below ─────────────
   function renderEnemyNode(enemy, slotStyle) {
     const idx = enemies.findIndex(e => e.uid === enemy.uid);
-    const isSelected = idx === selectedEnemyIndex;
+    const isSelected = idx === selectedEnemyIndex && combatPhase === 'playerTurn';
     const isActing = enemy.uid === activeEnemyUid;
     const spriteDef = getEnemySprite(enemy);
     const displaySize = enemy.isBoss ? BOSS_DISPLAY_SIZE : ENEMY_DISPLAY_SIZE;
@@ -2248,8 +2299,6 @@ export default function CombatScreen() {
         {/* Container 3: Outer wrapper */}
         <View style={[
           styles.enemySelectable,
-          isSelected && styles.enemySelectableSelected,
-          !isSelected && isActing && styles.enemySelectableActing,
           { width: displaySize, paddingHorizontal: 0, paddingVertical: 0 }
         ]}>
           {/* Sprite & Layout Wrapper */}
@@ -2342,11 +2391,29 @@ export default function CombatScreen() {
 
             {/* Info block locked to bottom inside the sprite container */}
             <View style={[styles.enemyInfoBottom, { position: 'absolute', bottom: 8, left: 0, right: 0 }]}>
-              <View style={[styles.charHpBar, { width: '55%' }]}>
+              <Animated.View style={[
+                styles.charHpBar,
+                {
+                  width: '55%',
+                  borderWidth: 1.5,
+                  borderColor: isSelected
+                    ? targetBorderColor
+                    : isActing
+                      ? '#D8483F'
+                      : 'transparent',
+                  backgroundColor: isSelected
+                    ? targetBackgroundColor
+                    : isActing
+                      ? 'rgba(216, 72, 63, 0.06)'
+                      : 'transparent',
+                  borderRadius: 6,
+                  padding: 1.5,
+                }
+              ]}>
                 <ResourceBar variant="enemyHp" current={enemy.hp} max={enemy.maxHp} />
-              </View>
+              </Animated.View>
               {/* Stars Row - positioned below the HP bar */}
-              <View style={[styles.starsRow, { marginTop: 2, marginBottom: 0 }]}>
+              <View style={[styles.starsRow, { marginTop: 0, marginBottom: 0 }]}>
                 {Array.from({ length: enemy.isBoss ? 5 : (enemy.stars || 1) }).map((_, i) => (
                   <Text key={i} style={[styles.starText, enemy.isBoss && styles.starTextBoss, { fontSize: 6, marginHorizontal: 0.5 }]}>★</Text>
                 ))}
@@ -2360,6 +2427,7 @@ export default function CombatScreen() {
                   key={p.id}
                   amount={p.amount}
                   isHeal={p.isHeal}
+                  isMiss={p.isMiss}
                   onComplete={() => removePopup(p.id)}
                 />
               ))}
@@ -2550,6 +2618,7 @@ function DyingEnemyCard({ enemy, slotStyle, popups = [], removePopup }) {
                 key={p.id}
                 amount={p.amount}
                 isHeal={p.isHeal}
+                isMiss={p.isMiss}
                 onComplete={() => removePopup?.(p.id)}
               />
             ))}
@@ -2562,7 +2631,7 @@ function DyingEnemyCard({ enemy, slotStyle, popups = [], removePopup }) {
 // ============================================================================
 // DamagePopup — rises up and fades out over a sprite on hit
 // ============================================================================
-function DamagePopup({ amount, isHeal, onComplete }) {
+function DamagePopup({ amount, isHeal, isMiss, onComplete }) {
   const animValue = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -2605,7 +2674,7 @@ function DamagePopup({ amount, isHeal, onComplete }) {
     >
       <Text
         style={{
-          color: isHeal ? '#34C759' : '#FF3B30', // Bright green for healing, red for damage
+          color: isHeal ? '#34C759' : isMiss ? '#95A5A6' : '#FF3B30', // Bright green for healing, gray for miss, red for damage
           fontSize: 12,
           fontWeight: '900',
           textAlign: 'center',
@@ -2614,7 +2683,7 @@ function DamagePopup({ amount, isHeal, onComplete }) {
           textShadowRadius: 1.5,
         }}
       >
-        {isHeal ? '+' : '-'}{amount}
+        {isMiss ? 'MISS' : `${isHeal ? '+' : '-'}${amount}`}
       </Text>
     </Animated.View>
   );

@@ -688,6 +688,7 @@ export function executeEnemyTurn(enemy, enemyState, target, targetState) {
       effects: [],
       log: `${targetState.name || 'Mochi'} dodged ${enemy.name}'s ${move.name}!`,
       selfDestruct: false,
+      isDodged: true,
     };
   }
 
