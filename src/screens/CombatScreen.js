@@ -2345,9 +2345,10 @@ export default function CombatScreen() {
               <View style={[styles.charHpBar, { width: '55%' }]}>
                 <ResourceBar variant="enemyHp" current={enemy.hp} max={enemy.maxHp} />
               </View>
-              <View style={styles.starsRow}>
+              {/* Stars Row - positioned below the HP bar */}
+              <View style={[styles.starsRow, { marginTop: 2, marginBottom: 0 }]}>
                 {Array.from({ length: enemy.isBoss ? 5 : (enemy.stars || 1) }).map((_, i) => (
-                  <Text key={i} style={[styles.starText, enemy.isBoss && styles.starTextBoss]}>★</Text>
+                  <Text key={i} style={[styles.starText, enemy.isBoss && styles.starTextBoss, { fontSize: 6, marginHorizontal: 0.5 }]}>★</Text>
                 ))}
               </View>
             </View>
