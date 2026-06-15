@@ -572,10 +572,12 @@ export default function CombatScreen() {
   const [popups, setPopups] = useState([]);
   const prevHeroHpRef = useRef(undefined);
   const prevEnemiesHpRef = useRef({});
+  // UIDs that already had a popup fired directly this tick (skip HP-watcher for these)
+  const pendingCritUids = useRef(new Set());
 
-  const triggerDamagePopup = useCallback((targetUid, amount, isHeal = false, isMiss = false) => {
+  const triggerDamagePopup = useCallback((targetUid, amount, isHeal = false, isMiss = false, isCrit = false) => {
     const id = `${targetUid}_${Date.now()}_${Math.random()}`;
-    setPopups((prev) => [...prev, { id, targetUid, amount, isHeal, isMiss }]);
+    setPopups((prev) => [...prev, { id, targetUid, amount, isHeal, isMiss, isCrit }]);
   }, []);
 
   const removePopup = useCallback((id) => {
@@ -616,7 +618,12 @@ export default function CombatScreen() {
       } else if (e.hp < prevHp) {
         const damage = prevHp - e.hp;
         if (damage > 0) {
-          triggerDamagePopup(e.uid, damage, false);
+          // Skip if a direct crit popup was already fired for this UID
+          if (!pendingCritUids.current.has(e.uid)) {
+            triggerDamagePopup(e.uid, damage, false);
+          } else {
+            pendingCritUids.current.delete(e.uid);
+          }
         }
         prevEnemiesHpRef.current[e.uid] = e.hp;
       } else if (e.hp > prevHp) {
@@ -632,9 +639,10 @@ export default function CombatScreen() {
     Object.keys(prevEnemiesHpRef.current).forEach((uid) => {
       if (!currentUids.has(uid)) {
         const prevHp = prevEnemiesHpRef.current[uid];
-        if (prevHp > 0) {
+        if (prevHp > 0 && !pendingCritUids.current.has(uid)) {
           triggerDamagePopup(uid, prevHp, false);
         }
+        pendingCritUids.current.delete(uid);
         delete prevEnemiesHpRef.current[uid];
       }
     });
@@ -847,6 +855,11 @@ export default function CombatScreen() {
     const result = executeAttack(heroState, target, heroState);
     if (result.damage > 0) {
       triggerEnemyRecoil(target.uid, animDuration);
+      if (result.isCrit) {
+        // Fire crit popup directly and mark UID so the HP-watcher skips it
+        pendingCritUids.current.add(target.uid);
+        triggerDamagePopup(target.uid, result.damage, false, false, true);
+      }
     }
     if (result.isDodged) {
       triggerDamagePopup(target.uid, 0, false, true);
@@ -2164,7 +2177,7 @@ export default function CombatScreen() {
           </Svg>
 
           {/* Status effects row - locked to the top inside sprite container */}
-          <View style={[styles.enemyEffectsTop, { position: 'absolute', top: 4, left: 0, right: 0 }]}>
+          <View style={[styles.enemyEffectsTop, { position: 'absolute', top: 20, left: 0, right: 0 }]}>
             {renderEffectsRow(heroState.effects, 'hero')}
           </View>
 
@@ -2294,6 +2307,7 @@ export default function CombatScreen() {
                 amount={p.amount}
                 isHeal={p.isHeal}
                 isMiss={p.isMiss}
+                isCrit={p.isCrit}
                 onComplete={() => removePopup(p.id)}
               />
             ))}
@@ -2343,7 +2357,7 @@ export default function CombatScreen() {
             </Svg>
 
             {/* Status effects row - locked to the top inside sprite container */}
-            <View style={[styles.enemyEffectsTop, { position: 'absolute', top: 4, left: 0, right: 0 }]}>
+            <View style={[styles.enemyEffectsTop, { position: 'absolute', top: 20, left: 0, right: 0 }]}>
               {renderEffectsRow(enemy.effects, `enemy_${enemy.uid}`)}
             </View>
 
@@ -2456,6 +2470,7 @@ export default function CombatScreen() {
                   amount={p.amount}
                   isHeal={p.isHeal}
                   isMiss={p.isMiss}
+                  isCrit={p.isCrit}
                   onComplete={() => removePopup(p.id)}
                 />
               ))}
@@ -2744,6 +2759,7 @@ function DyingEnemyCard({ enemy, slotStyle, popups = [], removePopup }) {
                 amount={p.amount}
                 isHeal={p.isHeal}
                 isMiss={p.isMiss}
+                isCrit={p.isCrit}
                 onComplete={() => removePopup?.(p.id)}
               />
             ))}
@@ -2756,7 +2772,7 @@ function DyingEnemyCard({ enemy, slotStyle, popups = [], removePopup }) {
 // ============================================================================
 // DamagePopup — rises up and fades out over a sprite on hit
 // ============================================================================
-function DamagePopup({ amount, isHeal, isMiss, onComplete }) {
+function DamagePopup({ amount, isHeal, isMiss, isCrit, onComplete }) {
   const animValue = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -2799,16 +2815,17 @@ function DamagePopup({ amount, isHeal, isMiss, onComplete }) {
     >
       <Text
         style={{
-          color: isHeal ? '#34C759' : isMiss ? '#95A5A6' : '#FF3B30', // Bright green for healing, gray for miss, red for damage
-          fontSize: 12,
+          color: isHeal ? '#34C759' : isMiss ? '#95A5A6' : isCrit ? '#FFD700' : '#FF3B30',
+          fontSize: isCrit ? 13 : 9,
           fontWeight: '900',
           textAlign: 'center',
-          textShadowColor: 'black',
+          textShadowColor: isCrit ? 'rgba(255, 120, 0, 0.9)' : 'black',
           textShadowOffset: { width: 1, height: 1 },
-          textShadowRadius: 1.5,
+          textShadowRadius: isCrit ? 4 : 1.5,
+          letterSpacing: isCrit ? 0.5 : 0,
         }}
       >
-        {isMiss ? 'MISS' : `${isHeal ? '+' : '-'}${amount}`}
+        {isMiss ? 'miss' : isCrit ? `✦${amount}!` : `${isHeal ? '+' : '-'}${amount}`}
       </Text>
     </Animated.View>
   );
