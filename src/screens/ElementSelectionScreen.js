@@ -684,7 +684,7 @@ const styles = StyleSheet.create({
         alignItems: 'flex-start',
     },
     startLabel: {
-        fontFamily: 'PixelifySans-Medium',
+        fontFamily: 'PixelifySans-Regular',
         fontWeight: 'normal',
         fontSize: 24,
         color: '#FFF3DA',
@@ -721,7 +721,7 @@ const styles = StyleSheet.create({
         marginBottom: 10,
     },
     modalTitle: {
-        fontFamily: 'PixelifySans-Medium',
+        fontFamily: 'PixelifySans-Regular',
         fontSize: 22,
         fontWeight: 'normal',
         marginBottom: 12,
@@ -759,7 +759,7 @@ const styles = StyleSheet.create({
         backgroundColor: 'rgba(255,255,255,0.03)',
     },
     modalCancelText: {
-        fontFamily: 'PixelifySans-Medium',
+        fontFamily: 'PixelifySans-Regular',
         fontSize: 13,
         fontWeight: 'normal',
         color: 'rgba(255,255,255,0.5)',
@@ -777,7 +777,7 @@ const styles = StyleSheet.create({
         elevation: 4,
     },
     modalConfirmText: {
-        fontFamily: 'PixelifySans-Medium',
+        fontFamily: 'PixelifySans-Regular',
         fontSize: 13,
         fontWeight: 'normal',
         color: '#1A1200',

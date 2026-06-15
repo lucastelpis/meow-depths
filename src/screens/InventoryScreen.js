@@ -909,7 +909,7 @@ const styles = StyleSheet.create({
   cardIcon: { fontSize: 22 },
   cardInfo: { flex: 1, justifyContent: 'center' },
   cardName: {
-    fontFamily: 'PixelifySans-Medium',
+    fontFamily: 'PixelifySans-Regular',
     fontSize: 14,
     color: '#F8FAFC',
     fontWeight: 'normal',
@@ -931,7 +931,7 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(212,167,84,0.2)',
   },
   qtyText: {
-    fontFamily: 'PixelifySans-Medium',
+    fontFamily: 'PixelifySans-Regular',
     fontSize: 14,
     color: '#D4A754',
     fontWeight: 'normal',
@@ -946,7 +946,7 @@ const styles = StyleSheet.create({
     flexShrink: 0,
   },
   openChestText: {
-    fontFamily: 'PixelifySans-Medium',
+    fontFamily: 'PixelifySans-Regular',
     fontSize: 12,
     fontWeight: 'normal',
     color: '#1A1200',
@@ -999,7 +999,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   materialName: {
-    fontFamily: 'PixelifySans-Medium',
+    fontFamily: 'PixelifySans-Regular',
     fontSize: 13,
     color: '#CFE0EE',
     flex: 1,
@@ -1012,7 +1012,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   materialQty: {
-    fontFamily: 'PixelifySans-Medium',
+    fontFamily: 'PixelifySans-Regular',
     fontSize: 12,
     fontWeight: 'normal',
   },
@@ -1022,7 +1022,7 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   subSectionTitle: {
-    fontFamily: 'PixelifySans-Medium',
+    fontFamily: 'PixelifySans-Regular',
     fontWeight: 'normal',
     fontSize: 13,
     color: '#D4A754',
@@ -1040,7 +1040,7 @@ const styles = StyleSheet.create({
     zIndex: 2,
   },
   setBonusName: {
-    fontFamily: 'PixelifySans-Medium',
+    fontFamily: 'PixelifySans-Regular',
     fontSize: 14,
     color: '#D4A754',
     fontWeight: 'normal',
@@ -1074,7 +1074,7 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(212,167,84,0.15)',
   },
   gearStats: {
-    fontFamily: 'PixelifySans-Medium',
+    fontFamily: 'PixelifySans-Regular',
     fontSize: 12,
     color: '#D4A754',
     marginTop: 3,
@@ -1090,7 +1090,7 @@ const styles = StyleSheet.create({
     flexShrink: 0,
   },
   equipBtnText: {
-    fontFamily: 'PixelifySans-Medium',
+    fontFamily: 'PixelifySans-Regular',
     fontSize: 12,
     color: '#F8FAFC',
     fontWeight: 'normal',
@@ -1136,7 +1136,7 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   emptyTitle: {
-    fontFamily: 'PixelifySans-Medium',
+    fontFamily: 'PixelifySans-Regular',
     fontSize: 15,
     fontWeight: 'normal',
     color: 'rgba(255,243,218,0.6)',
@@ -1315,7 +1315,7 @@ const styles = StyleSheet.create({
     zIndex: 15,
   },
   modalTitleText: {
-    fontFamily: 'PixelifySans-Medium',
+    fontFamily: 'PixelifySans-Regular',
     fontSize: 22,
     fontWeight: 'normal',
     color: '#FFFFFF',
@@ -1327,7 +1327,7 @@ const styles = StyleSheet.create({
     textShadowRadius: 4,
   },
   modalStatusText: {
-    fontFamily: 'PixelifySans-Medium',
+    fontFamily: 'PixelifySans-Regular',
     fontSize: 12,
     color: 'rgba(255, 255, 255, 0.5)',
     fontWeight: 'normal',
@@ -1458,7 +1458,7 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   modalCloseText: {
-    fontFamily: 'PixelifySans-Medium',
+    fontFamily: 'PixelifySans-Regular',
     fontSize: 13,
     color: 'rgba(255, 255, 255, 0.65)',
     fontWeight: 'normal',
@@ -1476,7 +1476,7 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   modalConfirmText: {
-    fontFamily: 'PixelifySans-Medium',
+    fontFamily: 'PixelifySans-Regular',
     fontSize: 13,
     color: '#120C00',
     fontWeight: 'normal',
@@ -1494,7 +1494,7 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   modalUnequipText: {
-    fontFamily: 'PixelifySans-Medium',
+    fontFamily: 'PixelifySans-Regular',
     fontSize: 13,
     color: '#EF4444',
     fontWeight: 'normal',

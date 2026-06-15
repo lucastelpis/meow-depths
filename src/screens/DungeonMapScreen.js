@@ -1815,7 +1815,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   confirmBtnText: {
-    fontFamily: 'PixelifySans-Medium',
+    fontFamily: 'PixelifySans-Regular',
     fontSize: 13,
     color: '#1A1200',
     fontWeight: 'normal',
@@ -1882,7 +1882,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   lostLootTitle: {
-    fontFamily: 'PixelifySans-Medium',
+    fontFamily: 'PixelifySans-Regular',
     fontSize: 12,
     color: '#EF4444',
     fontWeight: 'normal',
@@ -1941,7 +1941,7 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(239, 68, 68, 0.25)',
   },
   actionMapBtnText: {
-    fontFamily: 'PixelifySans-Medium',
+    fontFamily: 'PixelifySans-Regular',
     fontSize: 13,
     fontWeight: 'normal',
     color: '#F8FAFC',
@@ -1986,7 +1986,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
   },
   bagLootText: {
-    fontFamily: 'PixelifySans-Medium',
+    fontFamily: 'PixelifySans-Regular',
     fontSize: 12,
     color: '#F8FAFC',
     fontWeight: 'normal',
@@ -2033,7 +2033,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   bagItemName: {
-    fontFamily: 'PixelifySans-Medium',
+    fontFamily: 'PixelifySans-Regular',
     fontSize: 13,
     fontWeight: 'normal',
     color: '#F8FAFC',
@@ -2064,7 +2064,7 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255, 255, 255, 0.05)',
   },
   bagItemUseBtnText: {
-    fontFamily: 'PixelifySans-Medium',
+    fontFamily: 'PixelifySans-Regular',
     fontSize: 12,
     fontWeight: 'normal',
     color: '#D4A754',
@@ -2083,13 +2083,13 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   closeBagBtnText: {
-    fontFamily: 'PixelifySans-Medium',
+    fontFamily: 'PixelifySans-Regular',
     fontSize: 13,
     fontWeight: 'normal',
     color: '#707F94',
   },
   fleeButtonText: {
-    fontFamily: 'PixelifySans-Medium',
+    fontFamily: 'PixelifySans-Regular',
     color: '#EF4444',
     fontWeight: 'normal',
     fontSize: 14,
@@ -2105,7 +2105,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   fleeCostWarning: {
-    fontFamily: 'PixelifySans-Medium',
+    fontFamily: 'PixelifySans-Regular',
     fontSize: 12,
     color: '#EF4444',
     fontWeight: 'normal',
@@ -2126,7 +2126,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   retainedGold: {
-    fontFamily: 'PixelifySans-Medium',
+    fontFamily: 'PixelifySans-Regular',
     color: '#FBBF24',
     fontWeight: 'normal',
     fontSize: 15,
@@ -2153,7 +2153,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#EF4444',
   },
   fleeConfirmBtnText: {
-    fontFamily: 'PixelifySans-Medium',
+    fontFamily: 'PixelifySans-Regular',
     fontSize: 13,
     color: '#FFF',
     fontWeight: 'normal',
@@ -2166,7 +2166,7 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255, 255, 255, 0.12)',
   },
   fleeCancelBtnText: {
-    fontFamily: 'PixelifySans-Medium',
+    fontFamily: 'PixelifySans-Regular',
     fontSize: 13,
     color: '#F8FAFC',
     fontWeight: 'normal',

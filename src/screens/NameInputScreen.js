@@ -337,7 +337,7 @@ const styles = StyleSheet.create({
     paddingBottom: 5,
     borderBottomWidth: 2,
     borderBottomColor: 'rgba(232, 167, 58, 0.55)',
-    fontFamily: 'PixelifySans-Medium',
+    fontFamily: 'PixelifySans-Regular',
     fontSize: 22,
     fontWeight: 'normal',
     color: '#FFF3DA',
@@ -358,7 +358,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   continueText: {
-    fontFamily: 'PixelifySans-Medium',
+    fontFamily: 'PixelifySans-Regular',
     fontWeight: 'normal',
     fontSize: 20,
     color: '#FFF3DA',

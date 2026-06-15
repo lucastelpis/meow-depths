@@ -683,7 +683,7 @@ const styles = StyleSheet.create({
   },
   inlineBackText: {
     color: '#D4A754',
-    fontFamily: 'PixelifySans-Medium',
+    fontFamily: 'PixelifySans-Regular',
     fontWeight: 'normal',
     fontSize: 15,
   },
@@ -768,7 +768,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   progressRingCount: {
-    fontFamily: 'PixelifySans-Medium',
+    fontFamily: 'PixelifySans-Regular',
     fontWeight: 'normal',
     fontSize: 16,
   },
@@ -918,7 +918,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   floorName: {
-    fontFamily: 'PixelifySans-Medium',
+    fontFamily: 'PixelifySans-Regular',
     fontWeight: 'normal',
     fontSize: 14,
     color: '#CFE0EE',
@@ -1084,7 +1084,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   modalFloorName: {
-    fontFamily: 'PixelifySans-Medium',
+    fontFamily: 'PixelifySans-Regular',
     fontWeight: 'normal',
     fontSize: 20,
     color: '#F8FAFC',
@@ -1155,7 +1155,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   loadoutTitle: {
-    fontFamily: 'PixelifySans-Medium',
+    fontFamily: 'PixelifySans-Regular',
     fontSize: 14,
     fontWeight: 'normal',
     color: '#F8FAFC',
@@ -1217,7 +1217,7 @@ const styles = StyleSheet.create({
   itemIcon: { fontSize: 19 },
   itemInfo: { flex: 1 },
   itemName: {
-    fontFamily: 'PixelifySans-Medium',
+    fontFamily: 'PixelifySans-Regular',
     fontSize: 13,
     fontWeight: 'normal',
     color: '#F0E8D8',
@@ -1248,14 +1248,14 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255,255,255,0.05)',
   },
   counterBtnText: {
-    fontFamily: 'PixelifySans-Medium',
+    fontFamily: 'PixelifySans-Regular',
     fontSize: 18,
     color: '#D4A754',
     fontWeight: 'normal',
     lineHeight: 22,
   },
   packedCount: {
-    fontFamily: 'PixelifySans-Medium',
+    fontFamily: 'PixelifySans-Regular',
     fontSize: 15,
     fontWeight: 'normal',
     color: '#F8FAFC',
@@ -1273,7 +1273,7 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   enterBtnText: {
-    fontFamily: 'PixelifySans-Medium',
+    fontFamily: 'PixelifySans-Regular',
     color: '#1A1200',
     fontWeight: 'normal',
     fontSize: 15,

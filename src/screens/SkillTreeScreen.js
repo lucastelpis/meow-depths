@@ -840,9 +840,9 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1, borderBottomColor: 'rgba(255, 255, 255, 0.04)',
   },
   backBtn: { width: 70, paddingVertical: 6 },
-  backText: { color: '#D4A754', fontFamily: 'PixelifySans-Medium', fontSize: 16, letterSpacing: 0.5 },
+  backText: { color: '#D4A754', fontFamily: 'PixelifySans-Regular', fontSize: 16, letterSpacing: 0.5 },
   titleContainer: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
-  titleText: { fontFamily: 'PixelifySans-Medium', fontSize: 20, color: '#F8FAFC', letterSpacing: 0.8 },
+  titleText: { fontFamily: 'PixelifySans-Regular', fontSize: 20, color: '#F8FAFC', letterSpacing: 0.8 },
   headerSpacer: { width: 70 },
 
   /* Crystal stash bar */
@@ -873,9 +873,9 @@ const styles = StyleSheet.create({
   stanceLeft:  { flex: 1 },
   stanceRight: { alignItems: 'flex-end', justifyContent: 'center', gap: 3 },
   stanceLabel: { fontFamily: 'Silkscreen-Regular', fontSize: 8, letterSpacing: 1.2, color: C.textDim, marginBottom: 5 },
-  stanceName:  { fontFamily: 'PixelifySans-Medium', fontSize: 17, marginBottom: 5 },
+  stanceName:  { fontFamily: 'PixelifySans-Regular', fontSize: 17, marginBottom: 5 },
   stanceDesc:  { fontFamily: 'PixelifySans-Regular', fontSize: 12, color: 'rgba(255,243,218,0.78)', lineHeight: 16 },
-  stanceStat:  { fontFamily: 'PixelifySans-Medium', fontSize: 14 },
+  stanceStat:  { fontFamily: 'PixelifySans-Regular', fontSize: 14 },
   stanceSubStat: { fontFamily: 'PixelifySans-Regular', fontSize: 10, opacity: 0.8 },
 
   placeholderBanner: {
@@ -895,7 +895,7 @@ const styles = StyleSheet.create({
   },
   cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
   cardBadgeCol: { alignItems: 'flex-end', gap: 4 },
-  cardName: { fontFamily: 'PixelifySans-Medium', fontSize: 14, lineHeight: 16, marginTop: 2 },
+  cardName: { fontFamily: 'PixelifySans-Regular', fontSize: 14, lineHeight: 16, marginTop: 2 },
   cardLockText: { fontFamily: 'Silkscreen-Regular', fontSize: 9, color: C.textFaint },
   cardCostRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   cardCostLabel: { fontFamily: 'Silkscreen-Regular', fontSize: 8, color: C.textDim },
@@ -928,7 +928,7 @@ const styles = StyleSheet.create({
   dockEmptyIcon: { width: 42, height: 42, justifyContent: 'center', alignItems: 'center', opacity: 0.8 },
   dockSlotText: { flex: 1 },
   dockSlotLabel: { fontFamily: 'Silkscreen-Regular', fontSize: 7.5, letterSpacing: 0.8, color: C.textFaint, marginBottom: 1 },
-  dockSlotName: { fontFamily: 'PixelifySans-Medium', fontSize: 13 },
+  dockSlotName: { fontFamily: 'PixelifySans-Regular', fontSize: 13 },
   dockSlotType: { fontFamily: 'PixelifySans-Regular', fontSize: 10, color: C.textDim, marginTop: 1 },
 
   /* Modal */
@@ -940,11 +940,11 @@ const styles = StyleSheet.create({
   modalCardInner: { borderRadius: 12, borderWidth: 2, backgroundColor: C.plaqueBg, overflow: 'hidden' },
   modalInner: { padding: 20 },
   modalCloseBtn: { position: 'absolute', top: 10, right: 14, padding: 6, zIndex: 10 },
-  modalCloseText: { fontFamily: 'PixelifySans-Medium', fontSize: 16, color: C.textDim },
+  modalCloseText: { fontFamily: 'PixelifySans-Regular', fontSize: 16, color: C.textDim },
 
   modalTitleRow: { flexDirection: 'row', gap: 12, marginBottom: 12, marginTop: 4, alignItems: 'flex-start' },
   modalTitleRight: { flex: 1 },
-  modalSkillName: { fontFamily: 'PixelifySans-Medium', fontSize: 20, color: C.text, marginBottom: 6 },
+  modalSkillName: { fontFamily: 'PixelifySans-Regular', fontSize: 20, color: C.text, marginBottom: 6 },
   modalBadges: { flexDirection: 'row', gap: 8, alignItems: 'center', flexWrap: 'wrap', marginBottom: 6 },
   modalTier: { fontFamily: 'Silkscreen-Regular', fontSize: 9, color: C.textDim },
   modalCD: { fontFamily: 'Silkscreen-Regular', fontSize: 9, color: '#FFA07A' },
@@ -957,7 +957,7 @@ const styles = StyleSheet.create({
   },
   modalStatLabel: { fontFamily: 'Silkscreen-Regular', fontSize: 8.5, color: C.textDim, letterSpacing: 1, marginBottom: 6 },
   modalStatLine: { fontFamily: 'PixelifySans-Regular', fontSize: 12, color: 'rgba(255,243,218,0.78)', marginBottom: 2 },
-  modalStatStrong: { fontFamily: 'PixelifySans-Medium', color: C.text },
+  modalStatStrong: { fontFamily: 'PixelifySans-Regular', color: C.text },
 
   modalCostBox: {
     backgroundColor: C.panelDeep, borderRadius: 10, padding: 10, marginBottom: 12,
@@ -968,10 +968,10 @@ const styles = StyleSheet.create({
     paddingVertical: 4, borderBottomWidth: 1, borderBottomColor: 'rgba(74,57,23,0.5)', marginBottom: 4,
   },
   modalCostLevelText: { fontFamily: 'PixelifySans-Regular', fontSize: 12, color: 'rgba(255,243,218,0.72)' },
-  modalCostLevelValue: { fontFamily: 'PixelifySans-Medium', fontSize: 12 },
+  modalCostLevelValue: { fontFamily: 'PixelifySans-Regular', fontSize: 12 },
   modalCostMatRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 3 },
   modalCostMatName: { fontFamily: 'PixelifySans-Regular', fontSize: 12, color: 'rgba(255,243,218,0.82)' },
-  modalCostMatValue: { fontFamily: 'PixelifySans-Medium', fontSize: 12 },
+  modalCostMatValue: { fontFamily: 'PixelifySans-Regular', fontSize: 12 },
 
   modalInfoBox: {
     backgroundColor: 'rgba(255,100,0,0.08)', borderRadius: 8, padding: 10, marginBottom: 12,
@@ -984,7 +984,7 @@ const styles = StyleSheet.create({
     height: 48, borderRadius: 10, alignItems: 'center', justifyContent: 'center', overflow: 'hidden',
     shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.4, shadowRadius: 10, elevation: 4,
   },
-  primaryBtnText: { fontFamily: 'PixelifySans-Medium', fontSize: 15, color: '#1A1200', zIndex: 2, letterSpacing: 0.3 },
+  primaryBtnText: { fontFamily: 'PixelifySans-Regular', fontSize: 15, color: '#1A1200', zIndex: 2, letterSpacing: 0.3 },
 
   disabledBtn: {
     height: 44, borderRadius: 10, alignItems: 'center', justifyContent: 'center',

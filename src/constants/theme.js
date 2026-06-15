@@ -96,7 +96,7 @@ const FONTS = {
     fontSize: 18, // Decreased from 24 as Press Start is wider and taller
   },
   heading: {
-    fontFamily: 'PixelifySans-Medium', // Proportional clean pixel font for headers
+    fontFamily: 'PixelifySans-Regular', // Proportional clean pixel font for headers
     fontWeight: 'normal',
     fontSize: 16,
   },

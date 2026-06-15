@@ -2831,7 +2831,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   loadingText: {
-    fontFamily: 'PixelifySans-Medium',
+    fontFamily: 'PixelifySans-Regular',
     fontSize: 16,
     color: '#707F94',
     fontWeight: 'normal',
@@ -3239,7 +3239,7 @@ const styles = StyleSheet.create({
     zIndex: 2,
   },
   modalTitle: {
-    fontFamily: 'PixelifySans-Medium',
+    fontFamily: 'PixelifySans-Regular',
     fontSize: 18,
     color: '#F8FAFC',
     fontWeight: 'normal',
@@ -3259,7 +3259,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   infoSkillName: {
-    fontFamily: 'PixelifySans-Medium',
+    fontFamily: 'PixelifySans-Regular',
     fontSize: 18,
     color: '#F8FAFC',
     fontWeight: 'normal',

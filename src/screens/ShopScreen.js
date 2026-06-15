@@ -762,7 +762,7 @@ const styles = StyleSheet.create({
   },
   backText: {
     color: '#D4A754',
-    fontFamily: 'PixelifySans-Medium',
+    fontFamily: 'PixelifySans-Regular',
     fontWeight: 'normal',
     fontSize: 16,
     letterSpacing: 0.5,
@@ -775,7 +775,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   titleText: {
-    fontFamily: 'PixelifySans-Medium',
+    fontFamily: 'PixelifySans-Regular',
     fontWeight: 'normal',
     fontSize: 20,
     color: '#F8FAFC',
@@ -795,7 +795,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   goldBadgeText: {
-    fontFamily: 'PixelifySans-Medium',
+    fontFamily: 'PixelifySans-Regular',
     fontSize: 12,
     fontWeight: 'normal',
     color: '#FFD700',
@@ -851,7 +851,7 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   materialQty: {
-    fontFamily: 'PixelifySans-Medium',
+    fontFamily: 'PixelifySans-Regular',
     fontSize: 12,
     color: '#D4A754',
     fontWeight: 'normal',
@@ -911,7 +911,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
   },
   introTitle: {
-    fontFamily: 'PixelifySans-Medium',
+    fontFamily: 'PixelifySans-Regular',
     fontSize: 16,
     fontWeight: 'normal',
     color: '#F8FAFC',
@@ -966,7 +966,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   shopRowName: {
-    fontFamily: 'PixelifySans-Medium',
+    fontFamily: 'PixelifySans-Regular',
     fontSize: 13,
     color: '#F8FAFC',
     fontWeight: 'normal',
@@ -1072,7 +1072,7 @@ const styles = StyleSheet.create({
     marginTop: 18,
   },
   zoneHeader: {
-    fontFamily: 'PixelifySans-Medium',
+    fontFamily: 'PixelifySans-Regular',
     fontSize: 15,
     fontWeight: 'normal',
     color: '#D4A754',
@@ -1104,7 +1104,7 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   gearName: {
-    fontFamily: 'PixelifySans-Medium',
+    fontFamily: 'PixelifySans-Regular',
     fontSize: 13,
     color: '#F8FAFC',
     fontWeight: 'normal',
@@ -1169,7 +1169,7 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(92, 196, 137, 0.2)',
   },
   armoryBuyBtnOwnedText: {
-    fontFamily: 'PixelifySans-Medium',
+    fontFamily: 'PixelifySans-Regular',
     fontSize: 12,
     fontWeight: 'normal',
     color: '#5CC489',
@@ -1197,7 +1197,7 @@ const styles = StyleSheet.create({
 
   /* ── Forge Section ───────────────────────────────────────── */
   subSectionTitle: {
-    fontFamily: 'PixelifySans-Medium',
+    fontFamily: 'PixelifySans-Regular',
     fontWeight: 'normal',
     fontSize: 13,
     color: '#D4A754',
@@ -1273,7 +1273,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.01)',
   },
   vaultItemQtyText: {
-    fontFamily: 'PixelifySans-Medium',
+    fontFamily: 'PixelifySans-Regular',
     fontSize: 11,
     fontWeight: 'normal',
   },
@@ -1304,7 +1304,7 @@ const styles = StyleSheet.create({
     fontSize: 26,
   },
   recipeMaterialName: {
-    fontFamily: 'PixelifySans-Medium',
+    fontFamily: 'PixelifySans-Regular',
     fontSize: 13,
     color: '#F8FAFC',
     textAlign: 'center',

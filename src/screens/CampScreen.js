@@ -22,7 +22,7 @@ import {
   Animated,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import Svg, { Defs, LinearGradient, RadialGradient, Stop, Rect, Circle, Path, G } from 'react-native-svg';
+import Svg, { Defs, RadialGradient, Stop, Circle, Path, G, Ellipse } from 'react-native-svg';
 
 // ── Project imports ──────────────────────────────────────────────────────────
 import theme from '../constants/theme';
@@ -130,6 +130,39 @@ function IconGlowBackground({ size = 56 }) {
   );
 }
 
+// ─── Decorative 4-point sparkle ──────────────────────────────────────────────
+function Sparkle({ size = 12, color = '#F4D079', style }) {
+  const c = size / 2;
+  const r = size / 2;
+  const i = r * 0.28; // inner waist
+  const d = `M${c},${c - r} L${c + i},${c - i} L${c + r},${c} L${c + i},${c + i} L${c},${c + r} L${c - i},${c + i} L${c - r},${c} L${c - i},${c - i} Z`;
+  return (
+    <View style={style} pointerEvents="none">
+      <Svg width={size} height={size}>
+        <Path d={d} fill={color} />
+      </Svg>
+    </View>
+  );
+}
+
+// ─── Soft blurred ellipse shadow (ground shadow under the gift) ───────────────
+function SoftEllipseShadow({ width = 80, height = 18, color = '#2A1A0C', style }) {
+  return (
+    <View style={style} pointerEvents="none">
+      <Svg width={width} height={height}>
+        <Defs>
+          <RadialGradient id="softShadowGrad" cx="50%" cy="50%" rx="50%" ry="50%">
+            <Stop offset="0%" stopColor={color} stopOpacity="0.8" />
+            <Stop offset="55%" stopColor={color} stopOpacity="0.6" />
+            <Stop offset="100%" stopColor={color} stopOpacity="0" />
+          </RadialGradient>
+        </Defs>
+        <Ellipse cx={width / 2} cy={height / 2} rx={width / 2} ry={height / 2} fill="url(#softShadowGrad)" />
+      </Svg>
+    </View>
+  );
+}
+
 // ─── Animated Hub Background Component ───────────────────────────────────────
 function AnimatedHubBackground({ width, height }) {
   const [frame, setFrame] = React.useState(0);
@@ -163,6 +196,18 @@ export default function CampScreen({ navigation }) {
   const { hero } = state;
 
   const [dungeonCardLayout, setDungeonCardLayout] = React.useState({ width: 0, height: 0 });
+  const [dailyModalVisible, setDailyModalVisible] = React.useState(false);
+  const [dailyClaimedView, setDailyClaimedView] = React.useState(false);
+  const [dailyJustClaimed, setDailyJustClaimed] = React.useState(false);
+  const [nowTs, setNowTs] = React.useState(Date.now());
+
+  // Tick every second while the modal is open so the reset countdown stays live
+  React.useEffect(() => {
+    if (!dailyModalVisible) return;
+    setNowTs(Date.now());
+    const id = setInterval(() => setNowTs(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, [dailyModalVisible]);
 
   const effectiveStats = calculateEffectiveStats(hero);
 
@@ -224,50 +269,60 @@ export default function CampScreen({ navigation }) {
     outputRange: [2, 12],
   });
 
-  const handleDailyRewardPress = () => {
-    if (hasClaimedToday()) {
-      Alert.alert(
-        "🎁 Already Claimed",
-        "You already claimed your daily reward today. Come back tomorrow for more potions and gold! 🐱",
-        [{ text: "Okay" }]
-      );
-      return;
-    }
-
+  // ── Reward calculation (shared by the preview & the dispatch) ──────────────
+  const dailyRewards = React.useMemo(() => {
     const isFirstClaim = !state.progress.lastDailyClaim;
-
-    // Scale rewards based on level
     const lvl = hero.level || 1;
     const goldReward = isFirstClaim ? 50 : 100 + lvl * 50;
-
-    // Potions: health potions scaled, mega potions starting at lvl 3
+    // Potions: health potions scaled, super potions starting at lvl 3
     const healthPotionQty = isFirstClaim ? 3 : 1 + Math.floor(lvl / 5);
-    const megaPotionQty = isFirstClaim ? 0 : (lvl >= 3 ? 1 : 0);
+    const superPotionQty = isFirstClaim ? 0 : (lvl >= 3 ? 1 : 0);
+    return { isFirstClaim, lvl, goldReward, healthPotionQty, superPotionQty };
+  }, [state.progress.lastDailyClaim, hero.level]);
+
+  const openDailyModal = () => {
+    setDailyClaimedView(hasClaimedToday());
+    setDailyJustClaimed(false);
+    setDailyModalVisible(true);
+  };
+
+  const closeDailyModal = () => setDailyModalVisible(false);
+
+  const confirmDailyClaim = () => {
+    const { goldReward, healthPotionQty, superPotionQty } = dailyRewards;
 
     const consumablesReward = {};
     if (healthPotionQty > 0) consumablesReward['potion'] = healthPotionQty;
-    if (megaPotionQty > 0) consumablesReward['super_potion'] = megaPotionQty;
+    if (superPotionQty > 0) consumablesReward['super_potion'] = superPotionQty;
 
-    // Dispatch state update
     dispatch({
       type: 'CLAIM_DAILY_REWARD',
       payload: {
         gold: goldReward,
         consumables: consumablesReward,
-      }
+      },
     });
 
-    // Success alert
-    Alert.alert(
-      "🎁 Daily Reward Claimed!",
-      `Level ${lvl} Rewards Granted:\n\n` +
-      `💰 +${goldReward} Gold\n` +
-      (healthPotionQty > 0 ? `🧪 +${healthPotionQty} Health Potion${healthPotionQty > 1 ? 's' : ''}\n` : '') +
-      (megaPotionQty > 0 ? `🧪 +${megaPotionQty} Mega Potion${megaPotionQty > 1 ? 's' : ''}\n` : '') +
-      `\nCome back tomorrow for more!`,
-      [{ text: "Meow-tastic!" }]
-    );
+    setDailyJustClaimed(true);
+    setDailyClaimedView(true);
   };
+
+  // Reward rows to render in the modal (filters out empty quantities)
+  const dailyRewardRows = [
+    { key: 'gold', spritesheet: 'icons-1', frameIndex: 11, label: 'Gold', qty: dailyRewards.goldReward },
+    { key: 'potion', spritesheet: 'consumables-1', frameIndex: 0, label: 'Potion', qty: dailyRewards.healthPotionQty },
+    { key: 'super_potion', spritesheet: 'consumables-1', frameIndex: 1, label: 'Super Potion', qty: dailyRewards.superPotionQty },
+  ].filter((r) => r.qty > 0);
+
+  // Time until the daily reward resets (next local midnight), formatted HH:MM
+  const resetCountdown = React.useMemo(() => {
+    const next = new Date(nowTs);
+    next.setHours(24, 0, 0, 0); // next midnight
+    const diffMs = Math.max(0, next.getTime() - nowTs);
+    const hours = Math.floor(diffMs / 3600000);
+    const minutes = Math.floor((diffMs % 3600000) / 60000);
+    return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+  }, [nowTs]);
 
   return (
     <ScreenLoader assets={[
@@ -333,7 +388,7 @@ export default function CampScreen({ navigation }) {
         {/* Daily Reward Button */}
         <TouchableOpacity
           activeOpacity={0.8}
-          onPress={handleDailyRewardPress}
+          onPress={openDailyModal}
         >
           <Animated.View
             style={[
@@ -479,6 +534,105 @@ export default function CampScreen({ navigation }) {
         />
       </ScrollView>
 
+      {/* ═══════════════════════════════════════════════════════════════════
+          DAILY REWARD MODAL — themed to match the hub redesign
+          ═══════════════════════════════════════════════════════════════════ */}
+      <Modal
+        visible={dailyModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={closeDailyModal}
+        statusBarTranslucent
+      >
+        {(() => {
+          // Three states: already claimed earlier today, just claimed now, or claimable
+          const alreadyClaimed = dailyClaimedView && !dailyJustClaimed;
+          const claimed = alreadyClaimed || dailyJustClaimed;
+          return (
+            <Pressable style={styles.drOverlay} onPress={closeDailyModal}>
+              <Pressable style={[styles.drFrame, theme.SHADOWS.cardShadow]} onPress={() => {}}>
+                <View style={styles.drParchment}>
+                  {/* Inner paper bevel highlight */}
+                  <View style={styles.drBevel} pointerEvents="none" />
+
+                  {/* Close button — inside the panel */}
+                  <TouchableOpacity
+                    style={styles.drClose}
+                    onPress={closeDailyModal}
+                    activeOpacity={0.8}
+                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                  >
+                    <Text style={styles.drCloseText}>✕</Text>
+                  </TouchableOpacity>
+
+                  {/* Hero: gift box — claimed version has its own checkmark */}
+                  <View style={styles.drHero}>
+                    <SoftEllipseShadow width={100} height={24} style={styles.drGiftShadow} />
+                    {!claimed && <IconGlowBackground size={120} />}
+                    <Sparkle size={14} color="#F4D079" style={styles.drSparkle1} />
+                    <Sparkle size={9} color="#F8E7AC" style={styles.drSparkle2} />
+                    <Sparkle size={7} color="#F4D079" style={styles.drSparkle3} />
+                    <ItemSprite spritesheet="reward-icons" frameSize={128} frameIndex={claimed ? 1 : 0} displaySize={104} />
+                  </View>
+
+                  {/* Subtitle */}
+                  <Text style={styles.drSubtitle}>
+                    {alreadyClaimed
+                      ? "You've claimed today's reward."
+                      : dailyJustClaimed
+                      ? 'Added to your bag!'
+                      : 'Claim your reward for today.'}
+                  </Text>
+
+                  {alreadyClaimed ? (
+                    /* Countdown — centered, no box, no clock */
+                    <View style={styles.drCountdown}>
+                      <Text style={styles.drWatchLabel}>NEXT REWARD IN</Text>
+                      <Text style={styles.drWatchValue}>{resetCountdown}</Text>
+                    </View>
+                  ) : (
+                    /* Reward items — single container each, no nested wells */
+                    <View style={styles.drRewards}>
+                      {dailyRewardRows.map((row) => (
+                        <View key={row.key} style={styles.drChip}>
+                          <ItemSprite spritesheet={row.spritesheet} frameIndex={row.frameIndex} displaySize={40} />
+                          <Text style={styles.drChipQty}>+{row.qty}</Text>
+                          <Text style={styles.drChipLabel}>{row.label}</Text>
+                        </View>
+                      ))}
+                    </View>
+                  )}
+
+                  {/* Wooden action button */}
+                  {dailyClaimedView ? (
+                    <TouchableOpacity activeOpacity={0.85} onPress={closeDailyModal} style={styles.drButton}>
+                      <View style={styles.drButtonInner}>
+                        <Text style={styles.drButtonText}>{dailyJustClaimed ? 'CONTINUE' : 'GREAT, THANKS!'}</Text>
+                      </View>
+                    </TouchableOpacity>
+                  ) : (
+                    <TouchableOpacity activeOpacity={0.85} onPress={confirmDailyClaim} style={styles.drButton}>
+                      <View style={styles.drButtonInner}>
+                        <Text style={styles.drButtonText}>CLAIM REWARD</Text>
+                      </View>
+                    </TouchableOpacity>
+                  )}
+
+                </View>
+
+                {/* Title sign — mounted on the top border (MEOW DUNGEONS style) */}
+                <View style={styles.drTopWrap} pointerEvents="none">
+                  <View style={styles.drTopOuter}>
+                    <View style={styles.drTopInner}>
+                      <Text style={styles.drTopText}>DAILY REWARDS</Text>
+                    </View>
+                  </View>
+                </View>
+              </Pressable>
+            </Pressable>
+          );
+        })()}
+      </Modal>
 
     </SafeAreaView>
     </ScreenLoader>
@@ -535,14 +689,14 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   ctaTitle: {
-    fontFamily: 'PixelifySans-Medium',
+    fontFamily: 'PixelifySans-Regular',
     fontWeight: 'normal',
     fontSize: 18,
     color: '#07070A',
     letterSpacing: 0.3,
   },
   ctaSub: {
-    fontFamily: 'PixelifySans-Medium',
+    fontFamily: 'PixelifySans-Regular',
     fontWeight: 'normal',
     fontSize: 12,
     color: 'rgba(7, 7, 10, 0.65)',
@@ -581,7 +735,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
   },
   dungeonLabel: {
-    fontFamily: 'PixelifySans-Medium',
+    fontFamily: 'PixelifySans-Regular',
     fontWeight: 'normal',
     fontSize: 24,
     color: '#FFF3DA',
@@ -622,7 +776,7 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   subCardLabel: {
-    fontFamily: 'PixelifySans-Medium',
+    fontFamily: 'PixelifySans-Regular',
     fontWeight: 'normal',
     fontSize: 11,
     lineHeight: 12,
@@ -669,7 +823,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
   },
   dailyRewardTitle: {
-    fontFamily: 'PixelifySans-Medium',
+    fontFamily: 'PixelifySans-Regular',
     fontWeight: 'normal',
     fontSize: 20,
     textTransform: 'uppercase',
@@ -801,5 +955,216 @@ const styles = StyleSheet.create({
     marginTop: -1,
   },
 
-
+  /* ═══ Daily Reward Modal — Cozy Parchment ════════════════════════════════ */
+  drOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(24, 14, 6, 0.78)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 26,
+  },
+  drFrame: {
+    width: '100%',
+    maxWidth: 340,
+    backgroundColor: '#6E4524',
+    borderColor: '#3A2210',
+    borderWidth: 3,
+    borderRadius: 12,
+    padding: 10,
+    position: 'relative',
+  },
+  drParchment: {
+    backgroundColor: '#ECD8A6',
+    borderRadius: 14,
+    borderColor: '#C9A86A',
+    borderWidth: 2,
+    paddingTop: 26,
+    paddingBottom: 14,
+    paddingHorizontal: 18,
+    alignItems: 'center',
+    position: 'relative',
+  },
+  drBevel: {
+    position: 'absolute',
+    top: 3,
+    left: 3,
+    right: 3,
+    bottom: 3,
+    borderRadius: 11,
+    borderWidth: 1.5,
+    borderColor: 'rgba(255, 250, 228, 0.4)',
+    zIndex: 1,
+  },
+  drClose: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: '#E3CF9C',
+    borderColor: '#9A6B34',
+    borderWidth: 2,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 30,
+  },
+  drCloseText: {
+    fontSize: 13,
+    fontWeight: 'bold',
+    lineHeight: 15,
+    color: '#6E4524',
+  },
+  drHero: {
+    width: 150,
+    height: 100,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 6,
+    marginBottom: 0,
+    position: 'relative',
+    zIndex: 2,
+  },
+  drGiftShadow: {
+    position: 'absolute',
+    bottom: 2,
+    left: 25, // (hero width 150 - 100) / 2 → centered
+  },
+  drSparkle1: { position: 'absolute', top: 8, left: 24 },
+  drSparkle2: { position: 'absolute', top: 18, right: 28 },
+  drSparkle3: { position: 'absolute', bottom: 20, left: 34 },
+  drTopWrap: {
+    position: 'absolute',
+    top: -17,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    zIndex: 40,
+  },
+  drTopOuter: {
+    borderWidth: 3,
+    borderColor: '#4A3917',
+    borderRadius: 8,
+    padding: 2,
+    backgroundColor: '#1E1E20',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 3,
+    elevation: 6,
+  },
+  drTopInner: {
+    borderWidth: 2,
+    borderColor: '#D4A754',
+    borderRadius: 5,
+    backgroundColor: '#1E1E20',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+  },
+  drTopText: {
+    fontFamily: 'PressStart2P-Regular',
+    fontSize: 12,
+    color: '#FFF3DA',
+    textAlign: 'center',
+    textShadowColor: '#000',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 1,
+  },
+  drSubtitle: {
+    fontFamily: 'Silkscreen-Regular',
+    fontSize: 11,
+    color: '#4A2E14',
+    textAlign: 'center',
+    letterSpacing: 0.3,
+    lineHeight: 17,
+    marginTop: 10,
+    marginBottom: 16,
+    paddingHorizontal: 6,
+  },
+  drCountdown: {
+    alignItems: 'center',
+    marginTop: 2,
+    marginBottom: 18,
+  },
+  drWatchLabel: {
+    fontFamily: 'Silkscreen-Regular',
+    fontSize: 11,
+    color: '#4A2E14',
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+  },
+  drWatchValue: {
+    fontFamily: 'PressStart2P-Regular',
+    fontSize: 28,
+    color: '#3A2210',
+    letterSpacing: 1,
+    marginTop: 8,
+  },
+  drRewards: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    gap: 10,
+    marginTop: 2,
+    marginBottom: 16,
+  },
+  drChip: {
+    alignItems: 'center',
+    backgroundColor: '#F4E6C0',
+    borderColor: '#C9A86A',
+    borderWidth: 1.5,
+    borderRadius: 10,
+    paddingTop: 10,
+    paddingBottom: 8,
+    paddingHorizontal: 12,
+    minWidth: 84,
+  },
+  drChipQty: {
+    fontFamily: 'Silkscreen-Regular',
+    fontSize: 13,
+    color: '#3A2210',
+    marginTop: 6,
+  },
+  drChipLabel: {
+    fontFamily: 'Silkscreen-Regular',
+    fontSize: 8,
+    color: '#9A7A4A',
+    textTransform: 'uppercase',
+    marginTop: 2,
+  },
+  drButton: {
+    alignSelf: 'stretch',
+    backgroundColor: '#7A4A24',
+    borderColor: '#3A2210',
+    borderWidth: 2,
+    borderRadius: 12,
+    padding: 3,
+    marginBottom: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 3,
+    elevation: 4,
+  },
+  drButtonInner: {
+    backgroundColor: '#9A632F',
+    borderRadius: 9,
+    paddingVertical: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderTopWidth: 1.5,
+    borderTopColor: '#C58E4E',
+    borderBottomWidth: 2,
+    borderBottomColor: '#5A3318',
+  },
+  drButtonText: {
+    fontFamily: 'Silkscreen-Regular',
+    fontSize: 12,
+    color: '#FFF3DA',
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+    textShadowColor: '#4A2A10',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 1,
+  },
 });

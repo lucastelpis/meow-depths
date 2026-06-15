@@ -963,7 +963,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   pointsBadgeText: {
-    fontFamily: 'PixelifySans-Medium',
+    fontFamily: 'PixelifySans-Regular',
     fontSize: 13,
     color: 'rgba(255, 255, 255, 0.8)',
     fontWeight: 'normal',
@@ -1003,7 +1003,7 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
   },
   attributeValue: {
-    fontFamily: 'PixelifySans-Medium',
+    fontFamily: 'PixelifySans-Regular',
     fontSize: 22,
     fontWeight: 'normal',
     color: '#F8FAFC',
@@ -1036,14 +1036,14 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255, 255, 255, 0.08)',
   },
   attrControlBtnText: {
-    fontFamily: 'PixelifySans-Medium',
+    fontFamily: 'PixelifySans-Regular',
     color: '#D4A754',
     fontSize: 14,
     fontWeight: 'normal',
     marginTop: -2,
   },
   attrAllocatedText: {
-    fontFamily: 'PixelifySans-Medium',
+    fontFamily: 'PixelifySans-Regular',
     color: '#F8FAFC',
     fontSize: 12,
     fontWeight: 'normal',
@@ -1067,7 +1067,7 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   confirmBtnText: {
-    fontFamily: 'PixelifySans-Medium',
+    fontFamily: 'PixelifySans-Regular',
     fontSize: 14,
     fontWeight: 'normal',
     color: '#1A1200',
@@ -1106,7 +1106,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
   },
   stanceName: {
-    fontFamily: 'PixelifySans-Medium',
+    fontFamily: 'PixelifySans-Regular',
     fontSize: 15,
     fontWeight: 'normal',
     color: '#F8FAFC',
@@ -1136,7 +1136,7 @@ const styles = StyleSheet.create({
     color: '#64748B',
   },
   stanceBonusVal: {
-    fontFamily: 'PixelifySans-Medium',
+    fontFamily: 'PixelifySans-Regular',
     fontSize: 13,
     color: '#5CC489',
     marginTop: 2,
@@ -1145,7 +1145,7 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   subSectionTitle: {
-    fontFamily: 'PixelifySans-Medium',
+    fontFamily: 'PixelifySans-Regular',
     fontWeight: 'normal',
     fontSize: 13,
     color: '#D4A754',
@@ -1163,7 +1163,7 @@ const styles = StyleSheet.create({
     zIndex: 2,
   },
   setBonusName: {
-    fontFamily: 'PixelifySans-Medium',
+    fontFamily: 'PixelifySans-Regular',
     fontSize: 13,
     fontWeight: 'normal',
     color: '#F8FAFC',
@@ -1186,7 +1186,7 @@ const styles = StyleSheet.create({
   backBtn: { width: 70, paddingVertical: 6 },
   backText: {
     color: '#D4A754',
-    fontFamily: 'PixelifySans-Medium',
+    fontFamily: 'PixelifySans-Regular',
     fontSize: 16,
     letterSpacing: 0.5,
   },
@@ -1198,7 +1198,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   titleText: {
-    fontFamily: 'PixelifySans-Medium',
+    fontFamily: 'PixelifySans-Regular',
     fontSize: 20,
     color: '#F8FAFC',
     letterSpacing: 0.8,
@@ -1295,7 +1295,7 @@ const styles = StyleSheet.create({
     gap: theme.SPACING.tight,
   },
   sectionTitle: {
-    fontFamily: 'PixelifySans-Medium',
+    fontFamily: 'PixelifySans-Regular',
     fontWeight: 'normal',
     fontSize: 13,
     color: theme.COLORS.parchment,
@@ -1333,7 +1333,7 @@ const styles = StyleSheet.create({
     maxWidth: '100%',
   },
   statValue: {
-    fontFamily: 'PixelifySans-Medium',
+    fontFamily: 'PixelifySans-Regular',
     fontSize: 13,
     fontWeight: 'normal',
     color: theme.COLORS.candleGold,
@@ -1468,14 +1468,14 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   modalTitle: {
-    fontFamily: 'PixelifySans-Medium',
+    fontFamily: 'PixelifySans-Regular',
     fontSize: 17,
     color: '#FFF3DA',
     flex: 1,
     marginRight: 8,
   },
   modalCloseText: {
-    fontFamily: 'PixelifySans-Medium',
+    fontFamily: 'PixelifySans-Regular',
     color: 'rgba(255, 243, 218, 0.6)',
     fontSize: 16,
   },
@@ -1501,7 +1501,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   compareItemName: {
-    fontFamily: 'PixelifySans-Medium',
+    fontFamily: 'PixelifySans-Regular',
     fontWeight: 'normal',
     fontSize: 14,
     color: theme.COLORS.parchment,
@@ -1568,7 +1568,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   shopBtnText: {
-    fontFamily: 'PixelifySans-Medium',
+    fontFamily: 'PixelifySans-Regular',
     fontWeight: 'normal',
     fontSize: 13,
     color: theme.COLORS.candleGold,
@@ -1584,7 +1584,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   unequipBtnText: {
-    fontFamily: 'PixelifySans-Medium',
+    fontFamily: 'PixelifySans-Regular',
     fontWeight: 'normal',
     fontSize: 13,
     color: '#EF4444',

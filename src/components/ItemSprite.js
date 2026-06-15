@@ -10,7 +10,7 @@ import { ITEM_SPRITESHEETS } from '../constants/sprites';
  * @param {number} displaySize — width/height to display
  * @param {number} opacity — component opacity
  */
-export default function ItemSprite({ spritesheet, frameIndex, displaySize = 36, opacity = 1 }) {
+export default function ItemSprite({ spritesheet, frameIndex, displaySize = 36, opacity = 1, frameSize = 32 }) {
   const source = ITEM_SPRITESHEETS[spritesheet];
   if (!source) return null;
 
@@ -24,9 +24,9 @@ export default function ItemSprite({ spritesheet, frameIndex, displaySize = 36, 
     'skill-icons-1': 16,
     'consumables-1': 12,
     'status-icons-1': 24,
+    'reward-icons': 2,
   };
   const totalFrames = FRAMES_MAP[spritesheet] || 1;
-  const frameSize = 32;
   const scale = displaySize / frameSize;
 
   return (

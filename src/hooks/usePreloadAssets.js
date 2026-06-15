@@ -40,7 +40,7 @@ export default function usePreloadAssets(sources = []) {
           Font.loadAsync({
             'PressStart2P-Regular': require('../../assets/fonts/PressStart2P-Regular.ttf'),
             'PixelifySans-Regular': require('../../assets/fonts/PixelifySans-Regular.ttf'),
-            'PixelifySans-Medium': require('../../assets/fonts/PixelifySans-Medium.ttf'),
+            'PixelifySans-Regular': require('../../assets/fonts/PixelifySans-Regular.ttf'),
             'Silkscreen-Regular': require('../../assets/fonts/Silkscreen-Regular.ttf'),
           }),
           // Prefetch sprite/image assets
