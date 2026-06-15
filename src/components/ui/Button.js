@@ -42,7 +42,13 @@ export default function Button({
       activeOpacity={0.8}
     >
       <View style={styles.contentRow}>
-        {icon && <Text style={[styles.icon, labelStyle]}>{icon}</Text>}
+        {icon && (
+          typeof icon === 'string' ? (
+            <Text style={[styles.icon, labelStyle]}>{icon}</Text>
+          ) : (
+            icon
+          )
+        )}
         {title && <Text style={[styles.title, labelStyle, textStyle]}>{title}</Text>}
       </View>
     </TouchableOpacity>

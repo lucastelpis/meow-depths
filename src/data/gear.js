@@ -427,15 +427,6 @@ export const CONSUMABLES = [
     spritesheet: 'consumables-1',
     frameIndex: 9,
   },
-  {
-    id: 'mystery_chest',
-    name: 'Mystery Chest',
-    cost: 50,
-    effect: { type: 'lootbox' },
-    description: 'Open to receive random crystals, with a small chance for a Crystal Core!',
-    spritesheet: 'icons-1',
-    frameIndex: 5,
-  },
 ];
 
 // ─────────────────────────────────────────────────────────────────────────────

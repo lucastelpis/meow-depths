@@ -39,6 +39,7 @@ import { useGame } from '../state/gameState';
 import { ZONES } from '../data/zones';
 import { CONSUMABLES } from '../data/gear';
 import { calculateEffectiveStats } from '../logic/progressionEngine';
+import ItemSprite from '../components/ItemSprite';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -52,7 +53,7 @@ const ZONE_CONFIG = {
     bg:         '#0A120C',
     bgGrad1:    '#0F1A0F',
     bgGrad2:    '#07090A',
-    icon:       '💧',
+    iconSprite: { spritesheet: 'crystals-1', frameIndex: 1 },
     bannerDesc: 'Damp tunnels. Rats, slime, and worse lurk in every shadow.',
   },
   zone2: {
@@ -63,7 +64,7 @@ const ZONE_CONFIG = {
     bg:         '#0C0A12',
     bgGrad1:    '#150F1A',
     bgGrad2:    '#09060B',
-    icon:       '🌿',
+    iconSprite: { spritesheet: 'crystals-1', frameIndex: 5 },
     bannerDesc: 'Overgrown ruins where roots move and fungi glow with malice.',
   },
   zone3: {
@@ -74,7 +75,7 @@ const ZONE_CONFIG = {
     bg:         '#0A0F1A',
     bgGrad1:    '#0F151F',
     bgGrad2:    '#06090B',
-    icon:       '⚓',
+    iconSprite: { spritesheet: 'crystals-1', frameIndex: 9 },
     bannerDesc: 'Salt-crusted wharves haunted by drowned things.',
   },
 };
@@ -101,16 +102,16 @@ const GRID_SIZES = {
 };
 
 const DIFF_DATA = {
-  1: { stars: '★☆☆', label: 'Easy',   color: '#5A9FE0' },
-  2: { stars: '★☆☆', label: 'Easy',   color: '#5A9FE0' },
-  3: { stars: '★☆☆', label: 'Easy',   color: '#5A9FE0' },
-  4: { stars: '★★☆', label: 'Medium', color: '#F08A4A' },
-  5: { stars: '★★☆', label: 'Medium', color: '#F08A4A' },
-  6: { stars: '★★☆', label: 'Medium', color: '#F08A4A' },
-  7: { stars: '★★★', label: 'Hard',   color: '#D8483F' },
-  8: { stars: '★★★', label: 'Hard',   color: '#D8483F' },
-  9: { stars: '★★★', label: 'Hard',   color: '#D8483F' },
-  10: { stars: '☠☠☠', label: 'Boss',  color: '#DD7A86' },
+  1: { rating: 1, type: 'star', stars: '★☆☆', label: 'Easy',   color: '#5A9FE0' },
+  2: { rating: 1, type: 'star', stars: '★☆☆', label: 'Easy',   color: '#5A9FE0' },
+  3: { rating: 1, type: 'star', stars: '★☆☆', label: 'Easy',   color: '#5A9FE0' },
+  4: { rating: 2, type: 'star', stars: '★★☆', label: 'Medium', color: '#F08A4A' },
+  5: { rating: 2, type: 'star', stars: '★★☆', label: 'Medium', color: '#F08A4A' },
+  6: { rating: 2, type: 'star', stars: '★★☆', label: 'Medium', color: '#F08A4A' },
+  7: { rating: 3, type: 'star', stars: '★★★', label: 'Hard',   color: '#D8483F' },
+  8: { rating: 3, type: 'star', stars: '★★★', label: 'Hard',   color: '#D8483F' },
+  9: { rating: 3, type: 'star', stars: '★★★', label: 'Hard',   color: '#D8483F' },
+  10: { rating: 3, type: 'skull', stars: '☠☠☠', label: 'Boss',  color: '#DD7A86' },
 };
 
 const FLOOR_FLAVORS = [
@@ -144,6 +145,43 @@ function getFloorStatus(floor, cleared) {
 }
 
 
+
+function renderDifficultyStars(diffData, size = 10) {
+  const stars = [];
+  const total = 3;
+  
+  if (diffData.type === 'skull') {
+    for (let i = 0; i < diffData.rating; i++) {
+      stars.push(
+        <ItemSprite
+          key={`skull-${i}`}
+          spritesheet="status-icons-1"
+          frameIndex={21}
+          displaySize={size}
+        />
+      );
+    }
+  } else {
+    for (let i = 0; i < total; i++) {
+      const isFilled = i < diffData.rating;
+      stars.push(
+        <ItemSprite
+          key={`star-${i}`}
+          spritesheet="icons-1"
+          frameIndex={4}
+          displaySize={size}
+          opacity={isFilled ? 1 : 0.25}
+        />
+      );
+    }
+  }
+  
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2 }}>
+      {stars}
+    </View>
+  );
+}
 
 // ─── Component ────────────────────────────────────────────────────────────────
 export default function DungeonFloorScreen() {
@@ -259,7 +297,7 @@ export default function DungeonFloorScreen() {
             isBoss && isAvail && styles.railDotBoss,
           ]}>
             {isCleared && <Text style={styles.railDotCheck}>✓</Text>}
-            {isBoss && !isCleared && <Text style={styles.railDotBossIcon}>☠</Text>}
+            {isBoss && !isCleared && <ItemSprite spritesheet="status-icons-1" frameIndex={21} displaySize={10} />}
           </View>
           {/* line below dot */}
           <View style={[styles.railLine, { backgroundColor: isLast ? 'transparent' : lineColor }]} />
@@ -327,11 +365,12 @@ export default function DungeonFloorScreen() {
               )}
               {isAvail && isBoss && (
                 <View style={styles.badgeBoss}>
-                  <Text style={styles.badgeBossText}>☠ Boss</Text>
+                  <ItemSprite spritesheet="status-icons-1" frameIndex={21} displaySize={9} />
+                  <Text style={styles.badgeBossText}>Boss</Text>
                 </View>
               )}
               {isLocked && (
-                <Text style={styles.lockIcon}>🔒</Text>
+                <ItemSprite spritesheet="icons-1" frameIndex={22} displaySize={11} opacity={0.4} />
               )}
             </View>
 
@@ -340,7 +379,7 @@ export default function DungeonFloorScreen() {
                 {FLOOR_FLAVORS[floor - 1]}
               </Text>
               <View style={styles.floorMeta}>
-                <Text style={[styles.diffStars, { color: diff.color }]}>{diff.stars}</Text>
+                {renderDifficultyStars(diff, 10)}
                 <Text style={styles.gridSize}>{GRID_SIZES[floor]}</Text>
               </View>
             </View>
@@ -555,11 +594,7 @@ export default function DungeonFloorScreen() {
                     {FLOOR_NAMES[(selectedFloor || 1) - 1]}
                   </Text>
                   <View style={styles.modalBadgeRow}>
-                    {selectedDiff && (
-                      <Text style={[styles.modalStars, { color: selectedDiff.color }]}>
-                        {selectedDiff.stars}
-                      </Text>
-                    )}
+                    {selectedDiff && renderDifficultyStars(selectedDiff, 10)}
                     <View style={styles.gridSizeBadge}>
                       <Text style={styles.gridSizeBadgeText}>{GRID_SIZES[selectedFloor || 1]}</Text>
                     </View>
@@ -585,7 +620,10 @@ export default function DungeonFloorScreen() {
 
               {/* Pack supplies */}
               <View style={styles.loadoutHeader}>
-                <Text style={styles.loadoutTitle}>🎒 Pack Supplies</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <ItemSprite spritesheet="icons-1" frameIndex={26} displaySize={16} />
+                  <Text style={styles.loadoutTitle}>Pack Supplies</Text>
+                </View>
                 <View style={styles.slotPips}>
                   {Array.from({ length: maxSlots }).map((_, i) => (
                     <View key={i} style={[styles.pip, i < totalPacked && styles.pipFilled]} />
@@ -597,7 +635,7 @@ export default function DungeonFloorScreen() {
               {/* Items */}
               <View style={styles.itemList}>
                 {maxSlots === 0 ? (
-                  <Text style={styles.emptyText}>⚠️ No bag slots. Buy & equip a belt/bag in your loadout to bring items!</Text>
+                  <Text style={styles.emptyText}>No bag slots. Buy & equip a belt/bag in your loadout to bring items!</Text>
                 ) : state.hero.inventory.consumables.filter(c => c.quantity > 0).length === 0 ? (
                   <Text style={styles.emptyText}>No items — visit the Shop!</Text>
                 ) : (
@@ -607,12 +645,19 @@ export default function DungeonFloorScreen() {
                       const def = CONSUMABLES.find(c => c.id === entry.id);
                       const packed = loadout[entry.id] || 0;
                       const canAdd = totalPacked < maxSlots && packed < entry.quantity;
-                      const icon = CONSUMABLE_ICONS[entry.id] || '🧪';
 
                       return (
                         <View key={entry.id} style={styles.itemRow}>
                           <View style={styles.itemIconBox}>
-                            <Text style={styles.itemIcon}>{icon}</Text>
+                            {def?.spritesheet ? (
+                              <ItemSprite
+                                spritesheet={def.spritesheet}
+                                frameIndex={def.frameIndex}
+                                displaySize={24}
+                              />
+                            ) : (
+                              <Text style={styles.itemIcon}>🧪</Text>
+                            )}
                           </View>
                           <View style={styles.itemInfo}>
                             <Text style={styles.itemName}>{def?.name || entry.id}</Text>
@@ -620,17 +665,17 @@ export default function DungeonFloorScreen() {
                           </View>
                           <View style={styles.itemControls}>
                             <TouchableOpacity
-                              style={[styles.counterBtn, packed === 0 && styles.counterBtnDim]}
-                              onPress={() => removeItem(entry.id)}
-                              disabled={packed === 0}
+                               style={[styles.counterBtn, packed === 0 && styles.counterBtnDim]}
+                               onPress={() => removeItem(entry.id)}
+                               disabled={packed === 0}
                             >
                               <Text style={[styles.counterBtnText, packed === 0 && { color: 'rgba(255,255,255,0.2)' }]}>−</Text>
                             </TouchableOpacity>
                             <Text style={styles.packedCount}>{packed}</Text>
                             <TouchableOpacity
-                              style={[styles.counterBtn, !canAdd && styles.counterBtnDim]}
-                              onPress={() => addItem(entry.id)}
-                              disabled={!canAdd}
+                               style={[styles.counterBtn, !canAdd && styles.counterBtnDim]}
+                               onPress={() => addItem(entry.id)}
+                               disabled={!canAdd}
                             >
                               <Text style={[styles.counterBtnText, !canAdd && { color: 'rgba(255,255,255,0.2)' }]}>+</Text>
                             </TouchableOpacity>
@@ -652,8 +697,9 @@ export default function DungeonFloorScreen() {
                   </Defs>
                   <Rect width="100%" height="100%" fill="url(#enterGrad)" rx={14} />
                 </Svg>
+                <ItemSprite spritesheet="icons-1" frameIndex={10} displaySize={16} />
                 <Text style={[styles.enterBtnText, selectedFloor === 10 && { color: '#FFF' }]}>
-                  ⚔️  Enter Floor {selectedFloor}{totalPacked > 0 ? `  ·  ${totalPacked} items` : ''}
+                  Enter Floor {selectedFloor}{totalPacked > 0 ? `  ·  ${totalPacked} items` : ''}
                 </Text>
               </TouchableOpacity>
             </ScrollView>
@@ -997,6 +1043,9 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
     borderWidth: 1,
     borderColor: 'rgba(221,122,134,0.3)',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
   },
   badgeBossText: {
     fontFamily: 'Silkscreen-Regular',
@@ -1271,6 +1320,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     overflow: 'hidden',
     position: 'relative',
+    flexDirection: 'row',
+    gap: 6,
   },
   enterBtnText: {
     fontFamily: 'PixelifySans-Regular',

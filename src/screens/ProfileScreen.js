@@ -54,7 +54,7 @@ const WEAPONS_FRAMES = 7;
 
 const TABS = [
   { key: 'stats',     frameIndex: 28, label: 'Stats' },
-  { key: 'equipment', frameIndex: 10, label: 'Equipment' },
+  { key: 'equipment', frameIndex: 10, label: 'Gear' },
 ];
 
 // ─── Equipment slot config ────────────────────────────────────────────────────

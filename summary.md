@@ -10,9 +10,9 @@ Meow Depths is an RPG/dungeon-crawler game built using React Native and Expo, fe
 - **Camp Hub (Main Screen)**: The player can navigate to the Dungeon Map, Loadout (Inventory), Skills, Market (Shop), and Profile.
 - **Profile Screen**: Accessible from the hub. Split into two tabs:
   - **Stats tab**: Displays base attributes (STR, AGI, VIT) where players allocate points earned from leveling up, previews and displays effective combat stats (ATK, DEF, MAX HP, etc.), and describes their current elemental stance.
-  - **Equipment tab**: Displays equipped gear across 8 slots (Head, Chest, Gloves, Legs, Boots, Weapon, Trinket, Storage) and displays active set bonuses.
-- **Inventory/Loadout Screen**: Accessible from the hub. Contains three tabs (Consumables, Equipment, Materials) styled as cozy parchment/wood tabs.
-- **Market (Shop) Screen**: Accessible from the hub. Contains three tabs (Consumables shop, Equipment armory, Forge fusion) styled as cozy parchment/wood tabs.
+  - **Gear tab**: Displays equipped gear across 8 slots (Head, Chest, Gloves, Legs, Boots, Weapon, Trinket, Storage) and displays active set bonuses.
+- **Inventory/Loadout Screen**: Accessible from the hub. Contains three tabs (Supplies, Gear, Materials) styled as cozy parchment/wood tabs.
+- **Market (Shop) Screen**: Accessible from the hub. Contains three tabs (Supplies shop, Gear armory, Forge fusion) styled as cozy parchment/wood tabs.
 - **Dungeon Map Screen**: Allows entering zones to fight enemies.
 - **Skill Tree Screen**: Unlocks and upgrades active and passive skills using gold/crystals.
 
@@ -28,8 +28,8 @@ Players can fuse lower-tier crystal shards and crystals into higher-tier ones in
   - **Yellow Crystals (Zone 3 - Sunken Docks)**: Unlocked/visible only after Zone 2 is cleared (`state.progress.zone2Cleared` is true).
 
 ## Tabs Icons Reference (icons-1 spritesheet)
-- **Consumables**: Frame index 26 (Frame 27)
-- **Equipment**: Frame index 10 (Frame 11)
+- **Supplies**: Frame index 26 (Frame 27)
+- **Gear**: Frame index 10 (Frame 11)
 - **Forge**: Frame index 9 (Frame 10)
 - **Materials**: Frame index 29 (Frame 30)
 

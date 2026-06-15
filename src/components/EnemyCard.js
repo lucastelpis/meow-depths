@@ -8,26 +8,10 @@
 import React from 'react';
 import { View, TouchableOpacity, Text, StyleSheet } from 'react-native';
 import theme from '../constants/theme';
+import AnimatedSprite from './AnimatedSprite';
+import { getEnemySprite } from '../constants/sprites';
 
-// Map enemy IDs to emoji placeholders
-// TODO: replace with sprite sheet frames
-const ENEMY_EMOJIS = {
-  sewer_rat: '🐀',
-  slimeling: '🟢',
-  cockroach_knight: '🪳',
-  plague_frog: '🐸',
-  king_rat: '👑🐀',
-  thorn_sprite: '🌿',
-  giant_beetle: '🐛',
-  mushroom_puffer: '🍄',
-  vine_lurker: '🌱',
-  rootmother: '🌳',
-  barnacle_crab: '🦀',
-  sea_witch_eel: '🐍',
-  drowned_sailor: '👻',
-  pufferfish_bomb: '🐡',
-  captain_moray: '⚓',
-};
+
 
 /**
  * @param {Object} props
@@ -40,9 +24,9 @@ export default function EnemyCard({ enemy, enemyState, isSelected, onSelect }) {
   if (!enemy) return null;
 
   const hpPercent = Math.max(0, (enemy.hp / (enemy.maxHp || enemy.hp)) * 100);
-  const emoji = ENEMY_EMOJIS[enemy.id] || '❓';
   const intent = enemyState?.intent;
   const effects = enemyState?.effects || [];
+  const spriteDef = getEnemySprite(enemy);
 
   return (
     <TouchableOpacity
@@ -53,9 +37,16 @@ export default function EnemyCard({ enemy, enemyState, isSelected, onSelect }) {
       {/* Enemy type badge */}
       {enemy.type === 'boss' && <Text style={styles.bossBadge}>💀 Boss</Text>}
 
-      {/* Enemy sprite placeholder */}
-      {/* TODO: replace with sprite sheet frame */}
-      <Text style={styles.emoji}>{emoji}</Text>
+      {/* Enemy sprite */}
+      <AnimatedSprite
+        source={spriteDef.idle.source}
+        frameSize={spriteDef.idle.frameSize}
+        totalFrames={spriteDef.idle.frames}
+        displaySize={36}
+        active={false}
+        flipX={true}
+        style={{ marginBottom: 4 }}
+      />
 
       {/* Enemy name */}
       <Text style={styles.name} numberOfLines={1}>{enemy.name}</Text>

@@ -26,8 +26,8 @@ import ItemSprite from '../components/ItemSprite';
 
 // ─── Tabs ────────────────────────────────────────────────────────────────────
 const TABS = [
-  { key: 'consumables', frameIndex: 26, label: 'Consumables' },
-  { key: 'gear',        frameIndex: 10, label: 'Equipment'  },
+  { key: 'consumables', frameIndex: 26, label: 'Supplies' },
+  { key: 'gear',        frameIndex: 10, label: 'Gear'  },
   { key: 'crafting',    frameIndex: 29, label: 'Materials'  },
 ];
 

@@ -28,6 +28,7 @@ import Svg, {
 import theme from '../constants/theme';
 import { useGame } from '../state/gameState';
 import { ZONES } from '../data/zones';
+import ItemSprite from '../components/ItemSprite';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -305,14 +306,16 @@ const renderStatusBadge = (unlocked, isCleared) => {
   if (!unlocked) {
     return (
       <View style={[styles.statusBadge, styles.statusBadgeLocked]}>
-        <Text style={styles.statusBadgeTextLocked}>🔒 LOCKED</Text>
+        <ItemSprite spritesheet="icons-1" frameIndex={22} displaySize={11} opacity={0.5} />
+        <Text style={styles.statusBadgeTextLocked}>LOCKED</Text>
       </View>
     );
   }
   if (isCleared) {
     return (
       <View style={[styles.statusBadge, styles.statusBadgeCleared]}>
-        <Text style={styles.statusBadgeTextCleared}>🏆 COMPLETED</Text>
+        <ItemSprite spritesheet="icons-1" frameIndex={4} displaySize={11} />
+        <Text style={styles.statusBadgeTextCleared}>COMPLETED</Text>
       </View>
     );
   }
@@ -336,7 +339,10 @@ export default function WorldMapScreen({ navigation }) {
         <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
           <Text style={styles.backText}>← Hub</Text>
         </TouchableOpacity>
-        <Text style={styles.title}>🗺️ World Map</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+          <ItemSprite spritesheet="icons-1" frameIndex={28} displaySize={18} />
+          <Text style={styles.title}>World Map</Text>
+        </View>
         <View style={styles.headerSpacer} />
       </View>
 
@@ -366,7 +372,7 @@ export default function WorldMapScreen({ navigation }) {
 
               {!unlocked && (
                 <View style={styles.lockOverlay}>
-                  <Text style={styles.lockIcon}>🔒</Text>
+                  <ItemSprite spritesheet="icons-1" frameIndex={22} displaySize={48} opacity={0.3} />
                 </View>
               )}
 
@@ -386,13 +392,15 @@ export default function WorldMapScreen({ navigation }) {
                   {renderStatusBadge(unlocked, isCleared)}
                   {unlocked && (
                     <View style={styles.runsBadge}>
-                      <Text style={styles.runsBadgeText}>⚔️ Runs: {runsCount}</Text>
+                      <ItemSprite spritesheet="icons-1" frameIndex={10} displaySize={11} />
+                      <Text style={styles.runsBadgeText}>Runs: {runsCount}</Text>
                     </View>
                   )}
                   {unlocked && (
                     <View style={[styles.runsBadge, { borderColor: `${grad.accent}40`, backgroundColor: `${grad.accent}12` }]}>
+                      <ItemSprite spritesheet="icons-1" frameIndex={28} displaySize={11} />
                       <Text style={[styles.runsBadgeText, { color: grad.accent }]}>
-                        🗺️ Floor {isCleared ? floorCount : nextFloor}/{floorCount}
+                        Floor {isCleared ? floorCount : nextFloor}/{floorCount}
                       </Text>
                     </View>
                   )}
@@ -408,13 +416,21 @@ export default function WorldMapScreen({ navigation }) {
                   disabled={!unlocked}
                   onPress={() => navigation.navigate('DungeonFloor', { zoneId: zone.id })}
                 >
-                  <Text style={[styles.beginButtonText, !unlocked && styles.beginButtonTextDisabled]}>
-                    {unlocked
-                      ? isCleared
-                        ? '🗺️  View Floors'
-                        : `🗺️  Enter — Floor ${nextFloor}`
-                      : '🔒  Locked'}
-                  </Text>
+                  {unlocked ? (
+                    <>
+                      <ItemSprite spritesheet="icons-1" frameIndex={28} displaySize={18} />
+                      <Text style={[styles.beginButtonText, !unlocked && styles.beginButtonTextDisabled]}>
+                        {isCleared ? 'View Floors' : `Enter — Floor ${nextFloor}`}
+                      </Text>
+                    </>
+                  ) : (
+                    <>
+                      <ItemSprite spritesheet="icons-1" frameIndex={22} displaySize={18} opacity={0.5} />
+                      <Text style={[styles.beginButtonText, !unlocked && styles.beginButtonTextDisabled]}>
+                        Locked
+                      </Text>
+                    </>
+                  )}
                 </TouchableOpacity>
               </View>
             </View>
@@ -465,19 +481,19 @@ const styles = StyleSheet.create({
   
   // Status & runs badge row
   badgeRow:         { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 12 },
-  statusBadge:      { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6, borderWidth: 1 },
+  statusBadge:      { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6, borderWidth: 1, flexDirection: 'row', alignItems: 'center', gap: 4 },
   statusBadgeLocked:     { backgroundColor: 'rgba(255,255,255,0.02)', borderColor: 'rgba(255,255,255,0.06)' },
   statusBadgeCleared:    { backgroundColor: 'rgba(16, 185, 129, 0.08)', borderColor: 'rgba(16, 185, 129, 0.22)' },
   
   statusBadgeTextLocked:     { ...theme.FONTS.tiny, color: theme.COLORS.textDim, fontWeight: 'bold', fontSize: 11 },
   statusBadgeTextCleared:    { ...theme.FONTS.tiny, color: theme.COLORS.success, fontWeight: 'bold', fontSize: 11 },
   
-  runsBadge:        { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6, borderWidth: 1, backgroundColor: 'rgba(251, 191, 36, 0.06)', borderColor: 'rgba(251, 191, 36, 0.18)' },
+  runsBadge:        { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6, borderWidth: 1, backgroundColor: 'rgba(251, 191, 36, 0.06)', borderColor: 'rgba(251, 191, 36, 0.18)', flexDirection: 'row', alignItems: 'center', gap: 4 },
   runsBadgeText:    { ...theme.FONTS.tiny, color: theme.COLORS.gold, fontWeight: 'bold', fontSize: 11 },
   
   zoneDescription:  { ...theme.FONTS.body, color: '#94A3B8', marginBottom: 16, lineHeight: 21, fontSize: 14 },
 
-  beginButton:      { borderRadius: 14, paddingVertical: 14, alignItems: 'center', minHeight: 52, justifyContent: 'center' },
+  beginButton:      { borderRadius: 14, paddingVertical: 14, alignItems: 'center', minHeight: 52, justifyContent: 'center', flexDirection: 'row', gap: 6 },
   beginButtonDisabled:     { backgroundColor: theme.COLORS.buttonDisabled },
   beginButtonText:         { ...theme.FONTS.body, color: '#07070A', fontWeight: 'bold', letterSpacing: 0.5, fontSize: 16 },
   beginButtonTextDisabled: { color: theme.COLORS.textDim },

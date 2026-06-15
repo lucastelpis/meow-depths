@@ -36,9 +36,9 @@ const GEAR_TYPE_ICONS = { weapon: '⚔️', armor: '🛡️', trinket: '💎' };
 
 // ─── Tab Configuration ───────────────────────────────────────────────────────
 const TABS = [
-  { key: 'supplies', frameIndex: 26, label: 'Consumables' },
-  { key: 'armory',   frameIndex: 10, label: 'Equipment'  },
-  { key: 'forge',    frameIndex: 9,  label: 'Forge'      },
+  { key: 'supplies', frameIndex: 26, label: 'Supplies' },
+  { key: 'armory', frameIndex: 10, label: 'Gear' },
+  { key: 'forge', frameIndex: 9, label: 'Forge' },
 ];
 
 // ─── Material Metadata ───────────────────────────────────────────────────────
@@ -145,15 +145,7 @@ const ZONE_LABELS = {
   3: '⚓ Zone 3 — Sunken Docks (Yellow Crystals)',
 };
 
-const CONSUMABLE_ICONS = {
-  potion: '🧪',
-  super_potion: '🧪',
-  mega_potion: '🧪',
-  ultra_potion: '🧪',
-  antidote: '🌿',
-  smoke_vial: '💨',
-  mystery_chest: '🎁',
-};
+// Consumables now use spritesheet/frameIndex from their gear.js definition (no emoji fallback needed)
 
 
 
@@ -162,17 +154,17 @@ function formatStats(stats) {
   if (!stats) return '';
 
   const STAT_LABELS = {
-    attack:          'ATK',
-    defence:         'DEF',
-    maxHp:           'HP',
-    critChance:      'crit',
-    dodge:           'dodge',
-    bleedChance:     'bleed',
-    poisonChance:    'poison',
-    stunChance:      'stun',
-    skillDamage:     'skill dmg',
+    attack: 'ATK',
+    defence: 'DEF',
+    maxHp: 'HP',
+    critChance: 'crit',
+    dodge: 'dodge',
+    bleedChance: 'bleed',
+    poisonChance: 'poison',
+    stunChance: 'stun',
+    skillDamage: 'skill dmg',
     bleedExtraDamage: 'bleed dmg',
-    bagSlots:        'bag slots',
+    bagSlots: 'bag slots',
   };
 
   return Object.entries(stats)
@@ -208,7 +200,7 @@ export default function ShopScreen() {
   };
 
   const ownedMaterials = hero.inventory.materials || {};
-  const craftedGear    = hero.inventory.craftedGear || [];
+  const craftedGear = hero.inventory.craftedGear || [];
 
   // ── Build shop items list based on progression ─────────────────────────────
   const armoryItems = useMemo(() => {
@@ -317,7 +309,6 @@ export default function ShopScreen() {
     return (
       <View style={styles.tabContent}>
         <View style={styles.suppliesIntro}>
-          <Text style={styles.introTitle}>⚒️ Crystal Fusion (Forge)</Text>
           <Text style={styles.introDesc}>Fuse lower-tier crystals to create higher-tier ones. Cores cannot be forged.</Text>
         </View>
 
@@ -518,14 +509,12 @@ export default function ShopScreen() {
         {activeTab === 'supplies' && (
           <View style={styles.tabContent}>
             <View style={styles.suppliesIntro}>
-              <Text style={styles.introTitle}>Consumables & Provisions</Text>
               <Text style={styles.introDesc}>Purchase healing reagents and items to aid your dungeon runs.</Text>
             </View>
 
             <View style={styles.listContainer}>
               {CONSUMABLES.filter(item => !item.minLevel || hero.level >= item.minLevel).map((item) => {
                 const owned = consumableCounts[item.id] || 0;
-                const icon = CONSUMABLE_ICONS[item.id] || '🧪';
 
                 const qty = getQty(item.id);
                 const totalCost = item.cost * qty;
@@ -545,7 +534,11 @@ export default function ShopScreen() {
                       {/* Left: icon + info */}
                       <View style={styles.shopRowLeft}>
                         <View style={styles.shopIconWrapper}>
-                          <Text style={styles.shopRowIcon}>{icon}</Text>
+                          <ItemSprite
+                            spritesheet={item.spritesheet}
+                            frameIndex={item.frameIndex}
+                            displaySize={36}
+                          />
                         </View>
                         <View style={styles.shopRowInfo}>
                           <View style={styles.shopNameRow}>
@@ -625,60 +618,83 @@ export default function ShopScreen() {
         {activeTab === 'armory' && (
           <View style={styles.tabContent}>
             <View style={styles.suppliesIntro}>
-              <Text style={styles.introTitle}>⚔️ Equipment</Text>
-              <Text style={styles.introDesc}>Purchase equipment and weapons with Gold. Owned gear cannot be bought again.</Text>
+              <Text style={styles.introDesc}>Spend Gold on weapons and gear. New items unlock as you venture deeper into the dungeons.</Text>
             </View>
 
             <View style={styles.listContainer}>
-              {armoryItems.map((item) => {
-                const isOwned = craftedGear.includes(item.id);
-                const canAfford = hero.gold >= item.goldCost;
-
-                return (
-                  <View key={item.id} style={[styles.gearCard, isOwned && { opacity: 0.8 }]}>
-                    <View style={StyleSheet.absoluteFill}>
-                      <Svg width="100%" height="100%">
-                        <Rect width="100%" height="100%" fill="rgba(255,255,255,0.02)" rx={14} />
-                        <Rect
-                          x="1"
-                          y="1"
-                          width="98%"
-                          height="98%"
-                          rx={13}
-                          fill="none"
-                          stroke={isOwned ? 'rgba(16, 185, 129, 0.2)' : 'rgba(255,255,255,0.05)'}
-                          strokeWidth={1}
-                        />
-                      </Svg>
+              {(() => {
+                const availableItems = armoryItems.filter(item => !craftedGear.includes(item.id));
+                if (availableItems.length === 0) {
+                  return (
+                    <View style={styles.emptyArmoryCard}>
+                      <View style={StyleSheet.absoluteFill}>
+                        <Svg width="100%" height="100%">
+                          <Defs>
+                            <RadialGradient id="emptyGlow" cx="50%" cy="0%" rx="80%" ry="60%">
+                              <Stop offset="0%" stopColor="#D4A754" stopOpacity="0.06" />
+                              <Stop offset="100%" stopColor="#133131" stopOpacity="0" />
+                            </RadialGradient>
+                          </Defs>
+                          <Rect width="100%" height="100%" fill="rgba(255,255,255,0.02)" rx={16} />
+                          <Rect x="1" y="1" width="98%" height="98%" rx={15} fill="url(#emptyGlow)" />
+                          <Rect x="1" y="1" width="98%" height="98%" rx={15} fill="none" stroke="rgba(212,167,84,0.15)" strokeWidth={1} />
+                        </Svg>
+                      </View>
+                      <ItemSprite spritesheet="icons-1" frameIndex={12} displaySize={40} opacity={0.6} />
+                      <Text style={styles.emptyArmoryTitle}>The shelves are bare</Text>
+                      <Text style={styles.emptyArmoryDesc}>
+                        You've claimed everything on offer. Venture deeper into the dungeons to unlock new weapons and gear.
+                      </Text>
                     </View>
+                  );
+                }
+                return availableItems.map((item) => {
+                  const canAfford = hero.gold >= item.goldCost;
 
-                    <View style={styles.gearCardInner}>
-                      {/* Left: Icon, Name, Type, Stats */}
-                      <View style={styles.shopRowLeft}>
-                        <View style={styles.gearIconWrapper}>
-                          <ItemSprite
-                            spritesheet={item.spritesheet}
-                            frameIndex={item.frameIndex}
-                            displaySize={36}
+                  return (
+                    <View key={item.id} style={styles.gearCard}>
+                      <View style={StyleSheet.absoluteFill}>
+                        <Svg width="100%" height="100%">
+                          <Rect width="100%" height="100%" fill="rgba(255,255,255,0.02)" rx={14} />
+                          <Rect
+                            x="1"
+                            y="1"
+                            width="98%"
+                            height="98%"
+                            rx={13}
+                            fill="none"
+                            stroke="rgba(255,255,255,0.05)"
+                            strokeWidth={1}
                           />
-                        </View>
-                        <View style={styles.shopRowInfo}>
-                          <View style={styles.shopNameRow}>
-                            <Text style={styles.gearName} numberOfLines={1}>{item.name}</Text>
-                            <View style={styles.gearTypeBadge}>
-                              <Text style={styles.gearTypeBadgeText}>{item.type.toUpperCase()}</Text>
-                            </View>
-                          </View>
-                          <Text style={styles.statPreview}>🛡️ {formatStats(item.stats)}</Text>
-                          {!!item.description && item.type !== 'storage' && (
-                            <Text style={styles.shopRowDesc}>{item.description}</Text>
-                          )}
-                        </View>
+                        </Svg>
                       </View>
 
-                      {/* Right: Buy Button / Owned State */}
-                      <View style={styles.buyArea}>
-                        {!isOwned ? (
+                      <View style={styles.gearCardInner}>
+                        {/* Left: Icon, Name, Type, Stats */}
+                        <View style={styles.shopRowLeft}>
+                          <View style={styles.gearIconWrapper}>
+                            <ItemSprite
+                              spritesheet={item.spritesheet}
+                              frameIndex={item.frameIndex}
+                              displaySize={36}
+                            />
+                          </View>
+                          <View style={styles.shopRowInfo}>
+                            <View style={styles.shopNameRow}>
+                              <Text style={styles.gearName} numberOfLines={1}>{item.name}</Text>
+                              <View style={styles.gearTypeBadge}>
+                                <Text style={styles.gearTypeBadgeText}>{item.type.toUpperCase()}</Text>
+                              </View>
+                            </View>
+                            <Text style={styles.statPreview}>{formatStats(item.stats)}</Text>
+                            {!!item.description && item.type !== 'storage' && (
+                              <Text style={styles.shopRowDesc}>{item.description}</Text>
+                            )}
+                          </View>
+                        </View>
+
+                        {/* Right: Buy Button */}
+                        <View style={styles.buyArea}>
                           <TouchableOpacity
                             style={[
                               styles.armoryBuyBtn,
@@ -712,18 +728,12 @@ export default function ShopScreen() {
                               </Text>
                             </View>
                           </TouchableOpacity>
-                        ) : (
-                          <View style={styles.armoryBuyBtnOwned}>
-                            <Text style={styles.armoryBuyBtnOwnedText}>
-                              Owned
-                            </Text>
-                          </View>
-                        )}
+                        </View>
                       </View>
                     </View>
-                  </View>
-                );
-              })}
+                  );
+                });
+              })()}
             </View>
           </View>
         )}
@@ -924,6 +934,32 @@ const styles = StyleSheet.create({
   },
   listContainer: {
     gap: 10,
+  },
+  emptyArmoryCard: {
+    borderRadius: 16,
+    overflow: 'hidden',
+    alignItems: 'center',
+    paddingVertical: 40,
+    paddingHorizontal: 24,
+    gap: 12,
+    marginTop: 8,
+  },
+  emptyArmoryTitle: {
+    fontFamily: 'PixelifySans-Regular',
+    fontSize: 16,
+    color: '#D4A754',
+    fontWeight: 'normal',
+    letterSpacing: 0.5,
+    marginTop: 4,
+  },
+  emptyArmoryDesc: {
+    fontFamily: 'Silkscreen-Regular',
+    fontSize: 9,
+    color: '#707F94',
+    fontWeight: 'normal',
+    textAlign: 'center',
+    lineHeight: 16,
+    letterSpacing: 0,
   },
   shopRow: {
     borderRadius: 14,

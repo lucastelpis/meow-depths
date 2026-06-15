@@ -331,7 +331,7 @@ To prevent broken layouts, the generator runs up to 100 layout attempts enforcin
 - **⚔️ Combat**: Triggers a turn-based battle encounter. Rated 1★ to 5★ which dictates scaling and enemy group composition.
 - **💀 Boss**: Triggered on Floor 10. Engages the unique Zone Boss.
 - **🔥 Rest**: A cozy campfire offering a critical strategic choice:
-  1. **Restore Health**: Instantly heals Mochi for **40% of Max HP** (boosted by the Hydration passive if active).
+  1. **Restore Health**: Instantly restores Mochi to full health.
   2. **Gain Buff**: Roll a permanent, run-only stat enhancement from the campfire pool:
      - *Attack*: +10% Attack.
      - *Crit*: +8% Crit chance.

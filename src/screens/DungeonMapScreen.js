@@ -18,6 +18,7 @@ import {
   Dimensions,
   Animated,
   Alert,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, {
@@ -31,6 +32,7 @@ import Svg, {
   Line,
   Circle,
   Polygon,
+  Ellipse,
 } from 'react-native-svg';
 
 import theme from '../constants/theme';
@@ -44,6 +46,59 @@ import { generateTreasureDrops } from '../logic/lootEngine';
 import Button from '../components/ui/Button';
 import ResourceBar from '../components/ui/ResourceBar';
 import ItemSprite from '../components/ItemSprite';
+
+// ─── SVG Soft Icon Glow Background Component ─────────────────────────────────
+function IconGlowBackground({ size = 56 }) {
+  const radius = size / 2;
+  return (
+    <View style={{ ...StyleSheet.absoluteFillObject, justifyContent: 'center', alignItems: 'center' }}>
+      <Svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+        <Defs>
+          <RadialGradient id={`iconGlowGrad-${size}`} cx="50%" cy="50%" rx="50%" ry="50%">
+            <Stop offset="0%" stopColor="#FFF3DA" stopOpacity="0.65" />
+            <Stop offset="50%" stopColor="#E8A73A" stopOpacity="0.25" />
+            <Stop offset="100%" stopColor="#E8A73A" stopOpacity="0" />
+          </RadialGradient>
+        </Defs>
+        <Circle cx={radius} cy={radius} r={radius} fill={`url(#iconGlowGrad-${size})`} />
+      </Svg>
+    </View>
+  );
+}
+
+// ─── Decorative 4-point sparkle ──────────────────────────────────────────────
+function Sparkle({ size = 12, color = '#F4D079', style }) {
+  const c = size / 2;
+  const r = size / 2;
+  const i = r * 0.28; // inner waist
+  const d = `M${c},${c - r} L${c + i},${c - i} L${c + r},${c} L${c + i},${c + i} L${c},${c + r} L${c - i},${c + i} L${c - r},${c} L${c - i},${c - i} Z`;
+  return (
+    <View style={style} pointerEvents="none">
+      <Svg width={size} height={size}>
+        <Path d={d} fill={color} />
+      </Svg>
+    </View>
+  );
+}
+
+// ─── Soft blurred ellipse shadow (ground shadow under elements) ───────────────
+function SoftEllipseShadow({ width = 80, height = 18, color = '#2A1A0C', style }) {
+  return (
+    <View style={style} pointerEvents="none">
+      <Svg width={width} height={height}>
+        <Defs>
+          <RadialGradient id="softShadowGrad" cx="50%" cy="50%" rx="50%" ry="50%">
+            <Stop offset="0%" stopColor={color} stopOpacity="0.8" />
+            <Stop offset="55%" stopColor={color} stopOpacity="0.6" />
+            <Stop offset="100%" stopColor={color} stopOpacity="0" />
+          </RadialGradient>
+        </Defs>
+        <Ellipse cx={width / 2} cy={height / 2} rx={width / 2} ry={height / 2} fill="url(#softShadowGrad)" />
+      </Svg>
+    </View>
+  );
+}
+
 
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -87,11 +142,11 @@ const ZONE_MATERIAL_POOLS = {
   zone3: ['yellow_shard', 'yellow_crystal_small', 'yellow_crystal_big', 'yellow_crystal_core'],
 };
 
-// Zone-specific icons shown in the HUD header
-const ZONE_ICONS = {
-  zone1: '💧',
-  zone2: '🌿',
-  zone3: '⚓',
+// Zone-specific crystal sprites shown in the HUD header
+const ZONE_SPRITES = {
+  zone1: { spritesheet: 'crystals-1', frameIndex: 1 }, // Black Crystal (Sewer theme)
+  zone2: { spritesheet: 'crystals-1', frameIndex: 5 }, // Green Crystal (Garden theme)
+  zone3: { spritesheet: 'crystals-1', frameIndex: 9 }, // Yellow Crystal (Docks theme)
 };
 
 // Zone themes config — aligned to design system palette
@@ -473,7 +528,7 @@ export default function DungeonMapScreen({ navigation }) {
 
   const handleChooseRestOption = (option) => {
     if (option === 'heal') {
-      const healAmount = Math.floor(effectiveStats.maxHp * 0.4);
+      const healAmount = effectiveStats.maxHp;
       dispatch({ type: 'HEAL', payload: { amount: healAmount } });
     } else {
       dispatch({
@@ -546,8 +601,7 @@ export default function DungeonMapScreen({ navigation }) {
       }
     }
 
-    let emoji = '🔒';
-    let label = 'Lock';
+    let label = 'Locked';
     let cellStyle = styles.fogCell;
     let labelColor = 'rgba(255, 255, 255, 0.25)';
 
@@ -570,38 +624,83 @@ export default function DungeonMapScreen({ navigation }) {
     };
 
     if (tile.type === 'start') {
-      emoji = '🏠';
       label = 'Start';
       cellStyle = styles.startCell;
       labelColor = '#5A9FE0'; // coldBlue — start is a special revealed tile
     } else if (!isFog) {
       if (tile.type === 'combat') {
-        emoji = '⚔️';
         label = tile.cleared ? 'Cleared' : 'Combat';
         cellStyle = styles.combatCell;
         labelColor = tile.cleared ? CLEARED_COLOR : '#5A9FE0'; // coldBlue
       } else if (tile.type === 'rest') {
-        emoji = '🔥';
         label = tile.cleared ? 'Cleared' : 'Rest';
         cellStyle = styles.restCell;
         labelColor = tile.cleared ? CLEARED_COLOR : '#3FB56E'; // healthGreen
       } else if (tile.type === 'treasure') {
-        emoji = '💎';
         label = tile.cleared ? 'Cleared' : 'Treasure';
         cellStyle = styles.treasureCell;
         labelColor = tile.cleared ? CLEARED_COLOR : '#F5CF4A'; // treasureGold
       } else if (tile.type === 'gamble') {
-        emoji = '❓';
         label = tile.cleared ? 'Cleared' : '???';
         cellStyle = styles.gambleCell;
         labelColor = tile.cleared ? CLEARED_COLOR : '#A98EE0'; // mysteryViolet
       } else if (tile.type === 'boss') {
-        emoji = bossLocked ? '🔒' : '💀';
         label = tile.cleared ? 'Cleared' : bossLocked ? 'Sealed' : 'Boss';
         cellStyle = bossLocked ? styles.bossLockedCell : styles.bossCell;
         labelColor = tile.cleared ? CLEARED_COLOR : bossLocked ? 'rgba(255,255,255,0.3)' : '#DD7A86';
       }
     }
+
+    const renderCellSprite = () => {
+      if (isPlayerHere) {
+        return (
+          <View style={styles.playerAvatarWrapper}>
+            <Image
+              source={require('../../assets/sprites/items/cat-head-icon.png')}
+              style={{ width: 28, height: 28 }}
+              resizeMode="contain"
+            />
+          </View>
+        );
+      }
+
+      let sheet = 'icons-1';
+      let frame = 0;
+
+      if (isFog) {
+        sheet = 'status-icons-1';
+        frame = 20; // mist/fog
+      } else {
+        if (tile.type === 'start') {
+          sheet = 'icons-1';
+          frame = 0;
+        } else if (tile.type === 'combat') {
+          sheet = 'icons-1';
+          frame = 10;
+        } else if (tile.type === 'rest') {
+          sheet = 'icons-1';
+          frame = 9;
+        } else if (tile.type === 'treasure') {
+          sheet = 'icons-1';
+          frame = 12;
+        } else if (tile.type === 'gamble') {
+          sheet = 'icons-1';
+          frame = 5;
+        } else if (tile.type === 'boss') {
+          sheet = 'icons-1';
+          frame = 33;
+        }
+      }
+
+      return (
+        <ItemSprite
+          spritesheet={sheet}
+          frameIndex={frame}
+          displaySize={28}
+          opacity={isFog ? 0.35 : tile.cleared ? 0.45 : 1}
+        />
+      );
+    };
 
     const cellWidth = Math.floor((SCREEN_WIDTH - 48 - (gridWidth * 6)) / gridWidth);
 
@@ -625,29 +724,27 @@ export default function DungeonMapScreen({ navigation }) {
         {/* Directional movement arrow indicator */}
         {arrowIndicator}
 
-        {isPlayerHere ? (
-          <View style={styles.cellContent}>
-            <Text style={styles.cellEmoji}>🐱</Text>
-            <Text style={[styles.cellLabel, { color: '#D4A754' }]} numberOfLines={1}>
-              You're Here
+        <View style={styles.cellContent}>
+          {renderCellSprite()}
+          <Text style={[styles.cellLabel, { color: isPlayerHere ? '#D4A754' : labelColor }]} numberOfLines={1}>
+            {isPlayerHere ? "You're Here" : label}
+          </Text>
+          {/* Star badge for combat tiles (only when revealed and not cleared) */}
+          {tile.type === 'combat' && !isFog && !tile.cleared && tile.battleRating && !isPlayerHere && (
+            <Text 
+              style={[styles.starBadge, { color: STAR_COLORS[tile.battleRating] }]}
+              numberOfLines={1}
+              adjustsFontSizeToFit={true}
+            >
+              {STAR_LABELS[tile.battleRating]}
             </Text>
-          </View>
-        ) : (
-          <View style={styles.cellContent}>
-            <Text style={styles.cellEmoji}>{emoji}</Text>
-            <Text style={[styles.cellLabel, { color: labelColor }]} numberOfLines={1}>
-              {label}
-            </Text>
-            {/* Star badge for combat tiles (only when revealed and not cleared) */}
-            {tile.type === 'combat' && !isFog && !tile.cleared && tile.battleRating && (
-              <Text 
-                style={[styles.starBadge, { color: STAR_COLORS[tile.battleRating] }]}
-                numberOfLines={1}
-                adjustsFontSizeToFit={true}
-              >
-                {STAR_LABELS[tile.battleRating]}
-              </Text>
-            )}
+          )}
+        </View>
+
+        {/* Sealed Overlay for Locked Boss */}
+        {bossLocked && !isPlayerHere && (
+          <View style={styles.sealedOverlay}>
+            <Text style={styles.sealedText}>SEALED</Text>
           </View>
         )}
 
@@ -695,7 +792,7 @@ export default function DungeonMapScreen({ navigation }) {
     if (items.length === 0) return null;
 
     return items.map(({ id, qty, isConsumable }) => {
-      const def = isConsumable ? CONSUMABLES[id] : MATERIALS[id];
+      const def = isConsumable ? CONSUMABLES.find(c => c.id === id) : MATERIALS[id];
       let emoji = '💎';
       if (id.includes('potion')) emoji = '🧪';
       else if (id.startsWith('black')) emoji = '🖤';
@@ -754,7 +851,16 @@ export default function DungeonMapScreen({ navigation }) {
           {/* ── Zone Brand and Progress ── */}
           <View style={styles.hudHeaderRow}>
             <View style={styles.zoneBadge}>
-              <Text style={styles.zoneBadgeText}>{ZONE_ICONS[currentRun.zoneId] || '🏰'}</Text>
+              {(() => {
+                const sp = ZONE_SPRITES[currentRun.zoneId] || { spritesheet: 'icons-1', frameIndex: 0 };
+                return (
+                  <ItemSprite
+                    spritesheet={sp.spritesheet}
+                    frameIndex={sp.frameIndex}
+                    displaySize={22}
+                  />
+                );
+              })()}
             </View>
             <View style={styles.zoneMetaBlock}>
               <Text style={styles.zoneTitle}>{zone.name}</Text>
@@ -766,8 +872,9 @@ export default function DungeonMapScreen({ navigation }) {
               borderColor: zTheme.accent + '33',
               backgroundColor: zTheme.accent + '12',
             }]}>
+              <ItemSprite spritesheet="icons-1" frameIndex={28} displaySize={13} />
               <Text style={[styles.roomsBadgeText, { color: zTheme.accent }]}>
-                🗺️ {currentRun.roomsCleared}/{currentRun.totalRooms}
+                {currentRun.roomsCleared}/{currentRun.totalRooms}
               </Text>
             </View>
           </View>
@@ -778,7 +885,7 @@ export default function DungeonMapScreen({ navigation }) {
           {/* ── Loot Stats (Gold & XP) ── */}
           <View style={styles.lootStatsRow}>
             <View style={[styles.lootStatChip, styles.lootStatChipGold]}>
-              <Text style={styles.lootStatEmoji}>💰</Text>
+              <ItemSprite spritesheet="icons-1" frameIndex={11} displaySize={18} />
               <View>
                 <Text style={styles.lootStatLabel}>Gold Collected</Text>
                 <Text style={styles.lootStatValueGold}>{currentRun.lootCollected.gold}g</Text>
@@ -786,7 +893,7 @@ export default function DungeonMapScreen({ navigation }) {
             </View>
             
             <View style={[styles.lootStatChip, styles.lootStatChipXp]}>
-              <Text style={styles.lootStatEmoji}>✨</Text>
+              <ItemSprite spritesheet="icons-1" frameIndex={4} displaySize={18} />
               <View>
                 <Text style={styles.lootStatLabel}>XP Acquired</Text>
                 <Text style={styles.lootStatValueXp}>{currentRun.lootCollected.xp || 0} XP</Text>
@@ -826,27 +933,32 @@ export default function DungeonMapScreen({ navigation }) {
               <Text style={styles.buffsTitle}>Buffs</Text>
               {currentRun.runBuffs.attackBonus > 0 && (
                 <View style={styles.buffBadge}>
-                  <Text style={styles.buffBadgeText}>⚔️ ATK +{currentRun.runBuffs.attackBonus}</Text>
+                  <ItemSprite spritesheet="icons-1" frameIndex={20} displaySize={12} />
+                  <Text style={styles.buffBadgeText}>ATK +{currentRun.runBuffs.attackBonus}</Text>
                 </View>
               )}
               {currentRun.runBuffs.critBonus > 0 && (
                 <View style={styles.buffBadge}>
-                  <Text style={styles.buffBadgeText}>🎯 CRIT +{Math.round(currentRun.runBuffs.critBonus * 100)}%</Text>
+                  <ItemSprite spritesheet="icons-1" frameIndex={21} displaySize={12} />
+                  <Text style={styles.buffBadgeText}>CRIT +{Math.round(currentRun.runBuffs.critBonus * 100)}%</Text>
                 </View>
               )}
               {currentRun.runBuffs.dodgeBonus > 0 && (
                 <View style={styles.buffBadge}>
-                  <Text style={styles.buffBadgeText}>💨 DODGE +{Math.round(currentRun.runBuffs.dodgeBonus * 100)}%</Text>
+                  <ItemSprite spritesheet="icons-1" frameIndex={21} displaySize={12} />
+                  <Text style={styles.buffBadgeText}>DODGE +{Math.round(currentRun.runBuffs.dodgeBonus * 100)}%</Text>
                 </View>
               )}
               {currentRun.runBuffs.defenceBonus > 0 && (
                 <View style={styles.buffBadge}>
-                  <Text style={styles.buffBadgeText}>🛡️ DEF +{currentRun.runBuffs.defenceBonus}</Text>
+                  <ItemSprite spritesheet="icons-1" frameIndex={22} displaySize={12} />
+                  <Text style={styles.buffBadgeText}>DEF +{currentRun.runBuffs.defenceBonus}</Text>
                 </View>
               )}
               {currentRun.runBuffs.maxHpBonus > 0 && (
                 <View style={styles.buffBadge}>
-                  <Text style={styles.buffBadgeText}>♥ HP +{currentRun.runBuffs.maxHpBonus}</Text>
+                  <ItemSprite spritesheet="icons-1" frameIndex={22} displaySize={12} />
+                  <Text style={styles.buffBadgeText}>HP +{currentRun.runBuffs.maxHpBonus}</Text>
                 </View>
               )}
             </ScrollView>
@@ -866,14 +978,14 @@ export default function DungeonMapScreen({ navigation }) {
       <View style={styles.actionButtonsRow}>
         <Button
           title="Run Bag"
-          icon="🎒"
+          icon={<ItemSprite spritesheet="icons-1" frameIndex={26} displaySize={18} />}
           variant="secondary"
           onPress={() => setActiveModal('bag')}
           style={{ flex: 1 }}
         />
         <Button
           title="Flee Dungeon"
-          icon="🏳️"
+          icon={<ItemSprite spritesheet="consumables-1" frameIndex={9} displaySize={18} />}
           variant="danger"
           onPress={() => setActiveModal('flee')}
           style={{ flex: 1 }}
@@ -891,62 +1003,55 @@ export default function DungeonMapScreen({ navigation }) {
           1. REST ROOM CHOICE MODAL
       ════════════════════════════════════════════════════════════════ */}
       <Modal visible={activeModal === 'rest'} transparent animationType="fade">
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalCard}>
-            <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
-              <Defs>
-                <RadialGradient id="restGlow" cx="50%" cy="0%" r="60%">
-                  <Stop offset="0%" stopColor="#10B981" stopOpacity="0.08" />
-                  <Stop offset="100%" stopColor="#111317" stopOpacity="0" />
-                </RadialGradient>
-              </Defs>
-              <Rect width="100%" height="100%" fill="#111317" rx={16} />
-              <Rect width="100%" height="100%" fill="url(#restGlow)" rx={16} />
-              <Rect x="1" y="1" width="98%" height="98%" rx={15} fill="none" stroke="rgba(16, 185, 129, 0.15)" strokeWidth={1} />
-            </Svg>
+        <View style={styles.cozyOverlay}>
+          <View style={[styles.cozyFrame, theme.SHADOWS.cardShadow]}>
+            <View style={styles.cozyParchment}>
+              <View style={styles.cozyBevel} pointerEvents="none" />
+              
+              <View style={styles.cozyHeroIcon}>
+                <SoftEllipseShadow width={90} height={20} style={{ position: 'absolute', bottom: -2 }} />
+                <IconGlowBackground size={72} />
+                <Sparkle size={14} color="#FBBF24" style={{ position: 'absolute', top: -10, left: -10 }} />
+                <Sparkle size={9} color="#F8E7AC" style={{ position: 'absolute', top: -5, right: -10 }} />
+                <ItemSprite spritesheet="icons-1" frameIndex={9} displaySize={48} />
+              </View>
 
-            <View style={styles.modalCardInner}>
-              <Text style={styles.modalTitle}>🔥 Campfire Rest</Text>
-              <Text style={styles.modalSubtitle}>
+              <Text style={styles.cozySubtitle}>
                 You found a quiet corner. Take a moment to prepare for the depths ahead.
               </Text>
 
               <View style={styles.modalChoiceContainer}>
                 <TouchableOpacity
-                  style={[styles.modalChoiceCard, styles.choiceCardHeal]}
+                  style={styles.cozyChoiceCard}
                   onPress={() => handleChooseRestOption('heal')}
                   activeOpacity={0.8}
                 >
-                  <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
-                    <Rect width="100%" height="100%" fill="rgba(63, 181, 110, 0.04)" rx={12} />
-                    <Rect x="1" y="1" width="98%" height="98%" rx={11} fill="none" stroke="rgba(63, 181, 110, 0.28)" strokeWidth={1.2} />
-                  </Svg>
-                  <View style={styles.choiceCardInner}>
-                    <Text style={styles.modalBtnEmoji}>❤️</Text>
-                    <Text style={styles.modalBtnTitle}>Restore Health</Text>
-                    <Text style={styles.modalBtnDesc}>
-                      Recover 40% of Max HP (+{applyHealingEfficiency(Math.floor(effectiveStats.maxHp * 0.4), hero)} HP)
-                    </Text>
-                  </View>
+                  <ItemSprite spritesheet="consumables-1" frameIndex={0} displaySize={32} />
+                  <Text style={styles.cozyChoiceCardText}>Restore Health</Text>
+                  <Text style={styles.cozyChoiceCardDesc}>
+                    Recover your full health (+{effectiveStats.maxHp} HP)
+                  </Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
-                  style={[styles.modalChoiceCard, styles.choiceCardBuff]}
+                  style={styles.cozyChoiceCard}
                   onPress={() => handleChooseRestOption('buff')}
                   activeOpacity={0.8}
                 >
-                  <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
-                    <Rect width="100%" height="100%" fill="rgba(16, 185, 129, 0.03)" rx={12} />
-                    <Rect x="1" y="1" width="98%" height="98%" rx={11} fill="none" stroke="rgba(16, 185, 129, 0.25)" strokeWidth={1.2} />
-                  </Svg>
-                  <View style={styles.choiceCardInner}>
-                    <Text style={styles.modalBtnEmoji}>✨</Text>
-                    <Text style={styles.modalBtnTitle}>Receive Buff</Text>
-                    <Text style={styles.modalBtnDesc}>
-                      Skip heal & obtain: {modalData?.buffLabel}
-                    </Text>
-                  </View>
+                  <ItemSprite spritesheet="icons-1" frameIndex={4} displaySize={32} />
+                  <Text style={styles.cozyChoiceCardText}>Receive Buff</Text>
+                  <Text style={styles.cozyChoiceCardDesc}>
+                    Skip heal & obtain: {modalData?.buffLabel}
+                  </Text>
                 </TouchableOpacity>
+              </View>
+            </View>
+
+            <View style={styles.cozyTopWrap} pointerEvents="none">
+              <View style={styles.cozyTopOuter}>
+                <View style={styles.cozyTopInner}>
+                  <Text style={styles.cozyTopText}>CAMPFIRE REST</Text>
+                </View>
               </View>
             </View>
           </View>
@@ -957,37 +1062,44 @@ export default function DungeonMapScreen({ navigation }) {
           2. TREASURE ROOM MODAL
       ════════════════════════════════════════════════════════════════ */}
       <Modal visible={activeModal === 'treasure'} transparent animationType="fade">
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalCard}>
-            <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
-              <Defs>
-                <RadialGradient id="treasureGlow" cx="50%" cy="0%" r="60%">
-                  <Stop offset="0%" stopColor="#FBBF24" stopOpacity="0.08" />
-                  <Stop offset="100%" stopColor="#111317" stopOpacity="0" />
-                </RadialGradient>
-              </Defs>
-              <Rect width="100%" height="100%" fill="#111317" rx={16} />
-              <Rect width="100%" height="100%" fill="url(#treasureGlow)" rx={16} />
-              <Rect x="1" y="1" width="98%" height="98%" rx={15} fill="none" stroke="rgba(251, 191, 36, 0.15)" strokeWidth={1} />
-            </Svg>
+        <View style={styles.cozyOverlay}>
+          <View style={[styles.cozyFrame, theme.SHADOWS.cardShadow]}>
+            <View style={styles.cozyParchment}>
+              <View style={styles.cozyBevel} pointerEvents="none" />
+              
+              <View style={styles.cozyHeroIcon}>
+                <SoftEllipseShadow width={100} height={22} style={{ position: 'absolute', bottom: -2 }} />
+                <IconGlowBackground size={80} />
+                <Sparkle size={14} color="#FBBF24" style={{ position: 'absolute', top: -12, left: -12 }} />
+                <Sparkle size={9} color="#FFF3DA" style={{ position: 'absolute', top: -6, right: -12 }} />
+                <ItemSprite spritesheet="icons-1" frameIndex={12} displaySize={56} />
+              </View>
 
-            <View style={styles.modalCardInner}>
-              <Text style={styles.modalTitle}>💎 Treasure Chest!</Text>
-              <Text style={styles.modalSubtitle}>
+              <Text style={styles.cozySubtitle}>
                 An unlocked chest lies open in the corner of this chamber.
               </Text>
 
-              <View style={styles.lootRewardBox}>
-                <Text style={styles.lootGoldText}>💰 +{modalData?.gold} Gold</Text>
+              <View style={styles.cozyWell}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginVertical: 4 }}>
+                  <ItemSprite spritesheet="icons-1" frameIndex={11} displaySize={20} />
+                  <Text style={styles.cozyGoldText}>+{modalData?.gold} Gold</Text>
+                </View>
                 {renderLootItems(modalData?.materials, modalData?.consumables)}
               </View>
 
-              <Button
-                title="Claim Rewards"
-                variant="primary"
-                onPress={handleCloseTreasure}
-                style={{ width: '100%', marginTop: 8 }}
-              />
+              <TouchableOpacity activeOpacity={0.85} onPress={handleCloseTreasure} style={styles.cozyButton}>
+                <View style={styles.cozyButtonInner}>
+                  <Text style={styles.cozyButtonText}>Claim Rewards</Text>
+                </View>
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.cozyTopWrap} pointerEvents="none">
+              <View style={styles.cozyTopOuter}>
+                <View style={styles.cozyTopInner}>
+                  <Text style={styles.cozyTopText}>TREASURE CHEST</Text>
+                </View>
+              </View>
             </View>
           </View>
         </View>
@@ -997,50 +1109,46 @@ export default function DungeonMapScreen({ navigation }) {
           3. GAMBLE (???) ROOM MODAL
       ════════════════════════════════════════════════════════════════ */}
       <Modal visible={activeModal === 'gamble'} transparent animationType="fade">
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalCard}>
-            <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
-              <Defs>
-                <RadialGradient id="gambleGlow" cx="50%" cy="0%" r="60%">
-                  <Stop offset="0%" stopColor="#8B5CF6" stopOpacity="0.08" />
-                  <Stop offset="100%" stopColor="#111317" stopOpacity="0" />
-                </RadialGradient>
-              </Defs>
-              <Rect width="100%" height="100%" fill="#111317" rx={16} />
-              <Rect width="100%" height="100%" fill="url(#gambleGlow)" rx={16} />
-              <Rect x="1" y="1" width="98%" height="98%" rx={15} fill="none" stroke="rgba(139, 92, 246, 0.15)" strokeWidth={1} />
-            </Svg>
-
-            <View style={styles.modalCardInner}>
-              <Text style={styles.modalTitle}>❓ Gamble Outcome</Text>
+        <View style={styles.cozyOverlay}>
+          <View style={[styles.cozyFrame, theme.SHADOWS.cardShadow]}>
+            <View style={styles.cozyParchment}>
+              <View style={styles.cozyBevel} pointerEvents="none" />
               
               {modalData?.outcome === 'trap' && (
                 <View style={styles.outcomeContent}>
-                  <Text style={styles.outcomeEmoji}>⚠️</Text>
-                  <Text style={styles.outcomeTitle}>It's a Trap!</Text>
+                  <View style={styles.cozyHeroIcon}>
+                    <SoftEllipseShadow width={90} height={18} style={{ position: 'absolute', bottom: -2 }} />
+                    <IconGlowBackground size={72} />
+                    <ItemSprite spritesheet="weapons-1" frameIndex={8} displaySize={48} />
+                  </View>
+                  <Text style={[styles.outcomeTitle, { color: '#B91C1C' }]}>It's a Trap!</Text>
                   <Text style={styles.outcomeFlavor}>"{modalData.flavor}"</Text>
                   <Text style={styles.trapDamageText}>
                     {hero.name || 'Mochi'} lost {modalData.pct}% max HP (-{modalData.damage} HP)
                   </Text>
-                  {modalData.survived ? (
-                    <Text style={styles.outcomeSubText}>
-                      You pull yourself out of the mechanism, bruised but still standing.
-                    </Text>
-                  ) : (
-                    <Text style={[styles.outcomeSubText, { color: theme.COLORS.danger, fontWeight: 'bold' }]}>
-                      The trap proved fatal...
-                    </Text>
-                  )}
+                  <Text style={[styles.outcomeSubText, { color: '#6A4A2A' }]}>
+                    {modalData.survived
+                      ? "You pull yourself out of the mechanism, bruised but still standing."
+                      : "The trap proved fatal..."}
+                  </Text>
                 </View>
               )}
 
               {modalData?.outcome === 'treasure' && (
                 <View style={styles.outcomeContent}>
-                  <Text style={styles.outcomeEmoji}>🎁</Text>
-                  <Text style={styles.outcomeTitle}>Jackpot!</Text>
+                  <View style={styles.cozyHeroIcon}>
+                    <SoftEllipseShadow width={100} height={22} style={{ position: 'absolute', bottom: -2 }} />
+                    <IconGlowBackground size={80} />
+                    <Sparkle size={14} color="#D97706" style={{ position: 'absolute', top: -10, left: -10 }} />
+                    <ItemSprite spritesheet="icons-1" frameIndex={5} displaySize={56} />
+                  </View>
+                  <Text style={[styles.outcomeTitle, { color: '#D97706' }]}>Jackpot!</Text>
                   <Text style={styles.outcomeFlavor}>"{modalData.flavor}"</Text>
-                  <View style={styles.lootRewardBox}>
-                    <Text style={styles.lootGoldText}>💰 +{modalData.gold} Gold (Double Treasure!)</Text>
+                  <View style={styles.cozyWell}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginVertical: 4 }}>
+                      <ItemSprite spritesheet="icons-1" frameIndex={11} displaySize={18} />
+                      <Text style={styles.cozyGoldText}>+{modalData.gold} Gold (Double Treasure!)</Text>
+                    </View>
                     {renderLootItems(modalData.materials, modalData.consumables)}
                   </View>
                 </View>
@@ -1048,23 +1156,50 @@ export default function DungeonMapScreen({ navigation }) {
 
               {modalData?.outcome === 'ambush' && (
                 <View style={styles.outcomeContent}>
-                  <Text style={styles.outcomeEmoji}>👺</Text>
-                  <Text style={styles.outcomeTitle}>Ambush!</Text>
-                  <Text style={styles.outcomeSubText}>
+                  <View style={styles.cozyHeroIcon}>
+                    <SoftEllipseShadow width={90} height={20} style={{ position: 'absolute', bottom: -2 }} />
+                    <IconGlowBackground size={72} />
+                    <ItemSprite spritesheet="icons-1" frameIndex={10} displaySize={48} />
+                  </View>
+                  <Text style={[styles.outcomeTitle, { color: '#9D174D' }]}>Ambush!</Text>
+                  <Text style={[styles.outcomeSubText, { color: '#6A4A2A', marginBottom: 6 }]}>
                     A shadow leaps from the dark. You are ambushed by monsters!
                   </Text>
-                  <Text style={styles.ambushWarningText}>
+                  <Text style={[styles.ambushWarningText, { color: '#B91C1C', fontFamily: 'Silkscreen-Regular', fontSize: 10 }]}>
                     Prepare for a challenging fight!
                   </Text>
                 </View>
               )}
 
-              <Button
-                title={modalData?.outcome === 'ambush' ? 'Prepare for Battle' : 'Continue'}
-                variant={modalData?.outcome === 'trap' && !modalData.survived ? 'danger' : 'primary'}
+              <TouchableOpacity
+                activeOpacity={0.85}
                 onPress={handleCloseGamble}
-                style={{ width: '100%', marginTop: 8 }}
-              />
+                style={
+                  modalData?.outcome === 'trap' && !modalData.survived
+                    ? styles.cozyButtonDanger
+                    : styles.cozyButton
+                }
+              >
+                <View
+                  style={
+                    modalData?.outcome === 'trap' && !modalData.survived
+                      ? styles.cozyButtonDangerInner
+                      : styles.cozyButtonInner
+                  }
+                >
+                  <Text style={styles.cozyButtonText}>
+                    {modalData?.outcome === 'ambush' ? 'Prepare for Battle' : 'Continue'}
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.cozyTopWrap} pointerEvents="none">
+              <View style={styles.cozyTopOuter}>
+                <View style={styles.cozyTopInner}>
+                  <Text style={styles.cozyTopText}>MYSTERY ROOM</Text>
+                </View>
+              </View>
             </View>
           </View>
         </View>
@@ -1074,20 +1209,22 @@ export default function DungeonMapScreen({ navigation }) {
           4. RUN DEFEAT / DEATH OVERLAY
       ════════════════════════════════════════════════════════════════ */}
       <Modal visible={activeModal === 'death'} transparent animationType="fade">
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalCard}>
-            <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
-              <Rect width="100%" height="100%" fill="#140A0A" rx={16} />
-              <Rect x="1" y="1" width="98%" height="98%" rx={15} fill="none" stroke="rgba(255, 68, 68, 0.2)" strokeWidth={1} />
-            </Svg>
+        <View style={styles.cozyOverlay}>
+          <View style={[styles.cozyFrame, theme.SHADOWS.cardShadow]}>
+            <View style={styles.cozyParchment}>
+              <View style={styles.cozyBevel} pointerEvents="none" />
+              
+              <View style={styles.cozyHeroIcon}>
+                <SoftEllipseShadow width={90} height={20} style={{ position: 'absolute', bottom: -2 }} />
+                <IconGlowBackground size={72} />
+                <ItemSprite spritesheet="status-icons-1" frameIndex={21} displaySize={48} />
+              </View>
 
-            <View style={styles.modalCardInner}>
-              <Text style={[styles.modalTitle, { color: theme.COLORS.danger }]}>💀 Defeated…</Text>
-              <Text style={styles.modalSubtitle}>
+              <Text style={styles.cozySubtitle}>
                 {hero.name || 'Mochi'} fell to the dangers of the dungeon and was forced to retreat.
               </Text>
 
-              <View style={styles.deathLootLostBox}>
+              <View style={styles.cozyWellDanger}>
                 <Text style={styles.lostLootTitle}>Loot Lost in the Depths:</Text>
                 {currentRun.lootCollected.gold === 0 &&
                 Object.keys(currentRun.lootCollected.materials).length === 0 &&
@@ -1095,28 +1232,41 @@ export default function DungeonMapScreen({ navigation }) {
                 (currentRun.lootCollected.xp || 0) === 0 ? (
                   <Text style={styles.noLostLootText}>No materials, gold, XP, or consumables were collected this run.</Text>
                 ) : (
-                  <>
+                  <View style={{ gap: 6, width: '100%', alignItems: 'center' }}>
                     {currentRun.lootCollected.xp > 0 && (
-                      <Text style={styles.lostLootXp}>✨ {currentRun.lootCollected.xp} XP</Text>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                        <ItemSprite spritesheet="icons-1" frameIndex={4} displaySize={18} opacity={0.5} />
+                        <Text style={[styles.lostLootXp, { color: '#6A4A2A' }]}>{currentRun.lootCollected.xp} XP</Text>
+                      </View>
                     )}
                     {currentRun.lootCollected.gold > 0 && (
-                      <Text style={styles.lostLootGold}>💰 {currentRun.lootCollected.gold} Gold</Text>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                        <ItemSprite spritesheet="icons-1" frameIndex={11} displaySize={18} opacity={0.5} />
+                        <Text style={[styles.lostLootGold, { color: '#6A4A2A' }]}>{currentRun.lootCollected.gold} Gold</Text>
+                      </View>
                     )}
                     {renderLootItems(currentRun.lootCollected.materials, currentRun.lootCollected.consumables)}
-                  </>
+                  </View>
                 )}
               </View>
 
-              <Text style={styles.deathRecoverMsg}>
+              <Text style={[styles.deathRecoverMsg, { color: '#6A4A2A' }]}>
                 {hero.name || 'Mochi'} wakes up back at camp, fully recovered but empty-handed.
               </Text>
 
-              <Button
-                title="Return to Camp"
-                variant="danger"
-                onPress={handleCloseDeath}
-                style={{ width: '100%', marginTop: 8 }}
-              />
+              <TouchableOpacity activeOpacity={0.85} onPress={handleCloseDeath} style={styles.cozyButtonDanger}>
+                <View style={styles.cozyButtonDangerInner}>
+                  <Text style={styles.cozyButtonText}>Return to Camp</Text>
+                </View>
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.cozyTopWrap} pointerEvents="none">
+              <View style={styles.cozyTopOuter}>
+                <View style={styles.cozyTopInner}>
+                  <Text style={styles.cozyTopText}>DEFEATED</Text>
+                </View>
+              </View>
             </View>
           </View>
         </View>
@@ -1126,34 +1276,41 @@ export default function DungeonMapScreen({ navigation }) {
           5. FLEE DUNGEON CONFIRMATION MODAL
       ════════════════════════════════════════════════════════════════ */}
       <Modal visible={activeModal === 'flee'} transparent animationType="fade">
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalCard}>
-            <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
-              <Rect width="100%" height="100%" fill="#111317" rx={16} />
-              <Rect x="1" y="1" width="98%" height="98%" rx={15} fill="none" stroke="rgba(255, 68, 68, 0.2)" strokeWidth={1} />
-            </Svg>
+        <View style={styles.cozyOverlay}>
+          <View style={[styles.cozyFrame, theme.SHADOWS.cardShadow]}>
+            <View style={styles.cozyParchment}>
+              <View style={styles.cozyBevel} pointerEvents="none" />
+              
+              <View style={styles.cozyHeroIcon}>
+                <SoftEllipseShadow width={90} height={20} style={{ position: 'absolute', bottom: -2 }} />
+                <IconGlowBackground size={72} />
+                <ItemSprite spritesheet="icons-1" frameIndex={26} displaySize={48} />
+              </View>
 
-            <View style={styles.modalCardInner}>
-              <Text style={[styles.modalTitle, { color: theme.COLORS.danger }]}>🏳️ Flee Dungeon?</Text>
-              <Text style={styles.modalSubtitle}>
+              <Text style={styles.cozySubtitle}>
                 Are you sure you want to escape? Fleeing preserves your life, but at a cost:
               </Text>
 
               <View style={styles.fleeCostBox}>
                 <Text style={styles.fleeCostWarning}>
-                  ⚠️ You will lose HALF of all gold, materials, and consumables collected during this run!
+                  You will lose HALF of all gold, materials, and consumables collected during this run!
                 </Text>
                 
                 <View style={styles.fleeLootPreview}>
-                  <Text style={styles.fleeLootPreviewTitle}>Estimated Retained Loot:</Text>
+                  <Text style={[styles.fleeLootPreviewTitle, { color: '#6A4A2A' }]}>Estimated Retained Loot:</Text>
                   {Math.floor(currentRun.lootCollected.gold / 2) === 0 &&
                   Object.keys(currentRun.lootCollected.materials).length === 0 &&
                   Object.keys(currentRun.lootCollected.consumables || {}).length === 0 ? (
                     <Text style={styles.noLostLootText}>No loot will be kept.</Text>
                   ) : (
-                    <>
+                    <View style={{ width: '100%', alignItems: 'center', gap: 6, marginTop: 4 }}>
                       {Math.floor(currentRun.lootCollected.gold / 2) > 0 && (
-                        <Text style={styles.retainedGold}>💰 {Math.floor(currentRun.lootCollected.gold / 2)} Gold</Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                          <ItemSprite spritesheet="icons-1" frameIndex={11} displaySize={18} />
+                          <Text style={[styles.retainedGold, { color: '#A85A00', fontWeight: 'bold' }]}>
+                            {Math.floor(currentRun.lootCollected.gold / 2)} Gold
+                          </Text>
+                        </View>
                       )}
                       {(() => {
                         const items = [];
@@ -1167,48 +1324,48 @@ export default function DungeonMapScreen({ navigation }) {
                         }
                         if (items.length === 0) return null;
                         return items.map(({ id, keptQty, isConsumable }) => {
-                          const def = isConsumable ? CONSUMABLES[id] : MATERIALS[id];
-                          let emoji = '💎';
-                          if (id.includes('potion')) emoji = '🧪';
-                          else if (id.startsWith('black')) emoji = '🖤';
-                          else if (id.startsWith('green')) emoji = '💚';
-                          else if (id.startsWith('yellow')) emoji = '💛';
+                          const def = isConsumable ? CONSUMABLES.find(c => c.id === id) : MATERIALS[id];
                           return (
                             <View key={id} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginVertical: 2 }}>
-                              {def?.spritesheet ? (
+                              {def?.spritesheet && (
                                 <ItemSprite
                                   spritesheet={def.spritesheet}
                                   frameIndex={def.frameIndex}
                                   displaySize={18}
                                 />
-                              ) : (
-                                <Text style={{ fontSize: 13 }}>{emoji}</Text>
                               )}
-                              <Text style={styles.retainedLootItemText}>
+                              <Text style={[styles.retainedLootItemText, { color: '#6A4A2A' }]}>
                                 {def?.name || id} ×{keptQty}
                               </Text>
                             </View>
                           );
                         });
                       })()}
-                    </>
+                    </View>
                   )}
                 </View>
               </View>
 
               <View style={styles.fleeBtnRow}>
-                <Button
-                  title="Flee & Escape"
-                  variant="danger"
-                  onPress={handleConfirmFlee}
-                  style={{ flex: 1 }}
-                />
-                <Button
-                  title="Stay & Fight"
-                  variant="secondary"
-                  onPress={() => setActiveModal(null)}
-                  style={{ flex: 1 }}
-                />
+                <TouchableOpacity activeOpacity={0.85} onPress={handleConfirmFlee} style={[styles.cozyButtonDanger, { flex: 1 }]}>
+                  <View style={styles.cozyButtonDangerInner}>
+                    <Text style={styles.cozyButtonText}>Flee & Escape</Text>
+                  </View>
+                </TouchableOpacity>
+
+                <TouchableOpacity activeOpacity={0.85} onPress={() => setActiveModal(null)} style={[styles.cozyButtonSecondary, { flex: 1 }]}>
+                  <View style={styles.cozyButtonSecondaryInner}>
+                    <Text style={styles.cozyButtonText}>Stay & Fight</Text>
+                  </View>
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            <View style={styles.cozyTopWrap} pointerEvents="none">
+              <View style={styles.cozyTopOuter}>
+                <View style={styles.cozyTopInner}>
+                  <Text style={styles.cozyTopText}>FLEE DUNGEON</Text>
+                </View>
               </View>
             </View>
           </View>
@@ -1219,34 +1376,32 @@ export default function DungeonMapScreen({ navigation }) {
           6. FLOOR COMPLETE MODAL
       ════════════════════════════════════════════════════════════════ */}
       <Modal visible={activeModal === 'floorComplete'} transparent animationType="fade">
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalCard}>
-            <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
-              <Defs>
-                <RadialGradient id="floorCompleteGlow" cx="50%" cy="0%" r="60%">
-                  <Stop offset="0%" stopColor="#FBBF24" stopOpacity="0.10" />
-                  <Stop offset="100%" stopColor="#0E0F14" stopOpacity="0" />
-                </RadialGradient>
-              </Defs>
-              <Rect width="100%" height="100%" fill="#0E0F14" rx={16} />
-              <Rect width="100%" height="100%" fill="url(#floorCompleteGlow)" rx={16} />
-              <Rect x="1" y="1" width="98%" height="98%" rx={15} fill="none" stroke="rgba(251,191,36,0.2)" strokeWidth={1} />
-            </Svg>
+        <View style={styles.cozyOverlay}>
+          <View style={[styles.cozyFrame, theme.SHADOWS.cardShadow]}>
+            <View style={styles.cozyParchment}>
+              <View style={styles.cozyBevel} pointerEvents="none" />
+              
+              <View style={styles.cozyHeroIcon}>
+                <SoftEllipseShadow width={100} height={22} style={{ position: 'absolute', bottom: -2 }} />
+                <IconGlowBackground size={80} />
+                <Sparkle size={14} color="#FBBF24" style={{ position: 'absolute', top: -12, left: -12 }} />
+                <Sparkle size={9} color="#FFF3DA" style={{ position: 'absolute', top: -6, right: -12 }} />
+                <ItemSprite spritesheet="icons-1" frameIndex={0} displaySize={56} />
+              </View>
 
-            <View style={styles.modalCardInner}>
-              <Text style={styles.floorCompleteTitle}>
-                {currentRun.floorNumber === 10 ? '⚔️ Zone Cleared!' : `🎉 Floor ${currentRun.floorNumber} Cleared!`}
-              </Text>
-              <Text style={styles.modalSubtitle}>
+              <Text style={styles.cozySubtitle}>
                 {currentRun.floorNumber === 10
                   ? `You have conquered the entire zone. The dungeon trembles before ${hero.name || 'Mochi'}!`
                   : 'Every room on this floor has been explored. Return to camp and prepare for the next descent.'}
               </Text>
 
-              <View style={styles.lootRewardBox}>
-                <Text style={styles.floorLootTitle}>Loot Collected This Run:</Text>
+              <View style={styles.cozyWell}>
+                <Text style={[styles.floorLootTitle, { color: '#8A6E44', fontWeight: 'bold' }]}>Loot Collected This Run:</Text>
                 {currentRun.lootCollected.gold > 0 && (
-                  <Text style={styles.lootGoldText}>💰 +{currentRun.lootCollected.gold} Gold</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginVertical: 4 }}>
+                    <ItemSprite spritesheet="icons-1" frameIndex={11} displaySize={18} />
+                    <Text style={styles.cozyGoldText}>+{currentRun.lootCollected.gold} Gold</Text>
+                  </View>
                 )}
                 {(Object.keys(currentRun.lootCollected.materials).length > 0 || Object.keys(currentRun.lootCollected.consumables || {}).length > 0)
                   ? renderLootItems(currentRun.lootCollected.materials, currentRun.lootCollected.consumables)
@@ -1254,12 +1409,21 @@ export default function DungeonMapScreen({ navigation }) {
                 }
               </View>
 
-              <Button
-                title="Return to Camp"
-                variant="primary"
-                onPress={handleFloorComplete}
-                style={{ width: '100%', marginTop: 12 }}
-              />
+              <TouchableOpacity activeOpacity={0.85} onPress={handleFloorComplete} style={styles.cozyButton}>
+                <View style={styles.cozyButtonInner}>
+                  <Text style={styles.cozyButtonText}>Return to Camp</Text>
+                </View>
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.cozyTopWrap} pointerEvents="none">
+              <View style={styles.cozyTopOuter}>
+                <View style={styles.cozyTopInner}>
+                  <Text style={styles.cozyTopText}>
+                    {currentRun.floorNumber === 10 ? 'ZONE CLEARED' : `FLOOR ${currentRun.floorNumber} CLEARED`}
+                  </Text>
+                </View>
+              </View>
             </View>
           </View>
         </View>
@@ -1269,93 +1433,92 @@ export default function DungeonMapScreen({ navigation }) {
           7. RUN BAG / ITEMS MODAL
       ════════════════════════════════════════════════════════════════ */}
       <Modal visible={activeModal === 'bag'} transparent animationType="fade">
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalCard}>
-            <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
-              <Defs>
-                <RadialGradient id="bagGlow" cx="50%" cy="0%" r="60%">
-                  <Stop offset="0%" stopColor="#D4A754" stopOpacity="0.08" />
-                  <Stop offset="100%" stopColor="#111317" stopOpacity="0" />
-                </RadialGradient>
-              </Defs>
-              <Rect width="100%" height="100%" fill="#111317" rx={16} />
-              <Rect width="100%" height="100%" fill="url(#bagGlow)" rx={16} />
-              <Rect x="1" y="1" width="98%" height="98%" rx={15} fill="none" stroke="rgba(212, 167, 84, 0.15)" strokeWidth={1} />
-            </Svg>
-
-            <View style={styles.modalCardInner}>
-              <Text style={styles.modalTitle}>🎒 Run Bag & Loot</Text>
-              <Text style={styles.modalSubtitle}>
-                Packed supplies and collected dungeon loot.
-              </Text>
+        <View style={styles.cozyOverlay}>
+          <View style={[styles.cozyFrame, theme.SHADOWS.cardShadow]}>
+            <View style={styles.cozyParchment}>
+              <View style={styles.cozyBevel} pointerEvents="none" />
+              
+              <View style={styles.cozyHeroIcon}>
+                <SoftEllipseShadow width={90} height={20} style={{ position: 'absolute', bottom: -2 }} />
+                <IconGlowBackground size={72} />
+                <ItemSprite spritesheet="icons-1" frameIndex={26} displaySize={48} />
+              </View>
 
               <ScrollView style={styles.modalBagScroll} showsVerticalScrollIndicator={false}>
-                <Text style={styles.bagSectionHeader}>🎒 Packed Supplies</Text>
+                <Text style={[styles.bagSectionHeader, { color: '#8A6E44' }]}>Packed Supplies</Text>
                 {runConsumablesList.length === 0 ? (
                   <Text style={styles.emptyBagText}>No items remaining in your run bag.</Text>
                 ) : (
                   runConsumablesList.map((item) => {
-                    const icon = CONSUMABLE_ICONS[item.id] || '🧪';
+                    const consumableDef = CONSUMABLES.find(c => c.id === item.id);
                     const isUsable = ['potion', 'super_potion', 'mega_potion', 'ultra_potion'].includes(item.id);
 
                     return (
-                      <View key={item.id} style={styles.bagItemRow}>
+                      <View key={item.id} style={[styles.bagItemRow, { backgroundColor: '#F4E6C0', borderColor: '#C9A86A' }]}>
                         <View style={styles.bagItemLeft}>
-                          <View style={styles.bagItemIconWrapper}>
-                            <Text style={styles.bagItemIcon}>{icon}</Text>
+                          <View style={[styles.bagItemIconWrapper, { backgroundColor: 'rgba(154, 99, 47, 0.08)' }]}>
+                            {consumableDef?.spritesheet ? (
+                              <ItemSprite
+                                spritesheet={consumableDef.spritesheet}
+                                frameIndex={consumableDef.frameIndex}
+                                displaySize={28}
+                              />
+                            ) : (
+                              <ItemSprite spritesheet="consumables-1" frameIndex={0} displaySize={28} />
+                            )}
                           </View>
                           <View style={styles.bagItemInfo}>
-                            <Text style={styles.bagItemName}>{item.name}</Text>
-                            <Text style={styles.bagItemDesc}>{item.description}</Text>
-                            <Text style={styles.bagItemQty}>Qty: {item.quantity}</Text>
+                            <Text style={[styles.bagItemName, { color: '#4A2E14', fontWeight: 'bold' }]}>{item.name}</Text>
+                            <Text style={[styles.bagItemDesc, { color: '#8A6E44' }]}>{item.description}</Text>
+                            <Text style={[styles.bagItemQty, { color: '#A85A00' }]}>Qty: {item.quantity}</Text>
                           </View>
                         </View>
 
-                        <Button
-                          title={isUsable ? 'Use' : 'Info'}
-                          variant={isUsable ? 'primary' : 'disabled'}
-                          onPress={() => handleUseItemOnMap(item)}
-                          style={{ paddingHorizontal: 16, paddingVertical: 6, minHeight: 0 }}
-                          textStyle={{ fontSize: 12 }}
-                        />
+                        {isUsable ? (
+                          <TouchableOpacity
+                            activeOpacity={0.85}
+                            onPress={() => handleUseItemOnMap(item)}
+                            style={[styles.cozyButton, { width: 70, minHeight: 36, padding: 2, marginTop: 0, marginBottom: 0 }]}
+                          >
+                            <View style={[styles.cozyButtonInner, { paddingVertical: 6 }]}>
+                              <Text style={[styles.cozyButtonText, { fontSize: 10 }]}>Use</Text>
+                            </View>
+                          </TouchableOpacity>
+                        ) : (
+                          <View style={[styles.bagItemUseBtnDisabled, { borderWidth: 1.5, borderColor: '#C9A86A', borderRadius: 8, paddingVertical: 6, paddingHorizontal: 12 }]}>
+                            <Text style={{ fontFamily: 'Silkscreen-Regular', fontSize: 10, color: '#8A6E44' }}>Info</Text>
+                          </View>
+                        )}
                       </View>
                     );
                   })
                 )}
 
-                <View style={styles.bagDivider} />
+                <View style={[styles.bagDivider, { backgroundColor: '#C9A86A', opacity: 0.5 }]} />
 
-                <Text style={styles.bagSectionHeader}>💎 Loot Collected</Text>
+                <Text style={[styles.bagSectionHeader, { color: '#8A6E44' }]}>Loot Collected</Text>
                 {currentRun.lootCollected.gold === 0 && Object.keys(currentRun.lootCollected.materials).length === 0 ? (
                   <Text style={styles.emptyBagText}>No gold or materials collected yet.</Text>
                 ) : (
-                  <View style={styles.bagLootBox}>
+                  <View style={styles.cozyWell}>
                     {currentRun.lootCollected.gold > 0 && (
                       <View style={styles.bagLootRow}>
-                        <Text style={styles.bagLootEmoji}>💰</Text>
-                        <Text style={styles.bagLootText}>Gold: {currentRun.lootCollected.gold}g</Text>
+                        <ItemSprite spritesheet="icons-1" frameIndex={11} displaySize={18} />
+                        <Text style={[styles.bagLootText, { color: '#4A2E14' }]}>Gold: {currentRun.lootCollected.gold}g</Text>
                       </View>
                     )}
                     {Object.entries(currentRun.lootCollected.materials).map(([id, qty]) => {
                       const def = MATERIALS[id];
-                      let emoji = '💎';
-                      if (id.startsWith('black')) emoji = '🖤';
-                      if (id.startsWith('green')) emoji = '💚';
-                      if (id.startsWith('yellow')) emoji = '💛';
                       return (
                         <View key={id} style={styles.bagLootRow}>
-                          {def?.spritesheet ? (
-                            <View style={{ marginRight: 6 }}>
-                              <ItemSprite
-                                spritesheet={def.spritesheet}
-                                frameIndex={def.frameIndex}
-                                displaySize={18}
-                              />
-                            </View>
-                          ) : (
-                            <Text style={styles.bagLootEmoji}>{emoji}</Text>
+                          {def?.spritesheet && (
+                            <ItemSprite
+                              spritesheet={def.spritesheet}
+                              frameIndex={def.frameIndex}
+                              displaySize={18}
+                            />
                           )}
-                          <Text style={styles.bagLootText}>
+                          <Text style={[styles.bagLootText, { color: '#4A2E14' }]}>
                             {def?.name || id.replace(/_/g, ' ').toUpperCase()}: {qty}
                           </Text>
                         </View>
@@ -1365,12 +1528,19 @@ export default function DungeonMapScreen({ navigation }) {
                 )}
               </ScrollView>
 
-              <Button
-                title="Close Bag"
-                variant="secondary"
-                onPress={() => setActiveModal(null)}
-                style={{ width: '100%', marginTop: 10 }}
-              />
+              <TouchableOpacity activeOpacity={0.85} onPress={() => setActiveModal(null)} style={styles.cozyButtonSecondary}>
+                <View style={styles.cozyButtonSecondaryInner}>
+                  <Text style={styles.cozyButtonText}>Close Bag</Text>
+                </View>
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.cozyTopWrap} pointerEvents="none">
+              <View style={styles.cozyTopOuter}>
+                <View style={styles.cozyTopInner}>
+                  <Text style={styles.cozyTopText}>RUN BAG & LOOT</Text>
+                </View>
+              </View>
             </View>
           </View>
         </View>
@@ -1448,6 +1618,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 4,
     alignSelf: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
   },
   roomsBadgeText: {
     ...theme.FONTS.label,
@@ -1570,6 +1743,9 @@ const styles = StyleSheet.create({
     borderRadius: theme.BORDER_RADIUS.pill,
     paddingHorizontal: 8,
     paddingVertical: 3,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
   },
   buffBadgeText: {
     ...theme.FONTS.label,
@@ -2212,5 +2388,295 @@ const styles = StyleSheet.create({
     fontSize: 9,
     color: 'rgba(207,224,238,0.5)',
     marginBottom: 6,
+  },
+
+  // ── Sealed Boss and Player Glow ──────────────────────────────
+  sealedOverlay: {
+    position: 'absolute',
+    top: 4,
+    backgroundColor: 'rgba(239, 68, 68, 0.8)',
+    borderRadius: 4,
+    paddingHorizontal: 4,
+    paddingVertical: 2,
+    zIndex: 15,
+  },
+  sealedText: {
+    fontFamily: 'Silkscreen-Regular',
+    fontSize: 7,
+    color: '#FFF',
+    fontWeight: 'bold',
+  },
+  playerAvatarWrapper: {
+    width: 30,
+    height: 30,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 2,
+  },
+
+  // ── Cozy Parchment Design System ──────────────────────────────
+  cozyOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(24, 14, 6, 0.78)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
+  cozyFrame: {
+    width: '100%',
+    maxWidth: 360,
+    backgroundColor: '#6E4524',
+    borderColor: '#3A2210',
+    borderWidth: 3,
+    borderRadius: 12,
+    padding: 10,
+    position: 'relative',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.5,
+    shadowRadius: 5,
+    elevation: 8,
+  },
+  cozyParchment: {
+    backgroundColor: '#ECD8A6',
+    borderRadius: 14,
+    borderColor: '#C9A86A',
+    borderWidth: 2,
+    paddingTop: 28,
+    paddingBottom: 16,
+    paddingHorizontal: 20,
+    alignItems: 'center',
+    position: 'relative',
+  },
+  cozyBevel: {
+    position: 'absolute',
+    top: 3,
+    left: 3,
+    right: 3,
+    bottom: 3,
+    borderRadius: 11,
+    borderWidth: 1.5,
+    borderColor: 'rgba(255, 250, 228, 0.4)',
+    zIndex: 1,
+  },
+  cozyClose: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: '#E3CF9C',
+    borderColor: '#9A6B34',
+    borderWidth: 2,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 30,
+  },
+  cozyCloseText: {
+    fontSize: 13,
+    fontWeight: 'bold',
+    lineHeight: 15,
+    color: '#6E4524',
+  },
+  cozyTopWrap: {
+    position: 'absolute',
+    top: -18,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    zIndex: 40,
+  },
+  cozyTopOuter: {
+    borderWidth: 3,
+    borderColor: '#4A3917',
+    borderRadius: 8,
+    padding: 2,
+    backgroundColor: '#1E1E20',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 3,
+    elevation: 6,
+  },
+  cozyTopInner: {
+    borderWidth: 2,
+    borderColor: '#D4A754',
+    borderRadius: 5,
+    backgroundColor: '#1E1E20',
+    paddingVertical: 6,
+    paddingHorizontal: 16,
+  },
+  cozyTopText: {
+    fontFamily: 'PressStart2P-Regular',
+    fontSize: 11,
+    color: '#FFF3DA',
+    textAlign: 'center',
+    textShadowColor: '#000',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 1,
+  },
+  cozySubtitle: {
+    fontFamily: 'Silkscreen-Regular',
+    fontSize: 11,
+    color: '#4A2E14',
+    textAlign: 'center',
+    letterSpacing: 0.3,
+    lineHeight: 17,
+    marginTop: 8,
+    marginBottom: 16,
+    paddingHorizontal: 6,
+  },
+  cozyWell: {
+    backgroundColor: '#F4E6C0',
+    borderColor: '#C9A86A',
+    borderWidth: 1.5,
+    borderRadius: 10,
+    padding: 12,
+    width: '100%',
+    alignItems: 'center',
+    marginBottom: 16,
+    gap: 8,
+  },
+  cozyWellDanger: {
+    backgroundColor: '#E6D3A0',
+    borderColor: '#D8483F',
+    borderWidth: 1.5,
+    borderRadius: 10,
+    padding: 12,
+    width: '100%',
+    alignItems: 'center',
+    marginBottom: 16,
+    gap: 8,
+  },
+  cozyHeroIcon: {
+    width: 120,
+    height: 80,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginVertical: 10,
+    position: 'relative',
+    zIndex: 2,
+  },
+  cozyGoldText: {
+    fontFamily: 'PixelifySans-Regular',
+    fontSize: 16,
+    color: '#A85A00',
+    fontWeight: 'bold',
+  },
+  cozyChoiceCard: {
+    flex: 1,
+    minHeight: 120,
+    backgroundColor: '#F4E6C0',
+    borderColor: '#C9A86A',
+    borderWidth: 1.5,
+    borderRadius: 10,
+    padding: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cozyChoiceCardText: {
+    fontFamily: 'PixelifySans-Regular',
+    fontSize: 12,
+    color: '#4A2E14',
+    fontWeight: 'bold',
+    textAlign: 'center',
+    marginTop: 6,
+  },
+  cozyChoiceCardDesc: {
+    fontFamily: 'Silkscreen-Regular',
+    fontSize: 8,
+    color: '#8A6E44',
+    textAlign: 'center',
+    marginTop: 4,
+    lineHeight: 11,
+  },
+  cozyButton: {
+    alignSelf: 'stretch',
+    backgroundColor: '#7A4A24',
+    borderColor: '#3A2210',
+    borderWidth: 2,
+    borderRadius: 12,
+    padding: 3,
+    marginBottom: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 3,
+    elevation: 4,
+    marginTop: 8,
+  },
+  cozyButtonInner: {
+    backgroundColor: '#9A632F',
+    borderRadius: 9,
+    paddingVertical: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderTopWidth: 1.5,
+    borderTopColor: '#C58E4E',
+    borderBottomWidth: 2,
+    borderBottomColor: '#5A3318',
+  },
+  cozyButtonText: {
+    fontFamily: 'Silkscreen-Regular',
+    fontSize: 12,
+    color: '#FFF3DA',
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+    textShadowColor: '#4A2A10',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 1,
+  },
+  cozyButtonSecondary: {
+    alignSelf: 'stretch',
+    backgroundColor: '#4E2C14',
+    borderColor: '#241208',
+    borderWidth: 2,
+    borderRadius: 12,
+    padding: 3,
+    marginBottom: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 2,
+    elevation: 3,
+    marginTop: 8,
+  },
+  cozyButtonSecondaryInner: {
+    backgroundColor: '#633D1E',
+    borderRadius: 9,
+    paddingVertical: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderTopWidth: 1.5,
+    borderTopColor: '#8E5E35',
+    borderBottomWidth: 2,
+    borderBottomColor: '#361F0E',
+  },
+  cozyButtonDanger: {
+    alignSelf: 'stretch',
+    backgroundColor: '#7A1C16',
+    borderColor: '#3A0A06',
+    borderWidth: 2,
+    borderRadius: 12,
+    padding: 3,
+    marginBottom: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 3,
+    elevation: 4,
+    marginTop: 8,
+  },
+  cozyButtonDangerInner: {
+    backgroundColor: '#9A2B23',
+    borderRadius: 9,
+    paddingVertical: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderTopWidth: 1.5,
+    borderTopColor: '#C5544C',
+    borderBottomWidth: 2,
+    borderBottomColor: '#5A1713',
   },
 });
