@@ -60,6 +60,14 @@ const COLORS = {
   bleed: '#D8483F',             // damageRed alias
   guard: '#5A9FE0',             // coldBlue alias
   stealth: '#A98EE0',           // mysteryViolet alias
+
+  // --- Shared hub design language (warm teal + gold panels) ---
+  hubBg: '#133131',             // teal screen background used across redesigned screens
+  panelGreenTop: '#102719',     // panel gradient top
+  panelGreenBottom: '#0A160F',  // panel gradient bottom
+  panelGreen: '#142C1C',        // flat panel background
+  panelBorderGold: 'rgba(212, 167, 84, 0.15)', // soft gold panel border
+  panelBorderGoldStrong: 'rgba(212, 167, 84, 0.35)', // gold chip/pill border
 };
 
 // ─── Glow & Drop Shadows ───────────────────────────────────────────────────────

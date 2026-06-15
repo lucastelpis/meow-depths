@@ -28,6 +28,7 @@ export const ITEM_SPRITESHEETS = {
   'crystals-1': require('../../assets/sprites/items/crystals-1.png'),
   'skill-icons-1': require('../../assets/sprites/items/skill-icons-1.png'),
   'consumables-1': require('../../assets/sprites/items/consumables-1.png'),
+  'status-icons-1': require('../../assets/sprites/items/status-icons-1.png'),
 };
 
 export const HERO_SPRITE = {
