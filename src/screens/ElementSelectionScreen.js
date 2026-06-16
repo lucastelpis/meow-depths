@@ -402,62 +402,91 @@ export default function ElementSelectionScreen({ route, navigation }) {
                 onRequestClose={() => setConfirmModalVisible(false)}
             >
                 <Pressable style={styles.modalBackdrop} onPress={() => setConfirmModalVisible(false)}>
-                    <Pressable style={styles.modalCard}>
-                        <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
-                            <Defs>
-                                <RadialGradient id="modalGlow" cx="50%" cy="0%" rx="80%" ry="50%">
-                                    <Stop offset="0%" stopColor={elementDef?.color || '#D4A754'} stopOpacity="0.1" />
-                                    <Stop offset="100%" stopColor="#14161C" stopOpacity="0" />
-                                </RadialGradient>
-                            </Defs>
-                            <Rect width="100%" height="100%" fill="#14161C" rx={20} />
-                            <Rect width="100%" height="100%" fill="url(#modalGlow)" rx={20} />
-                            <Rect x="1" y="1" width="98%" height="98%" rx={19} fill="none"
-                                stroke={elementDef ? elementDef.borderColor : 'rgba(212,167,84,0.2)'}
-                                strokeWidth={1}
-                            />
-                        </Svg>
+                    <Pressable style={styles.modalCardOuter} onPress={(e) => e.stopPropagation()}>
+                        <View style={[styles.modalCardInner, { borderColor: elementDef ? `${elementDef.color}80` : 'rgba(212,167,84,0.5)' }]}>
+                            <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
+                                <Defs>
+                                    <RadialGradient id="modalGlow" cx="50%" cy="0%" rx="80%" ry="50%">
+                                        <Stop offset="0%" stopColor={elementDef?.color || '#D4A754'} stopOpacity="0.18" />
+                                        <Stop offset="100%" stopColor="#1E1E20" stopOpacity="0" />
+                                    </RadialGradient>
+                                </Defs>
+                                <Rect width="100%" height="100%" fill="#1E1E20" />
+                                <Rect width="100%" height="100%" fill="url(#modalGlow)" />
+                            </Svg>
 
-                        <View style={styles.modalInner}>
-                            <Text style={styles.modalIcon}>{elementDef?.icon}</Text>
-                            <Text style={[styles.modalTitle, { color: elementDef?.color || '#D4A754' }]}>
-                                Choose {elementDef?.name}?
-                            </Text>
-                            <Text style={styles.modalBody}>
-                                "{heroName.trim() || 'Mochi'}" will embody the{' '}
-                                <Text style={{ color: elementDef?.color, fontWeight: 'bold' }}>
-                                    {elementDef?.name} element
-                                </Text>{' '}
-                                for this adventure. This defines your playstyle.
-                            </Text>
-                            <Text style={styles.modalWarning}>
-                                This choice is permanent until you start a new game.
-                            </Text>
+                            <View style={styles.modalInner}>
+                                <View style={styles.modalIconContainer}>
+                                    <View style={[styles.modalIconFrame, { borderColor: elementDef ? `${elementDef.color}30` : 'rgba(212,167,84,0.3)', backgroundColor: elementDef ? `${elementDef.color}05` : 'rgba(212,167,84,0.05)' }]}>
+                                        <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
+                                            <Defs>
+                                                <RadialGradient id={`pedestalGlow_${elementDef?.id}`} cx="50%" cy="50%" rx="50%" ry="50%">
+                                                    <Stop offset="0%" stopColor={elementDef?.color || '#D4A754'} stopOpacity="0.45" />
+                                                    <Stop offset="100%" stopColor="transparent" stopOpacity="0" />
+                                                </RadialGradient>
+                                            </Defs>
+                                            <Circle cx="45" cy="45" r="40" fill={`url(#pedestalGlow_${elementDef?.id})`} />
+                                            <Circle cx="45" cy="45" r="37" fill="none" stroke={elementDef ? `${elementDef.color}25` : 'rgba(212,167,84,0.2)'} strokeWidth={1} strokeDasharray="3 3" />
+                                            <Circle cx="45" cy="45" r="31" fill="none" stroke="#D4A754" strokeWidth={1} opacity={0.6} />
+                                        </Svg>
+                                        {elementDef && (
+                                            <ItemSprite
+                                                spritesheet="icons-1"
+                                                frameIndex={elementDef.spriteFrame}
+                                                displaySize={56}
+                                            />
+                                        )}
+                                    </View>
+                                </View>
 
-                            <View style={styles.modalBtns}>
-                                <TouchableOpacity
-                                    style={styles.modalCancelBtn}
-                                    onPress={() => setConfirmModalVisible(false)}
-                                >
-                                    <Text style={styles.modalCancelText}>Go Back</Text>
-                                </TouchableOpacity>
+                                <Text style={[styles.modalTitle, { color: elementDef?.color || '#D4A754' }]}>
+                                    CHOOSE {elementDef ? elementDef.name.toUpperCase() : ''}?
+                                </Text>
 
-                                <TouchableOpacity
-                                    style={[styles.modalConfirmBtn, { shadowColor: elementDef?.color }]}
-                                    onPress={handleFinalConfirm}
-                                    activeOpacity={0.85}
-                                >
-                                    <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
-                                        <Defs>
-                                            <LinearGradient id="confirmGrad" x1="0" y1="0" x2="1" y2="0">
-                                                <Stop offset="0%" stopColor={elementDef?.color || '#D4A754'} />
-                                                <Stop offset="100%" stopColor={elementDef?.borderColor || '#B5701A'} />
-                                            </LinearGradient>
-                                        </Defs>
-                                        <Rect width="100%" height="100%" fill="url(#confirmGrad)" rx={10} />
-                                    </Svg>
-                                    <Text style={styles.modalConfirmText}>Confirm {elementDef?.name}</Text>
-                                </TouchableOpacity>
+                                <View style={styles.ornateDividerContainer}>
+                                    <View style={styles.dividerLine} />
+                                    <Text style={styles.dividerDiamond}>◆</Text>
+                                    <View style={styles.dividerLine} />
+                                </View>
+
+                                <View style={styles.descriptionBox}>
+                                    <Text style={styles.modalBody}>
+                                        "{heroName.trim() || 'Mochi'}" will embody the{' '}
+                                        <Text style={{ color: elementDef?.color, fontWeight: 'bold' }}>
+                                            {elementDef?.name} element
+                                        </Text>{' '}
+                                        for this adventure. This defines your playstyle.
+                                    </Text>
+                                    <Text style={styles.modalWarning}>
+                                        This choice is permanent until you start a new game.
+                                    </Text>
+                                </View>
+
+                                <View style={styles.modalBtns}>
+                                    <TouchableOpacity
+                                        style={styles.modalCancelBtn}
+                                        onPress={() => setConfirmModalVisible(false)}
+                                    >
+                                        <Text style={styles.modalCancelText}>Go Back</Text>
+                                    </TouchableOpacity>
+
+                                    <TouchableOpacity
+                                        style={[styles.modalConfirmBtn, { shadowColor: elementDef?.color }]}
+                                        onPress={handleFinalConfirm}
+                                        activeOpacity={0.85}
+                                    >
+                                        <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
+                                            <Defs>
+                                                <LinearGradient id="confirmGrad" x1="0" y1="0" x2="1" y2="0">
+                                                    <Stop offset="0%" stopColor={elementDef?.color || '#D4A754'} />
+                                                    <Stop offset="100%" stopColor={elementDef?.borderColor || '#B5701A'} />
+                                                </LinearGradient>
+                                            </Defs>
+                                            <Rect width="100%" height="100%" fill="url(#confirmGrad)" rx={10} />
+                                        </Svg>
+                                        <Text style={styles.modalConfirmText}>Confirm {elementDef?.name}</Text>
+                                    </TouchableOpacity>
+                                </View>
                             </View>
                         </View>
                     </Pressable>
@@ -701,47 +730,100 @@ const styles = StyleSheet.create({
     /* Modal */
     modalBackdrop: {
         flex: 1,
-        backgroundColor: 'rgba(0,0,0,0.85)',
+        backgroundColor: 'rgba(5, 5, 8, 0.90)',
         justifyContent: 'center',
         alignItems: 'center',
         padding: 24,
     },
-    modalCard: {
+    modalCardOuter: {
         width: '100%',
         maxWidth: 340,
-        borderRadius: 20,
+        borderRadius: 16,
+        padding: 3,
+        borderWidth: 3,
+        borderColor: '#4A3917',
+        backgroundColor: '#4A3917',
+    },
+    modalCardInner: {
+        borderRadius: 12,
+        borderWidth: 2,
+        backgroundColor: '#1E1E20',
         overflow: 'hidden',
+        position: 'relative',
     },
     modalInner: {
-        padding: 24,
+        paddingVertical: 20,
+        paddingHorizontal: 16,
         alignItems: 'center',
+        zIndex: 2,
     },
-    modalIcon: {
-        fontSize: 44,
-        marginBottom: 10,
+    modalIconContainer: {
+        marginVertical: 10,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    modalIconFrame: {
+        width: 90,
+        height: 90,
+        borderRadius: 45,
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderWidth: 1.5,
+        position: 'relative',
     },
     modalTitle: {
-        fontFamily: 'PixelifySans-Regular',
-        fontSize: 22,
-        fontWeight: 'normal',
-        marginBottom: 12,
+        fontFamily: 'PressStart2P-Regular',
+        fontSize: 15,
+        textAlign: 'center',
+        marginTop: 10,
+        marginBottom: 4,
         letterSpacing: 0.5,
+        textShadowColor: 'rgba(0,0,0,0.5)',
+        textShadowOffset: { width: 1, height: 1 },
+        textShadowRadius: 1,
+    },
+    ornateDividerContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginVertical: 12,
+        width: '80%',
+    },
+    dividerLine: {
+        flex: 1,
+        height: 1,
+        backgroundColor: 'rgba(255, 243, 218, 0.15)',
+    },
+    dividerDiamond: {
+        fontFamily: 'PixelifySans-Regular',
+        fontSize: 10,
+        color: '#D4A754',
+        marginHorizontal: 8,
+        opacity: 0.8,
+    },
+    descriptionBox: {
+        backgroundColor: 'rgba(0,0,0,0.22)',
+        borderRadius: 10,
+        borderWidth: 1,
+        borderColor: 'rgba(255, 243, 218, 0.05)',
+        padding: 12,
+        width: '100%',
+        marginBottom: 20,
     },
     modalBody: {
         fontFamily: 'PixelifySans-Regular',
         fontSize: 13,
-        color: 'rgba(255,255,255,0.7)',
+        color: 'rgba(255, 255, 255, 0.8)',
         textAlign: 'center',
         lineHeight: 19,
-        marginBottom: 10,
+        marginBottom: 8,
     },
     modalWarning: {
         fontFamily: 'PixelifySans-Regular',
         fontSize: 11,
-        color: 'rgba(255,255,255,0.3)',
+        color: '#FF8A8A',
         textAlign: 'center',
-        marginBottom: 24,
-        fontStyle: 'italic',
+        fontWeight: 'normal',
     },
     modalBtns: {
         flexDirection: 'row',
@@ -754,15 +836,15 @@ const styles = StyleSheet.create({
         borderRadius: 10,
         alignItems: 'center',
         justifyContent: 'center',
-        borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.08)',
-        backgroundColor: 'rgba(255,255,255,0.03)',
+        borderWidth: 1.5,
+        borderColor: 'rgba(255, 243, 218, 0.12)',
+        backgroundColor: 'rgba(255, 255, 255, 0.03)',
     },
     modalCancelText: {
         fontFamily: 'PixelifySans-Regular',
         fontSize: 13,
         fontWeight: 'normal',
-        color: 'rgba(255,255,255,0.5)',
+        color: 'rgba(255, 243, 218, 0.6)',
     },
     modalConfirmBtn: {
         flex: 2,

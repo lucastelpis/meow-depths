@@ -2045,16 +2045,19 @@ export default function CombatScreen() {
 
                           {/* Text section */}
                           <View style={styles.modalItemText}>
-                            <View style={styles.modalItemNameRow}>
-                              <Text style={styles.modalItemName}>
-                                {def?.name || entry.id}
-                              </Text>
-                              <View style={styles.modalItemOwnedBadge}>
-                                <Text style={styles.modalItemOwnedText}>OWNED: {entry.quantity}</Text>
-                              </View>
-                            </View>
+                            <Text style={styles.modalItemName}>
+                              {def?.name || entry.id}
+                            </Text>
                             <Text style={styles.modalItemDesc}>
                               {def?.description || ''}
+                            </Text>
+                          </View>
+
+                          {/* Quantity on the right */}
+                          <View style={styles.modalItemQuantityBox}>
+                            <Text style={styles.modalItemQuantityText}>
+                              <Text style={styles.modalItemQuantityLabel}>x</Text>
+                              {entry.quantity}
                             </Text>
                           </View>
                         </TouchableOpacity>
@@ -2938,7 +2941,7 @@ function DamagePopup({ amount, isHeal, isMiss, isCrit, onComplete }) {
           letterSpacing: isCrit ? 0.5 : 0,
         }}
       >
-        {isMiss ? 'miss' : isCrit ? `✦${amount}!` : `${isHeal ? '+' : '-'}${amount}`}
+        {isMiss ? 'miss' : isCrit ? `${amount}!` : `${amount}`}
       </Text>
     </Animated.View>
   );
@@ -3471,27 +3474,26 @@ const styles = StyleSheet.create({
   modalItemText: {
     flex: 1,
   },
-  modalItemNameRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    flexWrap: 'wrap',
-    marginBottom: 4,
-  },
   modalItemName: {
     fontFamily: 'PixelifySans-Regular',
     fontSize: 16,
     color: '#F8FAFC',
+    marginBottom: 4,
   },
-  modalItemOwnedBadge: {
-    backgroundColor: '#1A6B3A',
-    borderRadius: 6,
-    paddingHorizontal: 7,
-    paddingVertical: 2,
+  modalItemQuantityBox: {
+    marginLeft: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingRight: 4,
   },
-  modalItemOwnedText: {
-    fontFamily: 'PressStart2P-Regular',
-    fontSize: 7,
+  modalItemQuantityText: {
+    fontFamily: 'Silkscreen-Regular',
+    fontSize: 16,
+    color: '#D4A754',
+  },
+  modalItemQuantityLabel: {
+    fontFamily: 'Silkscreen-Regular',
+    fontSize: 10,
     color: '#D4A754',
   },
   modalItemDesc: {

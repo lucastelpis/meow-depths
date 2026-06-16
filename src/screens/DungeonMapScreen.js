@@ -783,7 +783,7 @@ export default function DungeonMapScreen({ navigation }) {
     return <View style={styles.gridContainer}>{rows}</View>;
   };
 
-  const renderLootItems = (lootMats, lootConsumables = {}, gold = 0, xp = 0) => {
+  const renderLootItems = (lootMats, lootConsumables = {}, gold = 0, xp = 0, recessed = false) => {
     const items = [];
     for (const [id, qty] of Object.entries(lootMats || {})) {
       if (qty > 0) items.push({ id, qty, isConsumable: false });
@@ -794,17 +794,19 @@ export default function DungeonMapScreen({ navigation }) {
 
     if (items.length === 0 && gold <= 0 && xp <= 0) return null;
 
+    const chipStyle = recessed ? styles.bagItemChipRecessed : styles.bagItemChip;
+
     return (
       <View style={styles.bagChipsContainer}>
         {xp > 0 && (
-          <View style={styles.bagItemChip}>
+          <View style={chipStyle}>
             <ItemSprite spritesheet="icons-1" frameIndex={4} displaySize={32} />
             <Text style={styles.bagChipQty}>{xp}</Text>
             <Text style={styles.bagChipLabel}>XP</Text>
           </View>
         )}
         {gold > 0 && (
-          <View style={styles.bagItemChip}>
+          <View style={chipStyle}>
             <ItemSprite spritesheet="icons-1" frameIndex={11} displaySize={32} />
             <Text style={styles.bagChipQty}>{gold}g</Text>
             <Text style={styles.bagChipLabel}>Gold</Text>
@@ -813,7 +815,7 @@ export default function DungeonMapScreen({ navigation }) {
         {items.map(({ id, qty, isConsumable }) => {
           const def = isConsumable ? CONSUMABLES.find(c => c.id === id) : MATERIALS[id];
           return (
-            <View key={id} style={styles.bagItemChip}>
+            <View key={id} style={chipStyle}>
               {def?.spritesheet && (
                 <ItemSprite
                   spritesheet={def.spritesheet}
@@ -936,31 +938,31 @@ export default function DungeonMapScreen({ navigation }) {
               <Text style={styles.buffsTitle}>Buffs</Text>
               {currentRun.runBuffs.attackBonus > 0 && (
                 <View style={styles.buffBadge}>
-                  <ItemSprite spritesheet="icons-1" frameIndex={20} displaySize={12} />
+                  <ItemSprite spritesheet="icons-map" frameIndex={92} displaySize={12} />
                   <Text style={styles.buffBadgeText}>ATK +{currentRun.runBuffs.attackBonus}</Text>
                 </View>
               )}
               {currentRun.runBuffs.critBonus > 0 && (
                 <View style={styles.buffBadge}>
-                  <ItemSprite spritesheet="icons-1" frameIndex={21} displaySize={12} />
+                  <ItemSprite spritesheet="icons-map" frameIndex={47} displaySize={12} />
                   <Text style={styles.buffBadgeText}>CRIT +{Math.round(currentRun.runBuffs.critBonus * 100)}%</Text>
                 </View>
               )}
               {currentRun.runBuffs.dodgeBonus > 0 && (
                 <View style={styles.buffBadge}>
-                  <ItemSprite spritesheet="icons-1" frameIndex={21} displaySize={12} />
+                  <ItemSprite spritesheet="icons-map" frameIndex={94} displaySize={12} />
                   <Text style={styles.buffBadgeText}>DODGE +{Math.round(currentRun.runBuffs.dodgeBonus * 100)}%</Text>
                 </View>
               )}
               {currentRun.runBuffs.defenceBonus > 0 && (
                 <View style={styles.buffBadge}>
-                  <ItemSprite spritesheet="icons-1" frameIndex={22} displaySize={12} />
+                  <ItemSprite spritesheet="icons-map" frameIndex={62} displaySize={12} />
                   <Text style={styles.buffBadgeText}>DEF +{currentRun.runBuffs.defenceBonus}</Text>
                 </View>
               )}
               {currentRun.runBuffs.maxHpBonus > 0 && (
                 <View style={styles.buffBadge}>
-                  <ItemSprite spritesheet="icons-1" frameIndex={22} displaySize={12} />
+                  <ItemSprite spritesheet="icons-map" frameIndex={135} displaySize={12} />
                   <Text style={styles.buffBadgeText}>HP +{currentRun.runBuffs.maxHpBonus}</Text>
                 </View>
               )}
@@ -1101,12 +1103,12 @@ export default function DungeonMapScreen({ navigation }) {
               
               {modalData?.outcome === 'trap' && (
                 <View style={styles.outcomeContent}>
-                  <Text style={[styles.outcomeTitle, { color: '#B91C1C' }]}>It's a Trap!</Text>
-                  <Text style={styles.outcomeFlavor}>"{modalData.flavor}"</Text>
+                  <Text style={[styles.outcomeTitle, { color: '#9E1B1B' }]}>IT'S A TRAP!</Text>
+                  <Text style={[styles.outcomeFlavor, { color: '#4A2E14' }]}>"{modalData.flavor}"</Text>
                   <Text style={styles.trapDamageText}>
                     {hero.name || 'Mochi'} lost {modalData.pct}% max HP (-{modalData.damage} HP)
                   </Text>
-                  <Text style={[styles.outcomeSubText, { color: '#6A4A2A' }]}>
+                  <Text style={[styles.outcomeSubText, { color: '#3E2723' }]}>
                     {modalData.survived
                       ? "You pull yourself out of the mechanism, bruised but still standing."
                       : "The trap proved fatal..."}
@@ -1116,9 +1118,9 @@ export default function DungeonMapScreen({ navigation }) {
 
               {modalData?.outcome === 'treasure' && (
                 <View style={styles.outcomeContent}>
-                  <Text style={[styles.outcomeTitle, { color: '#D97706' }]}>Jackpot!</Text>
+                  <Text style={[styles.outcomeTitle, { color: '#B45309' }]}>Jackpot!</Text>
                   <Text style={[styles.outcomeFlavor, { color: '#4A2E14' }]}>"{modalData.flavor}"</Text>
-                  <Text style={{ color: '#7A4A24', fontFamily: 'Silkscreen-Regular', fontSize: 9, textAlign: 'center', marginBottom: 8 }}>
+                  <Text style={{ color: '#5C3F22', fontFamily: 'Silkscreen-Regular', fontSize: 9, textAlign: 'center', marginBottom: 8 }}>
                     Double Treasure Jackpot!
                   </Text>
                   {renderLootItems(modalData.materials, modalData.consumables, modalData.gold)}
@@ -1128,11 +1130,11 @@ export default function DungeonMapScreen({ navigation }) {
 
               {modalData?.outcome === 'ambush' && (
                 <View style={styles.outcomeContent}>
-                  <Text style={[styles.outcomeTitle, { color: '#9D174D' }]}>Ambush!</Text>
-                  <Text style={[styles.outcomeSubText, { color: '#6A4A2A', marginBottom: 6 }]}>
+                  <Text style={[styles.outcomeTitle, { color: '#831843' }]}>Ambush!</Text>
+                  <Text style={[styles.outcomeSubText, { color: '#3E2723', marginBottom: 6 }]}>
                     A shadow leaps from the dark. You are ambushed by monsters!
                   </Text>
-                  <Text style={[styles.ambushWarningText, { color: '#B91C1C', fontFamily: 'Silkscreen-Regular', fontSize: 10 }]}>
+                  <Text style={[styles.ambushWarningText, { color: '#9E1B1B', fontFamily: 'Silkscreen-Regular', fontSize: 10 }]}>
                     Prepare for a challenging fight!
                   </Text>
                 </View>
@@ -1191,7 +1193,8 @@ export default function DungeonMapScreen({ navigation }) {
                     currentRun.lootCollected.materials,
                     currentRun.lootCollected.consumables,
                     currentRun.lootCollected.gold,
-                    currentRun.lootCollected.xp
+                    currentRun.lootCollected.xp,
+                    true
                   )
                 )}
               </View>
@@ -1231,60 +1234,56 @@ export default function DungeonMapScreen({ navigation }) {
                 Are you sure you want to escape? Fleeing preserves your life, but at a cost:
               </Text>
 
-              <View style={styles.fleeCostBox}>
-                <Text style={styles.fleeCostWarning}>
-                  You will lose HALF of all gold, materials, and consumables collected during this run!
-                </Text>
-                
-                <View style={styles.fleeLootPreview}>
-                  <Text style={[styles.fleeLootPreviewTitle, { color: '#6A4A2A' }]}>Estimated Retained Loot:</Text>
-                  {Math.floor(currentRun.lootCollected.gold / 2) === 0 &&
-                  Object.keys(currentRun.lootCollected.materials).length === 0 &&
-                  Object.keys(currentRun.lootCollected.consumables || {}).length === 0 ? (
-                    <Text style={styles.noLostLootText}>No loot will be kept.</Text>
-                  ) : (
-                    <View style={styles.bagChipsContainer}>
-                      {Math.floor(currentRun.lootCollected.gold / 2) > 0 && (
-                        <View style={styles.bagItemChip}>
-                          <ItemSprite spritesheet="icons-1" frameIndex={11} displaySize={32} />
-                          <Text style={styles.bagChipQty}>{Math.floor(currentRun.lootCollected.gold / 2)}g</Text>
-                          <Text style={styles.bagChipLabel}>Gold</Text>
-                        </View>
-                      )}
-                      {(() => {
-                        const items = [];
-                        for (const [id, qty] of Object.entries(currentRun.lootCollected.materials || {})) {
-                          const keptQty = Math.floor(qty / 2);
-                          if (keptQty > 0) items.push({ id, keptQty, isConsumable: false });
-                        }
-                        for (const [id, qty] of Object.entries(currentRun.lootCollected.consumables || {})) {
-                          const keptQty = Math.floor(qty / 2);
-                          if (keptQty > 0) items.push({ id, keptQty, isConsumable: true });
-                        }
-                        if (items.length === 0) return null;
-                        return items.map(({ id, keptQty, isConsumable }) => {
-                          const def = isConsumable ? CONSUMABLES.find(c => c.id === id) : MATERIALS[id];
-                          return (
-                            <View key={id} style={styles.bagItemChip}>
-                              {def?.spritesheet && (
-                                <ItemSprite
-                                  spritesheet={def.spritesheet}
-                                  frameIndex={def.frameIndex}
-                                  displaySize={32}
-                                />
-                              )}
-                              <Text style={styles.bagChipQty}>{keptQty}</Text>
-                              <Text style={styles.bagChipLabel}>
-                                {def?.name || id.replace(/_/g, ' ')}
-                              </Text>
-                            </View>
-                          );
-                        });
-                      })()}
+              <Text style={[styles.fleeCostWarning, { color: '#B91C1C', textAlign: 'center', marginBottom: 12, fontSize: 10, fontFamily: 'Silkscreen-Regular' }]}>
+                You will lose HALF of all gold, materials, and consumables collected during this run!
+              </Text>
+              
+              <Text style={[styles.fleeLootPreviewTitle, { color: '#6A4A2A', fontWeight: 'bold', marginBottom: 8, textAlign: 'center' }]}>Estimated Retained Loot:</Text>
+              {Math.floor(currentRun.lootCollected.gold / 2) === 0 &&
+              Object.keys(currentRun.lootCollected.materials).length === 0 &&
+              Object.keys(currentRun.lootCollected.consumables || {}).length === 0 ? (
+                <Text style={[styles.noLostLootText, { textAlign: 'center', marginBottom: 12 }]}>No loot will be kept.</Text>
+              ) : (
+                <View style={[styles.bagChipsContainer, { marginBottom: 12 }]}>
+                  {Math.floor(currentRun.lootCollected.gold / 2) > 0 && (
+                    <View style={styles.bagItemChip}>
+                      <ItemSprite spritesheet="icons-1" frameIndex={11} displaySize={32} />
+                      <Text style={styles.bagChipQty}>{Math.floor(currentRun.lootCollected.gold / 2)}g</Text>
+                      <Text style={styles.bagChipLabel}>Gold</Text>
                     </View>
                   )}
+                  {(() => {
+                    const items = [];
+                    for (const [id, qty] of Object.entries(currentRun.lootCollected.materials || {})) {
+                      const keptQty = Math.floor(qty / 2);
+                      if (keptQty > 0) items.push({ id, keptQty, isConsumable: false });
+                    }
+                    for (const [id, qty] of Object.entries(currentRun.lootCollected.consumables || {})) {
+                      const keptQty = Math.floor(qty / 2);
+                      if (keptQty > 0) items.push({ id, keptQty, isConsumable: true });
+                    }
+                    if (items.length === 0) return null;
+                    return items.map(({ id, keptQty, isConsumable }) => {
+                      const def = isConsumable ? CONSUMABLES.find(c => c.id === id) : MATERIALS[id];
+                      return (
+                         <View key={id} style={styles.bagItemChip}>
+                          {def?.spritesheet && (
+                            <ItemSprite
+                              spritesheet={def.spritesheet}
+                              frameIndex={def.frameIndex}
+                              displaySize={32}
+                            />
+                          )}
+                          <Text style={styles.bagChipQty}>{keptQty}</Text>
+                          <Text style={styles.bagChipLabel}>
+                            {def?.name || id.replace(/_/g, ' ')}
+                          </Text>
+                        </View>
+                      );
+                    });
+                  })()}
                 </View>
-              </View>
+              )}
 
               <View style={styles.fleeBtnRow}>
                 <TouchableOpacity activeOpacity={0.85} onPress={handleConfirmFlee} style={[styles.cozyButtonDanger, { flex: 1 }]}>
@@ -1320,14 +1319,6 @@ export default function DungeonMapScreen({ navigation }) {
           <View style={[styles.cozyFrame, theme.SHADOWS.cardShadow]}>
             <View style={styles.cozyParchment}>
               <View style={styles.cozyBevel} pointerEvents="none" />
-              
-              <View style={styles.cozyHeroIcon}>
-                <SoftEllipseShadow width={100} height={22} style={{ position: 'absolute', bottom: -2 }} />
-                <IconGlowBackground size={80} />
-                <Sparkle size={14} color="#FBBF24" style={{ position: 'absolute', top: -12, left: -12 }} />
-                <Sparkle size={9} color="#FFF3DA" style={{ position: 'absolute', top: -6, right: -12 }} />
-                <ItemSprite spritesheet="icons-1" frameIndex={0} displaySize={56} />
-              </View>
 
               <Text style={styles.cozySubtitle}>
                 {currentRun.floorNumber === 10
@@ -1335,15 +1326,13 @@ export default function DungeonMapScreen({ navigation }) {
                   : 'Every room on this floor has been explored. Return to camp and prepare for the next descent.'}
               </Text>
 
-              <View style={styles.cozyWell}>
-                <Text style={[styles.floorLootTitle, { color: '#8A6E44', fontWeight: 'bold', marginBottom: 8 }]}>Loot Collected This Run:</Text>
-                {(Object.keys(currentRun.lootCollected.materials).length > 0 || Object.keys(currentRun.lootCollected.consumables || {}).length > 0 || currentRun.lootCollected.gold > 0)
-                  ? renderLootItems(currentRun.lootCollected.materials, currentRun.lootCollected.consumables, currentRun.lootCollected.gold)
-                  : <Text style={styles.noLostLootText}>No loot collected.</Text>
-                }
-              </View>
+              <Text style={[styles.floorLootTitle, { color: '#8A6E44', fontWeight: 'bold', marginBottom: 8, textAlign: 'center' }]}>Loot Collected This Run:</Text>
+              {(Object.keys(currentRun.lootCollected.materials).length > 0 || Object.keys(currentRun.lootCollected.consumables || {}).length > 0 || currentRun.lootCollected.gold > 0)
+                ? renderLootItems(currentRun.lootCollected.materials, currentRun.lootCollected.consumables, currentRun.lootCollected.gold, 0, false)
+                : <Text style={[styles.noLostLootText, { textAlign: 'center', marginBottom: 12 }]}>No loot collected.</Text>
+              }
 
-              <TouchableOpacity activeOpacity={0.85} onPress={handleFloorComplete} style={styles.cozyButton}>
+              <TouchableOpacity activeOpacity={0.85} onPress={handleFloorComplete} style={[styles.cozyButton, { marginTop: 12 }]}>
                 <View style={styles.cozyButtonInner}>
                   <Text style={styles.cozyButtonText}>Return to Camp</Text>
                 </View>
@@ -2236,6 +2225,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#F4E6C0',
     borderColor: '#C9A86A',
+    borderWidth: 1.5,
+    borderRadius: 10,
+    paddingTop: 10,
+    paddingBottom: 8,
+    paddingHorizontal: 8,
+    minWidth: 96,
+    maxWidth: 130,
+    flexGrow: 0,
+  },
+  bagItemChipRecessed: {
+    alignItems: 'center',
+    backgroundColor: '#E5D3A2',
+    borderColor: '#BCA16A',
     borderWidth: 1.5,
     borderRadius: 10,
     paddingTop: 10,
