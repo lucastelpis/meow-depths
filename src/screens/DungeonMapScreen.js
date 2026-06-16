@@ -783,7 +783,7 @@ export default function DungeonMapScreen({ navigation }) {
     return <View style={styles.gridContainer}>{rows}</View>;
   };
 
-  const renderLootItems = (lootMats, lootConsumables = {}) => {
+  const renderLootItems = (lootMats, lootConsumables = {}, gold = 0, xp = 0) => {
     const items = [];
     for (const [id, qty] of Object.entries(lootMats || {})) {
       if (qty > 0) items.push({ id, qty, isConsumable: false });
@@ -792,32 +792,44 @@ export default function DungeonMapScreen({ navigation }) {
       if (qty > 0) items.push({ id, qty, isConsumable: true });
     }
 
-    if (items.length === 0) return null;
+    if (items.length === 0 && gold <= 0 && xp <= 0) return null;
 
-    return items.map(({ id, qty, isConsumable }) => {
-      const def = isConsumable ? CONSUMABLES.find(c => c.id === id) : MATERIALS[id];
-      let emoji = '💎';
-      if (id.includes('potion')) emoji = '🧪';
-      else if (id.startsWith('black')) emoji = '🖤';
-      else if (id.startsWith('green')) emoji = '💚';
-      else if (id.startsWith('yellow')) emoji = '💛';
-      return (
-        <View key={id} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginVertical: 2 }}>
-          {def?.spritesheet ? (
-            <ItemSprite
-              spritesheet={def.spritesheet}
-              frameIndex={def.frameIndex}
-              displaySize={18}
-            />
-          ) : (
-            <Text style={{ fontSize: 13 }}>{emoji}</Text>
-          )}
-          <Text style={styles.lootItemText}>
-            {def?.name || id} ×{qty}
-          </Text>
-        </View>
-      );
-    });
+    return (
+      <View style={styles.bagChipsContainer}>
+        {xp > 0 && (
+          <View style={styles.bagItemChip}>
+            <ItemSprite spritesheet="icons-1" frameIndex={4} displaySize={32} />
+            <Text style={styles.bagChipQty}>+{xp}</Text>
+            <Text style={styles.bagChipLabel}>XP</Text>
+          </View>
+        )}
+        {gold > 0 && (
+          <View style={styles.bagItemChip}>
+            <ItemSprite spritesheet="icons-1" frameIndex={11} displaySize={32} />
+            <Text style={styles.bagChipQty}>+{gold}g</Text>
+            <Text style={styles.bagChipLabel}>Gold</Text>
+          </View>
+        )}
+        {items.map(({ id, qty, isConsumable }) => {
+          const def = isConsumable ? CONSUMABLES.find(c => c.id === id) : MATERIALS[id];
+          return (
+            <View key={id} style={styles.bagItemChip}>
+              {def?.spritesheet && (
+                <ItemSprite
+                  spritesheet={def.spritesheet}
+                  frameIndex={def.frameIndex}
+                  displaySize={32}
+                />
+              )}
+              <Text style={styles.bagChipQty}>+{qty}</Text>
+              <Text style={styles.bagChipLabel}>
+                {def?.name || id.replace(/_/g, ' ')}
+              </Text>
+            </View>
+          );
+        })}
+      </View>
+    );
   };
 
   return (
@@ -999,13 +1011,7 @@ export default function DungeonMapScreen({ navigation }) {
             <View style={styles.cozyParchment}>
               <View style={styles.cozyBevel} pointerEvents="none" />
               
-              <View style={styles.cozyHeroIcon}>
-                <SoftEllipseShadow width={48} height={10} style={{ position: 'absolute', bottom: 12 }} />
-                <IconGlowBackground size={72} />
-                <Sparkle size={14} color="#FBBF24" style={{ position: 'absolute', top: 10, left: 30 }} />
-                <Sparkle size={9} color="#F8E7AC" style={{ position: 'absolute', top: 18, right: 30 }} />
-                <ItemSprite spritesheet="icons-map" frameIndex={31} displaySize={64} />
-              </View>
+
 
               <Text style={styles.cozySubtitle}>
                 You found a quiet corner. Take a moment to prepare for the depths ahead.
@@ -1071,11 +1077,7 @@ export default function DungeonMapScreen({ navigation }) {
               </Text>
 
               <View style={styles.cozyWell}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginVertical: 4 }}>
-                  <ItemSprite spritesheet="icons-1" frameIndex={11} displaySize={20} />
-                  <Text style={styles.cozyGoldText}>+{modalData?.gold} Gold</Text>
-                </View>
-                {renderLootItems(modalData?.materials, modalData?.consumables)}
+                {renderLootItems(modalData?.materials, modalData?.consumables, modalData?.gold)}
               </View>
 
               <TouchableOpacity activeOpacity={0.85} onPress={handleCloseTreasure} style={styles.cozyButton}>
@@ -1108,9 +1110,9 @@ export default function DungeonMapScreen({ navigation }) {
               {modalData?.outcome === 'trap' && (
                 <View style={styles.outcomeContent}>
                   <View style={styles.cozyHeroIcon}>
-                    <SoftEllipseShadow width={90} height={18} style={{ position: 'absolute', bottom: -2 }} />
+                    <SoftEllipseShadow width={64} height={12} style={{ position: 'absolute', bottom: -2 }} />
                     <IconGlowBackground size={72} />
-                    <ItemSprite spritesheet="weapons-1" frameIndex={8} displaySize={48} />
+                    <ItemSprite spritesheet="icons-map" frameIndex={4} displaySize={56} />
                   </View>
                   <Text style={[styles.outcomeTitle, { color: '#B91C1C' }]}>It's a Trap!</Text>
                   <Text style={styles.outcomeFlavor}>"{modalData.flavor}"</Text>
@@ -1128,19 +1130,18 @@ export default function DungeonMapScreen({ navigation }) {
               {modalData?.outcome === 'treasure' && (
                 <View style={styles.outcomeContent}>
                   <View style={styles.cozyHeroIcon}>
-                    <SoftEllipseShadow width={100} height={22} style={{ position: 'absolute', bottom: -2 }} />
+                    <SoftEllipseShadow width={80} height={16} style={{ position: 'absolute', bottom: -2 }} />
                     <IconGlowBackground size={80} />
                     <Sparkle size={14} color="#D97706" style={{ position: 'absolute', top: -10, left: -10 }} />
-                    <ItemSprite spritesheet="icons-1" frameIndex={5} displaySize={56} />
+                    <ItemSprite spritesheet="icons-map" frameIndex={12} displaySize={56} />
                   </View>
                   <Text style={[styles.outcomeTitle, { color: '#D97706' }]}>Jackpot!</Text>
                   <Text style={styles.outcomeFlavor}>"{modalData.flavor}"</Text>
+                  <Text style={{ color: '#8A6E44', fontFamily: 'Silkscreen-Regular', fontSize: 9, textAlign: 'center', marginBottom: 8 }}>
+                    Double Treasure Jackpot!
+                  </Text>
                   <View style={styles.cozyWell}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginVertical: 4 }}>
-                      <ItemSprite spritesheet="icons-1" frameIndex={11} displaySize={18} />
-                      <Text style={styles.cozyGoldText}>+{modalData.gold} Gold (Double Treasure!)</Text>
-                    </View>
-                    {renderLootItems(modalData.materials, modalData.consumables)}
+                    {renderLootItems(modalData.materials, modalData.consumables, modalData.gold)}
                   </View>
                 </View>
               )}
@@ -1148,9 +1149,9 @@ export default function DungeonMapScreen({ navigation }) {
               {modalData?.outcome === 'ambush' && (
                 <View style={styles.outcomeContent}>
                   <View style={styles.cozyHeroIcon}>
-                    <SoftEllipseShadow width={90} height={20} style={{ position: 'absolute', bottom: -2 }} />
+                    <SoftEllipseShadow width={64} height={12} style={{ position: 'absolute', bottom: -2 }} />
                     <IconGlowBackground size={72} />
-                    <ItemSprite spritesheet="icons-1" frameIndex={10} displaySize={48} />
+                    <ItemSprite spritesheet="icons-map" frameIndex={66} displaySize={52} />
                   </View>
                   <Text style={[styles.outcomeTitle, { color: '#9D174D' }]}>Ambush!</Text>
                   <Text style={[styles.outcomeSubText, { color: '#6A4A2A', marginBottom: 6 }]}>
@@ -1223,21 +1224,12 @@ export default function DungeonMapScreen({ navigation }) {
                 (currentRun.lootCollected.xp || 0) === 0 ? (
                   <Text style={styles.noLostLootText}>No materials, gold, XP, or consumables were collected this run.</Text>
                 ) : (
-                  <View style={{ gap: 6, width: '100%', alignItems: 'center' }}>
-                    {currentRun.lootCollected.xp > 0 && (
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                        <ItemSprite spritesheet="icons-1" frameIndex={4} displaySize={18} opacity={0.5} />
-                        <Text style={[styles.lostLootXp, { color: '#6A4A2A' }]}>{currentRun.lootCollected.xp} XP</Text>
-                      </View>
-                    )}
-                    {currentRun.lootCollected.gold > 0 && (
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                        <ItemSprite spritesheet="icons-1" frameIndex={11} displaySize={18} opacity={0.5} />
-                        <Text style={[styles.lostLootGold, { color: '#6A4A2A' }]}>{currentRun.lootCollected.gold} Gold</Text>
-                      </View>
-                    )}
-                    {renderLootItems(currentRun.lootCollected.materials, currentRun.lootCollected.consumables)}
-                  </View>
+                  renderLootItems(
+                    currentRun.lootCollected.materials,
+                    currentRun.lootCollected.consumables,
+                    currentRun.lootCollected.gold,
+                    currentRun.lootCollected.xp
+                  )
                 )}
               </View>
 
@@ -1381,15 +1373,9 @@ export default function DungeonMapScreen({ navigation }) {
               </Text>
 
               <View style={styles.cozyWell}>
-                <Text style={[styles.floorLootTitle, { color: '#8A6E44', fontWeight: 'bold' }]}>Loot Collected This Run:</Text>
-                {currentRun.lootCollected.gold > 0 && (
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginVertical: 4 }}>
-                    <ItemSprite spritesheet="icons-1" frameIndex={11} displaySize={18} />
-                    <Text style={styles.cozyGoldText}>+{currentRun.lootCollected.gold} Gold</Text>
-                  </View>
-                )}
-                {(Object.keys(currentRun.lootCollected.materials).length > 0 || Object.keys(currentRun.lootCollected.consumables || {}).length > 0)
-                  ? renderLootItems(currentRun.lootCollected.materials, currentRun.lootCollected.consumables)
+                <Text style={[styles.floorLootTitle, { color: '#8A6E44', fontWeight: 'bold', marginBottom: 8 }]}>Loot Collected This Run:</Text>
+                {(Object.keys(currentRun.lootCollected.materials).length > 0 || Object.keys(currentRun.lootCollected.consumables || {}).length > 0 || currentRun.lootCollected.gold > 0)
+                  ? renderLootItems(currentRun.lootCollected.materials, currentRun.lootCollected.consumables, currentRun.lootCollected.gold)
                   : <Text style={styles.noLostLootText}>No loot collected.</Text>
                 }
               </View>
