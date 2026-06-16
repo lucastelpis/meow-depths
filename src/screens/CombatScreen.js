@@ -2740,7 +2740,7 @@ function DyingEnemyCard({ enemy, slotStyle, popups = [], removePopup }) {
         {/* Sprite, with skull overlay */}
         <View style={[styles.spriteWrapper, { width: displaySize, height: displaySize }]}>
           <View style={styles.dyingOverlay}>
-            <ItemSprite spritesheet="icons-map" frameIndex={32} displaySize={48} />
+            <ItemSprite spritesheet="icons-map" frameIndex={34} displaySize={48} />
           </View>
           <AnimatedSprite
             source={animData.source}

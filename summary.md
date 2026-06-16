@@ -85,161 +85,30 @@ Crystals and shards use frames from the `crystals-1` spritesheet:
 - **Synchronized Duration**: Both animations dynamically synchronize their durations to match the visual frame length of the active sprite sheet at 10 FPS.
 
 ## Matrix Spritesheet Reference (icons-map.png)
-This is a 14-column layout matrix of various game icons:
+This is a 15-column layout matrix of various game icons (480x320 px, 32x32 px per tile). The frame index is calculated as:
+`frameIndex = (row - 1) * 15 + (col - 1)` (0-based indexing).
 
-### Row 1 (Frames 1 - 14)
-- **1**: Striped tent (Red/White)
-- **2**: Brown tent
-- **3**: Red potion bottle
-- **4**: Chicken leg (Meat on the bone)
-- **5**: Bear trap / Spikes
-- **6**: Iron sword
-- **7**: Bowl of soup/stew
-- **8**: Stone room with a bed
-- **9**: Iron gate / Portcullis
-- **10**: Wooden chest (Closed)
-- **11**: Bow
-- **12**: Sack of grain
-- **13**: Treasure chest with gold
-- **14**: Campfire with a cooking pot
+### Mappings Used in Dungeon & Battle UI:
+1. **Fog / Unexplored Locked Room Tile**: Row 4, Col 5 ➔ `frameIndex: 49` (Lock)
+2. **Sealed Boss Padlock Overlay**: Row 4, Col 5 ➔ `frameIndex: 49` (Lock)
+3. **Room Completion Counter (HUD)**: Row 4, Col 8 ➔ `frameIndex: 52` (Lit candle)
+4. **EXP Icon (HUD)**: Row 10, Col 12 ➔ `frameIndex: 146` (EXP scroll)
+5. **Run Bag Button / Modal Header**: Row 7, Col 10 ➔ `frameIndex: 99` (Backpack)
+6. **Loot Collected Section Header (Run Bag popup)**: Row 1, Col 12 ➔ `frameIndex: 11` (Sack of grain)
+7. **Flee Button / Modal Header**: Row 9, Col 8 ➔ `frameIndex: 127` (Open book)
+8. **Rest Room Tile**: Row 3, Col 2 ➔ `frameIndex: 31` (Fireplace)
+9. **Surprise Room Tile**: Row 2, Col 5 ➔ `frameIndex: 19` (Jail Door / Iron Bars)
+10. **Start Room Tile**: Row 1, Col 5 ➔ `frameIndex: 4` (Bear Trap / Spikes)
+11. **Dying Enemy Skull Overlay (Battle)**: Row 3, Col 5 ➔ `frameIndex: 34` (Skull)
 
-### Row 2 (Frames 15 - 28)
-- **15**: Campfire (Basic)
-- **16**: Small brown tent
-- **17**: Cooking pot over a fire
-- **18**: Brown backpack
-- **19**: Bronze key
-- **20**: Jail door / Iron bars
-- **21**: Green backpack
-- **22**: Ornate gold key
-- **23**: Cobweb in a stone window
-- **24**: Tied wood logs
-- **25**: Gold ring
-- **26**: Quiver with arrows
-- **27**: Compass
-- **28**: Opened scroll / Map
-
-### Row 3 (Frames 29 - 42)
-- **29**: Fireplace (Stone)
-- **30**: Small campfire
-- **31**: Torch
-- **32**: Opened map/scroll
-- **33**: Skull
-- **34**: Pickaxe
-- **35**: Closed scroll
-- **36**: Stone room with a stool
-- **37**: Stack of books
-- **38**: Gold necklace/amulet
-- **39**: Battle axe
-- **40**: Firewood stack
-- **41**: Yellow potion bottle
-- **42**: Campfire (Alternative)
-
-### Row 4 (Frames 43 - 56)
-- **43**: Mug of beer/ale
-- **44**: Iron sword (Diagonal)
-- **45**: Pile of gold coins
-- **46**: Lock/Padlock (Gray)
-- **47**: Blue potion bottle
-- **48**: Stone room with a table
-- **49**: Stone room with a wall torch
-- **50**: Lit candle on a holder
-- **51**: Green potion bottle
-- **52**: Sleeping cat on a rug
-- **53**: Vampire in a coffin
-- **54**: Ornate red and gold chest
-- **55**: Circus tent / Shop tent
-- **56**: Loaf of bread
-
-### Row 5 (Frames 57 - 70)
-- **57**: Wooden shield
-- **58**: Stone archway
-- **59**: Stone block/cube
-- **60**: Iron hammer/mallet
-- **61**: Stone window looking outside
-- **62**: Stone window with a map
-- **63**: Red gem / Ruby
-- **64**: Iron shield
-- **65**: Lantern
-- **66**: Pile of colorful gems
-- **67**: Crossed swords icon (Combat)
-- **68**: Treasure map
-- **69**: Rolled up scroll
-- **70**: Anvil
-
-### Row 6 (Frames 71 - 84)
-- **71**: Red chest with gold trim
-- **72**: Pickaxe (Alternative)
-- **73**: Blacksmith hammer
-- **74**: Purple crystal cluster
-- **75**: Tornado/Whirlwind
-- **76**: Gold coin
-- **77**: Cloud
-- **78**: Purple rune stone
-- **79**: Pocket watch / Clock
-- **80**: Lit candle
-- **81**: Mushroom (Red with white spots)
-- **82**: Market stall / Shop
-- **83**: Green gift box
-- **84**: Crossed iron swords
-
-### Row 7 (Frames 85 - 98)
-- **85**: Fireball
-- **86**: Winged boot (Speed)
-- **87**: Purple wizard hat
-- **88**: Simple iron key
-- **89**: Water droplet
-- **90**: Magic wand with stars
-- **91**: Brown backpack (Alternative)
-- **92**: Gold key (Alternative)
-- **93**: Wooden signpost
-- **94**: Red potion bottle (Round)
-- **95**: Large meat on bone
-- **96**: Gold star
-- **97**: Magnifying glass
-- **98**: Small stack of gold coins
-
-### Row 8 (Frames 99 - 112)
-- **99**: Gold key (Simple)
-- **100**: Flexed arm (Strength)
-- **101**: Feather / Quill
-- **102**: Iron gear / Cog
-- **103**: Magma / Fire rock
-- **104**: Round wooden shield
-- **105**: Large stack of gold coins
-- **106**: Locked gold padlock
-- **107**: Gold bars / Ingots
-- **108**: Blue potion bottle (Round)
-- **109**: Red apple
-- **110**: Gray star
-- **111**: Brown book (Closed)
-- **112**: Small wooden chest
-
-### Row 9 (Frames 113 - 126)
-- **113**: Loaf of bread (Alternative)
-- **114**: Hand with red cross (Healing)
-- **115**: Green slime monster
-- **116**: Crossed wrench and hammer
-- **117**: Cat character running
-- **118**: Lit torch
-- **119**: Crown with gems
-- **120**: Open book with text
-- **121**: Mug of beer (Alternative)
-- **122**: Green potion bottle (Round)
-- **123**: Loaf of bread (Angle view)
-- **124**: Red heart with a green plus (Health up)
-- **125**: Cave entrance
-- **126**: Big red chest with gold locks
-
-### Row 10 (Frames 127 - 137)
-- **127**: Compass (Alternative)
-- **128**: Golden key with crown top
-- **129**: Gold crown
-- **130**: Flame / Fire
-- **131**: Warning sign (Exclamation mark)
-- **132**: Light blue potion bottle
-- **133**: Wood logs stack
-- **134**: Green arrow pointing up (Level up)
-- **135**: Scroll with "EXP" text
-- **136**: Grey mountain
-- **137**: Blue fish
+### Rows & Columns Layout Matrix:
+- **Row 1**: 1: Striped tent, 2: Brown tent, 3: Red potion, 4: Chicken leg, 5: Bear trap/Spikes, 6: Iron sword, 7: Bowl of soup, 8: Stone room/bed, 9: Iron gate, 10: Closed wooden chest, 11: Bow, 12: Sack of grain, 13: Treasure chest, 14: Campfire/pot, 15: Campfire
+- **Row 2**: 16: Small tent, 17: Pot over fire, 18: Backpack, 19: Bronze key, 20: Jail door/Iron bars, 21: Green backpack, 22: Gold key, 23: Cobweb window, 24: Wood logs, 25: Gold ring, 26: Quiver/arrows, 27: Compass, 28: Opened scroll/map, 29: Fireplace, 30: Small campfire
+- **Row 3**: 31: Fireplace, 32: Torch, 33: Opened map, 34: Skull, 35: Pickaxe, 36: Closed scroll, 37: Stone room/stool, 38: Stack of books, 39: Gold necklace, 40: Battle axe, 41: Firewood stack, 42: Yellow potion, 43: Campfire alt, 44: Beer mug, 45: Sword diag
+- **Row 4**: 46: Lock, 47: Blue potion, 48: Table room, 49: Wall torch room, 50: Lit candle, 51: Green potion, 52: Sleeping cat, 53: Vampire coffin, 54: Ornate chest, 55: Shop tent, 56: Bread loaf, 57: Shield, 58: Archway, 59: Stone block, 60: Mallet
+- **Row 5**: 61: Window, 62: Map window, 63: Ruby, 64: Iron shield, 65: Lantern, 66: Pile of gems, 67: Crossed swords, 68: Treasure map, 69: Scroll, 70: Anvil, 71: Red chest, 72: Pickaxe alt, 73: Hammer, 74: Purple crystal, 75: Tornado
+- **Row 6**: 76: Gold coin, 77: Cloud, 78: Purple rune, 79: Pocket watch, 80: Lit candle, 81: Mushroom, 82: Shop stall, 83: Gift box, 84: Crossed swords alt, 85: Fireball, 86: Winged boot, 87: Wizard hat, 88: Iron key, 89: Water drop, 90: Wand
+- **Row 7**: 91: Backpack alt, 92: Gold key alt, 93: Signpost, 94: Red potion round, 95: Meat, 96: Gold star, 97: Magnifying glass, 98: Gold coins, 99: Gold key, 100: Flexed arm, 101: Feather, 102: Gear, 103: Magma rock, 104: Wooden shield, 105: Gold coins stack
+- **Row 8**: 106: Locked padlock, 107: Gold bars, 108: Blue potion round, 109: Red apple, 110: Gray star, 111: Brown book, 112: Wooden chest small, 113: Bread loaf alt, 114: Hand/cross, 115: Green slime, 116: Wrench/hammer, 117: Running cat, 118: Torch alt, 119: Crown, 120: Open book
+- **Row 9**: 121: Beer alt, 122: Green potion round, 123: Bread angle, 124: Heart/plus, 125: Cave entrance, 126: Red chest gold locks, 127: Compass alt, 128: Gold key crown, 129: Gold crown, 130: Flame/fire, 131: Warning sign, 132: Blue potion light, 133: Wood stack, 134: Green arrow, 135: EXP Scroll
+- **Row 10**: 136: Grey mountain, 137: Blue fish, 138-150: Additional cells.
