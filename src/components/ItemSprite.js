@@ -31,7 +31,7 @@ export default function ItemSprite({ spritesheet, frameIndex, displaySize = 36, 
   const scale = displaySize / frameSize;
 
   const isMatrix = spritesheet === 'icons-map';
-  const cols = 14;
+  const cols = 15;
   const totalRows = 10;
 
   let imageWidth = frameSize * totalFrames * scale;
