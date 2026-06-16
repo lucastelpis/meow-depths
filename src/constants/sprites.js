@@ -30,6 +30,7 @@ export const ITEM_SPRITESHEETS = {
   'consumables-1': require('../../assets/sprites/items/consumables-1.png'),
   'status-icons-1': require('../../assets/sprites/items/status-icons-1.png'),
   'reward-icons': require('../../assets/sprites/items/reward-icons.png'),
+  'icons-map': require('../../assets/sprites/items/icons-map.png'),
 };
 
 export const HERO_SPRITE = {
@@ -265,6 +266,7 @@ export const ALL_SPRITESHEET_ASSETS = [
   require('../../assets/sprites/items/crystals-1.png'),
   require('../../assets/sprites/items/skill-icons-1.png'),
   require('../../assets/sprites/items/consumables-1.png'),
+  require('../../assets/sprites/items/icons-map.png'),
   // Hero sprites
   require('../../assets/sprites/units/hero/hero_idle.png'),
   require('../../assets/sprites/units/hero/hero_attack.png'),

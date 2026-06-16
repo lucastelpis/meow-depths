@@ -25,20 +25,39 @@ export default function ItemSprite({ spritesheet, frameIndex, displaySize = 36, 
     'consumables-1': 12,
     'status-icons-1': 24,
     'reward-icons': 2,
+    'icons-map': 137,
   };
   const totalFrames = FRAMES_MAP[spritesheet] || 1;
   const scale = displaySize / frameSize;
+
+  const isMatrix = spritesheet === 'icons-map';
+  const cols = 14;
+  const totalRows = 10;
+
+  let imageWidth = frameSize * totalFrames * scale;
+  let imageHeight = displaySize;
+  let left = -(frameIndex * displaySize);
+  let top = 0;
+
+  if (isMatrix) {
+    const col = frameIndex % cols;
+    const row = Math.floor(frameIndex / cols);
+    imageWidth = frameSize * cols * scale;
+    imageHeight = frameSize * totalRows * scale;
+    left = -(col * displaySize);
+    top = -(row * displaySize);
+  }
 
   return (
     <View style={{ width: displaySize, height: displaySize, overflow: 'hidden', opacity }}>
       <Image
         source={source}
         style={{
-          width: frameSize * totalFrames * scale,
-          height: displaySize,
+          width: imageWidth,
+          height: imageHeight,
           position: 'absolute',
-          left: -(frameIndex * displaySize),
-          top: 0,
+          left: left,
+          top: top,
         }}
         resizeMode="stretch"
       />

@@ -40,7 +40,7 @@ import { useGame } from '../state/gameState';
 import { useFocusEffect } from '@react-navigation/native';
 import { ZONES } from '../data/zones';
 import { ZONE_COMBAT_POOLS } from '../logic/dungeonGenerator';
-import { MATERIALS, CONSUMABLES } from '../data/gear';
+import { MATERIALS, CONSUMABLES, GEAR } from '../data/gear';
 import { calculateEffectiveStats, getXpForLevel, applyHealingEfficiency } from '../logic/progressionEngine';
 import { generateTreasureDrops } from '../logic/lootEngine';
 import Button from '../components/ui/Button';
@@ -656,7 +656,7 @@ export default function DungeonMapScreen({ navigation }) {
         return (
           <View style={styles.playerAvatarWrapper}>
             <Image
-              source={require('../../assets/sprites/items/cat-head-icon.png')}
+              source={require('../../assets/sprites/units/hero/hero_head.png')}
               style={{ width: 28, height: 28 }}
               resizeMode="contain"
             />
@@ -672,20 +672,20 @@ export default function DungeonMapScreen({ navigation }) {
         frame = 20; // mist/fog
       } else {
         if (tile.type === 'start') {
-          sheet = 'icons-1';
-          frame = 0;
+          sheet = 'icons-map';
+          frame = 4;
         } else if (tile.type === 'combat') {
           sheet = 'icons-1';
           frame = 10;
         } else if (tile.type === 'rest') {
-          sheet = 'icons-1';
-          frame = 9;
+          sheet = 'icons-map';
+          frame = 28;
         } else if (tile.type === 'treasure') {
           sheet = 'icons-1';
           frame = 12;
         } else if (tile.type === 'gamble') {
-          sheet = 'icons-1';
-          frame = 5;
+          sheet = 'icons-map';
+          frame = 18;
         } else if (tile.type === 'boss') {
           sheet = 'icons-1';
           frame = 33;
@@ -744,7 +744,10 @@ export default function DungeonMapScreen({ navigation }) {
         {/* Sealed Overlay for Locked Boss */}
         {bossLocked && !isPlayerHere && (
           <View style={styles.sealedOverlay}>
-            <Text style={styles.sealedText}>SEALED</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2 }}>
+              <ItemSprite spritesheet="icons-map" frameIndex={45} displaySize={10} />
+              <Text style={styles.sealedText}>SEALED</Text>
+            </View>
           </View>
         )}
 
@@ -850,18 +853,6 @@ export default function DungeonMapScreen({ navigation }) {
         <View style={styles.hudInner}>
           {/* ── Zone Brand and Progress ── */}
           <View style={styles.hudHeaderRow}>
-            <View style={styles.zoneBadge}>
-              {(() => {
-                const sp = ZONE_SPRITES[currentRun.zoneId] || { spritesheet: 'icons-1', frameIndex: 0 };
-                return (
-                  <ItemSprite
-                    spritesheet={sp.spritesheet}
-                    frameIndex={sp.frameIndex}
-                    displaySize={22}
-                  />
-                );
-              })()}
-            </View>
             <View style={styles.zoneMetaBlock}>
               <Text style={styles.zoneTitle}>{zone.name}</Text>
               <Text style={[styles.floorLabel, { color: zTheme.accent }]}>
@@ -872,7 +863,7 @@ export default function DungeonMapScreen({ navigation }) {
               borderColor: zTheme.accent + '33',
               backgroundColor: zTheme.accent + '12',
             }]}>
-              <ItemSprite spritesheet="icons-1" frameIndex={28} displaySize={13} />
+              <ItemSprite spritesheet="icons-map" frameIndex={49} displaySize={13} />
               <Text style={[styles.roomsBadgeText, { color: zTheme.accent }]}>
                 {currentRun.roomsCleared}/{currentRun.totalRooms}
               </Text>
@@ -893,7 +884,7 @@ export default function DungeonMapScreen({ navigation }) {
             </View>
             
             <View style={[styles.lootStatChip, styles.lootStatChipXp]}>
-              <ItemSprite spritesheet="icons-1" frameIndex={4} displaySize={18} />
+              <ItemSprite spritesheet="icons-map" frameIndex={134} displaySize={18} />
               <View>
                 <Text style={styles.lootStatLabel}>XP Acquired</Text>
                 <Text style={styles.lootStatValueXp}>{currentRun.lootCollected.xp || 0} XP</Text>
@@ -978,14 +969,14 @@ export default function DungeonMapScreen({ navigation }) {
       <View style={styles.actionButtonsRow}>
         <Button
           title="Run Bag"
-          icon={<ItemSprite spritesheet="icons-1" frameIndex={26} displaySize={18} />}
+          icon={<ItemSprite spritesheet="icons-map" frameIndex={93} displaySize={18} />}
           variant="secondary"
           onPress={() => setActiveModal('bag')}
           style={{ flex: 1 }}
         />
         <Button
           title="Flee Dungeon"
-          icon={<ItemSprite spritesheet="consumables-1" frameIndex={9} displaySize={18} />}
+          icon={<ItemSprite spritesheet="icons-map" frameIndex={119} displaySize={18} />}
           variant="danger"
           onPress={() => setActiveModal('flee')}
           style={{ flex: 1 }}
@@ -1284,7 +1275,7 @@ export default function DungeonMapScreen({ navigation }) {
               <View style={styles.cozyHeroIcon}>
                 <SoftEllipseShadow width={90} height={20} style={{ position: 'absolute', bottom: -2 }} />
                 <IconGlowBackground size={72} />
-                <ItemSprite spritesheet="icons-1" frameIndex={26} displaySize={48} />
+                <ItemSprite spritesheet="icons-map" frameIndex={119} displaySize={48} />
               </View>
 
               <Text style={styles.cozySubtitle}>
@@ -1441,91 +1432,116 @@ export default function DungeonMapScreen({ navigation }) {
               <View style={styles.cozyHeroIcon}>
                 <SoftEllipseShadow width={90} height={20} style={{ position: 'absolute', bottom: -2 }} />
                 <IconGlowBackground size={72} />
-                <ItemSprite spritesheet="icons-1" frameIndex={26} displaySize={48} />
+                <ItemSprite spritesheet="icons-map" frameIndex={93} displaySize={48} />
               </View>
 
               <ScrollView style={styles.modalBagScroll} showsVerticalScrollIndicator={false}>
-                <Text style={[styles.bagSectionHeader, { color: '#8A6E44' }]}>Packed Supplies</Text>
-                {runConsumablesList.length === 0 ? (
-                  <Text style={styles.emptyBagText}>No items remaining in your run bag.</Text>
-                ) : (
-                  runConsumablesList.map((item) => {
-                    const consumableDef = CONSUMABLES.find(c => c.id === item.id);
-                    const isUsable = ['potion', 'super_potion', 'mega_potion', 'ultra_potion'].includes(item.id);
+                {/* Section 1: Packed Supplies */}
+                {(() => {
+                  const equippedStorageId = hero.gear?.storage;
+                  const equippedStorage = equippedStorageId ? GEAR[equippedStorageId] : null;
 
-                    return (
-                      <View key={item.id} style={[styles.bagItemRow, { backgroundColor: '#F4E6C0', borderColor: '#C9A86A' }]}>
-                        <View style={styles.bagItemLeft}>
-                          <View style={[styles.bagItemIconWrapper, { backgroundColor: 'rgba(154, 99, 47, 0.08)' }]}>
-                            {consumableDef?.spritesheet ? (
-                              <ItemSprite
-                                spritesheet={consumableDef.spritesheet}
-                                frameIndex={consumableDef.frameIndex}
-                                displaySize={28}
-                              />
-                            ) : (
-                              <ItemSprite spritesheet="consumables-1" frameIndex={0} displaySize={28} />
-                            )}
-                          </View>
-                          <View style={styles.bagItemInfo}>
-                            <Text style={[styles.bagItemName, { color: '#4A2E14', fontWeight: 'bold' }]}>{item.name}</Text>
-                            <Text style={[styles.bagItemDesc, { color: '#8A6E44' }]}>{item.description}</Text>
-                            <Text style={[styles.bagItemQty, { color: '#A85A00' }]}>Qty: {item.quantity}</Text>
-                          </View>
-                        </View>
-
-                        {isUsable ? (
-                          <TouchableOpacity
-                            activeOpacity={0.85}
-                            onPress={() => handleUseItemOnMap(item)}
-                            style={[styles.cozyButton, { width: 70, minHeight: 36, padding: 2, marginTop: 0, marginBottom: 0 }]}
-                          >
-                            <View style={[styles.cozyButtonInner, { paddingVertical: 6 }]}>
-                              <Text style={[styles.cozyButtonText, { fontSize: 10 }]}>Use</Text>
-                            </View>
-                          </TouchableOpacity>
-                        ) : (
-                          <View style={[styles.bagItemUseBtnDisabled, { borderWidth: 1.5, borderColor: '#C9A86A', borderRadius: 8, paddingVertical: 6, paddingHorizontal: 12 }]}>
-                            <Text style={{ fontFamily: 'Silkscreen-Regular', fontSize: 10, color: '#8A6E44' }}>Info</Text>
-                          </View>
-                        )}
+                  return (
+                    <View style={{ marginBottom: 12 }}>
+                      <View style={styles.bagSectionHeaderContainer}>
+                        {equippedStorage ? (
+                          <ItemSprite
+                            spritesheet={equippedStorage.spritesheet}
+                            frameIndex={equippedStorage.frameIndex}
+                            displaySize={22}
+                          />
+                        ) : null}
+                        <Text style={[styles.bagSectionHeader, { color: '#8A6E44', marginLeft: equippedStorage ? 6 : 0 }]}>
+                          Packed Supplies
+                        </Text>
                       </View>
-                    );
-                  })
-                )}
+
+                      {!equippedStorage ? (
+                        <Text style={styles.emptyBagText}>There is no bag equipped to pack supplies.</Text>
+                      ) : runConsumablesList.length === 0 ? (
+                        <Text style={styles.emptyBagText}>No items remaining in your run bag.</Text>
+                      ) : (
+                        <View style={styles.bagChipsContainer}>
+                          {runConsumablesList.map((item) => {
+                            const consumableDef = CONSUMABLES.find(c => c.id === item.id);
+                            const isUsable = ['potion', 'super_potion', 'mega_potion', 'ultra_potion'].includes(item.id);
+
+                            return (
+                              <View key={item.id} style={styles.bagItemChip}>
+                                <ItemSprite
+                                  spritesheet={consumableDef?.spritesheet || 'consumables-1'}
+                                  frameIndex={consumableDef?.frameIndex || 0}
+                                  displaySize={32}
+                                />
+                                <Text style={styles.bagChipQty}>x{item.quantity}</Text>
+                                <Text style={styles.bagChipLabel} numberOfLines={1}>{item.name}</Text>
+
+                                {isUsable ? (
+                                  <TouchableOpacity
+                                    activeOpacity={0.85}
+                                    onPress={() => handleUseItemOnMap(item)}
+                                    style={styles.bagChipUseBtn}
+                                  >
+                                    <Text style={styles.bagChipUseBtnText}>Use</Text>
+                                  </TouchableOpacity>
+                                ) : (
+                                  <View style={styles.bagChipInfoBtn}>
+                                    <Text style={styles.bagChipInfoBtnText}>Info</Text>
+                                  </View>
+                                )}
+                              </View>
+                            );
+                          })}
+                        </View>
+                      )}
+                    </View>
+                  );
+                })()}
 
                 <View style={[styles.bagDivider, { backgroundColor: '#C9A86A', opacity: 0.5 }]} />
 
-                <Text style={[styles.bagSectionHeader, { color: '#8A6E44' }]}>Loot Collected</Text>
-                {currentRun.lootCollected.gold === 0 && Object.keys(currentRun.lootCollected.materials).length === 0 ? (
-                  <Text style={styles.emptyBagText}>No gold or materials collected yet.</Text>
-                ) : (
-                  <View style={styles.cozyWell}>
-                    {currentRun.lootCollected.gold > 0 && (
-                      <View style={styles.bagLootRow}>
-                        <ItemSprite spritesheet="icons-1" frameIndex={11} displaySize={18} />
-                        <Text style={[styles.bagLootText, { color: '#4A2E14' }]}>Gold: {currentRun.lootCollected.gold}g</Text>
-                      </View>
-                    )}
-                    {Object.entries(currentRun.lootCollected.materials).map(([id, qty]) => {
-                      const def = MATERIALS[id];
-                      return (
-                        <View key={id} style={styles.bagLootRow}>
-                          {def?.spritesheet && (
-                            <ItemSprite
-                              spritesheet={def.spritesheet}
-                              frameIndex={def.frameIndex}
-                              displaySize={18}
-                            />
-                          )}
-                          <Text style={[styles.bagLootText, { color: '#4A2E14' }]}>
-                            {def?.name || id.replace(/_/g, ' ').toUpperCase()}: {qty}
-                          </Text>
-                        </View>
-                      );
-                    })}
+                {/* Section 2: Loot Collected */}
+                <View style={{ marginBottom: 12 }}>
+                  <View style={styles.bagSectionHeaderContainer}>
+                    <ItemSprite spritesheet="icons-map" frameIndex={11} displaySize={22} />
+                    <Text style={[styles.bagSectionHeader, { color: '#8A6E44', marginLeft: 6 }]}>
+                      Loot Collected
+                    </Text>
                   </View>
-                )}
+
+                  {currentRun.lootCollected.gold === 0 && Object.keys(currentRun.lootCollected.materials).length === 0 ? (
+                    <Text style={styles.emptyBagText}>No gold or materials collected yet.</Text>
+                  ) : (
+                    <View style={styles.bagChipsContainer}>
+                      {currentRun.lootCollected.gold > 0 && (
+                        <View style={styles.bagItemChip}>
+                          <ItemSprite spritesheet="icons-1" frameIndex={11} displaySize={32} />
+                          <Text style={styles.bagChipQty}>+{currentRun.lootCollected.gold}g</Text>
+                          <Text style={styles.bagChipLabel}>Gold</Text>
+                        </View>
+                      )}
+                      {Object.entries(currentRun.lootCollected.materials).map(([id, qty]) => {
+                        if (qty <= 0) return null;
+                        const def = MATERIALS[id];
+                        return (
+                          <View key={id} style={styles.bagItemChip}>
+                            {def?.spritesheet && (
+                              <ItemSprite
+                                  spritesheet={def.spritesheet}
+                                  frameIndex={def.frameIndex}
+                                  displaySize={32}
+                                />
+                            )}
+                            <Text style={styles.bagChipQty}>+{qty}</Text>
+                            <Text style={styles.bagChipLabel} numberOfLines={1}>
+                              {def?.name || id.replace(/_/g, ' ')}
+                            </Text>
+                          </View>
+                        );
+                      })}
+                    </View>
+                  )}
+                </View>
               </ScrollView>
 
               <TouchableOpacity activeOpacity={0.85} onPress={() => setActiveModal(null)} style={styles.cozyButtonSecondary}>
@@ -2263,6 +2279,82 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: 'normal',
     color: '#707F94',
+  },
+  bagSectionHeaderContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+    marginTop: 6,
+  },
+  bagChipsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    justifyContent: 'flex-start',
+    width: '100%',
+  },
+  bagItemChip: {
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#F4E6C0',
+    borderColor: '#C9A86A',
+    borderWidth: 1.5,
+    borderRadius: 10,
+    paddingTop: 8,
+    paddingBottom: 6,
+    paddingHorizontal: 8,
+    width: '31%',
+    flexGrow: 1,
+    minWidth: 88,
+    minHeight: 110,
+  },
+  bagChipQty: {
+    fontFamily: 'Silkscreen-Regular',
+    fontSize: 10,
+    color: '#3A2210',
+    marginTop: 4,
+    textAlign: 'center',
+  },
+  bagChipLabel: {
+    fontFamily: 'Silkscreen-Regular',
+    fontSize: 7,
+    color: '#9A7A4A',
+    textTransform: 'uppercase',
+    marginTop: 2,
+    textAlign: 'center',
+  },
+  bagChipUseBtn: {
+    marginTop: 6,
+    backgroundColor: '#7A4A24',
+    borderColor: '#3A2210',
+    borderWidth: 1.2,
+    borderRadius: 6,
+    paddingVertical: 3,
+    paddingHorizontal: 10,
+    alignSelf: 'stretch',
+    alignItems: 'center',
+  },
+  bagChipUseBtnText: {
+    fontFamily: 'Silkscreen-Regular',
+    fontSize: 8,
+    color: '#FFF',
+  },
+  bagChipInfoBtn: {
+    marginTop: 6,
+    backgroundColor: '#8A6E44',
+    borderColor: '#5C442A',
+    borderWidth: 1.2,
+    borderRadius: 6,
+    paddingVertical: 3,
+    paddingHorizontal: 10,
+    alignSelf: 'stretch',
+    alignItems: 'center',
+    opacity: 0.6,
+  },
+  bagChipInfoBtnText: {
+    fontFamily: 'Silkscreen-Regular',
+    fontSize: 8,
+    color: '#FFF',
   },
   fleeButtonText: {
     fontFamily: 'PixelifySans-Regular',

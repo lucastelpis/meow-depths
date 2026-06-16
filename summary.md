@@ -83,3 +83,163 @@ Crystals and shards use frames from the `crystals-1` spritesheet:
 - **Damage Recoil**: Characters move backward subtly (12px left for hero, 12px right for enemies) when taking damage. The timing split matches the attack's: 30% recoil backward and 70% return recovery.
 - **Red Damage Overlay Tint**: When taking damage, a red color flash overlay (using `#ff3333` tint) is rendered over the unit, fading in to `0.75` opacity during the recoil phase and fading back to `0` opacity during the recovery phase.
 - **Synchronized Duration**: Both animations dynamically synchronize their durations to match the visual frame length of the active sprite sheet at 10 FPS.
+
+## Matrix Spritesheet Reference (icons-map.png)
+This is a 14-column layout matrix of various game icons:
+
+### Row 1 (Frames 1 - 14)
+- **1**: Striped tent (Red/White)
+- **2**: Brown tent
+- **3**: Red potion bottle
+- **4**: Chicken leg (Meat on the bone)
+- **5**: Bear trap / Spikes
+- **6**: Iron sword
+- **7**: Bowl of soup/stew
+- **8**: Stone room with a bed
+- **9**: Iron gate / Portcullis
+- **10**: Wooden chest (Closed)
+- **11**: Bow
+- **12**: Sack of grain
+- **13**: Treasure chest with gold
+- **14**: Campfire with a cooking pot
+
+### Row 2 (Frames 15 - 28)
+- **15**: Campfire (Basic)
+- **16**: Small brown tent
+- **17**: Cooking pot over a fire
+- **18**: Brown backpack
+- **19**: Bronze key
+- **20**: Jail door / Iron bars
+- **21**: Green backpack
+- **22**: Ornate gold key
+- **23**: Cobweb in a stone window
+- **24**: Tied wood logs
+- **25**: Gold ring
+- **26**: Quiver with arrows
+- **27**: Compass
+- **28**: Opened scroll / Map
+
+### Row 3 (Frames 29 - 42)
+- **29**: Fireplace (Stone)
+- **30**: Small campfire
+- **31**: Torch
+- **32**: Opened map/scroll
+- **33**: Skull
+- **34**: Pickaxe
+- **35**: Closed scroll
+- **36**: Stone room with a stool
+- **37**: Stack of books
+- **38**: Gold necklace/amulet
+- **39**: Battle axe
+- **40**: Firewood stack
+- **41**: Yellow potion bottle
+- **42**: Campfire (Alternative)
+
+### Row 4 (Frames 43 - 56)
+- **43**: Mug of beer/ale
+- **44**: Iron sword (Diagonal)
+- **45**: Pile of gold coins
+- **46**: Lock/Padlock (Gray)
+- **47**: Blue potion bottle
+- **48**: Stone room with a table
+- **49**: Stone room with a wall torch
+- **50**: Lit candle on a holder
+- **51**: Green potion bottle
+- **52**: Sleeping cat on a rug
+- **53**: Vampire in a coffin
+- **54**: Ornate red and gold chest
+- **55**: Circus tent / Shop tent
+- **56**: Loaf of bread
+
+### Row 5 (Frames 57 - 70)
+- **57**: Wooden shield
+- **58**: Stone archway
+- **59**: Stone block/cube
+- **60**: Iron hammer/mallet
+- **61**: Stone window looking outside
+- **62**: Stone window with a map
+- **63**: Red gem / Ruby
+- **64**: Iron shield
+- **65**: Lantern
+- **66**: Pile of colorful gems
+- **67**: Crossed swords icon (Combat)
+- **68**: Treasure map
+- **69**: Rolled up scroll
+- **70**: Anvil
+
+### Row 6 (Frames 71 - 84)
+- **71**: Red chest with gold trim
+- **72**: Pickaxe (Alternative)
+- **73**: Blacksmith hammer
+- **74**: Purple crystal cluster
+- **75**: Tornado/Whirlwind
+- **76**: Gold coin
+- **77**: Cloud
+- **78**: Purple rune stone
+- **79**: Pocket watch / Clock
+- **80**: Lit candle
+- **81**: Mushroom (Red with white spots)
+- **82**: Market stall / Shop
+- **83**: Green gift box
+- **84**: Crossed iron swords
+
+### Row 7 (Frames 85 - 98)
+- **85**: Fireball
+- **86**: Winged boot (Speed)
+- **87**: Purple wizard hat
+- **88**: Simple iron key
+- **89**: Water droplet
+- **90**: Magic wand with stars
+- **91**: Brown backpack (Alternative)
+- **92**: Gold key (Alternative)
+- **93**: Wooden signpost
+- **94**: Red potion bottle (Round)
+- **95**: Large meat on bone
+- **96**: Gold star
+- **97**: Magnifying glass
+- **98**: Small stack of gold coins
+
+### Row 8 (Frames 99 - 112)
+- **99**: Gold key (Simple)
+- **100**: Flexed arm (Strength)
+- **101**: Feather / Quill
+- **102**: Iron gear / Cog
+- **103**: Magma / Fire rock
+- **104**: Round wooden shield
+- **105**: Large stack of gold coins
+- **106**: Locked gold padlock
+- **107**: Gold bars / Ingots
+- **108**: Blue potion bottle (Round)
+- **109**: Red apple
+- **110**: Gray star
+- **111**: Brown book (Closed)
+- **112**: Small wooden chest
+
+### Row 9 (Frames 113 - 126)
+- **113**: Loaf of bread (Alternative)
+- **114**: Hand with red cross (Healing)
+- **115**: Green slime monster
+- **116**: Crossed wrench and hammer
+- **117**: Cat character running
+- **118**: Lit torch
+- **119**: Crown with gems
+- **120**: Open book with text
+- **121**: Mug of beer (Alternative)
+- **122**: Green potion bottle (Round)
+- **123**: Loaf of bread (Angle view)
+- **124**: Red heart with a green plus (Health up)
+- **125**: Cave entrance
+- **126**: Big red chest with gold locks
+
+### Row 10 (Frames 127 - 137)
+- **127**: Compass (Alternative)
+- **128**: Golden key with crown top
+- **129**: Gold crown
+- **130**: Flame / Fire
+- **131**: Warning sign (Exclamation mark)
+- **132**: Light blue potion bottle
+- **133**: Wood logs stack
+- **134**: Green arrow pointing up (Level up)
+- **135**: Scroll with "EXP" text
+- **136**: Grey mountain
+- **137**: Blue fish
