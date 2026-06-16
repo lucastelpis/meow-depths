@@ -2559,12 +2559,18 @@ export default function CombatScreen() {
             <Text style={styles.infoTagText}>?</Text>
           </TouchableOpacity>
         )}
-        {skillFrame != null ? (
-          <View style={[styles.actionBtnSprite, isDisabled && !isPassive && { opacity: 0.85 }]}>
-            <ItemSprite spritesheet="skill-icons-1" frameIndex={skillFrame} displaySize={28} />
-          </View>
+        {hasSkill ? (
+          skillFrame != null ? (
+            <View style={[styles.actionBtnSprite, isDisabled && !isPassive && { opacity: 0.85 }]}>
+              <ItemSprite spritesheet="skill-icons-1" frameIndex={skillFrame} displaySize={28} />
+            </View>
+          ) : (
+            <Text style={styles.actionBtnIcon}>{icon}</Text>
+          )
         ) : (
-          <Text style={styles.actionBtnIcon}>{icon}</Text>
+          <View style={[styles.actionBtnSprite, { opacity: 0.22 }]}>
+            <ItemSprite spritesheet="icons-map" frameIndex={109} displaySize={24} />
+          </View>
         )}
         <Text
           style={[styles.actionBtnTitle, { color: titleColor }]}
