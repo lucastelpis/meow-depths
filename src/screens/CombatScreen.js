@@ -1875,7 +1875,7 @@ export default function CombatScreen() {
                     <ItemSprite spritesheet="icons-1" frameIndex={10} displaySize={28} />
                   </View>
                   <Text style={[styles.actionBtnTitle, { color: '#5CC489' }]}>ATTACK</Text>
-                  <Text style={styles.actionBtnSub}>Basic Strike</Text>
+                  <Text style={styles.actionBtnSub}>Basic</Text>
                 </TouchableOpacity>
 
                 {renderSkillButton(0)}
