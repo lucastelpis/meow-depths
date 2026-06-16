@@ -1764,7 +1764,7 @@ export default function CombatScreen() {
 
     return (
       <Text key={`log_${index}`} style={[styles.logText, { color }]}>
-        ⚔️ {msg}
+        • {msg}
       </Text>
     );
   };
@@ -3213,6 +3213,7 @@ const styles = StyleSheet.create({
     fontSize: 9,
     color: 'rgba(243,226,189,0.4)',
     letterSpacing: 0.3,
+    textAlign: 'center',
   },
   enemyTurnBox: {
     height: 84,

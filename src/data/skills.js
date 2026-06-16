@@ -309,7 +309,7 @@ const swiftness = {
 };
 
 const whirlwind = {
-  id: 'whirlwind_strike',
+  id: 'whirlwind',
   name: 'Whirlwind Strike',
   element: 'wind',
   tier: 2,
@@ -393,7 +393,7 @@ export const SKILL_SPRITE_FRAMES = {
   stone_thorns: 11,
   dual_slash: 12,
   swiftness: 13,
-  whirlwind_strike: 14,
+  whirlwind: 14,
   critical_wind: 15,
 };
 
