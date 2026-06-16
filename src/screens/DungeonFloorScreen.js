@@ -81,19 +81,6 @@ const ZONE_CONFIG = {
 };
 
 // ─── Floor metadata ───────────────────────────────────────────────────────────
-const FLOOR_NAMES = [
-  'The Entrance',
-  'First Descent',
-  'The Shadowed Halls',
-  'Deeper Darkness',
-  'The Midway',
-  'The Deepening',
-  'The Dark Threshold',
-  'The Inner Sanctum',
-  'The Final Approach',
-  'The Boss Chamber',
-];
-
 const GRID_SIZES = {
   1: '3×3', 2: '3×3', 3: '3×3',
   4: '3×4', 5: '3×4', 6: '3×4',
@@ -101,31 +88,20 @@ const GRID_SIZES = {
   10: '4×5',
 };
 
+// Difficulty on a 5-star scale: floor 1 starts at half a star, +0.5 per floor,
+// floor 10 ends at a full 5 stars.
 const DIFF_DATA = {
-  1: { rating: 1, type: 'star', stars: '★☆☆', label: 'Easy',   color: '#5A9FE0' },
-  2: { rating: 1, type: 'star', stars: '★☆☆', label: 'Easy',   color: '#5A9FE0' },
-  3: { rating: 1, type: 'star', stars: '★☆☆', label: 'Easy',   color: '#5A9FE0' },
-  4: { rating: 2, type: 'star', stars: '★★☆', label: 'Medium', color: '#F08A4A' },
-  5: { rating: 2, type: 'star', stars: '★★☆', label: 'Medium', color: '#F08A4A' },
-  6: { rating: 2, type: 'star', stars: '★★☆', label: 'Medium', color: '#F08A4A' },
-  7: { rating: 3, type: 'star', stars: '★★★', label: 'Hard',   color: '#D8483F' },
-  8: { rating: 3, type: 'star', stars: '★★★', label: 'Hard',   color: '#D8483F' },
-  9: { rating: 3, type: 'star', stars: '★★★', label: 'Hard',   color: '#D8483F' },
-  10: { rating: 3, type: 'skull', stars: '☠☠☠', label: 'Boss',  color: '#DD7A86' },
+  1:  { rating: 0.5, color: '#5A9FE0' },
+  2:  { rating: 1.0, color: '#5A9FE0' },
+  3:  { rating: 1.5, color: '#5A9FE0' },
+  4:  { rating: 2.0, color: '#F08A4A' },
+  5:  { rating: 2.5, color: '#F08A4A' },
+  6:  { rating: 3.0, color: '#F08A4A' },
+  7:  { rating: 3.5, color: '#D8483F' },
+  8:  { rating: 4.0, color: '#D8483F' },
+  9:  { rating: 4.5, color: '#D8483F' },
+  10: { rating: 5.0, color: '#DD7A86', skull: true },
 };
-
-const FLOOR_FLAVORS = [
-  'Warm up here. Materials drop freely.',
-  'A little darker now. Stay alert.',
-  'The first real test begins here.',
-  'Tougher 3-star enemies start appearing.',
-  'The dungeon shows its true face.',
-  'No safe shortcuts from here on.',
-  'Every room is a threat.',
-  'Only the strongest survive this deep.',
-  'The dungeon is at its most brutal.',
-  'The zone boss awaits. Clear every room.',
-];
 
 // Dynamic bag slots computed from player equipment
 const CONSUMABLE_ICONS = {
@@ -147,38 +123,38 @@ function getFloorStatus(floor, cleared) {
 
 
 function renderDifficultyStars(diffData, size = 10) {
-  const stars = [];
-  const total = 3;
-  
-  if (diffData.type === 'skull') {
-    for (let i = 0; i < diffData.rating; i++) {
-      stars.push(
-        <ItemSprite
-          key={`skull-${i}`}
-          spritesheet="status-icons-1"
-          frameIndex={21}
-          displaySize={size}
-        />
-      );
-    }
-  } else {
-    for (let i = 0; i < total; i++) {
-      const isFilled = i < diffData.rating;
-      stars.push(
-        <ItemSprite
-          key={`star-${i}`}
-          spritesheet="icons-1"
-          frameIndex={4}
-          displaySize={size}
-          opacity={isFilled ? 1 : 0.25}
-        />
-      );
-    }
+  const fontSize = size + 3;
+
+  // Boss floor shows 5 skull icons instead of stars.
+  if (diffData.skull) {
+    return (
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 1 }}>
+        {Array.from({ length: 5 }).map((_, i) => (
+          <ItemSprite key={`skull-${i}`} spritesheet="icons-map" frameIndex={34} displaySize={size + 4} />
+        ))}
+      </View>
+    );
   }
-  
+
+  // 5-star scale. Supports fractional ratings (e.g. 1.5) by clipping a filled ★
+  // to a fraction of its width over an empty ☆ — there's no reliable half-star glyph.
   return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2 }}>
-      {stars}
+    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+      {Array.from({ length: 5 }).map((_, i) => {
+        const fill = Math.max(0, Math.min(1, diffData.rating - i)); // 0, 0.5, 1, …
+        return (
+          <View key={`star-${i}`} style={{ marginHorizontal: 0.5 }}>
+            {/* Empty base */}
+            <Text style={{ fontSize, color: diffData.color, opacity: 0.25 }}>☆</Text>
+            {/* Filled overlay, clipped to the fill fraction */}
+            {fill > 0 && (
+              <View style={[StyleSheet.absoluteFill, { width: `${fill * 100}%`, overflow: 'hidden' }]}>
+                <Text style={{ fontSize, color: diffData.color }}>★</Text>
+              </View>
+            )}
+          </View>
+        );
+      })}
     </View>
   );
 }
@@ -350,17 +326,17 @@ export default function DungeonFloorScreen() {
                 isLocked && { color: 'rgba(207,224,238,0.45)' },
                 isBoss && { color: '#DD7A86' },
               ]} numberOfLines={1}>
-                {FLOOR_NAMES[floor - 1]}
+                Floor {floor}
               </Text>
               {/* Status badge */}
               {isCleared && (
                 <View style={styles.badgeCleared}>
-                  <Text style={styles.badgeClearedText}>✓ Done</Text>
+                  <Text style={styles.badgeClearedText}>Cleared</Text>
                 </View>
               )}
               {isAvail && !isBoss && (
                 <View style={styles.badgeNext}>
-                  <Text style={styles.badgeNextText}>▶ Next</Text>
+                  <Text style={styles.badgeNextText}>Unlocked</Text>
                 </View>
               )}
               {isAvail && isBoss && (
@@ -375,11 +351,10 @@ export default function DungeonFloorScreen() {
             </View>
 
             <View style={styles.floorCardBottom}>
-              <Text style={[styles.floorFlavor, isBoss && { color: 'rgba(221,122,134,0.7)' }]} numberOfLines={1}>
-                {FLOOR_FLAVORS[floor - 1]}
-              </Text>
-              <View style={styles.floorMeta}>
+              <View style={styles.floorDiff}>
                 {renderDifficultyStars(diff, 10)}
+              </View>
+              <View style={styles.floorMeta}>
                 <Text style={styles.gridSize}>{GRID_SIZES[floor]}</Text>
               </View>
             </View>
@@ -591,7 +566,7 @@ export default function DungeonFloorScreen() {
                     styles.modalFloorName,
                     selectedFloor === 10 && { color: '#DD7A86' },
                   ]}>
-                    {FLOOR_NAMES[(selectedFloor || 1) - 1]}
+                    Floor {selectedFloor || 1}
                   </Text>
                   <View style={styles.modalBadgeRow}>
                     {selectedDiff && renderDifficultyStars(selectedDiff, 10)}
@@ -600,19 +575,11 @@ export default function DungeonFloorScreen() {
                     </View>
                     {selectedStatus === 'cleared' && (
                       <View style={styles.clearedBadge}>
-                        <Text style={styles.clearedBadgeText}>✓ Cleared</Text>
+                        <Text style={styles.clearedBadgeText}>Cleared</Text>
                       </View>
                     )}
                   </View>
                 </View>
-              </View>
-
-              {/* Flavor text */}
-              <View style={[
-                styles.flavorBox,
-                selectedFloor === 10 && { borderColor: 'rgba(221,122,134,0.18)', backgroundColor: 'rgba(221,122,134,0.04)' },
-              ]}>
-                <Text style={styles.flavorText}>{FLOOR_FLAVORS[(selectedFloor || 1) - 1]}</Text>
               </View>
 
               {/* Separator */}
@@ -975,10 +942,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  floorFlavor: {
-    fontFamily: 'Silkscreen-Regular',
-    fontSize: 10,
-    color: 'rgba(207,224,238,0.38)',
+  floorDiff: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
     flex: 1,
     marginRight: 8,
   },
@@ -986,12 +953,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-  },
-  diffStars: {
-    fontFamily: 'Silkscreen-Regular',
-    fontSize: 9,
-    fontWeight: 'normal',
-    letterSpacing: 1,
   },
   gridSize: {
     fontFamily: 'Silkscreen-Regular',
@@ -1176,21 +1137,6 @@ const styles = StyleSheet.create({
     fontSize: 9,
     fontWeight: 'normal',
     color: '#3FB56E',
-  },
-  flavorBox: {
-    backgroundColor: 'rgba(255,255,255,0.02)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
-    borderRadius: 10,
-    padding: 12,
-    marginBottom: 16,
-  },
-  flavorText: {
-    fontFamily: 'PixelifySans-Regular',
-    fontSize: 12,
-    color: 'rgba(207,224,238,0.6)',
-    lineHeight: 17,
-    fontStyle: 'italic',
   },
   separator: {
     height: 1,

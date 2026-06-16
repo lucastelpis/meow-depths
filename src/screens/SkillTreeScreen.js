@@ -439,7 +439,10 @@ export default function SkillTreeScreen() {
         )}
 
         {isActive && skill.cooldown > 0 && (
-          <Text style={styles.cardCooldown}>⏳ {skill.cooldown}-TURN CD</Text>
+          <View style={styles.cardCooldownRow}>
+            <ItemSprite spritesheet="icons-map" frameIndex={26} displaySize={11} />
+            <Text style={styles.cardCooldown}>{skill.cooldown}-TURN CD</Text>
+          </View>
         )}
       </TouchableOpacity>
     );
@@ -485,7 +488,7 @@ export default function SkillTreeScreen() {
         </TouchableOpacity>
         <View style={styles.titleContainer}>
           <ItemSprite spritesheet="icons-1" frameIndex={4} displaySize={24} />
-          <Text style={styles.titleText}>Skill Tree</Text>
+          <Text style={styles.titleText}>Skills</Text>
         </View>
         <View style={styles.headerSpacer} />
       </View>
@@ -537,6 +540,7 @@ export default function SkillTreeScreen() {
               <Text style={styles.stanceDesc}>{stance.description}</Text>
             </View>
             <View style={styles.stanceRight}>
+              <Text style={styles.stanceRightLabel}>CURRENT BONUS</Text>
               {stanceBonus.atkPercent !== undefined && (
                 <Text style={[styles.stanceStat, { color: elementColor }]}>+{Math.round(stanceBonus.atkPercent * 100)}% ATK</Text>
               )}
@@ -617,15 +621,7 @@ export default function SkillTreeScreen() {
                   <SkillSprite skillId={sk.id} size={34} glow glowColor={elementColor} />
                 ) : (
                   <View style={styles.dockEmptyIcon}>
-                    {slotIdx === 0 ? (
-                      <Svg width={24} height={24} viewBox="0 0 24 24" fill="none" stroke="rgba(255,243,218,0.3)" strokeWidth={1.5}>
-                        <Path d="M4 20l16-16M5 15l4 4M20 20L4 4M19 15l-4 4" strokeLinecap="round" />
-                      </Svg>
-                    ) : (
-                      <Svg width={22} height={22} viewBox="0 0 24 24" fill="none" stroke="rgba(255,243,218,0.3)" strokeWidth={1.5}>
-                        <Path d="M12 3C12 3 5 5 5 11C5 16.5 12 21 12 21C12 21 19 16.5 19 11C19 5 12 3 12 3Z" strokeLinecap="round" strokeLinejoin="round" />
-                      </Svg>
-                    )}
+                    <ItemSprite spritesheet="icons-map" frameIndex={76} displaySize={24} opacity={0.4} />
                   </View>
                 )}
                 <View style={styles.dockSlotText}>
@@ -872,6 +868,7 @@ const styles = StyleSheet.create({
   },
   stanceLeft:  { flex: 1 },
   stanceRight: { alignItems: 'flex-end', justifyContent: 'center', gap: 3 },
+  stanceRightLabel: { fontFamily: 'Silkscreen-Regular', fontSize: 9, letterSpacing: 1, color: C.candleGold, marginBottom: 4 },
   stanceLabel: { fontFamily: 'Silkscreen-Regular', fontSize: 8, letterSpacing: 1.2, color: C.textDim, marginBottom: 5 },
   stanceName:  { fontFamily: 'PixelifySans-Regular', fontSize: 17, marginBottom: 5 },
   stanceDesc:  { fontFamily: 'PixelifySans-Regular', fontSize: 12, color: 'rgba(255,243,218,0.78)', lineHeight: 16 },
@@ -900,6 +897,7 @@ const styles = StyleSheet.create({
   cardCostRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   cardCostLabel: { fontFamily: 'Silkscreen-Regular', fontSize: 8, color: C.textDim },
   cardCostText: { fontFamily: 'Silkscreen-Regular', fontSize: 8, color: C.textDim },
+  cardCooldownRow: { flexDirection: 'row', alignItems: 'center', gap: 3 },
   cardCooldown: { fontFamily: 'Silkscreen-Regular', fontSize: 8, color: '#FFA07A' },
 
   typeBadge: { borderRadius: 5, paddingHorizontal: 5, paddingVertical: 2, borderWidth: 1, backgroundColor: 'rgba(0,0,0,0.25)' },

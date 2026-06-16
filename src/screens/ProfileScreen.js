@@ -314,7 +314,11 @@ export default function ProfileScreen() {
           <Text style={styles.backText}>← Hub</Text>
         </TouchableOpacity>
         <View style={styles.titleContainer}>
-          <ItemSprite spritesheet="icons-1" frameIndex={28} displaySize={24} />
+          <Image
+            source={require('../../assets/sprites/units/hero/hero_head.png')}
+            style={{ width: 24, height: 24 }}
+            resizeMode="contain"
+          />
           <Text style={styles.titleText}>Profile</Text>
         </View>
         <View style={styles.headerSpacer} />
@@ -357,7 +361,7 @@ export default function ProfileScreen() {
             <View style={styles.avatarCircle}>
               <Image
                 source={require('../../assets/sprites/units/hero/hero_idle1.png')}
-                style={{ width: 70, height: 70 }}
+                style={{ width: 110, height: 110 }}
                 resizeMode="contain"
               />
             </View>

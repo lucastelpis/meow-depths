@@ -315,7 +315,10 @@ export default function ShopScreen() {
         <View style={styles.forgeContainer}>
           {/* 1. Crystal Vault Summary */}
           <View style={styles.vaultSection}>
-            <Text style={styles.subSectionTitle}>💎 Material Vault</Text>
+            <View style={styles.subSectionHeader}>
+              <ItemSprite spritesheet="icons-map" frameIndex={71} displaySize={16} />
+              <Text style={[styles.subSectionTitle, styles.subSectionTitleInline]}>Material Vault</Text>
+            </View>
             {MATERIAL_ZONES.map((zone, zIdx) => {
               if (!isMaterialZoneOpened(zIdx)) return null;
 
@@ -364,7 +367,10 @@ export default function ShopScreen() {
 
           {/* 2. Fusion Recipes */}
           <View style={styles.recipesSection}>
-            <Text style={styles.subSectionTitle}>⚒️ Fusion Forge</Text>
+            <View style={styles.subSectionHeader}>
+              <ItemSprite spritesheet="icons-map" frameIndex={80} displaySize={16} />
+              <Text style={[styles.subSectionTitle, styles.subSectionTitleInline]}>Fusion Forge</Text>
+            </View>
             {activeRecipes.map((recipe, idx) => {
               const inputQty = materials[recipe.inputId] || 0;
               const outputQty = materials[recipe.outputId] || 0;
@@ -1240,6 +1246,15 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
     textTransform: 'uppercase',
     marginBottom: 10,
+  },
+  subSectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 10,
+  },
+  subSectionTitleInline: {
+    marginBottom: 0,
   },
   forgeContainer: {
     gap: 16,

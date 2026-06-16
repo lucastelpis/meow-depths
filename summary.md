@@ -100,6 +100,8 @@ This is a 15-column layout matrix of various game icons (480x320 px, 32x32 px pe
 9. **Surprise Room Tile**: Row 2, Col 5 ➔ `frameIndex: 19` (Jail Door / Iron Bars)
 10. **Start Room Tile**: Row 1, Col 5 ➔ `frameIndex: 4` (Bear Trap / Spikes)
 11. **Dying Enemy Skull Overlay (Battle)**: Row 3, Col 5 ➔ `frameIndex: 34` (Skull)
+12. **Victory Overlay Title**: Row 7, Col 6 ➔ `frameIndex: 95` (Gold star)
+13. **Defeat Overlay Title**: Row 3, Col 5 ➔ `frameIndex: 34` (Skull)
 
 ### Rows & Columns Layout Matrix:
 - **Row 1**: 1: Striped tent, 2: Brown tent, 3: Red potion, 4: Chicken leg, 5: Bear trap/Spikes, 6: Iron sword, 7: Bowl of soup, 8: Stone room/bed, 9: Iron gate, 10: Closed wooden chest, 11: Bow, 12: Sack of grain, 13: Treasure chest, 14: Campfire/pot, 15: Campfire

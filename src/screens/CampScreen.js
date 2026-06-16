@@ -357,28 +357,27 @@ export default function CampScreen({ navigation }) {
 
               {/* Tag 2: Level */}
               <View style={styles.bannerTag}>
-                <ItemSprite spritesheet="icons-1" frameIndex={28} displaySize={18} />
+                <ItemSprite spritesheet="icons-map" frameIndex={105} displaySize={18} />
                 <Text style={styles.bannerTagText}>LV {hero.level}</Text>
               </View>
 
-              {/* Tag 3: Stats (Clickable) */}
-              <View style={styles.bannerTagClickableWrapper}>
-                <TouchableOpacity
-                  style={styles.bannerTagClickableInner}
-                  onPress={() => navigation.navigate('Profile', { initialTab: 'stats' })}
-                  activeOpacity={0.7}
-                >
-                  <ItemSprite spritesheet="icons-1" frameIndex={28} displaySize={18} />
-                  <Text style={styles.bannerTagText}>STATS</Text>
-                </TouchableOpacity>
+              {/* Tag 3: Stats (Clickable) — only shown when stat points are available */}
+              {(hero.statPoints || 0) > 0 && (
+                <View style={styles.bannerTagClickableWrapper}>
+                  <TouchableOpacity
+                    style={styles.bannerTagClickableInner}
+                    onPress={() => navigation.navigate('Profile', { initialTab: 'stats' })}
+                    activeOpacity={0.7}
+                  >
+                    <ItemSprite spritesheet="icons-1" frameIndex={28} displaySize={18} />
+                    <Text style={styles.bannerTagText}>STATS</Text>
+                  </TouchableOpacity>
 
-                {/* Exclamation badge when stats are available */}
-                {(hero.statPoints || 0) > 0 && (
                   <View style={styles.bannerTagBadge}>
                     <Text style={styles.bannerTagBadgeText}>!</Text>
                   </View>
-                )}
-              </View>
+                </View>
+              )}
             </View>
           </View>
         </View>
@@ -503,7 +502,11 @@ export default function CampScreen({ navigation }) {
             >
               <View style={styles.subSpriteContainer}>
                 <IconGlowBackground size={44} />
-                <ItemSprite spritesheet="icons-1" frameIndex={28} displaySize={38} />
+                <Image
+                  source={require('../../assets/sprites/units/hero/hero_head.png')}
+                  style={{ width: 38, height: 38 }}
+                  resizeMode="contain"
+                />
               </View>
               <Text style={styles.subCardLabel}>PROFILE</Text>
             </TouchableOpacity>
@@ -515,7 +518,6 @@ export default function CampScreen({ navigation }) {
             ═══════════════════════════════════════════════════════════════════ */}
         <Button
           title="Reset Save Data"
-          icon="⚠️"
           variant="danger"
           onPress={() => {
             Alert.alert(

@@ -56,9 +56,11 @@ const ZONE_GRADIENTS = {
 
 
 // ── SVG Zone Illustration Renderers ──────────────────────────────────────────
-const renderZoneSVG = (zoneId, unlocked, grad) => {
-  const startColor = unlocked ? grad.start : '#15151C';
-  const endColor = unlocked ? grad.end : '#0B0B0E';
+// Cards share the hub "teal panel" base so the screen matches Camp / Shop / etc.;
+// each zone's identity comes from the faint illustration tint + accent badges.
+const renderZoneSVG = (zoneId, unlocked) => {
+  const startColor = unlocked ? '#16403B' : '#15211F';
+  const endColor = unlocked ? '#0E2A28' : '#0C1A18';
   const illustrationOpacity = unlocked ? 0.16 : 0.04;
 
   if (zoneId === 'zone1') {
@@ -306,7 +308,7 @@ const renderStatusBadge = (unlocked, isCleared) => {
   if (!unlocked) {
     return (
       <View style={[styles.statusBadge, styles.statusBadgeLocked]}>
-        <ItemSprite spritesheet="icons-1" frameIndex={22} displaySize={11} opacity={0.5} />
+        <ItemSprite spritesheet="icons-map" frameIndex={49} displaySize={11} opacity={0.5} />
         <Text style={styles.statusBadgeTextLocked}>LOCKED</Text>
       </View>
     );
@@ -334,13 +336,25 @@ export default function WorldMapScreen({ navigation }) {
 
   return (
     <SafeAreaView style={styles.container}>
+      {/* Background with subtle top radial gradient glow (shared hub look) */}
+      <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
+        <Defs>
+          <RadialGradient id="worldTopGlow" cx="50%" cy="0%" rx="80%" ry="45%">
+            <Stop offset="0%" stopColor="#10B981" stopOpacity="0.05" />
+            <Stop offset="100%" stopColor="#133131" stopOpacity="0" />
+          </RadialGradient>
+        </Defs>
+        <Rect width="100%" height="100%" fill="#133131" />
+        <Rect width="100%" height="100%" fill="url(#worldTopGlow)" />
+      </Svg>
+
       {/* ── Header ─────────────────────────────────────────────────────── */}
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()} activeOpacity={0.7}>
           <Text style={styles.backText}>← Hub</Text>
         </TouchableOpacity>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-          <ItemSprite spritesheet="icons-1" frameIndex={28} displaySize={18} />
+        <View style={styles.titleContainer}>
+          <ItemSprite spritesheet="icons-1" frameIndex={0} displaySize={22} />
           <Text style={styles.title}>World Map</Text>
         </View>
         <View style={styles.headerSpacer} />
@@ -362,17 +376,17 @@ export default function WorldMapScreen({ navigation }) {
               {/* Inset Background & Decorative Border Container */}
               <View style={styles.cardBackdropContainer}>
                 {/* SVG Background Illustration & Gradient Backdrop (Combined) */}
-                {renderZoneSVG(zone.id, unlocked, grad)}
+                {renderZoneSVG(zone.id, unlocked)}
 
                 {/* Decorative inner border (framed inside container, offset by 1px to prevent clipping) */}
                 <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
-                  <Rect x="1" y="1" width="99.5%" height="99.5%" rx={14} fill="none" stroke={unlocked ? grad.border : 'rgba(255,255,255,0.02)'} strokeWidth="1.5" />
+                  <Rect x="1" y="1" width="99.5%" height="99.5%" rx={14} fill="none" stroke={unlocked ? 'rgba(212,167,84,0.18)' : 'rgba(255,255,255,0.02)'} strokeWidth="1.5" />
                 </Svg>
               </View>
 
               {!unlocked && (
                 <View style={styles.lockOverlay}>
-                  <ItemSprite spritesheet="icons-1" frameIndex={22} displaySize={48} opacity={0.3} />
+                  <ItemSprite spritesheet="icons-map" frameIndex={49} displaySize={48} opacity={0.3} />
                 </View>
               )}
 
@@ -398,7 +412,7 @@ export default function WorldMapScreen({ navigation }) {
                   )}
                   {unlocked && (
                     <View style={[styles.runsBadge, { borderColor: `${grad.accent}40`, backgroundColor: `${grad.accent}12` }]}>
-                      <ItemSprite spritesheet="icons-1" frameIndex={28} displaySize={11} />
+                      <ItemSprite spritesheet="icons-1" frameIndex={0} displaySize={11} />
                       <Text style={[styles.runsBadgeText, { color: grad.accent }]}>
                         Floor {isCleared ? floorCount : nextFloor}/{floorCount}
                       </Text>
@@ -411,22 +425,35 @@ export default function WorldMapScreen({ navigation }) {
 
                 {/* Action button */}
                 <TouchableOpacity
-                  style={[styles.beginButton, !unlocked && styles.beginButtonDisabled, unlocked && { backgroundColor: grad.accent }]}
+                  style={[styles.beginButton, !unlocked && styles.beginButtonDisabled]}
                   activeOpacity={0.8}
                   disabled={!unlocked}
                   onPress={() => navigation.navigate('DungeonFloor', { zoneId: zone.id })}
                 >
+                  {unlocked && (
+                    <View style={StyleSheet.absoluteFill}>
+                      <Svg width="100%" height="100%">
+                        <Defs>
+                          <LinearGradient id={`beginGrad_${zone.id}`} x1="0" y1="0" x2="1" y2="0">
+                            <Stop offset="0%" stopColor="#F9D99A" />
+                            <Stop offset="100%" stopColor="#D4A754" />
+                          </LinearGradient>
+                        </Defs>
+                        <Rect width="100%" height="100%" fill={`url(#beginGrad_${zone.id})`} rx={14} />
+                      </Svg>
+                    </View>
+                  )}
                   {unlocked ? (
                     <>
-                      <ItemSprite spritesheet="icons-1" frameIndex={28} displaySize={18} />
-                      <Text style={[styles.beginButtonText, !unlocked && styles.beginButtonTextDisabled]}>
-                        {isCleared ? 'View Floors' : `Enter — Floor ${nextFloor}`}
+                      <ItemSprite spritesheet="icons-map" frameIndex={136} displaySize={26} />
+                      <Text style={styles.beginButtonText}>
+                        {isCleared ? 'View Floors' : 'Enter Dungeon'}
                       </Text>
                     </>
                   ) : (
                     <>
-                      <ItemSprite spritesheet="icons-1" frameIndex={22} displaySize={18} opacity={0.5} />
-                      <Text style={[styles.beginButtonText, !unlocked && styles.beginButtonTextDisabled]}>
+                      <ItemSprite spritesheet="icons-map" frameIndex={49} displaySize={18} opacity={0.5} />
+                      <Text style={[styles.beginButtonText, styles.beginButtonTextDisabled]}>
                         Locked
                       </Text>
                     </>
@@ -446,15 +473,16 @@ export default function WorldMapScreen({ navigation }) {
 // Styles
 // =============================================================================
 const styles = StyleSheet.create({
-  container:   { flex: 1, backgroundColor: '#07070A' },
+  container:   { flex: 1, backgroundColor: '#133131' },
   scroll:      { padding: theme.SPACING.md, paddingBottom: theme.SPACING.xl * 2 },
 
-  // Header
-  header:       { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: 'rgba(255, 255, 255, 0.05)', backgroundColor: '#07070A' },
-  backButton:   { paddingVertical: theme.SPACING.xs, paddingRight: theme.SPACING.sm, minHeight: 40, justifyContent: 'center' },
-  backText:     { ...theme.FONTS.body, color: theme.COLORS.primary, fontWeight: 'bold' },
-  title:        { ...theme.FONTS.title, color: theme.COLORS.textBright, textAlign: 'center' },
-  headerSpacer: { width: 44 },
+  // Header (shared hub style)
+  header:       { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: 'rgba(255, 255, 255, 0.04)' },
+  backButton:   { width: 70, paddingVertical: 6, justifyContent: 'center' },
+  backText:     { fontFamily: 'PixelifySans-Regular', color: '#D4A754', fontSize: 16, letterSpacing: 0.5 },
+  titleContainer: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
+  title:        { fontFamily: 'PixelifySans-Regular', fontSize: 20, color: '#F8FAFC', letterSpacing: 0.8, textAlign: 'center' },
+  headerSpacer: { width: 70 },
 
   // Zone cards
   zoneCard:         { borderRadius: 20, marginBottom: 24, position: 'relative', overflow: 'hidden', borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.03)', minHeight: 180 },
@@ -475,7 +503,7 @@ const styles = StyleSheet.create({
   cardBody:         { paddingHorizontal: 18, paddingTop: 18, paddingBottom: 18, zIndex: 2 },
   
   zoneHeader:       { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
-  zoneName:         { ...theme.FONTS.heading, color: theme.COLORS.textBright, fontWeight: 'bold', fontSize: 21 },
+  zoneName:         { ...theme.FONTS.heading, color: '#F8FAFC', fontSize: 21 },
   levelBadge:       { borderWidth: 1, borderColor: 'rgba(255,255,255,0.15)', backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 8, paddingHorizontal: 9, paddingVertical: 3 },
   levelBadgeText:   { ...theme.FONTS.tiny, color: theme.COLORS.textDim, fontWeight: 'bold', fontSize: 12 },
   
@@ -491,11 +519,11 @@ const styles = StyleSheet.create({
   runsBadge:        { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6, borderWidth: 1, backgroundColor: 'rgba(251, 191, 36, 0.06)', borderColor: 'rgba(251, 191, 36, 0.18)', flexDirection: 'row', alignItems: 'center', gap: 4 },
   runsBadgeText:    { ...theme.FONTS.tiny, color: theme.COLORS.gold, fontWeight: 'bold', fontSize: 11 },
   
-  zoneDescription:  { ...theme.FONTS.body, color: '#94A3B8', marginBottom: 16, lineHeight: 21, fontSize: 14 },
+  zoneDescription:  { ...theme.FONTS.body, color: '#707F94', marginBottom: 16, lineHeight: 21, fontSize: 14 },
 
-  beginButton:      { borderRadius: 14, paddingVertical: 14, alignItems: 'center', minHeight: 52, justifyContent: 'center', flexDirection: 'row', gap: 6 },
-  beginButtonDisabled:     { backgroundColor: theme.COLORS.buttonDisabled },
-  beginButtonText:         { ...theme.FONTS.body, color: '#07070A', fontWeight: 'bold', letterSpacing: 0.5, fontSize: 16 },
-  beginButtonTextDisabled: { color: theme.COLORS.textDim },
+  beginButton:      { borderRadius: 14, height: 52, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 6, overflow: 'hidden', position: 'relative' },
+  beginButtonDisabled:     { backgroundColor: 'rgba(255,255,255,0.02)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' },
+  beginButtonText:         { fontFamily: 'PixelifySans-Regular', color: '#1A1200', fontWeight: 'normal', letterSpacing: 0.3, fontSize: 15, zIndex: 2 },
+  beginButtonTextDisabled: { color: 'rgba(255,255,255,0.25)' },
 
 });

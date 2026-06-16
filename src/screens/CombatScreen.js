@@ -41,7 +41,7 @@ import {
   Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import Svg, { Defs, LinearGradient, RadialGradient, Stop, Rect, Ellipse } from 'react-native-svg';
+import Svg, { Defs, LinearGradient, RadialGradient, Stop, Rect, Ellipse, Circle, Path } from 'react-native-svg';
 import { useNavigation, useRoute } from '@react-navigation/native';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -49,7 +49,7 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 import { ZONES } from '../data/zones';
 import { ENEMIES, STAR_MULTIPLIERS } from '../data/enemies';
 import { SKILLS, SKILL_SPRITE_FRAMES } from '../data/skills';
-import { CONSUMABLES } from '../data/gear';
+import { CONSUMABLES, MATERIALS, GEAR } from '../data/gear';
 import AnimatedSprite from '../components/AnimatedSprite';
 import ScreenLoader from '../components/ScreenLoader';
 import Button from '../components/ui/Button';
@@ -83,6 +83,58 @@ import theme from '../constants/theme';
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
+
+// ─── SVG Soft Icon Glow Background Component ─────────────────────────────────
+function IconGlowBackground({ size = 56 }) {
+  const radius = size / 2;
+  return (
+    <View style={{ ...StyleSheet.absoluteFillObject, justifyContent: 'center', alignItems: 'center' }}>
+      <Svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+        <Defs>
+          <RadialGradient id={`iconGlowGrad-${size}`} cx="50%" cy="50%" rx="50%" ry="50%">
+            <Stop offset="0%" stopColor="#FFF3DA" stopOpacity="0.65" />
+            <Stop offset="50%" stopColor="#E8A73A" stopOpacity="0.25" />
+            <Stop offset="100%" stopColor="#E8A73A" stopOpacity="0" />
+          </RadialGradient>
+        </Defs>
+        <Circle cx={radius} cy={radius} r={radius} fill={`url(#iconGlowGrad-${size})`} />
+      </Svg>
+    </View>
+  );
+}
+
+// ─── Decorative 4-point sparkle ──────────────────────────────────────────────
+function Sparkle({ size = 12, color = '#F4D079', style }) {
+  const c = size / 2;
+  const r = size / 2;
+  const i = r * 0.28; // inner waist
+  const d = `M${c},${c - r} L${c + i},${c - i} L${c + r},${c} L${c + i},${c + i} L${c},${c + r} L${c - i},${c + i} L${c - r},${c} L${c - i},${c - i} Z`;
+  return (
+    <View style={style} pointerEvents="none">
+      <Svg width={size} height={size}>
+        <Path d={d} fill={color} />
+      </Svg>
+    </View>
+  );
+}
+
+// ─── Soft blurred ellipse shadow (ground shadow under elements) ───────────────
+function SoftEllipseShadow({ width = 80, height = 18, color = '#2A1A0C', style }) {
+  return (
+    <View style={style} pointerEvents="none">
+      <Svg width={width} height={height}>
+        <Defs>
+          <RadialGradient id="softShadowGrad" cx="50%" cy="50%" rx="50%" ry="50%">
+            <Stop offset="0%" stopColor={color} stopOpacity="0.8" />
+            <Stop offset="55%" stopColor={color} stopOpacity="0.6" />
+            <Stop offset="100%" stopColor={color} stopOpacity="0" />
+          </RadialGradient>
+        </Defs>
+        <Ellipse cx={width / 2} cy={height / 2} rx={width / 2} ry={height / 2} fill="url(#softShadowGrad)" />
+      </Svg>
+    </View>
+  );
+}
 
 /** Returns a Promise that resolves after `ms` milliseconds.
  *  Awaiting this inside an async function lets React render between phases. */
@@ -1898,7 +1950,9 @@ export default function CombatScreen() {
 
             {combatPhase === 'enemyTurn' && (
               <View style={styles.enemyTurnBox}>
-                <Text style={styles.enemyTurnPulse}>⚔️</Text>
+                <View style={{ opacity: 0.7 }}>
+                  <ItemSprite spritesheet="icons-map" frameIndex={125} displaySize={28} />
+                </View>
                 <Text style={styles.enemyTurnText}>Enemies are acting…</Text>
               </View>
             )}
@@ -1950,7 +2004,20 @@ export default function CombatScreen() {
               </Svg>
 
               <View style={styles.modalContentInner}>
-                <Text style={styles.modalTitle}>🧪 Supplies Bag</Text>
+                {(() => {
+                  const bagId = state.hero.gear?.storage;
+                  const bagDef = bagId ? GEAR[bagId] : null;
+                  return (
+                    <View style={styles.modalTitleRow}>
+                      <ItemSprite
+                        spritesheet={bagDef?.spritesheet || 'storages-1'}
+                        frameIndex={bagDef?.frameIndex ?? 0}
+                        displaySize={24}
+                      />
+                      <Text style={styles.modalTitle}>Supplies Bag</Text>
+                    </View>
+                  );
+                })()}
 
                 <ScrollView style={styles.modalItemScroll} showsVerticalScrollIndicator={false}>
                   {runConsumables.length === 0 ? (
@@ -1965,14 +2032,27 @@ export default function CombatScreen() {
                           onPress={() => handleUseItem(entry)}
                           activeOpacity={0.8}
                         >
-                          <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
-                            <Rect width="100%" height="100%" fill="rgba(255,255,255,0.01)" rx={10} />
-                            <Rect x="1" y="1" width="98%" height="98%" rx={9} fill="none" stroke="rgba(255,255,255,0.04)" strokeWidth={1} />
-                          </Svg>
-                          <View style={styles.modalItemInner}>
-                            <Text style={styles.modalItemName}>
-                              {def?.name || entry.id} ×{entry.quantity}
-                            </Text>
+                          {/* Sprite box */}
+                          <View style={styles.modalItemIconBox}>
+                            {def?.spritesheet ? (
+                              <ItemSprite
+                                spritesheet={def.spritesheet}
+                                frameIndex={def.frameIndex}
+                                displaySize={44}
+                              />
+                            ) : null}
+                          </View>
+
+                          {/* Text section */}
+                          <View style={styles.modalItemText}>
+                            <View style={styles.modalItemNameRow}>
+                              <Text style={styles.modalItemName}>
+                                {def?.name || entry.id}
+                              </Text>
+                              <View style={styles.modalItemOwnedBadge}>
+                                <Text style={styles.modalItemOwnedText}>OWNED: {entry.quantity}</Text>
+                              </View>
+                            </View>
                             <Text style={styles.modalItemDesc}>
                               {def?.description || ''}
                             </Text>
@@ -1999,44 +2079,45 @@ export default function CombatScreen() {
 
         {/* ── Victory / Loot Overlay ───────────────────────────────────── */}
         {combatPhase === 'loot' && lootResult && (
-          <View style={styles.overlay}>
-            <View style={styles.overlayCard}>
-              <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
-                <Defs>
-                  <LinearGradient id="victoryGrad" x1="0" y1="0" x2="0" y2="1">
-                    <Stop offset="0%" stopColor={theme.COLORS.panelGreenTop} stopOpacity="1" />
-                    <Stop offset="100%" stopColor={theme.COLORS.panelGreenBottom} stopOpacity="1" />
-                  </LinearGradient>
-                  <RadialGradient id="victoryGlow" cx="50%" cy="0%" r="55%">
-                    <Stop offset="0%" stopColor={theme.COLORS.candleGold} stopOpacity="0.14" />
-                    <Stop offset="100%" stopColor={theme.COLORS.panelGreenTop} stopOpacity="0" />
-                  </RadialGradient>
-                </Defs>
-                <Rect width="100%" height="100%" fill="url(#victoryGrad)" rx={20} />
-                <Rect width="100%" height="100%" fill="url(#victoryGlow)" rx={20} />
-                <Rect x="1" y="1" width="98%" height="98%" rx={19} fill="none" stroke="rgba(212, 167, 84, 0.35)" strokeWidth={1} />
-              </Svg>
+          <View style={styles.cozyOverlay}>
+            <View style={[styles.cozyFrame, theme.SHADOWS.cardShadow]}>
+              <View style={styles.cozyParchment}>
+                <View style={styles.cozyBevel} pointerEvents="none" />
 
-              <View style={styles.overlayInner}>
-                <Text style={styles.victoryTitle}>🎉 Victory!</Text>
+                <Text style={styles.cozySubtitle}>
+                  You survived the encounter and secured the spoils of battle!
+                </Text>
 
                 {/* Loot breakdown */}
-                <View style={styles.lootSection}>
+                <View style={styles.lootChipsContainer}>
                   {lootResult.xp > 0 && (
-                    <Text style={styles.lootLine}>✨ XP: +{lootResult.xp}</Text>
+                    <View style={styles.lootItemChip}>
+                      <ItemSprite spritesheet="icons-map" frameIndex={146} displaySize={32} />
+                      <Text style={styles.lootChipQty}>{lootResult.xp}</Text>
+                      <Text style={styles.lootChipLabel}>XP</Text>
+                    </View>
                   )}
                   {lootResult.gold > 0 && (
-                    <Text style={styles.lootLine}>💰 Gold: +{lootResult.gold}</Text>
+                    <View style={styles.lootItemChip}>
+                      <ItemSprite spritesheet="icons-1" frameIndex={11} displaySize={32} />
+                      <Text style={styles.lootChipQty}>{lootResult.gold}g</Text>
+                      <Text style={styles.lootChipLabel}>Gold</Text>
+                    </View>
                   )}
                   {Object.entries(lootResult.materials).map(([itemId, qty]) => {
-                    let matEmoji = '💎';
-                    if (itemId.startsWith('black')) matEmoji = '🖤';
-                    if (itemId.startsWith('green')) matEmoji = '💚';
-                    if (itemId.startsWith('yellow')) matEmoji = '💛';
+                    const def = MATERIALS[itemId];
                     return (
-                      <Text key={itemId} style={styles.lootLine}>
-                        {matEmoji} {itemId.replace(/_/g, ' ').toUpperCase()}: ×{qty}
-                      </Text>
+                      <View key={itemId} style={styles.lootItemChip}>
+                        {def ? (
+                          <ItemSprite spritesheet={def.spritesheet} frameIndex={def.frameIndex} displaySize={32} />
+                        ) : (
+                          <ItemSprite spritesheet="icons-1" frameIndex={10} displaySize={32} />
+                        )}
+                        <Text style={styles.lootChipQty}>{qty}</Text>
+                        <Text style={styles.lootChipLabel}>
+                          {def?.name || itemId.replace(/_/g, ' ')}
+                        </Text>
+                      </View>
                     );
                   })}
                 </View>
@@ -2045,81 +2126,107 @@ export default function CombatScreen() {
                 {levelUpMessages.length > 0 && (
                   <View style={styles.levelUpSection}>
                     {levelUpMessages.map((msg, i) => (
-                      <Text key={`lu_${i}`} style={styles.levelUpText}>
-                        🌟 {msg}
-                      </Text>
+                      <View key={`lu_${i}`} style={styles.levelUpRow}>
+                        <Text style={styles.levelUpStar}>✦</Text>
+                        <Text style={styles.levelUpText}>{msg}</Text>
+                      </View>
                     ))}
                   </View>
                 )}
 
-                <Button
-                  title={roomType === 'boss' ? '🏕️ Return to Camp' : '➡️ Return to Map'}
-                  variant="primary"
-                  onPress={handleContinue}
-                  style={{ width: '100%', marginTop: 16 }}
-                />
+                <TouchableOpacity activeOpacity={0.85} onPress={handleContinue} style={styles.cozyButton}>
+                  <View style={styles.cozyButtonInner}>
+                    <Text style={styles.cozyButtonText}>
+                      {roomType === 'boss' ? 'Return to Camp' : 'Return to Map'}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
               </View>
+
+              <View style={styles.cozyTopWrap} pointerEvents="none">
+                <View style={styles.cozyTopOuter}>
+                  <View style={styles.cozyTopInner}>
+                    <Text style={styles.cozyTopText}>VICTORY</Text>
+                  </View>
+                </View>
+              </View>
+
             </View>
           </View>
         )}
 
         {/* ── Defeat Overlay ───────────────────────────────────────────── */}
         {combatPhase === 'defeat' && (
-          <View style={styles.overlay}>
-            <View style={styles.overlayCard}>
-              <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
-                <Defs>
-                  <LinearGradient id="defeatGrad" x1="0" y1="0" x2="0" y2="1">
-                    <Stop offset="0%" stopColor="#1A0C0C" stopOpacity="1" />
-                    <Stop offset="100%" stopColor="#0E0707" stopOpacity="1" />
-                  </LinearGradient>
-                </Defs>
-                <Rect width="100%" height="100%" fill="url(#defeatGrad)" rx={20} />
-                <Rect x="1" y="1" width="98%" height="98%" rx={19} fill="none" stroke="rgba(216, 72, 63, 0.28)" strokeWidth={1} />
-              </Svg>
+          <View style={styles.cozyOverlay}>
+            <View style={[styles.cozyFrame, theme.SHADOWS.cardShadow]}>
+              <View style={styles.cozyParchment}>
+                <View style={styles.cozyBevel} pointerEvents="none" />
 
-              <View style={styles.overlayInner}>
-                <Text style={styles.defeatTitle}>💀 Defeated…</Text>
-                <Text style={styles.defeatSubtext}>
+                <Text style={styles.cozySubtitle}>
                   {heroState.name || 'Mochi'} retreats to camp, battered but alive.
                 </Text>
 
-                <View style={styles.lostLootBox}>
-                  <Text style={styles.lostLootTitle}>Loot Lost in the Depths:</Text>
-                  {state.currentRun.lootCollected.gold === 0 &&
-                    Object.keys(state.currentRun.lootCollected.materials).length === 0 &&
-                    (state.currentRun.lootCollected.xp || 0) === 0 ? (
-                    <Text style={styles.noLostLootText}>No materials, gold, or XP were collected this run.</Text>
-                  ) : (
-                    <>
-                      {state.currentRun.lootCollected.xp > 0 && (
-                        <Text style={styles.lostLootXpText}>✨ {state.currentRun.lootCollected.xp} XP</Text>
-                      )}
-                      {state.currentRun.lootCollected.gold > 0 && (
-                        <Text style={styles.lostLootGold}>💰 {state.currentRun.lootCollected.gold} Gold</Text>
-                      )}
-                      {Object.entries(state.currentRun.lootCollected.materials).map(([id, qty]) => {
-                        let matEmoji = '💎';
-                        if (id.startsWith('black')) matEmoji = '🖤';
-                        if (id.startsWith('green')) matEmoji = '💚';
-                        if (id.startsWith('yellow')) matEmoji = '💛';
-                        return (
-                          <Text key={id} style={styles.lostLootItemText}>
-                            {matEmoji} {id.replace(/_/g, ' ').toUpperCase()} ×{qty}
+                <Text style={styles.lostLootTitle}>Loot Lost in the Depths:</Text>
+                {state.currentRun.lootCollected.gold === 0 &&
+                  Object.keys(state.currentRun.lootCollected.materials).length === 0 &&
+                  (state.currentRun.lootCollected.xp || 0) === 0 ? (
+                  <Text style={styles.noLostLootText}>No materials, gold, or XP were collected this run.</Text>
+                ) : (
+                  <View style={styles.lootChipsContainer}>
+                    {state.currentRun.lootCollected.xp > 0 && (
+                      <View style={styles.lootItemChip}>
+                        <ItemSprite spritesheet="icons-map" frameIndex={146} displaySize={32} opacity={0.5} />
+                        <Text style={[styles.lootChipQty, { textDecorationLine: 'line-through', opacity: 0.6 }]}>
+                          {state.currentRun.lootCollected.xp}
+                        </Text>
+                        <Text style={styles.lootChipLabel}>XP</Text>
+                      </View>
+                    )}
+                    {state.currentRun.lootCollected.gold > 0 && (
+                      <View style={styles.lootItemChip}>
+                        <ItemSprite spritesheet="icons-1" frameIndex={11} displaySize={32} opacity={0.5} />
+                        <Text style={[styles.lootChipQty, { textDecorationLine: 'line-through', opacity: 0.6 }]}>
+                          {state.currentRun.lootCollected.gold}g
+                        </Text>
+                        <Text style={styles.lootChipLabel}>Gold</Text>
+                      </View>
+                    )}
+                    {Object.entries(state.currentRun.lootCollected.materials).map(([id, qty]) => {
+                      const def = MATERIALS[id];
+                      return (
+                        <View key={id} style={styles.lootItemChip}>
+                          {def ? (
+                            <ItemSprite spritesheet={def.spritesheet} frameIndex={def.frameIndex} displaySize={32} opacity={0.5} />
+                          ) : (
+                            <ItemSprite spritesheet="icons-1" frameIndex={10} displaySize={32} opacity={0.5} />
+                          )}
+                          <Text style={[styles.lootChipQty, { textDecorationLine: 'line-through', opacity: 0.6 }]}>
+                            {qty}
                           </Text>
-                        );
-                      })}
-                    </>
-                  )}
-                </View>
+                          <Text style={styles.lootChipLabel}>
+                            {def?.name || id.replace(/_/g, ' ')}
+                          </Text>
+                        </View>
+                      );
+                    })}
+                  </View>
+                )}
 
-                <Button
-                  title="🏕️ Return to Camp"
-                  variant="danger"
-                  onPress={handleDefeatReturn}
-                  style={{ width: '100%', marginTop: 16 }}
-                />
+                <TouchableOpacity activeOpacity={0.85} onPress={handleDefeatReturn} style={styles.cozyButtonDanger}>
+                  <View style={styles.cozyButtonDangerInner}>
+                    <Text style={styles.cozyButtonText}>Return to Camp</Text>
+                  </View>
+                </TouchableOpacity>
               </View>
+
+              <View style={styles.cozyTopWrap} pointerEvents="none">
+                <View style={styles.cozyTopOuter}>
+                  <View style={styles.cozyTopInner}>
+                    <Text style={styles.cozyTopText}>DEFEATED</Text>
+                  </View>
+                </View>
+              </View>
+
             </View>
           </View>
         )}
@@ -3268,6 +3375,12 @@ const styles = StyleSheet.create({
     color: '#F8FAFC',
     fontWeight: 'normal',
     textAlign: 'center',
+  },
+  modalTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
     marginBottom: 14,
   },
 
@@ -3334,26 +3447,58 @@ const styles = StyleSheet.create({
     padding: theme.SPACING.lg,
   },
   modalItem: {
-    backgroundColor: theme.COLORS.cardBg,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    backgroundColor: 'rgba(255,255,255,0.04)',
     borderWidth: 1,
-    borderColor: theme.COLORS.cardBorder,
-    borderRadius: theme.BORDER_RADIUS.md,
-    padding: theme.SPACING.sm,
-    marginBottom: theme.SPACING.sm,
+    borderColor: 'rgba(255,255,255,0.08)',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 10,
   },
-  modalItemInner: {
-    zIndex: 2,
-    padding: 2,
+  modalItemIconBox: {
+    width: 60,
+    height: 60,
+    backgroundColor: 'rgba(0,0,0,0.3)',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.06)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+  modalItemText: {
+    flex: 1,
+  },
+  modalItemNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flexWrap: 'wrap',
+    marginBottom: 4,
   },
   modalItemName: {
-    ...theme.FONTS.body,
-    color: theme.COLORS.parchment,
-    fontWeight: 'bold',
+    fontFamily: 'PixelifySans-Regular',
+    fontSize: 16,
+    color: '#F8FAFC',
+  },
+  modalItemOwnedBadge: {
+    backgroundColor: '#1A6B3A',
+    borderRadius: 6,
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+  },
+  modalItemOwnedText: {
+    fontFamily: 'PressStart2P-Regular',
+    fontSize: 7,
+    color: '#D4A754',
   },
   modalItemDesc: {
-    ...theme.FONTS.small,
-    color: theme.COLORS.warmGlow,
-    marginTop: 2,
+    fontFamily: 'Silkscreen-Regular',
+    fontSize: 9,
+    color: 'rgba(255,255,255,0.5)',
+    lineHeight: 14,
   },
   modalCancel: {
     alignItems: 'center',
@@ -3372,26 +3517,22 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     width: '100%',
   },
-  lostLootBox: {
-    backgroundColor: 'rgba(216, 72, 63, 0.06)',
-    borderWidth: 1,
-    borderColor: 'rgba(216, 72, 63, 0.2)',
-    borderRadius: theme.BORDER_RADIUS.md,
-    padding: 14,
-    width: '100%',
-    alignItems: 'center',
-    marginBottom: theme.SPACING.md,
-    gap: 6,
-  },
   lostLootTitle: {
-    ...theme.FONTS.label,
-    fontSize: 10,
-    color: theme.COLORS.damageRed,
+    fontFamily: 'PixelifySans-Regular',
+    fontSize: 12,
+    color: '#9E2A2B',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: 8,
+    textAlign: 'center',
   },
   noLostLootText: {
-    ...theme.FONTS.small,
-    color: 'rgba(207,224,238,0.4)',
+    fontFamily: 'Silkscreen-Regular',
+    fontSize: 10,
+    color: '#7A6048',
     fontStyle: 'italic',
+    textAlign: 'center',
+    marginVertical: 10,
   },
   lostLootGold: {
     ...theme.FONTS.body,
@@ -3409,49 +3550,221 @@ const styles = StyleSheet.create({
     textDecorationLine: 'line-through',
   },
 
-  // ── Overlays (victory + defeat) ───────────────────────────────────────────
-  overlay: {
+  // ── Cozy Parchment Design System ──────────────────────────────
+  cozyOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.85)',
+    backgroundColor: 'rgba(24, 14, 6, 0.78)',
     justifyContent: 'center',
     alignItems: 'center',
+    padding: 24,
     zIndex: 100,
   },
-  overlayCard: {
-    borderRadius: theme.BORDER_RADIUS.xl,
-    overflow: 'hidden',
-    width: '85%',
+  cozyFrame: {
+    width: '100%',
+    maxWidth: 360,
+    backgroundColor: '#6E4524',
+    borderColor: '#3A2210',
+    borderWidth: 3,
+    borderRadius: 12,
+    padding: 10,
+    position: 'relative',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.5,
+    shadowRadius: 5,
+    elevation: 8,
+  },
+  cozyParchment: {
+    backgroundColor: '#ECD8A6',
+    borderRadius: 14,
+    borderColor: '#C9A86A',
+    borderWidth: 2,
+    paddingTop: 28,
+    paddingBottom: 16,
+    paddingHorizontal: 20,
     alignItems: 'center',
     position: 'relative',
   },
-  victoryTitle: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: theme.COLORS.stun, // gold colour
-    marginBottom: theme.SPACING.md,
+  cozyBevel: {
+    position: 'absolute',
+    top: 3,
+    left: 3,
+    right: 3,
+    bottom: 3,
+    borderRadius: 11,
+    borderWidth: 1.5,
+    borderColor: 'rgba(255, 250, 228, 0.4)',
+    zIndex: 1,
   },
-  defeatTitle: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: theme.COLORS.danger,
-    marginBottom: theme.SPACING.md,
-  },
-  defeatSubtext: {
-    ...theme.FONTS.body,
-    color: theme.COLORS.textDim,
+  cozySubtitle: {
+    fontFamily: 'Silkscreen-Regular',
+    fontSize: 10,
+    color: '#4A2E14',
     textAlign: 'center',
-    marginBottom: theme.SPACING.lg,
+    letterSpacing: 0.3,
+    lineHeight: 15,
+    marginTop: 8,
+    marginBottom: 16,
+    paddingHorizontal: 6,
+  },
+  cozyWell: {
+    backgroundColor: '#F4E6C0',
+    borderColor: '#C9A86A',
+    borderWidth: 1.5,
+    borderRadius: 10,
+    padding: 12,
+    width: '100%',
+    alignItems: 'center',
+    marginBottom: 16,
+    gap: 8,
+  },
+  cozyWellDanger: {
+    backgroundColor: '#E6D3A0',
+    borderColor: '#D8483F',
+    borderWidth: 1.5,
+    borderRadius: 10,
+    padding: 12,
+    width: '100%',
+    alignItems: 'center',
+    marginBottom: 16,
+    gap: 8,
+  },
+  cozyHeroIcon: {
+    width: 120,
+    height: 80,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginVertical: 10,
+    position: 'relative',
+    zIndex: 2,
+  },
+  cozyButton: {
+    backgroundColor: '#7A4A24',
+    borderColor: '#3A2210',
+    borderWidth: 2,
+    borderRadius: 8,
+    padding: 2,
+    width: '100%',
+    marginTop: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 2,
+    elevation: 3,
+  },
+  cozyButtonInner: {
+    borderWidth: 1.5,
+    borderColor: '#D4A754',
+    borderRadius: 6,
+    backgroundColor: '#7A4A24',
+    paddingVertical: 10,
+    alignItems: 'center',
+  },
+  cozyButtonText: {
+    fontFamily: 'PressStart2P-Regular',
+    fontSize: 10,
+    color: '#FFF3DA',
+    textShadowColor: '#000',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 1,
+    textAlign: 'center',
+  },
+  cozyButtonDanger: {
+    backgroundColor: '#9E2A2B',
+    borderColor: '#541012',
+    borderWidth: 2,
+    borderRadius: 8,
+    padding: 2,
+    width: '100%',
+    marginTop: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 2,
+    elevation: 3,
+  },
+  cozyButtonDangerInner: {
+    borderWidth: 1.5,
+    borderColor: '#E65D5E',
+    borderRadius: 6,
+    backgroundColor: '#9E2A2B',
+    paddingVertical: 10,
+    alignItems: 'center',
+  },
+  cozyTopWrap: {
+    position: 'absolute',
+    top: -18,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    zIndex: 40,
+  },
+  cozyTopOuter: {
+    borderWidth: 3,
+    borderColor: '#4A3917',
+    borderRadius: 8,
+    padding: 2,
+    backgroundColor: '#1E1E20',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 3,
+    elevation: 6,
+  },
+  cozyTopInner: {
+    borderWidth: 2,
+    borderColor: '#D4A754',
+    borderRadius: 5,
+    backgroundColor: '#1E1E20',
+    paddingVertical: 6,
+    paddingHorizontal: 16,
+  },
+  cozyTopText: {
+    fontFamily: 'PressStart2P-Regular',
+    fontSize: 11,
+    color: '#FFF3DA',
+    textAlign: 'center',
+    textShadowColor: '#000',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 1,
   },
 
-  // ── Loot section ──────────────────────────────────────────────────────────
-  lootSection: {
+  lootChipsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    gap: 10,
+    marginTop: 6,
+    marginBottom: 12,
     width: '100%',
-    marginBottom: theme.SPACING.md,
   },
-  lootLine: {
-    ...theme.FONTS.body,
-    color: theme.COLORS.text,
-    marginBottom: theme.SPACING.xs,
+  lootItemChip: {
+    alignItems: 'center',
+    backgroundColor: '#F4E6C0',
+    borderColor: '#C9A86A',
+    borderWidth: 1.5,
+    borderRadius: 10,
+    paddingTop: 10,
+    paddingBottom: 8,
+    paddingHorizontal: 8,
+    minWidth: 96,
+    maxWidth: 130,
+    flexGrow: 0,
+  },
+  lootChipQty: {
+    fontFamily: 'Silkscreen-Regular',
+    fontSize: 10,
+    color: '#3A2210',
+    marginTop: 4,
+    textAlign: 'center',
+  },
+  lootChipLabel: {
+    fontFamily: 'Silkscreen-Regular',
+    fontSize: 7,
+    color: '#9A7A4A',
+    textTransform: 'uppercase',
+    marginTop: 2,
+    textAlign: 'center',
   },
 
   // ── Level up ──────────────────────────────────────────────────────────────
@@ -3462,11 +3775,29 @@ const styles = StyleSheet.create({
     width: '100%',
     marginBottom: theme.SPACING.md,
   },
+  levelUpRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    marginBottom: 4,
+  },
+  levelUpStar: {
+    fontFamily: 'PressStart2P-Regular',
+    fontSize: 10,
+    color: '#D4A754',
+  },
   levelUpText: {
     ...theme.FONTS.body,
     color: theme.COLORS.stun,
     fontWeight: 'bold',
     textAlign: 'center',
+  },
+  lostLootRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 4,
   },
   // ── Dying enemy visual effects ────────────────────────────────────────────
   dyingOverlay: {

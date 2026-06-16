@@ -799,14 +799,14 @@ export default function DungeonMapScreen({ navigation }) {
         {xp > 0 && (
           <View style={styles.bagItemChip}>
             <ItemSprite spritesheet="icons-1" frameIndex={4} displaySize={32} />
-            <Text style={styles.bagChipQty}>+{xp}</Text>
+            <Text style={styles.bagChipQty}>{xp}</Text>
             <Text style={styles.bagChipLabel}>XP</Text>
           </View>
         )}
         {gold > 0 && (
           <View style={styles.bagItemChip}>
             <ItemSprite spritesheet="icons-1" frameIndex={11} displaySize={32} />
-            <Text style={styles.bagChipQty}>+{gold}g</Text>
+            <Text style={styles.bagChipQty}>{gold}g</Text>
             <Text style={styles.bagChipLabel}>Gold</Text>
           </View>
         )}
@@ -821,7 +821,7 @@ export default function DungeonMapScreen({ navigation }) {
                   displaySize={32}
                 />
               )}
-              <Text style={styles.bagChipQty}>+{qty}</Text>
+              <Text style={styles.bagChipQty}>{qty}</Text>
               <Text style={styles.bagChipLabel}>
                 {def?.name || id.replace(/_/g, ' ')}
               </Text>
@@ -1063,22 +1063,14 @@ export default function DungeonMapScreen({ navigation }) {
           <View style={[styles.cozyFrame, theme.SHADOWS.cardShadow]}>
             <View style={styles.cozyParchment}>
               <View style={styles.cozyBevel} pointerEvents="none" />
-              
-              <View style={styles.cozyHeroIcon}>
-                <SoftEllipseShadow width={100} height={22} style={{ position: 'absolute', bottom: -2 }} />
-                <IconGlowBackground size={80} />
-                <Sparkle size={14} color="#FBBF24" style={{ position: 'absolute', top: -12, left: -12 }} />
-                <Sparkle size={9} color="#FFF3DA" style={{ position: 'absolute', top: -6, right: -12 }} />
-                <ItemSprite spritesheet="icons-1" frameIndex={12} displaySize={56} />
-              </View>
 
               <Text style={styles.cozySubtitle}>
                 An unlocked chest lies open in the corner of this chamber.
               </Text>
 
-              <View style={styles.cozyWell}>
-                {renderLootItems(modalData?.materials, modalData?.consumables, modalData?.gold)}
-              </View>
+
+              {renderLootItems(modalData?.materials, modalData?.consumables, modalData?.gold)}
+
 
               <TouchableOpacity activeOpacity={0.85} onPress={handleCloseTreasure} style={styles.cozyButton}>
                 <View style={styles.cozyButtonInner}>
@@ -1109,11 +1101,6 @@ export default function DungeonMapScreen({ navigation }) {
               
               {modalData?.outcome === 'trap' && (
                 <View style={styles.outcomeContent}>
-                  <View style={styles.cozyHeroIcon}>
-                    <SoftEllipseShadow width={64} height={12} style={{ position: 'absolute', bottom: -2 }} />
-                    <IconGlowBackground size={72} />
-                    <ItemSprite spritesheet="icons-map" frameIndex={4} displaySize={56} />
-                  </View>
                   <Text style={[styles.outcomeTitle, { color: '#B91C1C' }]}>It's a Trap!</Text>
                   <Text style={styles.outcomeFlavor}>"{modalData.flavor}"</Text>
                   <Text style={styles.trapDamageText}>
@@ -1129,30 +1116,18 @@ export default function DungeonMapScreen({ navigation }) {
 
               {modalData?.outcome === 'treasure' && (
                 <View style={styles.outcomeContent}>
-                  <View style={styles.cozyHeroIcon}>
-                    <SoftEllipseShadow width={80} height={16} style={{ position: 'absolute', bottom: -2 }} />
-                    <IconGlowBackground size={80} />
-                    <Sparkle size={14} color="#D97706" style={{ position: 'absolute', top: -10, left: -10 }} />
-                    <ItemSprite spritesheet="icons-map" frameIndex={12} displaySize={56} />
-                  </View>
                   <Text style={[styles.outcomeTitle, { color: '#D97706' }]}>Jackpot!</Text>
-                  <Text style={styles.outcomeFlavor}>"{modalData.flavor}"</Text>
-                  <Text style={{ color: '#8A6E44', fontFamily: 'Silkscreen-Regular', fontSize: 9, textAlign: 'center', marginBottom: 8 }}>
+                  <Text style={[styles.outcomeFlavor, { color: '#4A2E14' }]}>"{modalData.flavor}"</Text>
+                  <Text style={{ color: '#7A4A24', fontFamily: 'Silkscreen-Regular', fontSize: 9, textAlign: 'center', marginBottom: 8 }}>
                     Double Treasure Jackpot!
                   </Text>
-                  <View style={styles.cozyWell}>
-                    {renderLootItems(modalData.materials, modalData.consumables, modalData.gold)}
-                  </View>
+                  {renderLootItems(modalData.materials, modalData.consumables, modalData.gold)}
+
                 </View>
               )}
 
               {modalData?.outcome === 'ambush' && (
                 <View style={styles.outcomeContent}>
-                  <View style={styles.cozyHeroIcon}>
-                    <SoftEllipseShadow width={64} height={12} style={{ position: 'absolute', bottom: -2 }} />
-                    <IconGlowBackground size={72} />
-                    <ItemSprite spritesheet="icons-map" frameIndex={66} displaySize={52} />
-                  </View>
                   <Text style={[styles.outcomeTitle, { color: '#9D174D' }]}>Ambush!</Text>
                   <Text style={[styles.outcomeSubText, { color: '#6A4A2A', marginBottom: 6 }]}>
                     A shadow leaps from the dark. You are ambushed by monsters!
@@ -1186,13 +1161,7 @@ export default function DungeonMapScreen({ navigation }) {
               </TouchableOpacity>
             </View>
 
-            <View style={styles.cozyTopWrap} pointerEvents="none">
-              <View style={styles.cozyTopOuter}>
-                <View style={styles.cozyTopInner}>
-                  <Text style={styles.cozyTopText}>MYSTERY ROOM</Text>
-                </View>
-              </View>
-            </View>
+
           </View>
         </View>
       </Modal>
@@ -1205,12 +1174,6 @@ export default function DungeonMapScreen({ navigation }) {
           <View style={[styles.cozyFrame, theme.SHADOWS.cardShadow]}>
             <View style={styles.cozyParchment}>
               <View style={styles.cozyBevel} pointerEvents="none" />
-              
-              <View style={styles.cozyHeroIcon}>
-                <SoftEllipseShadow width={90} height={20} style={{ position: 'absolute', bottom: -2 }} />
-                <IconGlowBackground size={72} />
-                <ItemSprite spritesheet="status-icons-1" frameIndex={21} displaySize={48} />
-              </View>
 
               <Text style={styles.cozySubtitle}>
                 {hero.name || 'Mochi'} fell to the dangers of the dungeon and was forced to retreat.
@@ -1284,7 +1247,7 @@ export default function DungeonMapScreen({ navigation }) {
                       {Math.floor(currentRun.lootCollected.gold / 2) > 0 && (
                         <View style={styles.bagItemChip}>
                           <ItemSprite spritesheet="icons-1" frameIndex={11} displaySize={32} />
-                          <Text style={styles.bagChipQty}>+{Math.floor(currentRun.lootCollected.gold / 2)}g</Text>
+                          <Text style={styles.bagChipQty}>{Math.floor(currentRun.lootCollected.gold / 2)}g</Text>
                           <Text style={styles.bagChipLabel}>Gold</Text>
                         </View>
                       )}
@@ -1310,7 +1273,7 @@ export default function DungeonMapScreen({ navigation }) {
                                   displaySize={32}
                                 />
                               )}
-                              <Text style={styles.bagChipQty}>+{keptQty}</Text>
+                              <Text style={styles.bagChipQty}>{keptQty}</Text>
                               <Text style={styles.bagChipLabel}>
                                 {def?.name || id.replace(/_/g, ' ')}
                               </Text>
@@ -1490,7 +1453,7 @@ export default function DungeonMapScreen({ navigation }) {
                       {currentRun.lootCollected.gold > 0 && (
                         <View style={styles.bagItemChip}>
                           <ItemSprite spritesheet="icons-1" frameIndex={11} displaySize={32} />
-                          <Text style={styles.bagChipQty}>+{currentRun.lootCollected.gold}g</Text>
+                          <Text style={styles.bagChipQty}>{currentRun.lootCollected.gold}g</Text>
                           <Text style={styles.bagChipLabel}>Gold</Text>
                         </View>
                       )}
@@ -1506,7 +1469,7 @@ export default function DungeonMapScreen({ navigation }) {
                                   displaySize={32}
                                 />
                             )}
-                            <Text style={styles.bagChipQty}>+{qty}</Text>
+                            <Text style={styles.bagChipQty}>{qty}</Text>
                             <Text style={styles.bagChipLabel}>
                               {def?.name || id.replace(/_/g, ' ')}
                             </Text>

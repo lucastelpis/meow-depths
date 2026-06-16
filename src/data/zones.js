@@ -28,7 +28,7 @@ export const ZONES = {
     description:
       'Damp tunnels crawling with rats and worse. The stench alone could kill you.',
     minLevel: 1,
-    maxLevel: 5,
+    maxLevel: 15,
     floorCount: 10,
     backgroundColor: '#0F0F1A',
     enemies: ['sewer_rat', 'slimeling', 'cockroach_knight', 'plague_frog'],
@@ -41,8 +41,8 @@ export const ZONES = {
     name: 'The Twisted Garden',
     description:
       'An overgrown ruin where roots move on their own and fungi glow with malice.',
-    minLevel: 6,
-    maxLevel: 12,
+    minLevel: 16,
+    maxLevel: 30,
     floorCount: 10,
     backgroundColor: '#0A1A0A',
     enemies: ['thorn_sprite', 'giant_beetle', 'mushroom_puffer', 'vine_lurker'],
@@ -55,8 +55,8 @@ export const ZONES = {
     name: 'The Sunken Docks',
     description:
       'Salt-crusted wharves haunted by drowned things. The tide never goes out.',
-    minLevel: 13,
-    maxLevel: 20,
+    minLevel: 31,
+    maxLevel: 45,
     floorCount: 10,
     backgroundColor: '#0A0F1A',
     enemies: ['barnacle_crab', 'sea_witch_eel', 'drowned_sailor', 'pufferfish_bomb'],
