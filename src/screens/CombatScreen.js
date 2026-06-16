@@ -2569,7 +2569,7 @@ export default function CombatScreen() {
           )
         ) : (
           <View style={[styles.actionBtnSprite, { opacity: 0.22 }]}>
-            <ItemSprite spritesheet="icons-map" frameIndex={109} displaySize={24} />
+            <ItemSprite spritesheet="icons-map" frameIndex={76} displaySize={24} />
           </View>
         )}
         <Text
