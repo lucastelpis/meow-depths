@@ -136,22 +136,27 @@ export const ENEMY_SPRITES = {
   // ── Zone 1 — Soggy Sewers (Black units) ──────────────────────────────────
 
   sewer_rat: {
+    platformOffsetFactor: 0.0,
     idle: { source: require('../../assets/sprites/units/dungeon-1/rat_idle.png'), frameSize: 128, frames: 4 },
     attack: { source: require('../../assets/sprites/units/dungeon-1/rat_attack.png'), frameSize: 128, frames: 8 },
   },
   slimeling: {
+    platformOffsetFactor: 0.0,
     idle: { source: require('../../assets/sprites/units/dungeon-1/slime_idle.png'), frameSize: 128, frames: 4 },
     attack: { source: require('../../assets/sprites/units/dungeon-1/slime_attack.png'), frameSize: 128, frames: 8 },
   },
   cockroach_knight: {
+    platformOffsetFactor: 0.0,
     idle: { source: require('../../assets/sprites/units/dungeon-1/cockroach_idle.png'), frameSize: 128, frames: 4 },
     attack: { source: require('../../assets/sprites/units/dungeon-1/cockroach_attack.png'), frameSize: 128, frames: 8 },
   },
   plague_frog: {
+    platformOffsetFactor: 0.0,
     idle: { source: require('../../assets/sprites/units/dungeon-1/frog_idle.png'), frameSize: 128, frames: 4 },
     attack: { source: require('../../assets/sprites/units/dungeon-1/frog_attack.png'), frameSize: 128, frames: 8 },
   },
   king_rat: {
+    platformOffsetFactor: 0.0,
     idle: { source: require('../../assets/sprites/units/dungeon-1/rat_king_idle.png'), frameSize: 128, frames: 4 },
     attack: { source: require('../../assets/sprites/units/dungeon-1/rat_king_attack.png'), frameSize: 128, frames: 8 },
   },
@@ -214,6 +219,14 @@ export const FALLBACK_ENEMY_SPRITE = {
 
 export const CAMP_CASTLE = require('../../assets/sprites/Tiny Swords (Free Pack)/Buildings/Yellow Buildings/Castle.png');
 export const CAMP_MONASTERY = require('../../assets/sprites/Tiny Swords (Free Pack)/Buildings/Yellow Buildings/Monastery.png');
+
+// ─── Dungeon Banners ─────────────────────────────────────────────────────────
+
+export const DUNGEON_BANNERS = {
+  zone1: require('../../assets/sprites/banners/soggy_sewers_banner_600x300.png'),
+  zone2: require('../../assets/sprites/banners/twisted_gardens_banner_600x300.png'),
+  zone3: require('../../assets/sprites/banners/sunken_docks_banner_600x300.png'),
+};
 
 // ─── Helper ──────────────────────────────────────────────────────────────────
 
@@ -314,4 +327,8 @@ export const ALL_SPRITESHEET_ASSETS = [
   // Buildings
   require('../../assets/sprites/Tiny Swords (Free Pack)/Buildings/Yellow Buildings/Castle.png'),
   require('../../assets/sprites/Tiny Swords (Free Pack)/Buildings/Yellow Buildings/Monastery.png'),
+  // Dungeon Banners
+  require('../../assets/sprites/banners/soggy_sewers_banner_600x300.png'),
+  require('../../assets/sprites/banners/twisted_gardens_banner_600x300.png'),
+  require('../../assets/sprites/banners/sunken_docks_banner_600x300.png'),
 ];

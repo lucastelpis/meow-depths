@@ -20,6 +20,7 @@ import {
   Modal,
   Pressable,
   Dimensions,
+  Image,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
@@ -40,6 +41,7 @@ import { ZONES } from '../data/zones';
 import { CONSUMABLES } from '../data/gear';
 import { calculateEffectiveStats } from '../logic/progressionEngine';
 import ItemSprite from '../components/ItemSprite';
+import { DUNGEON_BANNERS } from '../constants/sprites';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -249,15 +251,16 @@ export default function DungeonFloorScreen() {
       ? zc.accent + '55'
       : 'rgba(255,255,255,0.06)';
 
-    // Card colors
-    const cardBorder = isCleared  ? 'rgba(63,181,110,0.2)'
-                     : isAvail    ? (isBoss ? 'rgba(221,122,134,0.4)' : 'rgba(245,207,74,0.4)')
-                     : 'rgba(255,255,255,0.04)';
-    const cardBg    = isCleared  ? 'rgba(63,181,110,0.04)'
-                    : isAvail    ? (isBoss ? 'rgba(221,122,134,0.06)' : 'rgba(245,207,74,0.05)')
-                    : 'transparent';
+    // Card colors — zone-tinted backgrounds for all states
+    const cardBorder = isCleared  ? `${zc.accent}35`
+                     : isAvail    ? (isBoss ? 'rgba(221,122,134,0.5)' : `${zc.accent}70`)
+                     : 'rgba(255,255,255,0.06)';
+    const cardBg    = isCleared  ? `${zc.accent}0A`
+                    : isAvail    ? (isBoss ? 'rgba(221,122,134,0.08)' : `${zc.accent}12`)
+                    : `${zc.accent}05`;
+    const cardBorderWidth = isAvail ? 2 : 1;
 
-    const rowOpacity = isLocked ? 0.3 : 1;
+    const rowOpacity = isLocked ? 0.45 : 1;
 
     return (
       <View key={floor} style={[styles.floorRow, { opacity: rowOpacity }]}>
@@ -281,21 +284,21 @@ export default function DungeonFloorScreen() {
 
         {/* ── Floor Card ── */}
         <TouchableOpacity
-          style={[styles.floorCard, { borderColor: cardBorder, backgroundColor: cardBg }]}
+          style={[styles.floorCard, { borderColor: cardBorder, backgroundColor: cardBg, borderWidth: cardBorderWidth }]}
           onPress={() => openFloor(floor)}
           activeOpacity={isLocked ? 1 : 0.78}
           disabled={isLocked}
         >
-          {/* Card SVG Background */}
+          {/* Card SVG Background — zone-tinted glow for available floors */}
           {(isAvail || isBoss) && (
             <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
               <Defs>
                 <RadialGradient id={`cardGlow_${floor}`} cx="0%" cy="50%" rx="60%" ry="80%">
-                  <Stop offset="0%" stopColor={isBoss ? '#DD7A86' : '#F5CF4A'} stopOpacity={isBoss ? '0.07' : '0.06'} />
+                  <Stop offset="0%" stopColor={isBoss ? '#DD7A86' : zc.accent} stopOpacity={isBoss ? '0.10' : '0.10'} />
                   <Stop offset="100%" stopColor="transparent" stopOpacity="0" />
                 </RadialGradient>
               </Defs>
-              <Rect width="100%" height="100%" fill={`url(#cardGlow_${floor})`} rx={14} />
+              <Rect width="100%" height="100%" fill={`url(#cardGlow_${floor})`} rx={12} />
             </Svg>
           )}
 
@@ -346,7 +349,10 @@ export default function DungeonFloorScreen() {
                 </View>
               )}
               {isLocked && (
-                <ItemSprite spritesheet="icons-1" frameIndex={22} displaySize={11} opacity={0.4} />
+                <View style={styles.badgeLocked}>
+                  <ItemSprite spritesheet="icons-map" frameIndex={49} displaySize={9} opacity={0.5} />
+                  <Text style={styles.badgeLockedText}>Locked</Text>
+                </View>
               )}
             </View>
 
@@ -382,41 +388,58 @@ export default function DungeonFloorScreen() {
         <Rect width="100%" height="100%" fill="url(#topGlow)" />
       </Svg>
 
+      {/* ── Header ─────────────────────────────────────────────────────── */}
+      <View style={[styles.header, { paddingTop: insets.top }]}>
+        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()} activeOpacity={0.7}>
+          <Text style={styles.backText}>← Zones</Text>
+        </TouchableOpacity>
+        <View style={styles.titleContainer}>
+          <ItemSprite
+            spritesheet="icons-map"
+            frameIndex={136}
+            displaySize={22}
+          />
+          <Text style={styles.title}>Dungeon</Text>
+        </View>
+        <View style={styles.headerSpacer} />
+      </View>
+
       {/* ── Main Scroll View ────────────────────────────────────────── */}
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={[
           styles.scrollContent,
           {
-            paddingTop: (insets.top || 12) + 8,
+            paddingTop: 16,
             paddingBottom: insets.bottom + 24,
           }
         ]}
         showsVerticalScrollIndicator={false}
       >
-        {/* Inline Back Button */}
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.inlineBackBtn} activeOpacity={0.7}>
-          <Text style={styles.inlineBackText}>← Back to Zones</Text>
-        </TouchableOpacity>
 
         {/* ── Zone Banner ────────────────────────────────────────────── */}
-        <View style={[styles.banner, { borderColor: zc.border, marginHorizontal: 0, marginTop: 4, marginBottom: 20 }]}>
-          {/* SVG Background Patterns & Gradients */}
+        <View style={[styles.banner, { borderColor: zc.accent, marginHorizontal: 0, marginTop: 4, marginBottom: 20 }]}>
+          {/* Dungeon artwork as banner background */}
+          <Image
+            source={DUNGEON_BANNERS[zoneId]}
+            style={styles.bannerBgImage}
+            resizeMode="cover"
+          />
+          {/* Dark overlay for readability */}
           <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
             <Defs>
-              <LinearGradient id="bannerGrad" x1="0" y1="0" x2="1" y2="1">
-                <Stop offset="0%" stopColor={zc.bgGrad1} />
-                <Stop offset="50%" stopColor={zc.bgGrad2} />
-                <Stop offset="100%" stopColor="#050607" />
+              <LinearGradient id="bannerOverlay" x1="0" y1="0" x2="1" y2="0">
+                <Stop offset="0%" stopColor="#000000" stopOpacity="0.82" />
+                <Stop offset="60%" stopColor="#000000" stopOpacity="0.6" />
+                <Stop offset="100%" stopColor="#000000" stopOpacity="0.3" />
               </LinearGradient>
               <RadialGradient id="bannerAccent" cx="85%" cy="50%" rx="55%" ry="75%">
-                <Stop offset="0%" stopColor={zc.accent} stopOpacity="0.12" />
+                <Stop offset="0%" stopColor={zc.accent} stopOpacity="0.18" />
                 <Stop offset="100%" stopColor="transparent" stopOpacity="0" />
               </RadialGradient>
             </Defs>
-            <Rect width="100%" height="100%" fill="url(#bannerGrad)" rx={18} />
+            <Rect width="100%" height="100%" fill="url(#bannerOverlay)" rx={18} />
             <Rect width="100%" height="100%" fill="url(#bannerAccent)" rx={18} />
-            <Rect x="1" y="1" width="99%" height="98%" rx={17} fill="none" stroke={zc.border} strokeWidth="1.2" />
           </Svg>
 
           <View style={styles.bannerInner}>
@@ -489,7 +512,7 @@ export default function DungeonFloorScreen() {
           </View>
         </View>
 
-        <Text style={[styles.sectionLabel, { color: zc.accent, marginBottom: 12 }]}>— SELECT FLOOR —</Text>
+        <View style={{ height: 8 }} />
         {Array.from({ length: 10 }, (_, i) => renderFloorRow(i + 1))}
         <View style={{ height: 32 }} />
       </ScrollView>
@@ -687,18 +710,42 @@ const styles = StyleSheet.create({
     flex: 1,
   },
 
-  /* ── Header / Back Button ───────────────────────────────── */
-  inlineBackBtn: {
-    alignSelf: 'flex-start',
-    paddingVertical: 8,
-    paddingRight: 16,
-    marginBottom: 6,
+  /* ── Header Bar ─────────────────────────────────────────── */
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255, 255, 255, 0.04)',
   },
-  inlineBackText: {
-    color: '#D4A754',
+  backButton: {
+    width: 70,
+    paddingVertical: 6,
+    justifyContent: 'center',
+  },
+  backText: {
     fontFamily: 'PixelifySans-Regular',
-    fontWeight: 'normal',
-    fontSize: 15,
+    color: '#D4A754',
+    fontSize: 16,
+    letterSpacing: 0.5,
+  },
+  titleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  title: {
+    fontFamily: 'PixelifySans-Regular',
+    fontSize: 20,
+    color: '#F8FAFC',
+    letterSpacing: 0.8,
+    textAlign: 'center',
+  },
+  headerSpacer: {
+    width: 70,
   },
 
   /* ── Zone Banner ─────────────────────────────────────────── */
@@ -708,8 +755,13 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     borderRadius: 18,
     overflow: 'hidden',
-    borderWidth: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.2)',
+    borderWidth: 2,
+    backgroundColor: '#000',
+  },
+  bannerBgImage: {
+    ...StyleSheet.absoluteFillObject,
+    width: '100%',
+    height: '100%',
   },
   bannerInner: {
     flexDirection: 'row',
@@ -830,12 +882,12 @@ const styles = StyleSheet.create({
   floorRow: {
     flexDirection: 'row',
     alignItems: 'stretch',
-    marginBottom: 2,
+    marginBottom: 0,
   },
 
   /* Rail */
   rail: {
-    width: RAIL_WIDTH,
+    width: 36,
     alignItems: 'center',
     paddingHorizontal: 0,
   },
@@ -882,14 +934,14 @@ const styles = StyleSheet.create({
   floorCard: {
     flex: 1,
     borderWidth: 1,
-    borderRadius: 14,
-    marginVertical: CARD_MARGIN,
+    borderRadius: 12,
+    marginVertical: 5,
     padding: 12,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 10,
     overflow: 'hidden',
-    minHeight: 68,
+    minHeight: 62,
   },
   floorNumPill: {
     width: 40,
@@ -974,6 +1026,9 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
     borderWidth: 1,
     borderColor: 'rgba(63,181,110,0.25)',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
   },
   badgeClearedText: {
     fontFamily: 'Silkscreen-Regular',
@@ -989,12 +1044,33 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
     borderWidth: 1,
     borderColor: 'rgba(245,207,74,0.3)',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
   },
   badgeNextText: {
     fontFamily: 'Silkscreen-Regular',
     fontSize: 8,
     fontWeight: 'normal',
     color: '#F5CF4A',
+    letterSpacing: 0.3,
+  },
+  badgeLocked: {
+    backgroundColor: 'rgba(255,255,255,0.04)',
+    borderRadius: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+  },
+  badgeLockedText: {
+    fontFamily: 'Silkscreen-Regular',
+    fontSize: 8,
+    fontWeight: 'normal',
+    color: 'rgba(207,224,238,0.35)',
     letterSpacing: 0.3,
   },
   badgeBoss: {

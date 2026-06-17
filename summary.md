@@ -14,6 +14,7 @@ Meow Depths is an RPG/dungeon-crawler game built using React Native and Expo, fe
 - **Inventory/Loadout Screen**: Accessible from the hub. Contains three tabs (Supplies, Gear, Materials) styled as cozy parchment/wood tabs.
 - **Market (Shop) Screen**: Accessible from the hub. Contains three tabs (Supplies shop, Gear armory, Forge fusion) styled as cozy parchment/wood tabs.
 - **Dungeon Map Screen**: Allows entering zones to fight enemies.
+- **World Map Screen**: Displays available dungeon zones (Soggy Sewers, Twisted Gardens, Sunken Docks) with custom level ranges, run completion statistics, and floor completion status. Each dungeon card features a full-bleed premium background banner image scaled to a perfect 2:1 aspect ratio matching the dimensions of the assets.
 - **Skill Tree Screen**: Unlocks and upgrades active and passive skills using gold/crystals.
 
 ## Crystal Forging & Fusion
@@ -82,7 +83,32 @@ Crystals and shards use frames from the `crystals-1` spritesheet:
 - **Attack/Skill Lunge**: Attacking characters lunge forward snappily (24px right for hero, 24px left for enemies) on their turn. The timing split is 30% lunge forward and 70% return.
 - **Damage Recoil**: Characters move backward subtly (12px left for hero, 12px right for enemies) when taking damage. The timing split matches the attack's: 30% recoil backward and 70% return recovery.
 - **Red Damage Overlay Tint**: When taking damage, a red color flash overlay (using `#ff3333` tint) is rendered over the unit, fading in to `0.75` opacity during the recoil phase and fading back to `0` opacity during the recovery phase.
-- **Synchronized Duration**: Both animations dynamically synchronize their durations to match the visual frame length of the active sprite sheet at 10 FPS.
+- **Synchronized Duration**: Both animations dynamically synchronize their durations to match the visual frame length of the active sprite sheet. Single attacks/skills play at 10 FPS, while multi-hit skills/moves (like Dual Slash and Whirlwind Strike) play at a sped-up rate of 16 FPS.
+- **Sequential Multi-Hits**: Multi-hit skills/moves are executed as a sequence of rapid individual hits (each taking 350ms). Each hit resets the sprite animation sheet, triggers its own attack lunge, target recoil, damage popup, and step-by-step HP bar depletion, making them feel like actual successive attacks.
+
+## Combat & Battle Log Formatting
+- **Skill Usage Log Messages**: Battle log messages generated during skill usage are kept clean and free of all starting emojis, icons, or special symbols (e.g. 🔥, 🛡️, 💨). All skill log entries are prefixed with `[CharacterName] uses [SkillName]: ` (or `uses [SkillName] and...`/`raises...` etc.) and fully preserve the descriptive combat details, formulas, and damage tracking.
+
+- **Log Text Coloring Rules**: Log text colors are parsed dynamically in the UI:
+  - Hero actions (attacks, active skills, heals/shields when cast, and critical hits): Colored **Treasure Gold** (`#F5CF4A`).
+  - Damage taken and unit deaths: Colored **Damage Red** (`#D8483F`).
+  - Active healing source/HP ticks: Colored **Buff Mint Green** (`#5CC489`).
+  - Stuns, bleeds, guards, and status applications: Colored **Cold Blue** (`#5A9FE0`).
+  - Standard/enemy text: Colored default cool parchment grey.
+
+- **Combat Flee Mechanic**: The player can escape combat using the "Flee" button under the main actions.
+  - **Constraint**: Can only be used once per run.
+  - **Outcome**: Sends the player back to the last visited room they entered from, leaving the combat room uncleared/active on the map (so they can re-enter it or go elsewhere).
+  - **Status Preservation**: HP is kept at its current combat level, and all consumables used during combat remain consumed (not recovered).
+  - **Visual Indicator**: The Flee button renders as shaded/greyed-out and disabled if it has already been used during the current run.
+
+
+
+## Dungeon Banners Reference
+Dungeon cards on the World Map screen use high-quality banner images as backgrounds, which are preloaded and tinted dynamically using zone-specific colors:
+- **Zone 1 (Soggy Sewers)**: `assets/sprites/banners/soggy_sewers_banner_600x300.png`
+- **Zone 2 (Twisted Garden)**: `assets/sprites/banners/twisted_gardens_banner_600x300.png`
+- **Zone 3 (Sunken Docks)**: `assets/sprites/banners/sunken_docks_banner_600x300.png`
 
 ## Matrix Spritesheet Reference (icons-map.png)
 This is a 15-column layout matrix of various game icons (480x320 px, 32x32 px per tile). The frame index is calculated as:

@@ -353,6 +353,7 @@ export function executeSkill(skill, attacker, targets, attackerState) {
       let currentMultiplier = skill.effect.multiplier || 1.0;
       const falloff = skill.effect.damageFalloff || 1.0;
       const secondaryMult = skill.effect.secondaryMultiplier || 1.0;
+      log = `${attacker.name || 'Mochi'} uses ${skill.name}: `;
 
       for (let i = 0; i < targets.length; i++) {
         const target = targets[i];
@@ -368,7 +369,7 @@ export function executeSkill(skill, attacker, targets, attackerState) {
         const isDodged = checkDodge(target);
         if (isDodged) {
           results.push({ target: target.uid || target.id, damage: 0, isDodged: true });
-          log += `${target.name} dodged ${skill.name}! `;
+          log += `${target.name} dodged! `;
           continue;
         }
 
@@ -385,7 +386,7 @@ export function executeSkill(skill, attacker, targets, attackerState) {
           isDodged: false,
         });
 
-        log += `${skill.name} hits ${target.name} for ${dmgResult.damage}`;
+        log += `hits ${target.name} for ${dmgResult.damage}`;
         if (dmgResult.isCrit) log += ' (CRIT!)';
         log += '. ';
 
@@ -503,6 +504,7 @@ export function executeSkill(skill, attacker, targets, attackerState) {
       let currentMultiplier = skill.effect.multiplier || 1.0;
       const falloff = skill.effect.damageFalloff || 1.0;
       const secondaryMult = skill.effect.secondaryMultiplier || 1.0;
+      log = `${attacker.name || 'Mochi'} uses ${skill.name}: `;
 
       for (let i = 0; i < targets.length; i++) {
         const target = targets[i];
@@ -518,7 +520,7 @@ export function executeSkill(skill, attacker, targets, attackerState) {
         const isDodged = checkDodge(target);
         if (isDodged) {
           results.push({ target: target.uid || target.id, damage: 0, isDodged: true, stunApplied: false });
-          log += `${target.name} dodged ${skill.name}! `;
+          log += `${target.name} dodged! `;
           continue;
         }
 
@@ -543,8 +545,9 @@ export function executeSkill(skill, attacker, targets, attackerState) {
           stunEffect,
         });
 
-        log += `${skill.name} hits ${target.name} for ${dmgResult.damage} and stuns them for ${stunEffect.duration} turn(s)! `;
-        if (dmgResult.isCrit) log += '(CRIT!) ';
+        log += `hits ${target.name} for ${dmgResult.damage} and stuns them for ${stunEffect.duration} turn(s)`;
+        if (dmgResult.isCrit) log += ' (CRIT!)';
+        log += '. ';
 
         currentMultiplier = currentMultiplier * falloff;
       }
@@ -1005,7 +1008,7 @@ export function executeFireSlash(skillDef, stars, heroState, target, burnBonus) 
   return {
     damage,
     targetUid: target.uid || target.id,
-    log: `🔥 Fire Slash hits ${target.name} for ${damage}${critText} and applies burn (${burnDmg}/turn for ${starData.burnDuration} turns)!`,
+    log: `${heroState.name || 'Mochi'} uses Fire Slash: hits ${target.name} for ${damage}${critText} and applies burn (${burnDmg}/turn for ${starData.burnDuration} turns)!`,
   };
 }
 
@@ -1061,7 +1064,7 @@ export function executeFireBurst(skillDef, stars, heroState, enemies, targetIdx,
 
   return {
     results,
-    log: `💥 Fire Burst! ${logParts.join(', ')}!`,
+    log: `${heroState.name || 'Mochi'} uses Fire Burst: ${logParts.join(', ')}!`,
   };
 }
 
@@ -1069,7 +1072,7 @@ export function executeFireBurst(skillDef, stars, heroState, enemies, targetIdx,
  * Execute Flame Guard: applies counter-burn aura to the hero for N turns.
  * Returns the flame guard state to merge into heroState.
  */
-export function executeFlameGuard(skillDef, stars, burnBonus) {
+export function executeFlameGuard(skillDef, stars, burnBonus, heroName = 'Mochi') {
   const starData = skillDef.stars[stars];
   const burnDmg = calculateBurnDamage(starData.counterBurnDamage, burnBonus);
   return {
@@ -1077,7 +1080,7 @@ export function executeFlameGuard(skillDef, stars, burnBonus) {
     flameGuardTurnsRemaining: starData.guardDuration,
     flameGuardBurnDamage: burnDmg,
     flameGuardBurnDuration: starData.counterBurnDuration,
-    log: `🛡️ Flame Guard active for ${starData.guardDuration} turns! Attackers burn for ${burnDmg}/turn!`,
+    log: `${heroName} uses Flame Guard: active for ${starData.guardDuration} turns! Attackers burn for ${burnDmg}/turn!`,
   };
 }
 
@@ -1112,7 +1115,7 @@ export function executeTidalStrike(skillDef, stars, heroState, target) {
   return {
     damage,
     targetUid: target.uid || target.id,
-    log: `💧 Tidal Strike hits ${target.name} for ${damage}${critText} and reduces their ATK by ${Math.round(starData.atkReduce * 100)}% for ${starData.duration} turns!`,
+    log: `${heroState.name || 'Mochi'} uses Tidal Strike: hits ${target.name} for ${damage}${critText} and reduces their ATK by ${Math.round(starData.atkReduce * 100)}% for ${starData.duration} turns!`,
   };
 }
 
@@ -1160,7 +1163,7 @@ export function executeTidalWave(skillDef, stars, heroState, enemies, targetIdx)
 
   return {
     results,
-    log: `🌊 Tidal Wave! ${logParts.join(', ')}!`,
+    log: `${heroState.name || 'Mochi'} uses Tidal Wave: ${logParts.join(', ')}!`,
   };
 }
 
@@ -1175,7 +1178,7 @@ export function executeHealingCurrent(skillDef, stars, heroName = 'Mochi') {
       duration: starData.duration,
       turnsRemaining: starData.duration,
     },
-    log: `💧 Healing Current active! ${heroName} will restore HP each turn for ${starData.duration} turns.`,
+    log: `${heroName} uses Healing Current: active! Will restore HP each turn for ${starData.duration} turns.`,
   };
 }
 
@@ -1198,7 +1201,7 @@ export function executeBoulderSlash(skillDef, stars, heroState, target) {
   const stunApplied = Math.random() < starData.stunChance;
 
   const critText = isCrit ? ' (CRIT!)' : '';
-  let log = `🪨 Boulder Slash hits ${target.name} for ${damage}${critText}`;
+  let log = `${heroState.name || 'Mochi'} uses Boulder Slash: hits ${target.name} for ${damage}${critText}`;
   if (stunApplied) {
     log += ' and stuns them for 1 turn!';
   } else {
@@ -1232,7 +1235,7 @@ export function executeFortify(skillDef, stars, heroState) {
       duration: 1,
     },
     cooldown: starData.cooldown,
-    log: `⛰️ Fortify! DEF boosted by +${defBoost} (${Math.round(starData.defBoostPercent * 100)}%) for 1 turn!`,
+    log: `${heroState.name || 'Mochi'} uses Fortify: DEF boosted by +${defBoost} (${Math.round(starData.defBoostPercent * 100)}%) for 1 turn!`,
   };
 }
 
@@ -1251,19 +1254,28 @@ export function executeDualSlash(skillDef, stars, heroState, target) {
   const logParts = [];
 
   for (let i = 0; i < 2; i++) {
-    const { damage, isCrit } = calculateDamage(heroState, target, {
+    const { damage, isCrit, isDodged } = calculateDamage(heroState, target, {
       multiplier: starData.damageMultiplier,
       critBonus: starData.bonusCritChance,
     });
-    hits.push({ damage, isCrit });
+    hits.push({
+      targets: [
+        {
+          uid: target.uid || target.id,
+          damage,
+          isCrit,
+          isDodged,
+        }
+      ]
+    });
     logParts.push(`${damage}${isCrit ? '(CRIT!)' : ''}`);
   }
 
-  const totalDamage = hits.reduce((s, h) => s + h.damage, 0);
+  const totalDamage = hits.reduce((s, h) => s + h.targets[0].damage, 0);
   return {
     hits,
     targetUid: target.uid || target.id,
-    log: `💨 Dual Slash hits ${target.name} — ${logParts.join(' + ')} = ${totalDamage} total!`,
+    log: `${heroState.name || 'Mochi'} uses Dual Slash: hits ${target.name} — ${logParts.join(' + ')} = ${totalDamage} total!`,
   };
 }
 
@@ -1275,24 +1287,31 @@ export function executeDualSlash(skillDef, stars, heroState, target) {
  * @param {Object}   skillDef  - full skill definition from SKILLS
  * @param {number}   stars     - current star level
  * @param {Object}   heroState - hero combat state
- * @param {Object[]} enemies   - full living enemies array
+ * @param {Object[]} enemies    - full living enemies array
  * @param {number}   targetIdx - index of primary target in enemies
  */
 export function executeWhirlwind(skillDef, stars, heroState, enemies, targetIdx) {
   const starData = skillDef.stars[stars];
-  const results = [];
+  const hits = [];
   const primaryLogParts = [];
 
   const primary = enemies[targetIdx];
-  if (!primary) return { results, log: '🌪️ No target!' };
+  if (!primary) return { hits: [], log: `${heroState.name || 'Mochi'} uses Whirlwind: No target!` };
 
   for (let hit = 0; hit < 3; hit++) {
+    const targets = [];
+
     // Primary hit
-    const { damage: pDmg, isCrit: pCrit } = calculateDamage(heroState, primary, {
+    const { damage: pDmg, isCrit: pCrit, isDodged: pDodge } = calculateDamage(heroState, primary, {
       multiplier: starData.damageMultiplier,
       critBonus: starData.bonusCritChance,
     });
-    results.push({ damage: pDmg, targetUid: primary.uid || primary.id });
+    targets.push({
+      uid: primary.uid || primary.id,
+      damage: pDmg,
+      isCrit: pCrit,
+      isDodged: pDodge,
+    });
     primaryLogParts.push(`${pDmg}${pCrit ? '(CRIT!)' : ''}`);
 
     // Spread to adjacent enemies at 40% of the hit's full damage
@@ -1300,17 +1319,28 @@ export function executeWhirlwind(skillDef, stars, heroState, enemies, targetIdx)
       if (adjIdx < 0 || adjIdx >= enemies.length) continue;
       const adj = enemies[adjIdx];
       if (!adj || adj.hp <= 0) continue;
-      const { damage: aDmg } = calculateDamage(heroState, adj, {
+      const { damage: aDmg, isCrit: aCrit, isDodged: aDodge } = calculateDamage(heroState, adj, {
         multiplier: starData.damageMultiplier * starData.spreadPercent,
         critBonus: starData.bonusCritChance,
       });
-      results.push({ damage: aDmg, targetUid: adj.uid || adj.id });
+      targets.push({
+        uid: adj.uid || adj.id,
+        damage: aDmg,
+        isCrit: aCrit,
+        isDodged: aDodge,
+      });
     }
+
+    hits.push({ targets });
   }
 
+  const totalDamage = hits.reduce((sum, h) => {
+    return sum + h.targets.reduce((s, t) => s + t.damage, 0);
+  }, 0);
+
   return {
-    results,
-    log: `🌪️ Whirlwind! ${primaryLogParts.join(' → ')}!`,
+    hits,
+    log: `${heroState.name || 'Mochi'} uses Whirlwind: ${primaryLogParts.join(' → ')}!`,
   };
 }
 

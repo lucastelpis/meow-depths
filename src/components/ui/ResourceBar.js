@@ -40,7 +40,7 @@ export default function ResourceBar({
   let barConfig = {
     fillColor: theme.COLORS.healthGreen,
     trackColor: '#0D2618',
-    height: 12,
+    height: 10,
     radius: 4,
     showText: true,
   };
@@ -49,7 +49,7 @@ export default function ResourceBar({
     barConfig = {
       fillColor: theme.COLORS.damageRed,
       trackColor: '#241016',
-      height: 12,
+      height: 10,
       radius: 4,
       showText: true,
     };
@@ -57,7 +57,7 @@ export default function ResourceBar({
     barConfig = {
       fillColor: theme.COLORS.candleGold,
       trackColor: '#2A2010',
-      height: 12,
+      height: 10,
       radius: 4,
       showText: true,
     };
@@ -152,17 +152,17 @@ const styles = StyleSheet.create({
   valueTextOverlay: {
     ...StyleSheet.absoluteFillObject,
     ...theme.FONTS.label,
-    fontSize: 9,
+    fontSize: 8,
     fontWeight: 'bold',
     color: '#FFFFFF',
     textAlign: 'center',
-    lineHeight: 12,
+    lineHeight: 10,
     textShadowColor: 'rgba(0, 0, 0, 0.75)',
     textShadowOffset: { width: 0.5, height: 0.5 },
     textShadowRadius: 1,
   },
   valueTextSmallOverlay: {
     fontSize: 8,
-    lineHeight: 12,
+    lineHeight: 10,
   },
 });

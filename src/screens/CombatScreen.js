@@ -436,6 +436,7 @@ export default function CombatScreen() {
   const [runConsumables, setRunConsumables] = useState([]);
   const [narratorText, setNarratorText] = useState('');
   const [showItemModal, setShowItemModal] = useState(false);
+  const [showFleeConfirmModal, setShowFleeConfirmModal] = useState(false);
   const [infoSkillId, setInfoSkillId] = useState(null);
   const [levelUpMessages, setLevelUpMessages] = useState([]);
 
@@ -444,6 +445,8 @@ export default function CombatScreen() {
   const [heroAnim, setHeroAnim] = useState('idle');
   // { [enemy.uid]: 'idle' | 'attack' }  — per-enemy animation state
   const [enemyAnims, setEnemyAnims] = useState({});
+  const [heroAnimFps, setHeroAnimFps] = useState(10);
+  const [enemyAnimFps, setEnemyAnimFps] = useState(10);
 
   // Translation values for lunge animation when attacking
   const heroTranslateX = useRef(new Animated.Value(0)).current;
@@ -648,7 +651,11 @@ export default function CombatScreen() {
     if (heroState.hp < prevHeroHpRef.current) {
       const damage = prevHeroHpRef.current - heroState.hp;
       if (damage > 0) {
-        triggerDamagePopup('hero', damage, false);
+        if (!pendingCritUids.current.has('hero')) {
+          triggerDamagePopup('hero', damage, false);
+        } else {
+          pendingCritUids.current.delete('hero');
+        }
       }
     } else if (heroState.hp > prevHeroHpRef.current) {
       const heal = heroState.hp - prevHeroHpRef.current;
@@ -998,6 +1005,8 @@ export default function CombatScreen() {
       preSkillHps[e.uid] = e.hp;
     });
 
+    let isMultiHit = false;
+
     const skillId = state.hero.equippedSkills[slotIndex];
     if (!skillId) {
       addLog('No skill equipped in that slot.');
@@ -1028,7 +1037,10 @@ export default function CombatScreen() {
     // Lock player UI instantly
     setCombatPhase('enemyTurn');
 
-    setHeroAnim(skillId);
+    // Only set standard animation if this isn't a sequential multi-hit skill (handled inside loop)
+    if (skillId !== 'dual_slash' && skillId !== 'whirlwind') {
+      setHeroAnim(skillId);
+    }
 
     // Set cooldown — fortify and whirlwind use per-star cooldowns defined in star data
     const stars = (state.hero.unlockedSkills[skillId]?.stars) || 1;
@@ -1072,7 +1084,7 @@ export default function CombatScreen() {
 
     } else if (skillId === 'flame_guard') {
       const stars = (state.hero.unlockedSkills[skillId]?.stars) || 1;
-      const guard = executeFlameGuard(skillDef, stars, burnBonus);
+      const guard = executeFlameGuard(skillDef, stars, burnBonus, updatedHero.name || 'Mochi');
       updatedHero = {
         ...updatedHero,
         flameGuardActive: guard.flameGuardActive,
@@ -1146,32 +1158,84 @@ export default function CombatScreen() {
       };
       addLog(result.log);
 
-    } else if (skillId === 'dual_slash') {
-      const target = updatedEnemies[selectedEnemyIndex];
-      if (!target) { setCombatPhase('playerTurn'); return; }
-      const dsStars = (state.hero.unlockedSkills[skillId]?.stars) || 1;
-      const result = executeDualSlash(skillDef, dsStars, updatedHero, target);
-      const totalDmg = result.hits.reduce((s, h) => s + h.damage, 0);
-      updatedEnemies = updatedEnemies.map(e =>
-        (e.uid || e.id) === result.targetUid
-          ? { ...e, hp: Math.max(0, e.hp - totalDmg) }
-          : e
-      );
+    } else if (skillId === 'dual_slash' || skillId === 'whirlwind') {
+      let result;
+      if (skillId === 'dual_slash') {
+        const target = updatedEnemies[selectedEnemyIndex];
+        if (!target) { setCombatPhase('playerTurn'); return; }
+        const dsStars = (state.hero.unlockedSkills[skillId]?.stars) || 1;
+        result = executeDualSlash(skillDef, dsStars, updatedHero, target);
+      } else {
+        const wwStars = (state.hero.unlockedSkills[skillId]?.stars) || 1;
+        result = executeWhirlwind(skillDef, wwStars, updatedHero, updatedEnemies, selectedEnemyIndex);
+      }
+
+      isMultiHit = true;
       addLog(result.log);
 
-    } else if (skillId === 'whirlwind') {
-      const wwStars = (state.hero.unlockedSkills[skillId]?.stars) || 1;
-      const result = executeWhirlwind(skillDef, wwStars, updatedHero, updatedEnemies, selectedEnemyIndex);
-      // Accumulate damage per target uid (multiple hits land on same enemy)
-      const damageMap = {};
-      for (const hit of result.results) {
-        damageMap[hit.targetUid] = (damageMap[hit.targetUid] || 0) + hit.damage;
+      if (result.hits && result.hits.length > 0) {
+        const hitDuration = 350; // Snappy speed for each hit
+        setHeroAnimFps(16); // play animation faster
+
+        const hitFrames = HERO_SPRITE[skillId]?.frames || 8;
+        const finalHitDuration = Math.round((hitFrames / 16) * 1000);
+
+        for (let hitIdx = 0; hitIdx < result.hits.length; hitIdx++) {
+          const hit = result.hits[hitIdx];
+
+          // Determine the key: intermediate hits get suffix, last hit gets base skillId
+          const isLastHit = hitIdx === result.hits.length - 1;
+          const animKey = isLastHit ? skillId : `${skillId}_hit${hitIdx}`;
+          const currentHitDuration = isLastHit ? finalHitDuration : hitDuration;
+
+          setHeroAnim(animKey);
+          triggerHeroAttackLunge(currentHitDuration);
+
+          // Trigger recoils and popups for this hit's targets
+          hit.targets.forEach(t => {
+            if (t.isDodged) {
+              triggerDamagePopup(t.uid, 0, false, true);
+            } else if (t.damage > 0) {
+              triggerEnemyRecoil(t.uid, currentHitDuration);
+              if (t.isCrit) {
+                pendingCritUids.current.add(t.uid);
+                triggerDamagePopup(t.uid, t.damage, false, false, true);
+              } else {
+                pendingCritUids.current.add(t.uid);
+                triggerDamagePopup(t.uid, t.damage, false, false, false);
+              }
+            } else {
+              pendingCritUids.current.add(t.uid);
+              triggerDamagePopup(t.uid, 0, false, false, false);
+            }
+          });
+
+          // Apply damage to enemies in state
+          updatedEnemies = updatedEnemies.map(e => {
+            const targetDmg = hit.targets.find(t => t.uid === e.uid);
+            if (targetDmg) {
+              return { ...e, hp: Math.max(0, e.hp - targetDmg.damage) };
+            }
+            return e;
+          });
+
+          // Flush HP updates to the screen
+          setEnemies(updatedEnemies);
+
+          // Wait for this hit to finish before starting the next hit
+          await delay(currentHitDuration);
+        }
+
+        // Reset animation back to idle and wait for render update
+        setHeroAnim('idle');
+        await delay(50);
+
+        // Reset animation FPS to default
+        setHeroAnimFps(10);
+
+        // Wait a tiny bit extra to let the final hit's recovery finish
+        await delay(150);
       }
-      updatedEnemies = updatedEnemies.map(e => {
-        const dmg = damageMap[e.uid || e.id];
-        return dmg ? { ...e, hp: Math.max(0, e.hp - dmg) } : e;
-      });
-      addLog(result.log);
 
     } else {
       // Fallback: legacy executeSkill path for any non-element skills
@@ -1215,25 +1279,27 @@ export default function CombatScreen() {
     updatedEnemies = skillDeadRes.alive;
     updateEnemiesAndDyingEnemies(updatedEnemies, skillDeadRes.dead);
 
-    // Calculate animation length
-    const animData = HERO_SPRITE[skillId] || HERO_SPRITE.attack;
-    const animDuration = Math.round((animData.frames / 10) * 1000);
+    if (!isMultiHit) {
+      // Calculate animation length
+      const animData = HERO_SPRITE[skillId] || HERO_SPRITE.attack;
+      const animDuration = Math.round((animData.frames / 10) * 1000);
 
-    // Trigger hero lunge if the skill is targeted
-    if (isTargeted) {
-      triggerHeroAttackLunge(animDuration);
-    }
-
-    // Trigger enemy damage recoil for any enemy whose HP decreased
-    [...updatedEnemies, ...skillDeadRes.dead].forEach(e => {
-      const preHp = preSkillHps[e.uid];
-      if (preHp !== undefined && e.hp < preHp) {
-        triggerEnemyRecoil(e.uid, animDuration);
+      // Trigger hero lunge if the skill is targeted
+      if (isTargeted) {
+        triggerHeroAttackLunge(animDuration);
       }
-    });
 
-    // Wait for the skill animation to finish
-    await delay(animDuration + 200);
+      // Trigger enemy damage recoil for any enemy whose HP decreased
+      [...updatedEnemies, ...skillDeadRes.dead].forEach(e => {
+        const preHp = preSkillHps[e.uid];
+        if (preHp !== undefined && e.hp < preHp) {
+          triggerEnemyRecoil(e.uid, animDuration);
+        }
+      });
+
+      // Wait for the skill animation to finish
+      await delay(animDuration + 200);
+    }
 
     // Check for victory
     if (updatedEnemies.length === 0) {
@@ -1363,6 +1429,7 @@ export default function CombatScreen() {
     // ── Phase 1: Each enemy executes their telegraphed move ─────────────────
     for (let i = 0; i < updatedEnemies.length; i++) {
       const enemy = updatedEnemies[i];
+      const enemyUid = enemy.uid;
 
       // Failsafe: if the enemy is missing or already dead, skip them!
       if (!enemy || enemy.hp <= 0) continue;
@@ -1384,32 +1451,83 @@ export default function CombatScreen() {
       // Write the updated cooldowns back into the array so they persist.
       updatedEnemies[i] = { ...enemy, cooldowns: { ...(enemy.cooldowns || {}) } };
 
-      // Trigger this enemy's attack animation if they are not stunned or skipped
-      const enemyUid = enemy.uid;
+      let isEnemyMultiHit = turnResult.hits && turnResult.hits.length > 0;
       let animDuration = 500; // default delay if stunned, skipped, or no animation plays
 
-      if (!turnResult.isStunned && !turnResult.isSkipped) {
-        setEnemyAnims(prev => ({ ...prev, [enemyUid]: 'attack' }));
+      if (isEnemyMultiHit) {
+        const hitDuration = 350;
+        setEnemyAnimFps(16);
         const spriteDef = getEnemySprite(enemy);
-        const attackFrames = spriteDef.attack?.frames || 4;
-        animDuration = Math.round((attackFrames / 10) * 1000);
-        triggerEnemyAttackLunge(enemyUid, animDuration);
-      }
+        const hitFrames = spriteDef.attack?.frames || 6;
+        const finalHitDuration = Math.round((hitFrames / 16) * 1000);
 
-      if (turnResult.damage > 0) {
-        triggerHeroRecoil(animDuration);
-      }
-      if (turnResult.isDodged) {
-        triggerDamagePopup('hero', 0, false, true);
-      }
+        for (let hitIdx = 0; hitIdx < turnResult.hits.length; hitIdx++) {
+          const hit = turnResult.hits[hitIdx];
+          const isLastHit = hitIdx === turnResult.hits.length - 1;
+          const animKey = isLastHit ? 'attack' : `attack_hit${hitIdx}`;
+          const currentHitDuration = isLastHit ? finalHitDuration : hitDuration;
 
-      addLog(turnResult.log);
+          setEnemyAnims(prev => ({ ...prev, [enemyUid]: animKey }));
+          triggerEnemyAttackLunge(enemyUid, currentHitDuration);
 
-      // Apply damage to hero
-      updatedHero = {
-        ...updatedHero,
-        hp: Math.max(0, updatedHero.hp - turnResult.damage),
-      };
+          hit.targets.forEach(t => {
+            if (t.uid === 'hero') {
+              if (t.isDodged) {
+                triggerDamagePopup('hero', 0, false, true);
+              } else if (t.damage > 0) {
+                triggerHeroRecoil(currentHitDuration);
+                if (t.isCrit) {
+                  pendingCritUids.current.add('hero');
+                  triggerDamagePopup('hero', t.damage, false, false, true);
+                } else {
+                  pendingCritUids.current.add('hero');
+                  triggerDamagePopup('hero', t.damage, false, false, false);
+                }
+              } else {
+                pendingCritUids.current.add('hero');
+                triggerDamagePopup('hero', 0, false, false, false);
+              }
+
+              updatedHero = {
+                ...updatedHero,
+                hp: Math.max(0, updatedHero.hp - t.damage),
+              };
+            }
+          });
+
+          setHeroState({ ...updatedHero });
+          await delay(currentHitDuration);
+        }
+
+        // Reset enemy animation back to idle and wait for render update
+        setEnemyAnims(prev => ({ ...prev, [enemyUid]: 'idle' }));
+        await delay(50);
+
+        setEnemyAnimFps(10);
+        await delay(150); // post-animation recovery
+      } else {
+        // Trigger this enemy's attack animation if they are not stunned or skipped
+        if (!turnResult.isStunned && !turnResult.isSkipped) {
+          setEnemyAnims(prev => ({ ...prev, [enemyUid]: 'attack' }));
+          const spriteDef = getEnemySprite(enemy);
+          const attackFrames = spriteDef.attack?.frames || 4;
+          animDuration = Math.round((attackFrames / 10) * 1000);
+          triggerEnemyAttackLunge(enemyUid, animDuration);
+        }
+
+        if (turnResult.damage > 0) {
+          triggerHeroRecoil(animDuration);
+        }
+        if (turnResult.isDodged) {
+          triggerDamagePopup('hero', 0, false, true);
+        }
+
+        // Apply damage to hero
+        updatedHero = {
+          ...updatedHero,
+          hp: Math.max(0, updatedHero.hp - turnResult.damage),
+        };
+      }
 
       // Flame Guard counter-burn — attacker gets burned
       if (updatedHero.flameGuardActive && turnResult.damage > 0) {
@@ -1773,6 +1891,25 @@ export default function CombatScreen() {
     navigation.navigate('Camp');
   };
 
+  const performFlee = () => {
+    setShowFleeConfirmModal(false);
+    
+    // Sync any consumables used during this fight (deducting them)
+    const flatConsumables = [];
+    for (const c of runConsumables) {
+      for (let i = 0; i < c.quantity; i++) {
+        flatConsumables.push(c.id);
+      }
+    }
+    
+    dispatch({
+      type: 'COMBAT_FLEE',
+      payload: { hp: heroState.hp, consumables: flatConsumables },
+    });
+    
+    navigation.navigate('DungeonMap');
+  };
+
   // =========================================================================
   // Render: loading guard
   // =========================================================================
@@ -1804,7 +1941,25 @@ export default function CombatScreen() {
     const lower = msg.toLowerCase();
 
     const heroNameLower = (heroState?.name || 'Mochi').toLowerCase();
-    if (lower.includes(`${heroNameLower} attacks`) || lower.includes('crit!') || lower.includes('critical')) {
+    const activeSkillNames = Object.values(SKILLS)
+      .filter(s => s.type === 'active')
+      .map(s => s.name.toLowerCase());
+
+    const isHeroSkill = activeSkillNames.some(name => {
+      const shortName = name.replace(' strike', '');
+      return lower.includes(name) || lower.includes(shortName);
+    });
+
+    const isHeroAction =
+      lower.includes(`${heroNameLower} attacks`) ||
+      lower.includes(`${heroNameLower} uses`) ||
+      lower.includes(`${heroNameLower} raises`) ||
+      lower.includes(`${heroNameLower} vanishes`) ||
+      lower.includes('crit!') ||
+      lower.includes('critical') ||
+      isHeroSkill;
+
+    if (isHeroAction) {
       color = '#F5CF4A'; // treasureGold — hero actions
     } else if (lower.includes('takes') || lower.includes('damaged') || lower.includes('fells') || lower.includes('dies')) {
       color = '#D8483F'; // damageRed
@@ -1917,34 +2072,63 @@ export default function CombatScreen() {
             </View>
 
             {combatPhase === 'playerTurn' && (
-              <View style={styles.actionRowSingle}>
-                <TouchableOpacity
-                  style={[styles.actionBtn, styles.actionBtnAttack]}
-                  onPress={handleAttack}
-                  activeOpacity={0.75}
-                >
-                  <View style={styles.actionBtnSprite}>
-                    <ItemSprite spritesheet="icons-1" frameIndex={10} displaySize={28} />
-                  </View>
-                  <Text style={[styles.actionBtnTitle, { color: '#5CC489' }]}>ATTACK</Text>
-                  <Text style={styles.actionBtnSub}>Basic</Text>
-                </TouchableOpacity>
+              <View style={styles.actionAreaContainer}>
+                {/* Row 1: Attack and 2 Skills, expanding to fill horizontal space */}
+                <View style={styles.actionRowSingle}>
+                  <TouchableOpacity
+                    style={[styles.actionBtn, styles.actionBtnAttack]}
+                    onPress={handleAttack}
+                    activeOpacity={0.75}
+                  >
+                    <View style={styles.actionBtnSprite}>
+                      <ItemSprite spritesheet="icons-1" frameIndex={10} displaySize={28} />
+                    </View>
+                    <Text style={[styles.actionBtnTitle, { color: '#5CC489' }]}>ATTACK</Text>
+                    <Text style={styles.actionBtnSub}>Basic</Text>
+                  </TouchableOpacity>
 
-                {renderSkillButton(0)}
-                {renderSkillButton(1)}
+                  {renderSkillButton(0)}
+                  {renderSkillButton(1)}
+                </View>
 
-                <TouchableOpacity
-                  style={[styles.actionBtn, totalConsumables > 0 ? styles.actionBtnItem : styles.actionBtnEmpty]}
-                  onPress={() => totalConsumables > 0 && setShowItemModal(true)}
-                  activeOpacity={0.75}
-                  disabled={totalConsumables === 0}
-                >
-                  <View style={[styles.actionBtnSprite, totalConsumables === 0 && { opacity: 0.4 }]}>
-                    <ItemSprite spritesheet="icons-1" frameIndex={26} displaySize={28} />
-                  </View>
-                  <Text style={[styles.actionBtnTitle, { color: totalConsumables > 0 ? '#F5CF4A' : '#5A5A5A' }]}>ITEMS</Text>
-                  <Text style={styles.actionBtnSub}>{totalConsumables > 0 ? `${totalConsumables} in bag` : 'empty bag'}</Text>
-                </TouchableOpacity>
+                {/* Row 2: Flee and Items buttons, side-by-side */}
+                <View style={styles.actionRowSub}>
+                  <TouchableOpacity
+                    style={[
+                      styles.actionBtnSubRow,
+                      state.currentRun.combatFleeUsed ? styles.actionBtnEmpty : styles.actionBtnFlee,
+                      state.currentRun.combatFleeUsed && { opacity: 0.5 }
+                    ]}
+                    onPress={() => !state.currentRun.combatFleeUsed && setShowFleeConfirmModal(true)}
+                    activeOpacity={0.75}
+                    disabled={state.currentRun.combatFleeUsed}
+                  >
+                    <View style={styles.subBtnContent}>
+                      <View style={[styles.subBtnSprite, state.currentRun.combatFleeUsed && { opacity: 0.4 }]}>
+                        <ItemSprite spritesheet="icons-map" frameIndex={127} displaySize={18} />
+                      </View>
+                      <Text style={[styles.subBtnTitle, { color: state.currentRun.combatFleeUsed ? '#5A5A5A' : '#DD7A86' }]}>
+                        {state.currentRun.combatFleeUsed ? 'FLED (USED)' : 'FLEE'}
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[styles.actionBtnSubRow, totalConsumables > 0 ? styles.actionBtnItem : styles.actionBtnEmpty]}
+                    onPress={() => totalConsumables > 0 && setShowItemModal(true)}
+                    activeOpacity={0.75}
+                    disabled={totalConsumables === 0}
+                  >
+                    <View style={styles.subBtnContent}>
+                      <View style={[styles.subBtnSprite, totalConsumables === 0 && { opacity: 0.4 }]}>
+                        <ItemSprite spritesheet="icons-1" frameIndex={26} displaySize={18} />
+                      </View>
+                      <Text style={[styles.subBtnTitle, { color: totalConsumables > 0 ? '#F5CF4A' : '#5A5A5A' }]}>
+                        ITEMS ({totalConsumables})
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                </View>
               </View>
             )}
 
@@ -2079,6 +2263,61 @@ export default function CombatScreen() {
 
         {/* ── Skill info popup ─────────────────────────────────────────── */}
         {renderSkillInfoModal()}
+
+        {/* ── Flee confirmation popup ─────────────────────────────────── */}
+        <Modal
+          visible={showFleeConfirmModal}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setShowFleeConfirmModal(false)}
+        >
+          <Pressable style={styles.modalOverlay} onPress={() => setShowFleeConfirmModal(false)}>
+            <Pressable style={styles.modalContent}>
+              <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
+                <Defs>
+                  <LinearGradient id="fleeInfoGrad" x1="0" y1="0" x2="0" y2="1">
+                    <Stop offset="0%" stopColor={theme.COLORS.panelGreenTop} stopOpacity="1" />
+                    <Stop offset="100%" stopColor={theme.COLORS.panelGreenBottom} stopOpacity="1" />
+                  </LinearGradient>
+                </Defs>
+                <Rect width="100%" height="100%" fill="url(#fleeInfoGrad)" rx={20} />
+                <Rect x="1" y="1" width="98%" height="98%" rx={19} fill="none" stroke="rgba(212, 167, 84, 0.18)" strokeWidth={1} />
+              </Svg>
+
+              <View style={styles.modalContentInner}>
+                <View style={styles.modalTitleRow}>
+                  <ItemSprite spritesheet="icons-map" frameIndex={127} displaySize={28} />
+                  <Text style={styles.modalTitle}>Flee Battle</Text>
+                </View>
+
+                <Text style={styles.fleeConfirmText}>
+                  Are you sure you want to flee this battle?
+                </Text>
+                <Text style={styles.fleeConfirmSubText}>
+                  Can only be used once per run.
+                </Text>
+
+                <View style={styles.fleeModalButtonsRow}>
+                  <TouchableOpacity
+                    activeOpacity={0.85}
+                    onPress={() => setShowFleeConfirmModal(false)}
+                    style={[styles.fleeModalBtn, styles.fleeModalBtnCancel]}
+                  >
+                    <Text style={styles.fleeModalBtnText}>CANCEL</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    activeOpacity={0.85}
+                    onPress={performFlee}
+                    style={[styles.fleeModalBtn, styles.fleeModalBtnConfirm]}
+                  >
+                    <Text style={[styles.fleeModalBtnText, { color: '#DD7A86' }]}>FLEE</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </Pressable>
+          </Pressable>
+        </Modal>
 
         {/* ── Victory / Loot Overlay ───────────────────────────────────── */}
         {combatPhase === 'loot' && lootResult && (
@@ -2308,8 +2547,8 @@ export default function CombatScreen() {
                   <Svg width={shadowWidth} height={shadowHeight}>
                     <Defs>
                       <RadialGradient id="heroShadowGlow" cx="50%" cy="50%" r="50%">
-                        <Stop offset="0%" stopColor="#000000" stopOpacity="0.75" />
-                        <Stop offset="60%" stopColor="#000000" stopOpacity="0.35" />
+                        <Stop offset="0%" stopColor="#000000" stopOpacity="0.95" />
+                        <Stop offset="60%" stopColor="#000000" stopOpacity="0.6" />
                         <Stop offset="100%" stopColor="#000000" stopOpacity="0" />
                       </RadialGradient>
                     </Defs>
@@ -2328,10 +2567,11 @@ export default function CombatScreen() {
             {(() => {
               const isIdle = heroAnim === 'idle';
               const isGuard = heroAnim === 'guard';
-              const isAttack = heroAnim === 'attack';
+              const isAttack = heroAnim === 'attack' || heroAnim.startsWith('attack_hit');
               const isSkill = !isIdle && !isGuard && !isAttack;
 
-              const skillDef = isSkill ? HERO_SPRITE[heroAnim] : null;
+              const baseAnim = heroAnim.split('_hit')[0];
+              const skillDef = isSkill ? HERO_SPRITE[baseAnim] : null;
 
               return (
                 <>
@@ -2364,14 +2604,14 @@ export default function CombatScreen() {
                     tintOpacity={heroDamageOpacity}
                   />
                   <AnimatedSprite
-                    key="hero_sprite_attack"
+                    key={`hero_sprite_attack_${heroAnim}`}
                     source={HERO_SPRITE.attack.source}
                     frameSize={HERO_SPRITE.attack.frameSize}
                     totalFrames={HERO_SPRITE.attack.frames}
-                    fps={10}
+                    fps={heroAnimFps}
                     loop={false}
                     active={isAttack}
-                    onComplete={isAttack ? () => setHeroAnim('idle') : undefined}
+                    onComplete={isAttack && !heroAnim.includes('_hit') ? () => setHeroAnim('idle') : undefined}
                     displaySize={HERO_DISPLAY_SIZE}
                     pointerEvents={isAttack ? 'auto' : 'none'}
                     style={[styles.heroCardSprite, { position: 'absolute', opacity: isAttack ? 1 : 0 }]}
@@ -2385,10 +2625,10 @@ export default function CombatScreen() {
                       source={skillDef.source}
                       frameSize={skillDef.frameSize}
                       totalFrames={skillDef.frames}
-                      fps={10}
+                      fps={heroAnimFps}
                       loop={false}
                       active={true}
-                      onComplete={() => setHeroAnim('idle')}
+                      onComplete={!heroAnim.includes('_hit') ? () => setHeroAnim('idle') : undefined}
                       displaySize={HERO_DISPLAY_SIZE}
                       pointerEvents="auto"
                       style={[styles.heroCardSprite, { position: 'absolute' }]}
@@ -2402,7 +2642,7 @@ export default function CombatScreen() {
           </Animated.View>
 
           {/* Info block locked to bottom inside the sprite container */}
-          <View style={[styles.enemyInfoBottom, { position: 'absolute', bottom: 8, left: 0, right: 0 }]}>
+          <View style={[styles.enemyInfoBottom, { position: 'absolute', bottom: 15, left: 0, right: 0 }]}>
             <View style={[styles.charHpBar, { width: '55%' }]}>
               <ResourceBar variant="heroHp" current={heroState.hp} max={heroState.maxHp} />
             </View>
@@ -2488,8 +2728,8 @@ export default function CombatScreen() {
                     <Svg width={shadowWidth} height={shadowHeight}>
                       <Defs>
                         <RadialGradient id={`enemyShadowGlow_${enemy.uid}`} cx="50%" cy="50%" r="50%">
-                          <Stop offset="0%" stopColor="#000000" stopOpacity="0.75" />
-                          <Stop offset="60%" stopColor="#000000" stopOpacity="0.35" />
+                          <Stop offset="0%" stopColor="#000000" stopOpacity="0.95" />
+                          <Stop offset="60%" stopColor="#000000" stopOpacity="0.6" />
                           <Stop offset="100%" stopColor="#000000" stopOpacity="0" />
                         </RadialGradient>
                       </Defs>
@@ -2522,27 +2762,27 @@ export default function CombatScreen() {
                 tintOpacity={getEnemyDamageOpacity(enemy.uid)}
               />
               <AnimatedSprite
-                key={`${enemy.uid}_attack`}
+                key={`${enemy.uid}_attack_${animKey}`}
                 source={spriteDef.attack.source}
                 frameSize={spriteDef.attack.frameSize}
                 totalFrames={spriteDef.attack.frames}
-                fps={10}
+                fps={enemy.uid === activeEnemyUid ? enemyAnimFps : 10}
                 loop={false}
-                active={animKey === 'attack'}
-                onComplete={animKey === 'attack'
+                active={animKey === 'attack' || animKey.startsWith('attack_hit')}
+                onComplete={(animKey === 'attack' || animKey.startsWith('attack_hit')) && !animKey.includes('_hit')
                   ? () => setEnemyAnims(prev => ({ ...prev, [enemy.uid]: 'idle' }))
                   : undefined}
                 displaySize={displaySize}
                 flipX
-                pointerEvents={animKey === 'attack' ? 'auto' : 'none'}
-                style={[styles.enemySprite, { position: 'absolute', opacity: animKey === 'attack' ? 1 : 0 }]}
+                pointerEvents={(animKey === 'attack' || animKey.startsWith('attack_hit')) ? 'auto' : 'none'}
+                style={[styles.enemySprite, { position: 'absolute', opacity: (animKey === 'attack' || animKey.startsWith('attack_hit')) ? 1 : 0 }]}
                 tintColor="#ff3333"
                 tintOpacity={getEnemyDamageOpacity(enemy.uid)}
               />
             </Animated.View>
 
             {/* Info block locked to bottom inside the sprite container */}
-            <View style={[styles.enemyInfoBottom, { position: 'absolute', bottom: 8, left: 0, right: 0 }]}>
+            <View style={[styles.enemyInfoBottom, { position: 'absolute', bottom: 1.5, left: 0, right: 0 }]}>
               <Animated.View style={[
                 styles.charHpBar,
                 {
@@ -2564,6 +2804,9 @@ export default function CombatScreen() {
               ]}>
                 <ResourceBar variant="enemyHp" current={enemy.hp} max={enemy.maxHp} />
               </Animated.View>
+              <Text style={styles.charName} numberOfLines={1}>
+                {enemy.name}
+              </Text>
               {/* Stars Row - positioned below the HP bar */}
               <View style={[styles.starsRow, { marginTop: 0, marginBottom: 0 }]}>
                 {Array.from({ length: enemy.isBoss ? 5 : (enemy.stars || 1) }).map((_, i) => (
@@ -2890,6 +3133,8 @@ function DyingEnemyCard({ enemy, slotStyle, popups = [], removePopup }) {
 // ============================================================================
 function DamagePopup({ amount, isHeal, isMiss, isCrit, onComplete }) {
   const animValue = useRef(new Animated.Value(0)).current;
+  const onCompleteRef = useRef(onComplete);
+  onCompleteRef.current = onComplete;
 
   useEffect(() => {
     Animated.timing(animValue, {
@@ -2897,9 +3142,9 @@ function DamagePopup({ amount, isHeal, isMiss, isCrit, onComplete }) {
       duration: 1200,
       useNativeDriver: true,
     }).start(() => {
-      onComplete();
+      onCompleteRef.current?.();
     });
-  }, [animValue, onComplete]);
+  }, [animValue]);
 
   // Translate up and fade out
   const translateY = animValue.interpolate({
@@ -3067,16 +3312,15 @@ const styles = StyleSheet.create({
   enemyInfoBottom: {
     width: '100%',
     alignItems: 'center',
-    gap: 2,
+    gap: 1,
     marginTop: 4,
     zIndex: 6,
   },
   charName: {
-    ...theme.FONTS.body,
+    fontFamily: 'PixelifySans-Regular',
     fontSize: 10,
-    lineHeight: 13,
+    lineHeight: 11,
     color: theme.COLORS.parchment,
-    fontWeight: 'bold',
     textAlign: 'center',
   },
   charHpBar: {
@@ -3090,7 +3334,7 @@ const styles = StyleSheet.create({
   starText: {
     color: '#A0AEC0',
     fontSize: 6,
-    lineHeight: 8,
+    lineHeight: 7,
   },
   starTextBoss: {
     color: '#F5CF4A',
@@ -3223,10 +3467,50 @@ const styles = StyleSheet.create({
   actionsLine: {
     // sized to its content (divider + button row)
   },
+  actionAreaContainer: {
+    flexDirection: 'column',
+    gap: 6,
+  },
   actionRowSingle: {
     flexDirection: 'row',
     gap: 6,
-    height: 84,
+    height: 74,
+  },
+  actionRowSub: {
+    flexDirection: 'row',
+    gap: 6,
+    height: 38,
+  },
+  actionBtnSubRow: {
+    flex: 1,
+    borderRadius: theme.BORDER_RADIUS.card,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...theme.SHADOWS.cardShadow,
+  },
+  actionBtnFlee: {
+    backgroundColor: '#2D1B1E',
+    borderColor: '#5C2D32',
+  },
+  subBtnContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+  },
+  subBtnSprite: {
+    width: 18,
+    height: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  subBtnTitle: {
+    ...theme.FONTS.label,
+    fontSize: 10,
+    letterSpacing: 0.5,
+    fontWeight: '800',
+    textTransform: 'uppercase',
   },
   logLine: {
     flex: 1,
@@ -3243,16 +3527,16 @@ const styles = StyleSheet.create({
   logContainerInner: {
     flexGrow: 1,
     paddingHorizontal: 14,
-    paddingTop: 14,
-    paddingBottom: 10,
+    paddingTop: 8,
+    paddingBottom: 8,
     justifyContent: 'flex-start',
     gap: 2,
   },
   logText: {
     ...theme.FONTS.small,
-    fontSize: 9,
+    fontSize: 8,
     fontWeight: '600',
-    lineHeight: 13,
+    lineHeight: 12,
   },
 
   /* ── Action buttons ──────────────────────────────────────────── */
@@ -3332,7 +3616,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   enemyTurnBox: {
-    height: 84,
+    height: 118,
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
@@ -3385,6 +3669,48 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 8,
     marginBottom: 14,
+  },
+  fleeConfirmText: {
+    fontFamily: 'PixelifySans-Regular',
+    fontSize: 16,
+    color: '#EADCB9',
+    textAlign: 'center',
+    marginTop: 10,
+    marginBottom: 4,
+  },
+  fleeConfirmSubText: {
+    ...theme.FONTS.small,
+    fontSize: 11,
+    color: '#DD7A86',
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  fleeModalButtonsRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 8,
+  },
+  fleeModalBtn: {
+    flex: 1,
+    height: 40,
+    borderRadius: theme.BORDER_RADIUS.card,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  fleeModalBtnCancel: {
+    backgroundColor: '#1E1E1E',
+    borderColor: '#3E3E3E',
+  },
+  fleeModalBtnConfirm: {
+    backgroundColor: '#2D1B1E',
+    borderColor: '#5C2D32',
+  },
+  fleeModalBtnText: {
+    ...theme.FONTS.label,
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#EADCB9',
   },
 
   /* ── Skill info popup ───────────────────────────────────────── */

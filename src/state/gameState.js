@@ -128,6 +128,8 @@ const initialState = {
     gridHeight: 3,
     tiles: [],                // flat array, access by index = y * gridWidth + x
     playerPos: { x: 0, y: 2 },
+    previousPos: null,
+    combatFleeUsed: false,
     roomsCleared: 0,
     totalRooms: 9,
     consumables: [],          // consumables brought into this run (array of item ID strings)
@@ -479,6 +481,8 @@ function gameReducer(state, action) {
           gridHeight,
           tiles: flatTiles,
           playerPos: { x: startX, y: startY },
+          previousPos: null,
+          combatFleeUsed: false,
           roomsCleared: 1, // Start room is cleared
           totalRooms: gridWidth * gridHeight,
           consumables: consumables || [],
@@ -543,6 +547,7 @@ function gameReducer(state, action) {
         currentRun: {
           ...state.currentRun,
           tiles: newTiles,
+          previousPos: state.currentRun.playerPos,
           playerPos: { x, y }
         }
       };
@@ -644,6 +649,29 @@ function gameReducer(state, action) {
         currentRun: {
           ...state.currentRun,
           consumables: consumables || state.currentRun.consumables
+        }
+      };
+    }
+
+    // -----------------------------------------------------------------------
+    // COMBAT_FLEE — flee from combat, resetting position to previousPos
+    // Payload: { hp: number, consumables: [] }
+    // -----------------------------------------------------------------------
+    case 'COMBAT_FLEE': {
+      const { hp, consumables } = action.payload;
+      const { previousPos } = state.currentRun;
+      const effectiveMaxHp = calculateEffectiveStats(state.hero, undefined, state.currentRun.runBuffs).maxHp;
+      return {
+        ...state,
+        hero: {
+          ...state.hero,
+          hp: Math.min(effectiveMaxHp, hp)
+        },
+        currentRun: {
+          ...state.currentRun,
+          playerPos: previousPos || state.currentRun.playerPos,
+          consumables: consumables || state.currentRun.consumables,
+          combatFleeUsed: true
         }
       };
     }
