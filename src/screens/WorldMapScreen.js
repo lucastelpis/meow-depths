@@ -109,7 +109,7 @@ export default function WorldMapScreen({ navigation }) {
         </TouchableOpacity>
         <View style={styles.titleContainer}>
           <ItemSprite spritesheet="icons-1" frameIndex={0} displaySize={22} />
-          <Text style={styles.title}>World Map</Text>
+          <Text style={styles.title}>Expeditions</Text>
         </View>
         <View style={styles.headerSpacer} />
       </View>
@@ -189,7 +189,7 @@ export default function WorldMapScreen({ navigation }) {
                       <View style={[styles.runsBadge, { borderColor: `${grad.accent}40`, backgroundColor: `${grad.accent}12` }]}>
                         <ItemSprite spritesheet="icons-1" frameIndex={0} displaySize={11} />
                         <Text style={[styles.runsBadgeText, { color: grad.accent }]}>
-                          Floor {isCleared ? floorCount : nextFloor}/{floorCount}
+                          Zone {isCleared ? floorCount : nextFloor}/{floorCount}
                         </Text>
                       </View>
                     )}
@@ -215,7 +215,7 @@ export default function WorldMapScreen({ navigation }) {
                     <>
                       <ItemSprite spritesheet="icons-map" frameIndex={136} displaySize={26} />
                       <Text style={[styles.beginButtonText, { color: grad.accent }]}>
-                        {isCleared ? "View Floors" : "Enter Dungeon"}
+                        {isCleared ? "View Zones" : "Enter Region"}
                       </Text>
                     </>
                   ) : (

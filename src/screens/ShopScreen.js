@@ -515,7 +515,7 @@ export default function ShopScreen() {
         {activeTab === 'supplies' && (
           <View style={styles.tabContent}>
             <View style={styles.suppliesIntro}>
-              <Text style={styles.introDesc}>Purchase healing reagents and items to aid your dungeon runs.</Text>
+              <Text style={styles.introDesc}>Purchase healing reagents and items to aid your expedition runs.</Text>
             </View>
 
             <View style={styles.listContainer}>
@@ -624,7 +624,7 @@ export default function ShopScreen() {
         {activeTab === 'armory' && (
           <View style={styles.tabContent}>
             <View style={styles.suppliesIntro}>
-              <Text style={styles.introDesc}>Spend Gold on weapons and gear. New items unlock as you venture deeper into the dungeons.</Text>
+              <Text style={styles.introDesc}>Spend Gold on weapons and gear. New items unlock as you venture deeper into the regions.</Text>
             </View>
 
             <View style={styles.listContainer}>
@@ -649,7 +649,7 @@ export default function ShopScreen() {
                       <ItemSprite spritesheet="icons-1" frameIndex={12} displaySize={40} opacity={0.6} />
                       <Text style={styles.emptyArmoryTitle}>The shelves are bare</Text>
                       <Text style={styles.emptyArmoryDesc}>
-                        You've claimed everything on offer. Venture deeper into the dungeons to unlock new weapons and gear.
+                        You've claimed everything on offer. Venture deeper into the regions to unlock new weapons and gear.
                       </Text>
                     </View>
                   );

@@ -1,32 +1,32 @@
 # Meow Depths — Complete Game Details & Mechanics Specification
 
-Welcome to the definitive guide and specification for **Meow Depths**, a cozy yet grim grid-based mobile RPG built with React Native and Expo. In this game, players guide **Mochi**, a brave feline protagonist and new recruit of the ancient **Meow Order**, through dark dungeons across three distinct zones to fight enemies, forge legendary gear, and grow in power.
+Welcome to the definitive guide and specification for **Meow Depths**, a cozy yet grim grid-based mobile RPG built with React Native and Expo. In this game, players guide **Mochi**, a brave feline protagonist and new recruit of the ancient **Meow Order**, through dark regions across three distinct zones to fight enemies, forge legendary gear, and grow in power.
 
 ---
 
 ## 🗺️ High-Level Game Flow
 
-The game operates on a persistent loop between the safe haven of **Base Camp** and the perilous **Dungeon Floors**.
+The game operates on a persistent loop between the safe haven of **Base Camp** and the perilous **Region Zones**.
 
 ```mermaid
 graph TD
-    A[Base Camp] -->|Equip Loadout & Distribute Stats| B[World Map]
-    B -->|Select Zone & Floor / Pack Consumables| C[Dungeon Floor Map]
-    C -->|Orthogonal Movement| D{Tile Type}
+    A[Base Camp] -->|Equip Loadout & Distribute Stats| B[Expeditions]
+    B -->|Select Region & Zone / Pack Consumables| C[Region Map]
+    C -->|Orthogonal Movement| D{Site Type}
     D -->|Treasure / Rest / Start| E[Resolve Event]
-    D -->|Gamble Tile| F{Random Outcome 1/3}
+    D -->|Gamble Site| F{Random Outcome 1/3}
     F -->|Trap Damage| G[Take Damage]
     F -->|Treasure Loot| H[Gain Loot]
     F -->|Ambush| I[Enter Combat]
-    D -->|Combat / Boss Tile| I
+    D -->|Combat / Boss Site| I
     E --> C
     G --> C
     H --> C
-    I -->|Victory| J[Clear Tile & Collect Loot]
+    I -->|Victory| J[Clear Site & Collect Loot]
     I -->|Defeat| K[Lose Run: All loot lost & XP/Stats reverted]
     J --> C
     C -->|Flee| L[Retreat: Keep 50% collected loot]
-    C -->|Boss Defeated / All tiles cleared| M[Win Run: Keep 100% loot]
+    C -->|Boss Defeated / All sites cleared| M[Win Run: Keep 100% loot]
     K --> A
     L --> A
     M --> A
@@ -46,7 +46,7 @@ graph TD
 
 ## 🐱 Progression & RPG Systems
 
-Mochi grows stronger by earning Experience Points (XP) in dungeons, leveling up, and allocating stat points.
+Mochi grows stronger by earning Experience Points (XP) on expeditions, leveling up, and allocating stat points.
 
 ### Leveling & XP Curve
 - **Level 1** is free.
@@ -141,10 +141,10 @@ To help players acquire higher-tier crystals, they can use the **Forge** tab in 
 - **Crystal Cores** are exceptionally rare and **cannot** be forged; they must be obtained as drops from bosses or mystery chests.
 
 ###### **Progression Lock**
-Crystals and fusion recipes are locked by dungeon progression to match the active zone:
-1. **Black Crystals** (Zone 1 - Soggy Sewers): Always unlocked and available from the start.
-2. **Green Crystals** (Zone 2 - Twisted Garden): Visible in the Forge and inventory only after Zone 1 is cleared.
-3. **Yellow Crystals** (Zone 3 - Sunken Docks): Visible in the Forge and inventory only after Zone 2 is cleared.
+Crystals and fusion recipes are locked by region progression to match the active zone:
+1. **Black Crystals** (Region 1 - Soggy Sewers): Always unlocked and available from the start.
+2. **Green Crystals** (Region 2 - Twisted Garden): Visible in the Forge and inventory only after Region 1 is cleared.
+3. **Yellow Crystals** (Region 3 - Sunken Docks): Visible in the Forge and inventory only after Region 2 is cleared.
 
 ---
 
@@ -196,10 +196,10 @@ Crystals and fusion recipes are locked by dungeon progression to match the activ
 
 Mochi has **eight equipment slots**: **Weapon**, **Head**, **Chest**, **Legs**, **Gloves**, **Boots**, **Trinket**, and **Storage**. All slots now have gear defined for them. 
 
-Rather than crafting gear at a forge, **all equipment is purchased with Gold from the Armory Shop or dropped in dungeons**. Crystals are now used exclusively for unlocking and upgrading skills.
+Rather than crafting gear at a forge, **all equipment is purchased with Gold from the Armory Shop or dropped in regions**. Crystals are now used exclusively for unlocking and upgrading skills.
 
-### 🎒 Dynamic Dungeon Bag Slots
-By default, Mochi starts with **0 base bag slots** and cannot bring any consumables into dungeon runs. However, Mochi starts the game with a **Small Pouch** (+3 bag slots) already equipped. Equipping certain items increases the number of bag slots available:
+### 🎒 Dynamic Expedition Bag Slots
+By default, Mochi starts with **0 base bag slots** and cannot bring any consumables into expedition runs. However, Mochi starts the game with a **Small Pouch** (+3 bag slots) already equipped. Equipping certain items increases the number of bag slots available:
 - **Utility Leather Belt** (Trinket): +1 bag slot
 - **Small Pouch** (Storage): +3 bag slots
 - **Simple Backpack** (Storage): +5 bag slots
@@ -219,18 +219,18 @@ By default, Mochi starts with **0 base bag slots** and cannot bring any consumab
 | **Gloves** | Leather Gloves | Armory Shop (Start) | 100 | +1 DEF |
 | **Boots** | Leather Boots | Armory Shop (Start) | 100 | +1 DEF |
 | **Trinket** | Leather Belt | Armory Shop (Start) | 100 | +1 DEF |
-| **Storage** | Simple Backpack | Armory Shop (Start) | 300 | +5 Dungeon Run Bag Slots |
-| **Weapon** | Stone Sword | Armory Shop (Dungeon 1 Floor 6 reached) | 200 | +10 ATK |
-| **Head** | Superior Leather Helmet | Armory Shop (Dungeon 1 Floor 6 reached) | 200 | +2 DEF |
-| **Chest** | Superior Leather Chestpiece | Armory Shop (Dungeon 1 Floor 6 reached) | 200 | +2 DEF |
-| **Legs** | Superior Leather Leggings | Armory Shop (Dungeon 1 Floor 6 reached) | 200 | +2 DEF |
-| **Gloves** | Superior Leather Gloves | Armory Shop (Dungeon 1 Floor 6 reached) | 200 | +2 DEF |
-| **Boots** | Superior Leather Boots | Armory Shop (Dungeon 1 Floor 6 reached) | 200 | +2 DEF |
-| **Trinket** | Superior Leather Belt | Armory Shop (Dungeon 1 Floor 6 reached) | 200 | +2 DEF |
-| **Storage** | Fine Backpack | Armory Shop (Dungeon 1 Floor 6 reached) | 1000 | +7 Dungeon Run Bag Slots |
-| **Storage** | Luxury Backpack | Armory Shop (Dungeon 2 Floor 1 reached) | 5000 | +10 Dungeon Run Bag Slots |
-| **Trinket** | Utility Leather Belt | Drop-Only / Other | — | +1 Dungeon Run Bag Slots |
-| **Storage** | Small Pouch | *Starter Item* | — | +3 Dungeon Run Bag Slots |
+| **Storage** | Simple Backpack | Armory Shop (Start) | 300 | +5 Expedition Run Bag Slots |
+| **Weapon** | Stone Sword | Armory Shop (Region 1 Zone 6 reached) | 200 | +10 ATK |
+| **Head** | Superior Leather Helmet | Armory Shop (Region 1 Zone 6 reached) | 200 | +2 DEF |
+| **Chest** | Superior Leather Chestpiece | Armory Shop (Region 1 Zone 6 reached) | 200 | +2 DEF |
+| **Legs** | Superior Leather Leggings | Armory Shop (Region 1 Zone 6 reached) | 200 | +2 DEF |
+| **Gloves** | Superior Leather Gloves | Armory Shop (Region 1 Zone 6 reached) | 200 | +2 DEF |
+| **Boots** | Superior Leather Boots | Armory Shop (Region 1 Zone 6 reached) | 200 | +2 DEF |
+| **Trinket** | Superior Leather Belt | Armory Shop (Region 1 Zone 6 reached) | 200 | +2 DEF |
+| **Storage** | Fine Backpack | Armory Shop (Region 1 Zone 6 reached) | 1000 | +7 Expedition Run Bag Slots |
+| **Storage** | Luxury Backpack | Armory Shop (Region 2 Zone 1 reached) | 5000 | +10 Expedition Run Bag Slots |
+| **Trinket** | Utility Leather Belt | Drop-Only / Other | — | +1 Expedition Run Bag Slots |
+| **Storage** | Small Pouch | *Starter Item* | — | +3 Expedition Run Bag Slots |
 | **Weapon** | Bronze Sword | Drop-Only / Other | — | +15 ATK |
 | **Weapon** | Refined Bronze Sword | Drop-Only / Other | — | +20 ATK |
 | **Weapon** | Iron Sword | Drop-Only / Other | — | +25 ATK |
@@ -238,24 +238,24 @@ By default, Mochi starts with **0 base bag slots** and cannot bring any consumab
 | **Weapon** | Weird Wooden Sword | Drop-Only / Other | — | +7 ATK |
 | **Weapon** | Bone Sword | Drop-Only / Other | — | +13 ATK |
 | **Weapon** | Curved Iron Sword | Drop-Only / Other | — | +27 ATK |
-| **Weapon** | Sewer Shiv | Dungeon Drop / Zone 1 | — | +12 ATK, 15% Bleed Chance on hit |
-| **Chest** | Rat Hide Vest | Dungeon Drop / Zone 1 | — | +18 Max HP, +5% Dodge |
-| **Chest** | Slimecrawler Shell | Dungeon Drop / Zone 1 | — | +22 Max HP, Poison Immunity |
-| **Chest** | Plague Cloak | Dungeon Drop / Zone 1 | — | +14 Max HP, +4 DEF |
-| **Trinket** | Gnarlcrown | Dungeon Drop / Zone 1 | — | +10% Crit Chance |
-| **Trinket** | Cockroach Carapace| Dungeon Drop / Zone 1 | — | +4 DEF, +5% Dodge |
-| **Weapon** | Thorn Dagger | Dungeon Drop / Zone 2 | — | +20 ATK, 20% Poison Chance on hit |
-| **Chest** | Beetle Shell Vest | Dungeon Drop / Zone 2 | — | +30 Max HP, +8 DEF |
-| **Chest** | Spore Cloak | Dungeon Drop / Zone 2 | — | +24 Max HP, +10% Dodge |
-| **Chest** | Vine Wrap | Dungeon Drop / Zone 2 | — | +20 Max HP, +6 DEF, +5% Crit |
-| **Trinket** | Rootmother Eye | Dungeon Drop / Zone 2 | — | +15% Skill Damage |
-| **Trinket** | Glowspore Vial | Dungeon Drop / Zone 2 | — | +8% Crit, +5% Dodge |
-| **Weapon** | Ghost Cutlass | Dungeon Drop / Zone 3 | — | +28 ATK, 12% Stun Chance on hit |
-| **Chest** | Barnacle Plate | Dungeon Drop / Zone 3 | — | +40 Max HP, +10 DEF |
-| **Chest** | Ghost Silk Coat | Dungeon Drop / Zone 3 | — | +30 Max HP, +15% Dodge |
-| **Chest** | Saltcaptain Coat | Dungeon Drop / Zone 3 | — | +34 Max HP, +8 DEF, +8% Dodge |
-| **Trinket** | Moray's Compass | Dungeon Drop / Zone 3 | — | +20% Crit, +10% Dodge |
-| **Trinket** | Toxin Vial | Dungeon Drop / Zone 3 | — | +2 Bleed damage |
+| **Weapon** | Sewer Shiv | Region Drop / Region 1 | — | +12 ATK, 15% Bleed Chance on hit |
+| **Chest** | Rat Hide Vest | Region Drop / Region 1 | — | +18 Max HP, +5% Dodge |
+| **Chest** | Slimecrawler Shell | Region Drop / Region 1 | — | +22 Max HP, Poison Immunity |
+| **Chest** | Plague Cloak | Region Drop / Region 1 | — | +14 Max HP, +4 DEF |
+| **Trinket** | Gnarlcrown | Region Drop / Region 1 | — | +10% Crit Chance |
+| **Trinket** | Cockroach Carapace| Region Drop / Region 1 | — | +4 DEF, +5% Dodge |
+| **Weapon** | Thorn Dagger | Region Drop / Region 2 | — | +20 ATK, 20% Poison Chance on hit |
+| **Chest** | Beetle Shell Vest | Region Drop / Region 2 | — | +30 Max HP, +8 DEF |
+| **Chest** | Spore Cloak | Region Drop / Region 2 | — | +24 Max HP, +10% Dodge |
+| **Chest** | Vine Wrap | Region Drop / Region 2 | — | +20 Max HP, +6 DEF, +5% Crit |
+| **Trinket** | Rootmother Eye | Region Drop / Region 2 | — | +15% Skill Damage |
+| **Trinket** | Glowspore Vial | Region Drop / Region 2 | — | +8% Crit, +5% Dodge |
+| **Weapon** | Ghost Cutlass | Region Drop / Region 3 | — | +28 ATK, 12% Stun Chance on hit |
+| **Chest** | Barnacle Plate | Region Drop / Region 3 | — | +40 Max HP, +10 DEF |
+| **Chest** | Ghost Silk Coat | Region Drop / Region 3 | — | +30 Max HP, +15% Dodge |
+| **Chest** | Saltcaptain Coat | Region Drop / Region 3 | — | +34 Max HP, +8 DEF, +8% Dodge |
+| **Trinket** | Moray's Compass | Region Drop / Region 3 | — | +20% Crit, +10% Dodge |
+| **Trinket** | Toxin Vial | Region Drop / Region 3 | — | +2 Bleed damage |
 
 ---
 
@@ -288,14 +288,14 @@ Up to **5 consumables** can be packed from Mochi's inventory prior to starting a
 
 ---
 
-## 🕸️ Dungeon Grid & Exploration
+## 🕸️ Region Grid & Exploration
 
-Each run takes place inside a grid-based floor. The size of the floor and enemy difficulty scale as Mochi descends deeper.
+Each run takes place inside a grid-based zone. The size of the zone and enemy difficulty scale as Mochi descends deeper.
 
-### Floor Configuration Table
-The grid size, room ratios, and enemy numbers are floor-dependent:
+### Zone Configuration Table
+The grid size, room ratios, and enemy numbers are zone-dependent:
 
-| Floor | Grid Size | Combat Rooms | Rest | Gamble | Treasure | Boss Room |
+| Zone | Grid Size | Combat Rooms | Rest | Gamble | Treasure | Boss Room |
 | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
 | **1** | 3×3 | 4 | 2 | 1 | 1 | No |
 | **2** | 3×3 | 5 | 1 | 1 | 1 | No |
@@ -306,30 +306,30 @@ The grid size, room ratios, and enemy numbers are floor-dependent:
 | **7** | 4×4 | 11 | 2 | 1 | 1 | No |
 | **8** | 4×4 | 11 | 2 | 1 | 1 | No |
 | **9** | 4×4 | 11 | 2 | 1 | 1 | No |
-| **10** | 4×5 | 13 | 2 | 1 | 2 | **Yes** (Floor Boss) |
+| **10** | 4×5 | 13 | 2 | 1 | 2 | **Yes** (Zone Boss) |
 
-### Dungeon Generator Constraints & Rules
+### Region Generator Constraints & Rules
 To prevent broken layouts, the generator runs up to 100 layout attempts enforcing strict constraints.
 
 #### Hard Constraints (Never Violated)
-1. **Start Tile** must be at the bottom-left coordinate $(0, H-1)$ and starts pre-revealed and cleared.
-2. **Boss Tile** (only present on Floor 10) must lie on the top row or rightmost column, cannot be adjacent to the start tile, and must have a valid path from start.
-3. **Connectivity**: BFS pathfinder ensures that a path exists between the start tile and the boss (Floor 10) or at least one non-start corner (Floors 1-9).
-4. **Boss Sealed State**: The boss room on Floor 10 is sealed and cannot be entered until the player has successfully cleared all other tiles on the board.
+1. **Start Site** must be at the bottom-left coordinate $(0, H-1)$ and starts pre-revealed and cleared.
+2. **Boss Site** (only present on Zone 10) must lie on the top row or rightmost column, cannot be adjacent to the start site, and must have a valid path from start.
+3. **Connectivity**: BFS pathfinder ensures that a path exists between the start site and the boss (Zone 10) or at least one non-start corner (Zones 1-9).
+4. **Boss Sealed State**: The boss room on Zone 10 is sealed and cannot be entered until the player has successfully cleared all other sites on the board.
 
 #### Soft Constraints (Relaxed after 50 failures)
-1. No two **Rest Tiles** may be adjacent.
-2. No **Rest Tile** may be adjacent to the **Start Tile**.
-3. No **Treasure Tile** may be adjacent to the **Start Tile**.
-4. No **Gamble Tile** may be adjacent to the **Start Tile**.
+1. No two **Rest Sites** may be adjacent.
+2. No **Rest Site** may be adjacent to the **Start Site**.
+3. No **Treasure Site** may be adjacent to the **Start Site**.
+4. No **Gamble Site** may be adjacent to the **Start Site**.
 
 ---
 
-### Tile Types & Interaction Mechanics
+### Site Types & Interaction Mechanics
 
-- **🏠 Start**: Safe tile where Mochi enters the floor.
+- **🏠 Start**: Safe site where Mochi enters the zone.
 - **⚔️ Combat**: Triggers a turn-based battle encounter. Rated 1★ to 5★ which dictates scaling and enemy group composition.
-- **💀 Boss**: Triggered on Floor 10. Engages the unique Zone Boss.
+- **💀 Boss**: Triggered on Zone 10. Engages the unique Region Boss.
 - **🔥 Rest**: A cozy campfire offering a critical strategic choice:
   1. **Restore Health**: Instantly restores Mochi to full health.
   2. **Gain Buff**: Roll a permanent, run-only stat enhancement from the campfire pool:
@@ -339,10 +339,10 @@ To prevent broken layouts, the generator runs up to 100 layout attempts enforcin
      - *Defense*: +6 Defense.
      - *Max HP*: +15% Max HP (instantly heals Mochi for the added amount).
 - **💎 Treasure**: Safely awards Gold ($20-50$g) and 2 to 4 random materials from the active zone's crystal pool.
-- **❓ Gamble**: Risk-versus-reward anomaly tile. Triggers one of three outcomes with equal (33%) probability:
+- **❓ Gamble**: Risk-versus-reward anomaly site. Triggers one of three outcomes with equal (33%) probability:
   1. **Trap**: Mochi triggers a hazard (gas, darts, pitfall, mimic) and takes **20% to 60% Max HP** in damage. If this reduces HP to 0, the run is instantly failed.
   2. **Treasure Cache**: Drops a large cache of Gold ($50-100$g) and 4 to 8 random materials.
-  3. **Ambush**: Triggers an immediate battle encounter with the floor's maximum enemy group size and maximum star difficulty.
+  3. **Ambush**: Triggers an immediate battle encounter with the zone's maximum enemy group size and maximum star difficulty.
 
 ---
 
@@ -490,7 +490,7 @@ Common enemies have their base HP, Attack, and Defense scaled by room star ratin
 After defeating an encounter, Mochi gathers materials, Gold, and XP.
 
 ### Dynamic Crystal Drops by Enemy Star Level & Profile
-Instead of floor-restricted drops, normal monsters drop standard crystals dynamically depending on their Star Level (1–5), Zone ID, and Monster Profile. Floor-based material pools are bypassed for regular monster drops.
+Instead of zone-restricted drops, normal monsters drop standard crystals dynamically depending on their Star Level (1–5), Zone ID, and Monster Profile. Zone-based material pools are bypassed for regular monster drops.
 
 #### 1. Crystal Types by Star Level
 The tier of crystals dropped is determined by the monster's Star Level:
@@ -520,31 +520,31 @@ XP and Gold values are rolled per enemy and summed at the end of combat:
   - Gold: Rolled randomly in range (e.g. Rootmother = $200-350$g, Captain Moray = $500-800$g).
 
 ### 💎 Treasure Room Drops
-Treasure chests found in the dungeon (and Double Treasure gamble jackpot outcomes) scale their rewards dynamically depending on the current floor number (1–10).
+Treasure chests found in the region (and Double Treasure gamble jackpot outcomes) scale their rewards dynamically depending on the current zone number (1–10).
 
-#### 1. Materials Dropped by Floor
-* **Floor 1**: 1–5 Shards
-* **Floor 2**: 5–10 Shards, 1–2 Small Crystals
-* **Floor 3**: 10–15 Shards, 3–5 Small Crystals
-* **Floor 4**: 5–10 Small Crystals
-* **Floor 5**: 10–15 Small Crystals, 1–2 Big Crystals
-* **Floor 6**: 15–20 Small Crystals, 3–5 Big Crystals
-* **Floor 7**: 5–8 Big Crystals
-* **Floor 8**: 9–12 Big Crystals
-* **Floor 9**: 12–15 Big Crystals
-* **Floor 10**: 15–20 Big Crystals, 0–1 Crystal Cores
+#### 1. Materials Dropped by Zone
+* **Zone 1**: 1–5 Shards
+* **Zone 2**: 5–10 Shards, 1–2 Small Crystals
+* **Zone 3**: 10–15 Shards, 3–5 Small Crystals
+* **Zone 4**: 5–10 Small Crystals
+* **Zone 5**: 10–15 Small Crystals, 1–2 Big Crystals
+* **Zone 6**: 15–20 Small Crystals, 3–5 Big Crystals
+* **Zone 7**: 5–8 Big Crystals
+* **Zone 8**: 9–12 Big Crystals
+* **Zone 9**: 12–15 Big Crystals
+* **Zone 10**: 15–20 Big Crystals, 0–1 Crystal Cores
 *Note: Crystal prefixes match the zone (black for Zone 1, green for Zone 2, yellow for Zone 3).*
 
-#### 2. Gold & Potions by Floor
-* **Floor 1**: 50–100 Gold, 1 Potion
-* **Floor 2**: 100–150 Gold, 1–2 Potions
-* **Floor 3**: 150–200 Gold, 2–3 Potions
-* **Floor 4**: 200–250 Gold, 3–4 Potions
-* **Floor 5**: 250–300 Gold, 4–5 Potions
-* **Floor 6**: 300–400 Gold, 1–2 Super Potions
-* **Floor 7**: 400–500 Gold, 2–3 Super Potions
-* **Floor 8**: 500–600 Gold, 3–4 Super Potions
-* **Floor 9**: 600–700 Gold, 4–5 Super Potions
-* **Floor 10**: 700–800 Gold, 1–2 Ultra Potions
+#### 2. Gold & Potions by Zone
+* **Zone 1**: 50–100 Gold, 1 Potion
+* **Zone 2**: 100–150 Gold, 1–2 Potions
+* **Zone 3**: 150–200 Gold, 2–3 Potions
+* **Zone 4**: 200–250 Gold, 3–4 Potions
+* **Zone 5**: 250–300 Gold, 4–5 Potions
+* **Zone 6**: 300–400 Gold, 1–2 Super Potions
+* **Zone 7**: 400–500 Gold, 2–3 Super Potions
+* **Zone 8**: 500–600 Gold, 3–4 Super Potions
+* **Zone 9**: 600–700 Gold, 4–5 Super Potions
+* **Zone 10**: 700–800 Gold, 1–2 Ultra Potions
 
-*Note: Double Treasure outcomes on Gamble tiles double all material, gold, and potion quantities rolled for the current floor.*
+*Note: Double Treasure outcomes on Gamble sites double all material, gold, and potion quantities rolled for the current zone.*

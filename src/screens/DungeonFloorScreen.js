@@ -329,7 +329,7 @@ export default function DungeonFloorScreen() {
                 isLocked && { color: 'rgba(207,224,238,0.45)' },
                 isBoss && { color: '#DD7A86' },
               ]} numberOfLines={1}>
-                Floor {floor}
+                Zone {floor}
               </Text>
               {/* Status badge */}
               {isCleared && (
@@ -371,27 +371,23 @@ export default function DungeonFloorScreen() {
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: zc.bg }]}>
+    <View style={[styles.container, { backgroundColor: '#133131' }]}>
       {/* Full-screen ambient gradient */}
       <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
         <Defs>
-          <LinearGradient id="screenBg" x1="0" y1="0" x2="0" y2="1">
-            <Stop offset="0%" stopColor={zc.bgGrad1} />
-            <Stop offset="100%" stopColor={zc.bgGrad2} />
-          </LinearGradient>
-          <RadialGradient id="topGlow" cx="50%" cy="0%" rx="70%" ry="30%">
-            <Stop offset="0%" stopColor={zc.accent} stopOpacity="0.08" />
-            <Stop offset="100%" stopColor="transparent" stopOpacity="0" />
+          <RadialGradient id="screenGlow" cx="50%" cy="0%" rx="80%" ry="35%">
+            <Stop offset="0%" stopColor={zc.accent} stopOpacity="0.14" />
+            <Stop offset="100%" stopColor="#133131" stopOpacity="0" />
           </RadialGradient>
         </Defs>
-        <Rect width="100%" height="100%" fill="url(#screenBg)" />
-        <Rect width="100%" height="100%" fill="url(#topGlow)" />
+        <Rect width="100%" height="100%" fill="#133131" />
+        <Rect width="100%" height="100%" fill="url(#screenGlow)" />
       </Svg>
 
       {/* ── Header ─────────────────────────────────────────────────────── */}
       <View style={[styles.header, { paddingTop: insets.top }]}>
         <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()} activeOpacity={0.7}>
-          <Text style={styles.backText}>← Zones</Text>
+          <Text style={styles.backText}>← Expeditions</Text>
         </TouchableOpacity>
         <View style={styles.titleContainer}>
           <ItemSprite
@@ -399,7 +395,7 @@ export default function DungeonFloorScreen() {
             frameIndex={136}
             displaySize={22}
           />
-          <Text style={styles.title}>Dungeon</Text>
+          <Text style={styles.title}>Region</Text>
         </View>
         <View style={styles.headerSpacer} />
       </View>
@@ -446,7 +442,7 @@ export default function DungeonFloorScreen() {
             {/* Left Column: Title, Level Badge, and Description */}
             <View style={styles.bannerLeft}>
               <View style={styles.eyebrowRow}>
-                <Text style={styles.bannerEyebrow}>DUNGEON ZONE</Text>
+                <Text style={styles.bannerEyebrow}>REGION</Text>
                 <View style={[styles.levelTag, { borderColor: zc.border, backgroundColor: zc.accentDim }]}>
                   <Text style={[styles.levelTagText, { color: zc.accent }]}>
                     Lv. {zone.minLevel}–{zone.maxLevel}
@@ -559,7 +555,7 @@ export default function DungeonFloorScreen() {
               {/* Floor label + close */}
               <View style={styles.modalHeaderRow}>
                 <Text style={styles.modalEyebrow}>
-                  {zone?.name?.toUpperCase()} · FLOOR {selectedFloor}
+                  {zone?.name?.toUpperCase()} · ZONE {selectedFloor}
                 </Text>
                 <TouchableOpacity onPress={() => setSelectedFloor(null)} style={styles.closeBtn}>
                   <Text style={styles.closeBtnText}>✕</Text>
@@ -589,7 +585,7 @@ export default function DungeonFloorScreen() {
                     styles.modalFloorName,
                     selectedFloor === 10 && { color: '#DD7A86' },
                   ]}>
-                    Floor {selectedFloor || 1}
+                    Zone {selectedFloor || 1}
                   </Text>
                   <View style={styles.modalBadgeRow}>
                     {selectedDiff && renderDifficultyStars(selectedDiff, 10)}
@@ -689,7 +685,7 @@ export default function DungeonFloorScreen() {
                 </Svg>
                 <ItemSprite spritesheet="icons-1" frameIndex={10} displaySize={16} />
                 <Text style={[styles.enterBtnText, selectedFloor === 10 && { color: '#FFF' }]}>
-                  Enter Floor {selectedFloor}{totalPacked > 0 ? `  ·  ${totalPacked} items` : ''}
+                  Enter Zone {selectedFloor}{totalPacked > 0 ? `  ·  ${totalPacked} items` : ''}
                 </Text>
               </TouchableOpacity>
             </ScrollView>

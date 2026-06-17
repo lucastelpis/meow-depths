@@ -2003,7 +2003,7 @@ export default function CombatScreen() {
               </Text>
             </View>
             <Text style={styles.infoBarSub} numberOfLines={1}>
-              {zone?.name || 'Unknown Depths'} · Floor {floorNumber}
+              {zone?.name || 'Unknown Depths'} · Zone {floorNumber}
             </Text>
           </View>
           <View style={styles.turnPill}>

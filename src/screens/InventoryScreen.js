@@ -322,7 +322,7 @@ export default function InventoryScreen() {
         <View style={styles.emptyBox}>
           <Text style={styles.emptyEmoji}>💎</Text>
           <Text style={styles.emptyTitle}>No Materials</Text>
-          <Text style={styles.emptyDesc}>Explore dungeons and defeat enemies to collect crystals and shards.</Text>
+          <Text style={styles.emptyDesc}>Explore regions and defeat enemies to collect crystals and shards.</Text>
         </View>
       );
     }
@@ -719,7 +719,7 @@ export default function InventoryScreen() {
                         )}
                         {itemType === 'consumable' && !showOpenChestBtn && (
                           <Text style={styles.modalGuideText}>
-                            🧪 Slot this consumable before entering a floor to use during combat.
+                            🧪 Slot this consumable before entering a zone to use during combat.
                           </Text>
                         )}
 

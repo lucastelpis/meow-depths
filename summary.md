@@ -1,20 +1,20 @@
 # Meow Depths Game Summary
 
 ## Overview
-Meow Depths is an RPG/dungeon-crawler game built using React Native and Expo, featuring turn-based combat, skills, equipment, progression, and a town hub.
+Meow Depths is an RPG/region-crawler game built using React Native and Expo, featuring turn-based combat, skills, equipment, progression, and a town hub.
 
 ## Key Screens
 - **Onboarding Flow (First Launch)**: Shown when `hero.element` is null.
   - **Name Input Screen**: The player enters their character's name (defaults to "Mochi").
   - **Element Selection Screen**: A horizontal snap-carousel where players choose their starting element path (Fire, Water, Earth, Wind). Confirming dispatches the `SELECT_ELEMENT` action, locking in their choice and transitioning to the main game.
-- **Camp Hub (Main Screen)**: The player can navigate to the Dungeon Map, Loadout (Inventory), Skills, Market (Shop), and Profile.
+- **Camp Hub (Main Screen)**: The player can navigate to the Region Map, Loadout (Inventory), Skills, Market (Shop), and Profile.
 - **Profile Screen**: Accessible from the hub. Split into two tabs:
   - **Stats tab**: Displays base attributes (STR, AGI, VIT) where players allocate points earned from leveling up, previews and displays effective combat stats (ATK, DEF, MAX HP, etc.), and describes their current elemental stance.
   - **Gear tab**: Displays equipped gear across 8 slots (Head, Chest, Gloves, Legs, Boots, Weapon, Trinket, Storage) and displays active set bonuses.
 - **Inventory/Loadout Screen**: Accessible from the hub. Contains three tabs (Supplies, Gear, Materials) styled as cozy parchment/wood tabs.
 - **Market (Shop) Screen**: Accessible from the hub. Contains three tabs (Supplies shop, Gear armory, Forge fusion) styled as cozy parchment/wood tabs.
-- **Dungeon Map Screen**: Allows entering zones to fight enemies.
-- **World Map Screen**: Displays available dungeon zones (Soggy Sewers, Twisted Gardens, Sunken Docks) with custom level ranges, run completion statistics, and floor completion status. Each dungeon card features a full-bleed premium background banner image scaled to a perfect 2:1 aspect ratio matching the dimensions of the assets.
+- **Region Map Screen**: Allows entering zones to fight enemies.
+- **Expeditions Screen**: Displays available regions (Soggy Sewers, Twisted Gardens, Sunken Docks) with custom level ranges, run completion statistics, and zone completion status. Each region card features a full-bleed premium background banner image scaled to a perfect 2:1 aspect ratio matching the dimensions of the assets.
 - **Skill Tree Screen**: Unlocks and upgrades active and passive skills using gold/crystals.
 
 ## Crystal Forging & Fusion
@@ -23,7 +23,7 @@ Players can fuse lower-tier crystal shards and crystals into higher-tier ones in
   - 10x Crystal Shards ➔ 1x Small Crystal of the same color.
   - 10x Small Crystals ➔ 1x Big Crystal of the same color.
 - **Cores**: Crystal Cores cannot be forged and are only obtained as rare boss/chest drops.
-- **Progression Lock**: Crystals and fusion recipes are locked by dungeon zone progression:
+- **Progression Lock**: Crystals and fusion recipes are locked by region progression:
   - **Black Crystals (Zone 1 - Soggy Sewers)**: Always unlocked and available from the start.
   - **Green Crystals (Zone 2 - Twisted Garden)**: Unlocked/visible only after Zone 1 is cleared (`state.progress.zone1Cleared` is true).
   - **Yellow Crystals (Zone 3 - Sunken Docks)**: Unlocked/visible only after Zone 2 is cleared (`state.progress.zone2Cleared` is true).
@@ -104,8 +104,8 @@ Crystals and shards use frames from the `crystals-1` spritesheet:
 
 
 
-## Dungeon Banners Reference
-Dungeon cards on the World Map screen use high-quality banner images as backgrounds, which are preloaded and tinted dynamically using zone-specific colors:
+## Region Banners Reference
+Region cards on the Expeditions screen use high-quality banner images as backgrounds, which are preloaded and tinted dynamically using zone-specific colors:
 - **Zone 1 (Soggy Sewers)**: `assets/sprites/banners/soggy_sewers_banner_600x300.png`
 - **Zone 2 (Twisted Garden)**: `assets/sprites/banners/twisted_gardens_banner_600x300.png`
 - **Zone 3 (Sunken Docks)**: `assets/sprites/banners/sunken_docks_banner_600x300.png`
@@ -114,7 +114,7 @@ Dungeon cards on the World Map screen use high-quality banner images as backgrou
 This is a 15-column layout matrix of various game icons (480x320 px, 32x32 px per tile). The frame index is calculated as:
 `frameIndex = (row - 1) * 15 + (col - 1)` (0-based indexing).
 
-### Mappings Used in Dungeon & Battle UI:
+### Mappings Used in Region & Battle UI:
 1. **Fog / Unexplored Locked Room Tile**: Row 4, Col 5 ➔ `frameIndex: 49` (Lock)
 2. **Sealed Boss Padlock Overlay**: Row 4, Col 5 ➔ `frameIndex: 49` (Lock)
 3. **Room Completion Counter (HUD)**: Row 4, Col 8 ➔ `frameIndex: 52` (Lit candle)

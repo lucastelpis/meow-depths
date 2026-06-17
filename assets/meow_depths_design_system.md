@@ -5,7 +5,7 @@
 
 ## 1. Design principles
 
-1. **Cozy meets grim.** Warm tones = safety (camp, shop, victory). Cold tones = danger (dungeons, combat, death). The player should feel the shift without being told.
+1. **Cozy meets grim.** Warm tones = safety (camp, shop, victory). Cold tones = danger (expeditions, combat, death). The player should feel the shift without being told.
 2. **One clear action per screen.** The primary action is always the brightest, most saturated element. Everything else recedes.
 3. **Readable on a moving bus.** Large touch targets, high contrast, no tiny text. One-handed play in spare moments.
 4. **Flat and characterful.** Flat fills, chunky borders, no gradients. Personality comes from color and shape, not effects.
@@ -25,11 +25,11 @@
 | Warm Glow | `#F5CF7A` | Gold, accents |
 | Parchment | `#F3E2BD` | Warm text |
 
-### Cold palette (danger — dungeons, combat)
+### Cold palette (danger — regions, combat)
 | Name | Hex | Use |
 |------|-----|-----|
 | Void Navy | `#0D1016` | Combat background |
-| Sewer Black | `#0A120C` | Dungeon background |
+| Sewer Black | `#0A120C` | Region background |
 | Slate Steel | `#24323F` | Combat panels |
 | Cold Blue | `#5A9FE0` | Combat rooms |
 | Mystery Violet | `#A98EE0` | ??? rooms |
@@ -67,11 +67,11 @@ Rules: sentence case for body and headings; ALL CAPS only for small labels. Two 
 
 | Token | Value | Use |
 |-------|-------|-----|
-| radius / card | 14px | Panels, room tiles |
+| radius / card | 14px | Panels, room sites |
 | radius / button | 12px | All buttons |
 | radius / pill | 20px | Badges, gold counter |
 | border / default | 1px solid | Panel edges |
-| border / focus | 2px glow | Active tile, selected target |
+| border / focus | 2px glow | Active site, selected target |
 | gap / tight | 6-8px | Between buttons |
 | gap / section | 14-16px | Between content blocks |
 | padding / screen | 14px | Screen edges |
@@ -100,7 +100,7 @@ Rules: sentence case for body and headings; ALL CAPS only for small labels. Two 
 - **Skill (cooldown):** bg `#1A1408`, border `#3A2C14`, content `#9C7D44`, 50% opacity, shows turns-remaining badge.
 - Each shows: icon, name, and a sub-line (damage range / "Ready" / cooldown).
 
-### Dungeon room tiles
+### Region room sites
 Each room type has a fixed color + icon:
 | Room | Bg | Border | Accent | Icon |
 |------|-----|--------|--------|------|
@@ -111,9 +111,9 @@ Each room type has a fixed color + icon:
 | ??? (gamble) | `#241A2E` | `#3D2A5E` | `#A98EE0` | question-mark (never reveals) |
 | Boss | `#3A1A22` | `#6A2535` | `#DD7A86` | skull |
 
-- Current tile: 2px gold `#F5CF4A` glow border.
-- Cleared tile: 40% opacity + green checkmark overlay. Not tappable.
-- Tile size: ~60px square, radius 12px.
+- Current site: 2px gold `#F5CF4A` glow border.
+- Cleared site: 40% opacity + green checkmark overlay. Not tappable.
+- Site size: ~60px square, radius 12px.
 
 ### Badges & status pills
 - Radius 20px (pill), 10px text, 500 weight, icon + label.
@@ -156,7 +156,7 @@ Feed these rules to any AI image generator alongside each prompt:
 - **Flat cel shading** — two tones per surface max (base + one shadow). No gradients.
 - **Limited palette per sprite** — 4-6 colors, pulled from the game palette.
 - **Silhouette-first** — each enemy recognizable by silhouette alone. Distinct shapes.
-- **Warm hero, cold foes** — Mochi warm neutral tones; dungeon enemies cold and desaturated.
+- **Warm hero, cold foes** — Mochi warm neutral tones; region enemies cold and desaturated.
 
 **Do:** keep Mochi consistent across poses (generate one master, reuse as reference); match palette; bold outlines; cute with stakes.
 

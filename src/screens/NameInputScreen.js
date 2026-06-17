@@ -138,7 +138,7 @@ export default function NameInputScreen({ navigation }) {
               <View style={styles.titlePlaqueOuter}>
                 <View style={styles.titlePlaqueInner}>
                   <Text style={styles.titlePlaqueText}>
-                    WELCOME TO THE{'\n'}MEOW DUNGEONS
+                    WELCOME TO THE{'\n'}MEOW DEPTHS
                   </Text>
                 </View>
                 <View style={styles.topTagOverlay}>
@@ -152,7 +152,7 @@ export default function NameInputScreen({ navigation }) {
 
           {/* Lore text */}
           <Text style={styles.loreText}>
-            For generations, the Meow Order has protected the world from evil. As a new recruit following your family's tradition, explore endless dungeons and grow stronger to cleanse the world.
+            For generations, the Meow Order has protected the world from evil. As a new recruit following your family's tradition, explore endless regions and grow stronger to cleanse the world.
           </Text>
 
           {/* Name input */}

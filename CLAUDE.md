@@ -18,7 +18,7 @@ No test runner or lint script is configured. There is no CI pipeline.
 
 ## Architecture Overview
 
-**Meow Depths** is an Expo + React Native mobile RPG. Mochi (the hero cat) explores grid-based dungeons across three zones, fighting enemies in a turn-based combat system. Summary of it can be seen in [gamedetails.md](gamedetails.md)
+**Meow Depths** is an Expo + React Native mobile RPG. Mochi (the hero cat) explores grid-based regions (each containing 10 zones) on expeditions, fighting enemies in a turn-based combat system. Summary of it can be seen in [gamedetails.md](gamedetails.md)
 
 ### State management
 
@@ -26,8 +26,8 @@ All game data lives in a single React Context defined in [src/state/gameState.js
 
 The state has three top-level branches:
 - `state.hero` — persistent hero stats, gear, inventory, skills
-- `state.progress` — cross-run flags (zones cleared, daily reward timestamp, floors cleared)
-- `state.currentRun` — temporary run data reset by `END_RUN` (the active dungeon grid, player position, run-only buffs, loot collected mid-run)
+- `state.progress` — cross-run flags (regions cleared, daily reward timestamp, zones cleared)
+- `state.currentRun` — temporary run data reset by `END_RUN` (the active region grid, player position, run-only buffs, loot collected mid-run)
 
 State is auto-saved to AsyncStorage on every change. On first load, the saved state is **deep-merged** with `initialState`, so any new fields added to `initialState` after an existing save will be filled with their defaults (forward-compatibility guarantee).
 
@@ -35,7 +35,7 @@ State is auto-saved to AsyncStorage on every change. On first load, the saved st
 
 This is the most important pattern to understand:
 
-1. **`START_RUN`** — Generates a dungeon grid via `dungeonGenerator.js`, deducts packed consumables from `hero.inventory`, restores hero HP to full, and stores everything in `currentRun`.
+1. **`START_RUN`** — Generates a region/zone grid via `dungeonGenerator.js`, deducts packed consumables from `hero.inventory`, restores hero HP to full, and stores everything in `currentRun`.
 2. **During a run** — Combat results are buffered; gold and materials go to `currentRun.lootCollected`, HP changes are synced back via `UPDATE_RUN_AFTER_COMBAT`. Run-only stat buffs (from Rest rooms) live in `currentRun.runBuffs`.
 3. **`END_RUN`** — `outcome: 'win'` applies collected loot to permanent inventory; `outcome: 'flee'` keeps half; `outcome: 'lose'` discards it all. Remaining consumables from the run bag are returned to permanent inventory regardless.
 
@@ -58,7 +58,7 @@ Enemy **intent** is chosen at the START of each player turn (Slay the Spire styl
 Pure functions — no React, no side effects:
 
 - [src/logic/combatEngine.js](src/logic/combatEngine.js) — `calculateDamage`, `executeAttack`, `executeSkill`, `executeEnemyTurn`, `processStatusEffects`, `generateEncounter`
-- [src/logic/dungeonGenerator.js](src/logic/dungeonGenerator.js) — generates a 2D tile grid with hard constraints (start at bottom-left, boss on top/right edge, BFS-verified path) and soft constraints (rest tiles not adjacent to start, etc.). Retries up to 100 times; relaxes soft constraints after 50 attempts.
+- [src/logic/dungeonGenerator.js](src/logic/dungeonGenerator.js) — generates a 2D site grid with hard constraints (start at bottom-left, boss on top/right edge, BFS-verified path) and soft constraints (rest sites not adjacent to start, etc.). Retries up to 100 times; relaxes soft constraints after 50 attempts.
 - [src/logic/lootEngine.js](src/logic/lootEngine.js) — `calculateDrops` (per-enemy RNG roll), `calculateEncounterLoot` (merges drops from the whole fight)
 - [src/logic/progressionEngine.js](src/logic/progressionEngine.js) — `getXpForLevel`, `checkLevelUp`, `calculateEffectiveStats` (base stats + gear + passive skills + set bonuses + run buffs)
 
@@ -85,4 +85,4 @@ Stack navigator defined in [App.js](App.js). `Camp` is the initial route. `Comba
 
 ### Theme and design system
 
-All colors, fonts, spacing, and border-radius tokens are in [src/constants/theme.js](src/constants/theme.js). The design follows a "cozy meets grim" rule: **warm palette** (`hearthBlack`, `torchOrange`, `candleGold`) for safe screens (Camp, Shop, Inventory); **cold palette** (`voidNavy`, `coldBlue`, `mysteryViolet`) for dungeon and combat. See [assets/meow_depths_design_system.md](assets/meow_depths_design_system.md) for the full visual spec.
+All colors, fonts, spacing, and border-radius tokens are in [src/constants/theme.js](src/constants/theme.js). The design follows a "cozy meets grim" rule: **warm palette** (`hearthBlack`, `torchOrange`, `candleGold`) for safe screens (Camp, Shop, Inventory); **cold palette** (`voidNavy`, `coldBlue`, `mysteryViolet`) for region map and combat. See [assets/meow_depths_design_system.md](assets/meow_depths_design_system.md) for the full visual spec.

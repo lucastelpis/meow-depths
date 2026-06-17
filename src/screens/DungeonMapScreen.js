@@ -101,7 +101,7 @@ function SoftEllipseShadow({ width = 80, height = 18, color = '#2A1A0C', style }
 
 
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 const CONSUMABLE_ICONS = {
   potion: '🧪',
@@ -283,6 +283,18 @@ export default function DungeonMapScreen({ navigation }) {
   const { state, dispatch } = useGame();
   const { currentRun, hero } = state;
 
+  // Compute responsive cell size to prevent vertical extrapolation/overflow
+  const cellWidth = useMemo(() => {
+    const cols = currentRun?.gridWidth || 3;
+    const rows = currentRun?.gridHeight || 3;
+    // 1. Width constraint (subtracting 48 to ensure horizontal margins match design system)
+    const widthConstraint = Math.floor((SCREEN_WIDTH - 48 - ((cols - 1) * 8)) / cols);
+    // 2. Height constraint (subtracting 440 to keep grid within screen bounds)
+    const maxGridHeight = SCREEN_HEIGHT - 440;
+    const heightConstraint = Math.floor((maxGridHeight - ((rows - 1) * 8)) / rows);
+    return Math.max(50, Math.min(widthConstraint, heightConstraint));
+  }, [currentRun?.gridWidth, currentRun?.gridHeight]);
+
   // Local modal states
   const [activeModal, setActiveModal] = useState(null); // 'rest' | 'treasure' | 'gamble' | 'death' | 'flee' | 'bag'
   const [modalData, setModalData] = useState(null);
@@ -407,7 +419,7 @@ export default function DungeonMapScreen({ navigation }) {
     if (!isAdjacent(tile.x, tile.y)) return;
 
     if (isBossLocked(tile)) {
-      Alert.alert('Boss Sealed', 'Clear all other rooms on this floor before facing the boss!');
+      Alert.alert('Boss Sealed', 'Clear all other rooms in this zone before facing the boss!');
       return;
     }
 
@@ -580,21 +592,21 @@ export default function DungeonMapScreen({ navigation }) {
 
       if (dx === 1 && dy === 0) {
         arrowChar = '▶';
-        arrowStyle = { left: 5, top: '50%', transform: [{ translateY: -8 }] };
+        arrowStyle = { left: -14, top: '50%', transform: [{ translateY: -10 }] };
       } else if (dx === -1 && dy === 0) {
         arrowChar = '◀';
-        arrowStyle = { right: 5, top: '50%', transform: [{ translateY: -8 }] };
+        arrowStyle = { right: -14, top: '50%', transform: [{ translateY: -10 }] };
       } else if (dx === 0 && dy === 1) {
         arrowChar = '▼';
-        arrowStyle = { top: 5, left: '50%', transform: [{ translateX: -8 }] };
+        arrowStyle = { top: -14, left: '50%', transform: [{ translateX: -10 }] };
       } else if (dx === 0 && dy === -1) {
         arrowChar = '▲';
-        arrowStyle = { bottom: 5, left: '50%', transform: [{ translateX: -8 }] };
+        arrowStyle = { bottom: -14, left: '50%', transform: [{ translateX: -10 }] };
       }
 
       if (arrowChar) {
         arrowIndicator = (
-          <View style={[styles.arrowContainer, arrowStyle]}>
+          <View pointerEvents="none" style={[styles.arrowContainer, arrowStyle]}>
             <Text style={styles.arrowText}>{arrowChar}</Text>
           </View>
         );
@@ -702,68 +714,79 @@ export default function DungeonMapScreen({ navigation }) {
       );
     };
 
-    const cellWidth = Math.floor((SCREEN_WIDTH - 48 - (gridWidth * 6)) / gridWidth);
 
     return (
-      <TouchableOpacity
+      <View
         key={`${x}_${y}`}
         style={[
-          styles.cell,
-          { width: cellWidth, height: cellWidth },
-          cellStyle,
-          isPlayerHere && styles.currentCell,
-          tile.cleared && !isPlayerHere && styles.clearedCell,
+          styles.cellShadowContainer,
+          { 
+            width: cellWidth, 
+            height: cellWidth, 
+            position: 'relative',
+            zIndex: adjacent ? 10 : 1,
+            elevation: adjacent ? 6 : 5
+          },
         ]}
-        disabled={!adjacent}
-        onPress={() => handleTileTap(tile)}
-        activeOpacity={0.7}
       >
-        {/* Render zone-specific background SVG */}
-        {renderCellSVG(currentRun.zoneId, tile, isPlayerHere, isFog)}
-
-        {/* Directional movement arrow indicator */}
-        {arrowIndicator}
-
-        <View style={styles.cellContent}>
-          {renderCellSprite()}
-          <Text style={[styles.cellLabel, { color: isPlayerHere ? '#D4A754' : labelColor }]} numberOfLines={1}>
-            {isPlayerHere ? "You're Here" : label}
-          </Text>
-          {/* Star badge for combat tiles (only when revealed and not cleared) */}
-          {tile.type === 'combat' && !isFog && !tile.cleared && tile.battleRating && !isPlayerHere && (
-            <Text 
-              style={[styles.starBadge, { color: STAR_COLORS[tile.battleRating] }]}
-              numberOfLines={1}
-              adjustsFontSizeToFit={true}
-            >
-              {STAR_LABELS[tile.battleRating]}
+        <TouchableOpacity
+          style={[
+            styles.cell,
+            { width: '100%', height: '100%' },
+            cellStyle,
+            isPlayerHere && styles.currentCell,
+            tile.cleared && !isPlayerHere && styles.clearedCell,
+          ]}
+          disabled={!adjacent}
+          onPress={() => handleTileTap(tile)}
+          activeOpacity={0.7}
+        >
+          {/* Render zone-specific background SVG */}
+          {renderCellSVG(currentRun.zoneId, tile, isPlayerHere, isFog)}
+  
+          <View style={styles.cellContent}>
+            {renderCellSprite()}
+            <Text style={[styles.cellLabel, { color: isPlayerHere ? '#D4A754' : labelColor }]} numberOfLines={1}>
+              {isPlayerHere ? "You're Here" : label}
             </Text>
-          )}
-        </View>
-
-        {/* Sealed Overlay for Locked Boss */}
-        {bossLocked && !isPlayerHere && (
-          <View style={styles.sealedOverlay}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2 }}>
-              <ItemSprite spritesheet="icons-map" frameIndex={49} displaySize={10} />
-              <Text style={styles.sealedText}>SEALED</Text>
-            </View>
+            {/* Star badge for combat tiles (only when revealed and not cleared) */}
+            {tile.type === 'combat' && !isFog && !tile.cleared && tile.battleRating && !isPlayerHere && (
+              <Text 
+                style={[styles.starBadge, { color: STAR_COLORS[tile.battleRating] }]}
+                numberOfLines={1}
+                adjustsFontSizeToFit={true}
+              >
+                {STAR_LABELS[tile.battleRating]}
+              </Text>
+            )}
           </View>
-        )}
-
-        {/* Pulsing glow border if adjacent (tappable) */}
-        {adjacent && (
-          <Animated.View
-            style={[
-              styles.pulseBorder,
-              {
-                borderColor: tile.cleared ? 'rgba(255, 255, 255, 0.4)' : zTheme.accent,
-                opacity: pulseAnim,
-              },
-            ]}
-          />
-        )}
-      </TouchableOpacity>
+  
+          {/* Sealed Overlay for Locked Boss */}
+          {bossLocked && !isPlayerHere && (
+            <View style={styles.sealedOverlay}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2 }}>
+                <ItemSprite spritesheet="icons-map" frameIndex={49} displaySize={10} />
+                <Text style={styles.sealedText}>SEALED</Text>
+              </View>
+            </View>
+          )}
+  
+          {/* Pulsing glow border if adjacent (tappable) */}
+          {adjacent && (
+            <Animated.View
+              style={[
+                styles.pulseBorder,
+                {
+                  borderColor: tile.cleared ? 'rgba(255, 255, 255, 0.4)' : zTheme.accent,
+                  opacity: pulseAnim,
+                },
+              ]}
+            />
+          )}
+        </TouchableOpacity>
+        {/* Directional movement arrow indicator (outside cell to prevent overflow clipping) */}
+        {arrowIndicator}
+      </View>
     );
   };
 
@@ -835,16 +858,16 @@ export default function DungeonMapScreen({ navigation }) {
   };
 
   return (
-    <SafeAreaView style={[styles.root, { backgroundColor: zTheme.bg }]}>
+    <SafeAreaView style={[styles.root, { backgroundColor: '#133131' }]}>
       {/* Dynamic Zone-Colored Ambient Glow */}
       <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
         <Defs>
           <RadialGradient id="zoneGlow" cx="50%" cy="50%" r="50%">
             <Stop offset="0%" stopColor={zTheme.accent} stopOpacity="0.06" />
-            <Stop offset="100%" stopColor={zTheme.bg} stopOpacity="0" />
+            <Stop offset="100%" stopColor="#133131" stopOpacity="0" />
           </RadialGradient>
         </Defs>
-        <Rect width="100%" height="100%" fill={zTheme.bg} />
+        <Rect width="100%" height="100%" fill="#133131" />
         <Rect width="100%" height="100%" fill="url(#zoneGlow)" />
       </Svg>
 
@@ -870,7 +893,7 @@ export default function DungeonMapScreen({ navigation }) {
             <View style={styles.zoneMetaBlock}>
               <Text style={styles.zoneTitle}>{zone.name}</Text>
               <Text style={[styles.floorLabel, { color: zTheme.accent }]}>
-                Floor {currentRun.floorNumber || 1} of {zone.floorCount || 10}
+                Zone {currentRun.floorNumber || 1} of {zone.floorCount || 10}
               </Text>
             </View>
             <View style={[styles.roomsBadge, {
@@ -989,7 +1012,7 @@ export default function DungeonMapScreen({ navigation }) {
           style={{ flex: 1 }}
         />
         <Button
-          title="Flee Dungeon"
+          title="Flee Region"
           icon={<ItemSprite spritesheet="icons-map" frameIndex={127} displaySize={24} />}
           variant="danger"
           onPress={() => setActiveModal('flee')}
@@ -1000,7 +1023,7 @@ export default function DungeonMapScreen({ navigation }) {
       {/* ── Footer Info ────────────────────────────────────────────── */}
       <View style={styles.footer}>
         <Text style={styles.footerText}>
-          Tap adjacent tiles to explore. Cleared tiles can be re-entered to navigate.
+          Tap adjacent sites to explore. Cleared sites can be re-entered to navigate.
         </Text>
       </View>
 
@@ -1178,7 +1201,7 @@ export default function DungeonMapScreen({ navigation }) {
               <View style={styles.cozyBevel} pointerEvents="none" />
 
               <Text style={styles.cozySubtitle}>
-                {hero.name || 'Mochi'} fell to the dangers of the dungeon and was forced to retreat.
+                {hero.name || 'Mochi'} fell to the dangers of the region and was forced to retreat.
               </Text>
 
               <View style={styles.cozyWellDanger}>
@@ -1303,7 +1326,7 @@ export default function DungeonMapScreen({ navigation }) {
             <View style={styles.cozyTopWrap} pointerEvents="none">
               <View style={styles.cozyTopOuter}>
                 <View style={styles.cozyTopInner}>
-                  <Text style={styles.cozyTopText}>FLEE DUNGEON</Text>
+                  <Text style={styles.cozyTopText}>FLEE REGION</Text>
                 </View>
               </View>
             </View>
@@ -1322,8 +1345,8 @@ export default function DungeonMapScreen({ navigation }) {
 
               <Text style={styles.cozySubtitle}>
                 {currentRun.floorNumber === 10
-                  ? `You have conquered the entire zone. The dungeon trembles before ${hero.name || 'Mochi'}!`
-                  : 'Every room on this floor has been explored. Return to camp and prepare for the next descent.'}
+                  ? `You have conquered the entire region. It trembles before ${hero.name || 'Mochi'}!`
+                  : 'Every room in this zone has been explored. Return to camp and prepare for the next descent.'}
               </Text>
 
               <Text style={[styles.floorLootTitle, { color: '#8A6E44', fontWeight: 'bold', marginBottom: 8, textAlign: 'center' }]}>Loot Collected This Run:</Text>
@@ -1343,7 +1366,7 @@ export default function DungeonMapScreen({ navigation }) {
               <View style={styles.cozyTopOuter}>
                 <View style={styles.cozyTopInner}>
                   <Text style={styles.cozyTopText}>
-                    {currentRun.floorNumber === 10 ? 'ZONE CLEARED' : `FLOOR ${currentRun.floorNumber} CLEARED`}
+                    {currentRun.floorNumber === 10 ? 'REGION CLEARED' : `ZONE ${currentRun.floorNumber} CLEARED`}
                   </Text>
                 </View>
               </View>
@@ -1715,6 +1738,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 8,
   },
+  cellShadowContainer: {
+    position: 'relative',
+    borderRadius: 14,
+    backgroundColor: '#000000',
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.45,
+    shadowRadius: 3.5,
+    elevation: 5,
+  },
   cell: {
     borderRadius: 14,
     borderWidth: 1.5,
@@ -1739,9 +1772,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 10,
-    width: 16,
-    height: 16,
-    borderRadius: 8,
+    width: 20,
+    height: 20,
+    borderRadius: 5,
     backgroundColor: '#1E2330',
     borderWidth: 1.0,
     borderColor: '#D4A754',
@@ -1753,11 +1786,11 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   arrowText: {
-    fontSize: 8,
+    fontSize: 10,
     fontWeight: 'bold',
     color: '#D4A754',
     textAlign: 'center',
-    lineHeight: 12,
+    lineHeight: 14,
   },
   cellEmoji: {
     fontSize: 22,

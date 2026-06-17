@@ -343,7 +343,7 @@ export default function CampScreen({ navigation }) {
             {/* Centered Plaque Title */}
             <View style={styles.bannerTitleOuterBorder}>
               <View style={styles.bannerTitleInnerBorder}>
-                <Text style={styles.bannerTitleText}>MEOW DUNGEONS</Text>
+                <Text style={styles.bannerTitleText}>MEOW DEPTHS</Text>
               </View>
             </View>
 
@@ -432,7 +432,7 @@ export default function CampScreen({ navigation }) {
             NAVIGATION GRID — Asymmetric Cozy Layout
             ═══════════════════════════════════════════════════════════════════ */}
         <View style={styles.navGrid}>
-          {/* Enter Dungeons (WorldMap) — Full Width */}
+          {/* Enter Regions (WorldMap) — Full Width */}
           <TouchableOpacity
             style={styles.dungeonCard}
             activeOpacity={0.8}
@@ -448,8 +448,8 @@ export default function CampScreen({ navigation }) {
               <ItemSprite spritesheet="icons-1" frameIndex={0} displaySize={56} />
             </View>
             <View style={styles.dungeonTextContainer}>
-              <Text style={styles.dungeonLabel}>START ADVENTURE</Text>
-              <Text style={styles.dungeonSub}>EXPLORE ZONES</Text>
+              <Text style={styles.dungeonLabel}>START EXPEDITION</Text>
+              <Text style={styles.dungeonSub}>EXPLORE REGIONS</Text>
             </View>
           </TouchableOpacity>
 
