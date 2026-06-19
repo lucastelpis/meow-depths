@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Image } from 'react-native';
+import { View } from 'react-native';
+import { Image as ExpoImage } from 'expo-image';
 import { ITEM_SPRITESHEETS } from '../constants/sprites';
 
 /**
@@ -50,7 +51,7 @@ export default function ItemSprite({ spritesheet, frameIndex, displaySize = 36, 
 
   return (
     <View style={{ width: displaySize, height: displaySize, overflow: 'hidden', opacity }}>
-      <Image
+      <ExpoImage
         source={source}
         style={{
           width: imageWidth,
@@ -59,7 +60,7 @@ export default function ItemSprite({ spritesheet, frameIndex, displaySize = 36, 
           left: left,
           top: top,
         }}
-        resizeMode="stretch"
+        contentFit="fill"
       />
     </View>
   );

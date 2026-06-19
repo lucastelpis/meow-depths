@@ -18,8 +18,8 @@ import {
   Dimensions,
   Animated,
   Alert,
-  Image,
 } from 'react-native';
+import { Image as ExpoImage } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, {
   Defs,
@@ -47,6 +47,8 @@ import { generateTreasureDrops } from '../logic/lootEngine';
 import Button from '../components/ui/Button';
 import ResourceBar from '../components/ui/ResourceBar';
 import ItemSprite from '../components/ItemSprite';
+import ScreenLoader from '../components/ScreenLoader';
+import { DUNGEON_RUN_ASSETS } from '../constants/sprites';
 
 // ─── SVG Soft Icon Glow Background Component ─────────────────────────────────
 function IconGlowBackground({ size = 56 }) {
@@ -668,10 +670,10 @@ export default function DungeonMapScreen({ navigation }) {
       if (isPlayerHere) {
         return (
           <View style={styles.playerAvatarWrapper}>
-            <Image
+            <ExpoImage
               source={require('../../assets/sprites/units/hero/hero_head.png')}
               style={{ width: 28, height: 28 }}
-              resizeMode="contain"
+              contentFit="contain"
             />
           </View>
         );
@@ -858,8 +860,15 @@ export default function DungeonMapScreen({ navigation }) {
     );
   };
 
+  const zoneId = state.currentRun?.zoneId || 'zone1';
+  const runAssets = [
+    require('../../assets/sprites/units/hero/hero_head.png'),
+    ...(DUNGEON_RUN_ASSETS[zoneId] || []),
+  ];
+
   return (
-    <SafeAreaView style={[styles.root, { backgroundColor: '#133131' }]}>
+    <ScreenLoader assets={runAssets}>
+      <SafeAreaView style={[styles.root, { backgroundColor: '#133131' }]}>
       {/* Dynamic Zone-Colored Ambient Glow */}
       <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
         <Defs>
@@ -1536,6 +1545,7 @@ export default function DungeonMapScreen({ navigation }) {
         </View>
       </Modal>
     </SafeAreaView>
+    </ScreenLoader>
   );
 }
 

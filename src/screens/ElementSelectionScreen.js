@@ -21,8 +21,8 @@ import {
     Pressable,
     Animated,
     StatusBar,
-    Image,
 } from 'react-native';
+import { Image as ExpoImage } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, {
     Defs,
@@ -258,7 +258,7 @@ export default function ElementSelectionScreen({ route, navigation }) {
         <SafeAreaView style={styles.root}>
             <StatusBar barStyle="light-content" backgroundColor="#000" />
 
-            <Animated.View style={[styles.content, { opacity: fadeAnim }]}>
+                <Animated.View style={[styles.content, { opacity: fadeAnim }]}>
                 <ScrollView
                     contentContainerStyle={styles.scroll}
                     showsVerticalScrollIndicator={false}
@@ -317,10 +317,10 @@ export default function ElementSelectionScreen({ route, navigation }) {
                                             activeOpacity={0.9}
                                         >
                                             {/* Pre-rendered banner artwork with element emblem */}
-                                            <Image
+                                            <ExpoImage
                                                 source={BANNER_IMAGES[el.id]}
                                                 style={styles.bannerImage}
-                                                resizeMode="stretch"
+                                                contentFit="fill"
                                             />
 
                                             <View style={styles.elementCardContent}>

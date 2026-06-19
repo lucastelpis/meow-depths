@@ -15,11 +15,11 @@ import {
   TextInput,
   TouchableOpacity,
   ScrollView,
-  StyleSheet,
   StatusBar,
-  Image,
   Dimensions,
+  StyleSheet,
 } from 'react-native';
+import { Image as ExpoImage } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Path, G } from 'react-native-svg';
 
@@ -119,79 +119,79 @@ export default function NameInputScreen({ navigation }) {
     <SafeAreaView style={styles.root}>
       <StatusBar barStyle="light-content" backgroundColor="#000" />
 
-      <View style={styles.content}>
-        <ScrollView
-          contentContainerStyle={styles.scroll}
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
-        >
-          {/* Onboarding banner artwork with title plaque + top tag overlaid */}
-          <View style={styles.bannerOuter}>
-            <View style={styles.bannerContainer}>
-              <Image
-                source={require('../../assets/sprites/banners/onboarding-banner.png')}
-                style={styles.bannerImage}
-                resizeMode="cover"
-              />
-            </View>
-            <View style={styles.bannerTitleOverlay}>
-              <View style={styles.titlePlaqueOuter}>
-                <View style={styles.titlePlaqueInner}>
-                  <Text style={styles.titlePlaqueText}>
-                    WELCOME TO THE{'\n'}MEOW DEPTHS
-                  </Text>
-                </View>
-                <View style={styles.topTagOverlay}>
-                  <View style={styles.topTag}>
-                    <Text style={styles.topTagText}>★ A NEW JOURNEY BEGINS ★</Text>
+        <View style={styles.content}>
+          <ScrollView
+            contentContainerStyle={styles.scroll}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+          >
+            {/* Onboarding banner artwork with title plaque + top tag overlaid */}
+            <View style={styles.bannerOuter}>
+              <View style={styles.bannerContainer}>
+                <ExpoImage
+                  source={require('../../assets/sprites/banners/onboarding-banner.png')}
+                  style={styles.bannerImage}
+                  contentFit="cover"
+                />
+              </View>
+              <View style={styles.bannerTitleOverlay}>
+                <View style={styles.titlePlaqueOuter}>
+                  <View style={styles.titlePlaqueInner}>
+                    <Text style={styles.titlePlaqueText}>
+                      WELCOME TO THE{'\n'}MEOW DEPTHS
+                    </Text>
+                  </View>
+                  <View style={styles.topTagOverlay}>
+                    <View style={styles.topTag}>
+                      <Text style={styles.topTagText}>★ A NEW JOURNEY BEGINS ★</Text>
+                    </View>
                   </View>
                 </View>
               </View>
             </View>
-          </View>
 
-          {/* Lore text */}
-          <Text style={styles.loreText}>
-            For generations, the Meow Order has protected the world from evil. As a new recruit, explore dangerous regions and grow stronger to cleanse the world and uncover its secrets.
-          </Text>
+            {/* Lore text */}
+            <Text style={styles.loreText}>
+              For generations, the Meow Order has protected the world from evil. As a new recruit, explore dangerous regions and grow stronger to cleanse the world and uncover its secrets.
+            </Text>
 
-          {/* Name input */}
-          <View style={styles.section}>
-            <Text style={styles.nameQuestion}>WHAT'S YOUR NAME, RECRUIT?</Text>
-            <View style={styles.nameInputWrapper}>
-              <TextInput
-                style={styles.nameInput}
-                value={heroName}
-                onChangeText={setHeroName}
-                placeholder="Mochi"
-                placeholderTextColor="rgba(255, 243, 218, 0.4)"
-                maxLength={16}
-                selectTextOnFocus
-                textAlign="center"
-                cursorColor="#E8A73A"
-                selectionColor="rgba(232, 167, 58, 0.4)"
-              />
+            {/* Name input */}
+            <View style={styles.section}>
+              <Text style={styles.nameQuestion}>WHAT'S YOUR NAME, RECRUIT?</Text>
+              <View style={styles.nameInputWrapper}>
+                <TextInput
+                  style={styles.nameInput}
+                  value={heroName}
+                  onChangeText={setHeroName}
+                  placeholder="Mochi"
+                  placeholderTextColor="rgba(255, 243, 218, 0.4)"
+                  maxLength={16}
+                  selectTextOnFocus
+                  textAlign="center"
+                  cursorColor="#E8A73A"
+                  selectionColor="rgba(232, 167, 58, 0.4)"
+                />
+              </View>
             </View>
-          </View>
-        </ScrollView>
+          </ScrollView>
 
-        {/* Pinned Bottom Container for Continue Button */}
-        <View style={styles.bottomContainer}>
-          <TouchableOpacity
-            style={styles.continueBtn}
-            onPress={handleContinue}
-            onLayout={(e) => {
-              const { width, height } = e.nativeEvent.layout;
-              setContinueBtnLayout({ width, height });
-            }}
-            activeOpacity={0.85}
-          >
-            <RuggedBorderBackground width={continueBtnLayout.width} height={continueBtnLayout.height} />
-            <Text style={styles.continueText}>CONTINUE ➔</Text>
-          </TouchableOpacity>
+          {/* Pinned Bottom Container for Continue Button */}
+          <View style={styles.bottomContainer}>
+            <TouchableOpacity
+              style={styles.continueBtn}
+              onPress={handleContinue}
+              onLayout={(e) => {
+                const { width, height } = e.nativeEvent.layout;
+                setContinueBtnLayout({ width, height });
+              }}
+              activeOpacity={0.85}
+            >
+              <RuggedBorderBackground width={continueBtnLayout.width} height={continueBtnLayout.height} />
+              <Text style={styles.continueText}>CONTINUE ➔</Text>
+            </TouchableOpacity>
+          </View>
         </View>
-      </View>
-    </SafeAreaView>
+      </SafeAreaView>
   );
 }
 

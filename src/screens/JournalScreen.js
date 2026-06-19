@@ -12,7 +12,7 @@
  * state.progress.notesCollected (see gameState.js).
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -73,18 +73,6 @@ function isZoneUnlocked(zone, progress) {
   return !!progress[zone.unlockCondition];
 }
 
-function RarityStars({ stars, color }) {
-  return (
-    <View style={{ flexDirection: 'row' }}>
-      {Array.from({ length: 5 }).map((_, i) => (
-        <Text key={i} style={{ fontSize: 11, color: i < stars ? color : 'rgba(207,224,238,0.18)' }}>
-          ★
-        </Text>
-      ))}
-    </View>
-  );
-}
-
 function CreatureCard({ enemy, zoneId }) {
   const sprite = ENEMY_SPRITES[enemy.id] || FALLBACK_ENEMY_SPRITE;
   const accent = REGION_ACCENT[zoneId] || theme.COLORS.coldBlue;
@@ -114,7 +102,6 @@ function CreatureCard({ enemy, zoneId }) {
               </View>
             )}
           </View>
-          <RarityStars stars={enemy.stars} color={accent} />
           <Text style={styles.cardRegion}>{ZONES[zoneId].name}</Text>
 
           {dropIds.length > 0 && (
@@ -138,18 +125,27 @@ function CreatureCard({ enemy, zoneId }) {
   );
 }
 
-export default function JournalScreen({ navigation }) {
-  const { state } = useGame();
+export default function JournalScreen({ navigation, route }) {
+  const { state, dispatch } = useGame();
   const { progress } = state;
   const insets = useSafeAreaInsets();
 
-  const [tab, setTab] = useState('creatures');
+  const routeParams = route?.params || {};
+  const [tab, setTab] = useState(routeParams.initialTab || 'creatures');
+
+  useEffect(() => {
+    if (routeParams.initialTab) {
+      setTab(routeParams.initialTab);
+    }
+  }, [routeParams.initialTab]);
+
   const unlockedZones = ZONE_IDS.filter((id) => isZoneUnlocked(ZONES[id], progress));
   const [region, setRegion] = useState(unlockedZones[0] || 'zone1');
   const [openNote, setOpenNote] = useState(null);
 
   const encountered = progress.encounteredCreatures || {};
   const notesCollected = progress.notesCollected || {};
+  const readNotes = progress.readNotes || {};
 
   // Region sub-tabs (only unlocked regions) — shared by both Creatures and Notes
   const regionTabs = (
@@ -172,7 +168,7 @@ export default function JournalScreen({ navigation }) {
   );
 
   return (
-    <View style={[styles.container, { paddingBottom: insets.bottom }]}>
+      <View style={[styles.container, { paddingBottom: insets.bottom }]}>
       {/* Header */}
       <View style={[styles.header, { paddingTop: insets.top }]}>
         <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()} activeOpacity={0.7}>
@@ -233,21 +229,33 @@ export default function JournalScreen({ navigation }) {
               if (collectedNotes.length === 0) {
                 return <Text style={styles.emptyText}>No field notes recovered here yet.</Text>;
               }
-              return collectedNotes.map((note) => (
-                <TouchableOpacity
-                  key={note.id}
-                  style={styles.noteRow}
-                  activeOpacity={0.8}
-                  onPress={() => setOpenNote(note)}
-                >
-                  <ItemSprite spritesheet={NOTE_SPRITE.spritesheet} frameIndex={NOTE_SPRITE.frameIndex} displaySize={26} />
-                  <View style={{ flex: 1, marginLeft: 12 }}>
-                    <Text style={styles.noteTitle}>{note.title}</Text>
-                    <Text style={styles.noteSub} numberOfLines={1}>{note.context}</Text>
-                  </View>
-                  <Text style={styles.noteChevron}>›</Text>
-                </TouchableOpacity>
-              ));
+              return collectedNotes.map((note) => {
+                const isUnread = !readNotes[note.id];
+                return (
+                  <TouchableOpacity
+                    key={note.id}
+                    style={styles.noteRow}
+                    activeOpacity={0.8}
+                    onPress={() => {
+                      setOpenNote(note);
+                      dispatch({ type: 'MARK_NOTE_READ', payload: { noteId: note.id } });
+                    }}
+                  >
+                    <ItemSprite spritesheet={NOTE_SPRITE.spritesheet} frameIndex={NOTE_SPRITE.frameIndex} displaySize={26} />
+                    <View style={{ flex: 1, marginLeft: 12 }}>
+                      <Text style={styles.noteTitle}>{note.title}</Text>
+                      <Text style={styles.noteSub} numberOfLines={1}>{note.context}</Text>
+                    </View>
+                    <Text style={styles.noteChevron}>›</Text>
+
+                    {isUnread && (
+                      <View style={styles.noteBadge}>
+                        <Text style={styles.noteBadgeText}>!</Text>
+                      </View>
+                    )}
+                  </TouchableOpacity>
+                );
+              });
             })()}
           </ScrollView>
         </View>
@@ -392,6 +400,29 @@ const styles = StyleSheet.create({
   noteTitle: { fontFamily: 'Jersey10-Regular', fontSize: 14, color: theme.COLORS.warmGlow },
   noteSub: { ...theme.FONTS.small, fontSize: 9, color: 'rgba(207,224,238,0.4)', marginTop: 2 },
   noteChevron: { fontSize: 22, color: theme.COLORS.candleGold, marginLeft: 6 },
+  noteBadge: {
+    position: 'absolute',
+    top: -6,
+    right: -6,
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    backgroundColor: theme.COLORS.damageRed || '#D8483F',
+    borderColor: '#4A3917',
+    borderWidth: 1.5,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10,
+  },
+  noteBadgeText: {
+    fontFamily: 'PressStart2P-Regular',
+    fontSize: 8,
+    color: '#FFF3DA',
+    fontWeight: 'bold',
+    textAlign: 'center',
+    lineHeight: 8,
+    marginTop: -1,
+  },
 
   // Note reader modal (parchment)
   readerOverlay: {

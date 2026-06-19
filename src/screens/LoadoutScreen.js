@@ -32,7 +32,7 @@ export default function LoadoutScreen() {
   const navigation = useNavigation();
 
   return (
-    <SafeAreaView style={styles.root} edges={['top', 'left', 'right']}>
+      <SafeAreaView style={styles.root} edges={['top', 'left', 'right']}>
       {/* Ambient element-tinted glow at the top */}
       <Svg style={StyleSheet.absoluteFill} width="100%" height="100%" pointerEvents="none">
         <Defs>

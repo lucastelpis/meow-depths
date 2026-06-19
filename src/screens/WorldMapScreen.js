@@ -9,8 +9,8 @@ import {
   TouchableOpacity,
   ScrollView,
   StyleSheet,
-  Image,
 } from 'react-native';
+import { Image as ExpoImage } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, {
   Defs,
@@ -86,7 +86,7 @@ export default function WorldMapScreen({ navigation }) {
   };
 
   return (
-    <View style={[styles.container, { paddingBottom: insets.bottom }]}>
+      <View style={[styles.container, { paddingBottom: insets.bottom }]}>
       {/* Background with subtle top radial gradient glow (shared hub look) */}
       <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
         <Defs>
@@ -136,10 +136,10 @@ export default function WorldMapScreen({ navigation }) {
               ]}
             >
               {/* Dungeon Banner Image (Full Card Background) */}
-              <Image
+              <ExpoImage
                 source={DUNGEON_BANNERS[zone.id]}
                 style={styles.bannerImage}
-                resizeMode="cover"
+                contentFit="cover"
               />
 
               {/* Dark gradient overlay for readability, keeping background artwork highly visible */}

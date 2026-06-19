@@ -13,8 +13,9 @@
  */
 
 import React from 'react';
-import { StatusBar } from 'react-native';
-import { NavigationContainer } from '@react-navigation/native';
+import { StatusBar, View, StyleSheet } from 'react-native';
+import { Image as ExpoImage } from 'expo-image';
+import { NavigationContainer, DarkTheme } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import * as Font from 'expo-font';
@@ -36,7 +37,7 @@ import DungeonMapScreen from './src/screens/DungeonMapScreen';
 import DungeonFloorScreen from './src/screens/DungeonFloorScreen';
 import NameInputScreen from './src/screens/NameInputScreen';
 import ElementSelectionScreen from './src/screens/ElementSelectionScreen';
-import { ALL_SPRITESHEET_ASSETS } from './src/constants/sprites';
+import { ONBOARDING_ASSETS, HUB_ASSETS } from './src/constants/sprites';
 
 const Stack = createStackNavigator();
 
@@ -58,48 +59,63 @@ const APP_FONTS = {
  * Shows the ElementSelectionScreen until the player has chosen an element.
  */
 function AppNavigator() {
-  const { state } = useGame();
+  const { state, loading } = useGame();
   const hasElement = !!(state?.hero?.element);
 
+  if (loading) {
+    return <View style={{ flex: 1, backgroundColor: '#0D0D0D' }} />;
+  }
+
   return (
-    <NavigationContainer>
+    <NavigationContainer theme={DarkTheme}>
       <StatusBar barStyle="light-content" backgroundColor="#000" />
 
-      <Stack.Navigator
-        screenOptions={{
-          headerShown: false,
-          cardStyle: { backgroundColor: '#0D0D0D' },
-          gestureEnabled: true,
-        }}
-      >
-        {!hasElement ? (
-          <>
-            <Stack.Screen name="NameInput" component={NameInputScreen} />
-            <Stack.Screen name="ElementSelection" component={ElementSelectionScreen} />
-          </>
-        ) : (
-          <>
-            <Stack.Screen name="Camp" component={CampScreen} />
-            <Stack.Screen name="WorldMap" component={WorldMapScreen} />
-            <Stack.Screen name="DungeonFloor" component={DungeonFloorScreen} />
-            <Stack.Screen
-              name="Combat"
-              component={CombatScreen}
-              options={{ gestureEnabled: false }}
-            />
-            <Stack.Screen
-              name="DungeonMap"
-              component={DungeonMapScreen}
-              options={{ gestureEnabled: false }}
-            />
-            <Stack.Screen name="Shop" component={ShopScreen} />
-            <Stack.Screen name="SkillTree" component={SkillTreeScreen} />
-            <Stack.Screen name="Loadout" component={LoadoutScreen} />
-            <Stack.Screen name="Profile" component={ProfileScreen} />
-            <Stack.Screen name="Journal" component={JournalScreen} />
-          </>
-        )}
-      </Stack.Navigator>
+      {/* Pre-render heavy combat backgrounds behind the navigation stack so they cache perfectly at screen size */}
+      {hasElement && (
+        <ExpoImage
+          source={require('./assets/sprites/banners/battle_bg_1.png')}
+          style={[StyleSheet.absoluteFill, { opacity: 0.01 }]}
+          contentFit="fill"
+        />
+      )}
+
+      <ScreenLoader key={hasElement ? 'hub' : 'onboarding'} assets={hasElement ? HUB_ASSETS : ONBOARDING_ASSETS}>
+        <Stack.Navigator
+          screenOptions={{
+            headerShown: false,
+            cardStyle: { backgroundColor: '#0D0D0D' },
+            gestureEnabled: true,
+          }}
+        >
+          {!hasElement ? (
+            <>
+              <Stack.Screen name="NameInput" component={NameInputScreen} />
+              <Stack.Screen name="ElementSelection" component={ElementSelectionScreen} />
+            </>
+          ) : (
+            <>
+              <Stack.Screen name="Camp" component={CampScreen} />
+              <Stack.Screen name="WorldMap" component={WorldMapScreen} />
+              <Stack.Screen name="DungeonFloor" component={DungeonFloorScreen} />
+              <Stack.Screen
+                name="Combat"
+                component={CombatScreen}
+                options={{ gestureEnabled: false }}
+              />
+              <Stack.Screen
+                name="DungeonMap"
+                component={DungeonMapScreen}
+                options={{ gestureEnabled: false }}
+              />
+              <Stack.Screen name="Shop" component={ShopScreen} />
+              <Stack.Screen name="SkillTree" component={SkillTreeScreen} />
+              <Stack.Screen name="Loadout" component={LoadoutScreen} />
+              <Stack.Screen name="Profile" component={ProfileScreen} />
+              <Stack.Screen name="Journal" component={JournalScreen} />
+            </>
+          )}
+        </Stack.Navigator>
+      </ScreenLoader>
     </NavigationContainer>
   );
 }
@@ -110,11 +126,9 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <GameProvider>
-        <ScreenLoader assets={ALL_SPRITESHEET_ASSETS}>
-          {/* Hold off mounting any screen until pixel fonts are registered,
-              so text never paints with the system fallback font. */}
-          {fontsLoaded ? <AppNavigator /> : null}
-        </ScreenLoader>
+        {/* Hold off mounting any screen until pixel fonts are registered,
+            so text never paints with the system fallback font. */}
+        {fontsLoaded ? <AppNavigator /> : null}
       </GameProvider>
     </SafeAreaProvider>
   );

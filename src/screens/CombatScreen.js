@@ -43,6 +43,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Defs, LinearGradient, RadialGradient, Stop, Rect, Ellipse, Circle, Path } from 'react-native-svg';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import { Image as ExpoImage } from 'expo-image';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -51,7 +52,6 @@ import { ENEMIES, STAR_MULTIPLIERS } from '../data/enemies';
 import { SKILLS, SKILL_SPRITE_FRAMES } from '../data/skills';
 import { CONSUMABLES, MATERIALS, GEAR } from '../data/gear';
 import AnimatedSprite from '../components/AnimatedSprite';
-import ScreenLoader from '../components/ScreenLoader';
 import Button from '../components/ui/Button';
 import ResourceBar from '../components/ui/ResourceBar';
 import ItemSprite from '../components/ItemSprite';
@@ -139,6 +139,120 @@ function SoftEllipseShadow({ width = 80, height = 18, color = '#2A1A0C', style }
 /** Returns a Promise that resolves after `ms` milliseconds.
  *  Awaiting this inside an async function lets React render between phases. */
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+// Helper to construct initial combat state synchronously on mount/render
+function buildInitialCombatState(state, roomType, battleRating, enemyCount) {
+  const zone = ZONES[state.currentRun?.zoneId || 'zone1'];
+  if (!zone) return null;
+  const floorNumber = state.currentRun?.floorNumber || 1;
+
+  // 2. Compute the hero's effective stats (gear + passives + set bonuses + run buffs)
+  const eff = calculateEffectiveStats(state.hero, undefined, state.currentRun?.runBuffs);
+
+  // 3. Build local hero combat state
+  const initHero = {
+    name: state.hero.name || 'Mochi',
+    hp: state.hero.hp,
+    maxHp: eff.maxHp,
+    attack: eff.attack,
+    defence: eff.defence,
+    critChance: eff.critChance,
+    dodge: eff.dodge,
+    effects: [],
+    passives: eff.passives,
+    gearSpecials: eff.gearSpecials,
+    // Flame Guard state (Fire element T2B)
+    flameGuardActive: false,
+    flameGuardTurnsRemaining: 0,
+    flameGuardBurnDamage: 0,
+    flameGuardBurnDuration: 0,
+  };
+
+  // 4. Generate the encounter based on the room type
+  let taggedEnemies = [];
+  let pool = zone.enemies.map(id => ENEMIES[id]).filter(Boolean);
+  const floorGated = pool.filter(e => (e.minFloor || 1) <= floorNumber);
+  if (floorGated.length > 0) pool = floorGated;
+  if (floorNumber === 1) {
+    const starGated = pool.filter(e => e.stars === 1);
+    if (starGated.length > 0) pool = starGated;
+  }
+
+  if (roomType === 'boss') {
+    const bossData = ENEMIES[zone.bossId];
+    if (bossData) {
+      const boss = {
+        ...bossData,
+        uid: bossData.id + '_boss',
+        type: 'boss',
+        isBoss: true,
+        maxHp: bossData.hp,
+        effects: [],
+        cooldowns: {},
+        spawnIndex: 0,
+      };
+      boss.intent = selectEnemyMove(boss);
+      taggedEnemies = [boss];
+    }
+  } else {
+    const makeScaledEnemy = (template, i) => {
+      const mult = STAR_MULTIPLIERS[battleRating] || 1.0;
+      return {
+        ...template,
+        uid: template.id + '_' + i,
+        type: 'common',
+        stars: battleRating,
+        hp: Math.ceil(template.hp * mult),
+        maxHp: Math.ceil(template.hp * mult),
+        attack: Math.ceil(template.attack * mult),
+        def: Math.max(1, Math.ceil((template.def || 0) * mult)),
+        effects: [],
+        cooldowns: {},
+        spawnIndex: i,
+      };
+    };
+
+    let count = enemyCount;
+    if (count === undefined) {
+      if (battleRating === 1) count = 1;
+      else if (battleRating === 2) count = 2;
+      else if (battleRating === 3) count = 2;
+      else if (battleRating === 4) count = 3;
+      else count = 4;
+    }
+
+    for (let i = 0; i < count; i++) {
+      const template = randomPick(pool);
+      if (template) {
+        taggedEnemies.push(makeScaledEnemy(template, i));
+      }
+    }
+  }
+
+  taggedEnemies = taggedEnemies.map(enemy => ({
+    ...enemy,
+    intent: selectEnemyMove(enemy, taggedEnemies),
+  }));
+
+  const initCooldowns = {};
+  (state.hero.equippedSkills || []).forEach((skillId) => {
+    if (skillId) initCooldowns[skillId] = 0;
+  });
+
+  const consumableIds = state.currentRun?.consumables || [];
+  const consumableMap = {};
+  for (const id of consumableIds) {
+    consumableMap[id] = (consumableMap[id] || 0) + 1;
+  }
+  const initConsumables = Object.entries(consumableMap).map(([id, quantity]) => ({ id, quantity }));
+
+  return {
+    hero: initHero,
+    enemies: taggedEnemies,
+    cooldowns: initCooldowns,
+    consumables: initConsumables,
+  };
+}
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -389,25 +503,17 @@ export default function CombatScreen() {
   const { roomType, battleRating = 1, enemyCount } = route.params || { roomType: 'combat', battleRating: 1 };
   const { state, dispatch } = useGame();
 
-  // ── Assets to preload before combat is interactable ───────────────────────
-  // Hero base sprites + every skill the player has equipped
-  const assetsToPreload = React.useMemo(() => {
-    const sources = [
-      HERO_SPRITE.idle.source,
-      HERO_SPRITE.attack.source,
-      HERO_SPRITE.guard.source,
-    ];
-    (state.hero?.equippedSkills || []).forEach((skillId) => {
-      const src = skillId && HERO_SPRITE[skillId]?.source;
-      if (src) sources.push(src);
-    });
-    return sources;
-  }, []);
-
+  // Compute initial state synchronously on render to avoid black loading screen blink
+  const initialCombatData = React.useMemo(() => {
+    return buildInitialCombatState(state, roomType, battleRating, enemyCount);
+  }, [state, roomType, battleRating, enemyCount]);
 
   // ── Local combat state ───────────────────────────────────────────────────
-  const [combatPhase, setCombatPhase] = useState('start');
-  const [enemiesState, setEnemiesState] = useState({ alive: [], dying: [] });
+  const [combatPhase, setCombatPhase] = useState('playerTurn');
+  const [enemiesState, setEnemiesState] = useState(() => ({
+    alive: initialCombatData?.enemies || [],
+    dying: [],
+  }));
   const enemies = enemiesState.alive;
   const dyingEnemies = enemiesState.dying;
 
@@ -425,16 +531,16 @@ export default function CombatScreen() {
     }));
   }, []);
 
-  const [heroState, setHeroState] = useState(null);
+  const [heroState, setHeroState] = useState(() => initialCombatData?.hero || null);
   const [selectedEnemyIndex, setSelectedEnemyIndex] = useState(0);
   // uid of the enemy currently taking its turn — drives the "acting" highlight
   const [activeEnemyUid, setActiveEnemyUid] = useState(null);
-  const [cooldowns, setCooldowns] = useState({});
+  const [cooldowns, setCooldowns] = useState(() => initialCombatData?.cooldowns || {});
   const [combatLog, setCombatLog] = useState([]);
   const [lootResult, setLootResult] = useState(null);
   const [turnCount, setTurnCount] = useState(0);
-  const [runConsumables, setRunConsumables] = useState([]);
-  const [narratorText, setNarratorText] = useState('');
+  const [runConsumables, setRunConsumables] = useState(() => initialCombatData?.consumables || []);
+  const [narratorText, setNarratorText] = useState(() => randomPick(NARRATOR_LINES));
   const [showItemModal, setShowItemModal] = useState(false);
   const [showFleeConfirmModal, setShowFleeConfirmModal] = useState(false);
   const [infoSkillId, setInfoSkillId] = useState(null);
@@ -753,145 +859,17 @@ export default function CombatScreen() {
 
   // ── Initialisation (runs once on mount) ──────────────────────────────────
   useEffect(() => {
-    // 1. Resolve the current zone
-    const zone = ZONES[state.currentRun.zoneId];
-    if (!zone) return;
-    const floorNumber = state.currentRun.floorNumber || 1;
+    if (!initialCombatData) return;
 
-    // 2. Compute the hero's effective stats (gear + passives + set bonuses + run buffs)
-    const eff = calculateEffectiveStats(state.hero, undefined, state.currentRun.runBuffs);
-
-    // 3. Build local hero combat state
-    const initHero = {
-      name: state.hero.name || 'Mochi',
-      hp: state.hero.hp,
-      maxHp: eff.maxHp,
-      attack: eff.attack,
-      defence: eff.defence,
-      critChance: eff.critChance,
-      dodge: eff.dodge,
-      effects: [],
-      passives: eff.passives,
-      gearSpecials: eff.gearSpecials,
-      // Flame Guard state (Fire element T2B)
-      flameGuardActive: false,
-      flameGuardTurnsRemaining: 0,
-      flameGuardBurnDamage: 0,
-      flameGuardBurnDuration: 0,
-    };
-    setHeroState(initHero);
-
-    // 4. Generate the encounter based on the room type
-    let taggedEnemies = [];
-    let pool = zone.enemies.map(id => ENEMIES[id]).filter(Boolean);
-    // Respect per-enemy floor gating (e.g. Cockroach Knight has minFloor: 5).
-    // Fall back to the unfiltered pool if gating would leave nothing to spawn.
-    const floorGated = pool.filter(e => (e.minFloor || 1) <= floorNumber);
-    if (floorGated.length > 0) pool = floorGated;
-    if (floorNumber === 1) {
-      const starGated = pool.filter(e => e.stars === 1);
-      if (starGated.length > 0) pool = starGated;
-    }
-
-    if (roomType === 'boss') {
-      const bossData = ENEMIES[zone.bossId];
-      if (bossData) {
-        const boss = {
-          ...bossData,
-          uid: bossData.id + '_boss',
-          type: 'boss',
-          isBoss: true,
-          maxHp: bossData.hp,
-          effects: [],
-          cooldowns: {},
-          spawnIndex: 0,
-        };
-        boss.intent = selectEnemyMove(boss);
-        taggedEnemies = [boss];
-      }
-    } else {
-      // Scale all spawned enemies by the room's battle rating (star level)
-      // Handles both 'combat' and 'ambush' room types
-      const makeScaledEnemy = (template, i) => {
-        const mult = STAR_MULTIPLIERS[battleRating] || 1.0;
-
-        const scaled = {
-          ...template,
-          uid: template.id + '_' + i,
-          type: 'common',
-          stars: battleRating,
-          hp: Math.ceil(template.hp * mult),
-          maxHp: Math.ceil(template.hp * mult),
-          attack: Math.ceil(template.attack * mult),
-          def: Math.max(1, Math.ceil((template.def || 0) * mult)),
-          effects: [],
-          cooldowns: {},
-          spawnIndex: i,
-        };
-        return scaled;
-      };
-
-      let count = enemyCount;
-      if (count === undefined) {
-        // Fallback counts based on battle rating if not provided (e.g. testing or legacy path)
-        if (battleRating === 1) count = 1;
-        else if (battleRating === 2) count = 2;
-        else if (battleRating === 3) count = 2;
-        else if (battleRating === 4) count = 3;
-        else count = 4;
-      }
-
-      for (let i = 0; i < count; i++) {
-        const template = randomPick(pool);
-        if (template) {
-          taggedEnemies.push(makeScaledEnemy(template, i));
-        }
-      }
-    }
-
-    // Assign intents with awareness of other enemies on the field
-    taggedEnemies = taggedEnemies.map(enemy => ({
-      ...enemy,
-      intent: selectEnemyMove(enemy, taggedEnemies),
-    }));
-
-    setEnemies(taggedEnemies);
-
-    // Mark these creatures as encountered (unlocks their bestiary card in the
-    // Journal). Marking on combat start means fleeing/losing still counts.
-    const encounteredIds = taggedEnemies
+    // Mark these creatures as encountered (unlocks their bestiary card in the Journal).
+    const encounteredIds = initialCombatData.enemies
       .map((e) => (e.id || '').replace(/^elite_/, ''))
       .filter(Boolean);
     if (encounteredIds.length > 0) {
       dispatch({ type: 'ENCOUNTER_CREATURES', payload: { enemyIds: encounteredIds } });
     }
 
-    // 5. Initialise cooldowns for equipped skills
-    const initCooldowns = {};
-    (state.hero.equippedSkills || []).forEach((skillId) => {
-      if (skillId) initCooldowns[skillId] = 0;
-    });
-    setCooldowns(initCooldowns);
-
-    // 6. Consumables — currentRun.consumables is an array of ID strings
-    //    (e.g. ['potion', 'potion', 'antidote']). Group them
-    //    into { id, quantity } objects for the in-combat item UI.
-    const consumableIds = state.currentRun.consumables || [];
-    const consumableMap = {};
-    for (const id of consumableIds) {
-      consumableMap[id] = (consumableMap[id] || 0) + 1;
-    }
-    setRunConsumables(
-      Object.entries(consumableMap).map(([id, quantity]) => ({ id, quantity })),
-    );
-
-    // 7. Atmospheric narrator text
-    setNarratorText(randomPick(NARRATOR_LINES));
-
-
-    // 8. Combat begins!
     defeatedEnemiesRef.current = [];
-    setCombatPhase('playerTurn');
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -1995,7 +1973,6 @@ export default function CombatScreen() {
   };
 
   return (
-    <ScreenLoader assets={assetsToPreload}>
       <SafeAreaView style={styles.root}>
         {/* Background SVG gradients */}
         <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
@@ -2032,10 +2009,11 @@ export default function CombatScreen() {
         {/* ══ Battlefield arena ════════════════════════════════════════ */}
         <View style={styles.battlefield}>
           {/* Background image (same for all zones for now) */}
-          <Image
+          <ExpoImage
             source={require('../../assets/sprites/banners/battle_bg_1.png')}
             style={styles.battlefieldBg}
-            resizeMode="stretch"
+            contentFit="fill"
+            transition={0}
           />
 
           {/* ── Stage: hero left, enemies right ── */}
@@ -2491,7 +2469,6 @@ export default function CombatScreen() {
           </View>
         )}
       </SafeAreaView>
-    </ScreenLoader>
   );
 
   // ── Status-effect badge row (shared by hero + enemies) ──────────────────
@@ -3250,7 +3227,6 @@ const styles = StyleSheet.create({
     left: 0,
     width: '100%',
     height: '100%',
-    backgroundColor: '#000000',
   },
 
   /* ── Info bar (above the battlefield container) ─────────────── */

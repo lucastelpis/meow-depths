@@ -16,6 +16,9 @@ Meow Depths is an RPG/region-crawler game built using React Native and Expo, fea
 - **Region Map Screen**: Allows entering zones to fight enemies.
 - **Expeditions Screen**: Displays available regions (Soggy Ruins, Twisted Gardens, Sunken Docks) with custom level ranges, run completion statistics, and zone completion status. Each region card features a full-bleed premium background banner image scaled to a perfect 2:1 aspect ratio matching the dimensions of the assets.
 - **Skill Tree Screen**: Unlocks and upgrades active and passive skills using gold/crystals.
+- **Journal Screen**: Split into two tabs:
+  - **Creatures tab**: Displays discovered creature cards (sprite, name, region, item drops, and lore). Creature star levels are not shown because star levels dynamically scale in combat.
+  - **Notes tab**: Lists collectible field notes unlocked on first-time floor clears by region, readable via a parchment reader modal. Unread notes display a red retro '!' badge in the top-right corner. When new unread notes are collected, a clickable notification badge tag (exclamation mark) appears on the main Camp Hub banner that links directly to this tab. Opening/reading the note clears its unread state.
 
 ## Crystal Forging & Fusion
 Players can fuse lower-tier crystal shards and crystals into higher-tier ones in the **Forge** tab at the Market (Shop):

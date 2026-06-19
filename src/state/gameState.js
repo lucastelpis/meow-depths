@@ -36,6 +36,7 @@ import React, {
   useEffect,
   useCallback,
   useRef,
+  useState,
 } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { generateDungeonGrid } from '../logic/dungeonGenerator';
@@ -119,6 +120,7 @@ const initialState = {
     },
     encounteredCreatures: {}, // { enemyId: true } — unlocks bestiary cards
     notesCollected: {},       // { noteId: true } — e.g. 'zone1_floor3'
+    readNotes: {},            // { noteId: true } — tracks read bestiary/lore notes
   },
 
   // -- Current Run (temporary, reset after each dungeon run) ----------------
@@ -1188,6 +1190,25 @@ function gameReducer(state, action) {
     }
 
     // -----------------------------------------------------------------------
+    // MARK_NOTE_READ — mark a note as read/viewed
+    // Payload: { noteId: string }
+    // -----------------------------------------------------------------------
+    case 'MARK_NOTE_READ': {
+      const noteId = action.payload?.noteId;
+      if (!noteId) return state;
+      const nextReadNotes = { ...(state.progress.readNotes || {}) };
+      if (nextReadNotes[noteId]) return state;
+      nextReadNotes[noteId] = true;
+      return {
+        ...state,
+        progress: {
+          ...state.progress,
+          readNotes: nextReadNotes,
+        },
+      };
+    }
+
+    // -----------------------------------------------------------------------
     // RESET_GAME — nuke everything and start fresh
     // -----------------------------------------------------------------------
     case 'RESET_GAME':
@@ -1229,6 +1250,7 @@ const GameContext = createContext(null);
 export function GameProvider({ children }) {
   // -- useReducer gives us state + dispatch ---------------------------------
   const [state, dispatch] = useReducer(gameReducer, initialState);
+  const [loading, setLoading] = useState(true);
 
   // We use a ref to track whether we've finished loading saved data.
   // This prevents us from saving the default initialState over a real save.
@@ -1320,6 +1342,7 @@ export function GameProvider({ children }) {
       }
       // Mark loading as complete so auto-save can begin
       hasLoadedRef.current = true;
+      setLoading(false);
     });
   }, []);
 
@@ -1333,7 +1356,7 @@ export function GameProvider({ children }) {
   }, [state]);
 
   return (
-    <GameContext.Provider value={{ state, dispatch }}>
+    <GameContext.Provider value={{ state, dispatch, loading }}>
       {children}
     </GameContext.Provider>
   );

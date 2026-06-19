@@ -6,70 +6,64 @@
  * occurs when an image is used for the first time (e.g. a skill spritesheet
  * that mounts on demand).
  *
- * Usage:
- *   const ready = usePreloadAssets([
- *     require('../assets/foo.png'),
- *     require('../assets/bar.png'),
- *   ]);
+ * It uses hidden native <Image> components to force the native OS thread to
+ * load and decode the images from disk.
  *
- * @param {Array} sources – array of require() results (numeric asset IDs or
- *                          objects with a `uri` field). Falsy values are
- *                          filtered out so you can safely spread arrays that
- *                          may contain undefined entries.
- * @returns {boolean} ready – true once all assets have been decoded (or if
- *                            an error occurs — fail-open so the game never hangs).
+ * @param {Array} sources – array of require() results.
+ * @returns {[boolean, ReactNode]} [ready, preloadElements] – ready is true
+ *   once all assets have been decoded (or if safety timeout triggers).
+ *   preloadElements should be rendered in the host component's tree.
  */
 
-import { useState, useEffect } from 'react';
-import { Image } from 'react-native';
-import * as Font from 'expo-font';
+import React, { useState, useEffect, useMemo } from 'react';
+import { View } from 'react-native';
+import { Image as ExpoImage } from 'expo-image';
 
 export default function usePreloadAssets(sources = []) {
   const [ready, setReady] = useState(false);
+  const [loadedCount, setLoadedCount] = useState(0);
+
+  const valid = useMemo(() => sources.filter(Boolean), [sources]);
+  const serialized = useMemo(() => {
+    return valid.map(s => (typeof s === 'number' ? s : s.uri || String(s))).join(',');
+  }, [valid]);
 
   useEffect(() => {
-    // Filter out any falsy values (undefined skills, etc.)
-    const valid = sources.filter(Boolean);
+    if (valid.length === 0) {
+      setReady(true);
+      return;
+    }
 
-    let cancelled = false;
+    setReady(false);
+    setLoadedCount(0);
 
-    const prefetchAll = async () => {
-      try {
-        await Promise.all([
-          // Load retro pixel fonts
-          Font.loadAsync({
-            'PressStart2P-Regular': require('../../assets/fonts/PressStart2P-Regular.ttf'),
-            'PixelifySans-Regular': require('../../assets/fonts/PixelifySans-Regular.ttf'),
-            'PixelifySans-Medium': require('../../assets/fonts/PixelifySans-Medium.ttf'),
-            'Silkscreen-Regular': require('../../assets/fonts/Silkscreen-Regular.ttf'),
-            'Jersey10-Regular': require('../../assets/fonts/Jersey10-Regular.ttf'),
-          }),
-          // Prefetch sprite/image assets
-          ...valid.map((src) => {
-            const resolved = Image.resolveAssetSource(src);
-            if (resolved?.uri) {
-              return Image.prefetch(resolved.uri);
-            }
-            return Promise.resolve();
-          }),
-        ]);
-      } catch (err) {
-        // Fail-open: if any asset can't be prefetched, unblock anyway
-        console.warn('Failed to preload fonts or images:', err);
-      } finally {
-        if (!cancelled) setReady(true);
-      }
-    };
+    // Safety timeout: fail-open after 2.5 seconds so the screen never hangs
+    const timer = setTimeout(() => {
+      setReady(true);
+    }, 2500);
 
-    prefetchAll();
+    return () => clearTimeout(timer);
+  }, [serialized]);
 
-    return () => {
-      cancelled = true;
-    };
-    // Only run once on mount — sources list is built at render time from
-    // static require() calls so it never actually changes between renders.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  useEffect(() => {
+    if (valid.length > 0 && loadedCount >= valid.length) {
+      setReady(true);
+    }
+  }, [loadedCount, valid.length]);
 
-  return ready;
+  const preloadElements = (
+    <View style={{ position: 'absolute', left: -1000, top: -1000, width: 10, height: 10, overflow: 'hidden' }} pointerEvents="none">
+      {valid.map((src, index) => (
+        <ExpoImage
+          key={`preload_${index}`}
+          source={src}
+          style={{ width: 10, height: 10 }}
+          onLoad={() => setLoadedCount(c => c + 1)}
+          onError={() => setLoadedCount(c => c + 1)}
+        />
+      ))}
+    </View>
+  );
+
+  return [ready, preloadElements];
 }

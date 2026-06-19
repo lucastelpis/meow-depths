@@ -21,6 +21,7 @@ import {
   Pressable,
   Animated,
 } from 'react-native';
+import { Image as ExpoImage } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import Svg, { Defs, RadialGradient, Stop, Circle, Path, G } from 'react-native-svg';
@@ -29,7 +30,6 @@ import Svg, { Defs, RadialGradient, Stop, Circle, Path, G } from 'react-native-s
 import theme from '../constants/theme';
 import { useGame } from '../state/gameState';
 import { calculateEffectiveStats } from '../logic/progressionEngine';
-import ScreenLoader from '../components/ScreenLoader';
 import { SKILLS } from '../data/skills';
 import ItemSprite from '../components/ItemSprite';
 import { pickRandomThought } from '../data/mochiThoughts';
@@ -168,7 +168,7 @@ function AnimatedHubBackground({ width, height }) {
 
   return (
     <View style={{ width, height, overflow: 'hidden', position: 'absolute' }}>
-      <Image
+      <ExpoImage
         source={require('../../assets/sprites/background-hub.png')}
         style={{
           width: width * 4,
@@ -177,7 +177,7 @@ function AnimatedHubBackground({ width, height }) {
           left: -(frame * width),
           top: 0,
         }}
-        resizeMode="stretch"
+        contentFit="fill"
       />
     </View>
   );
@@ -215,6 +215,12 @@ export default function CampScreen({ navigation }) {
   }, [dailyModalVisible]);
 
   const effectiveStats = calculateEffectiveStats(hero);
+
+  const notesCollected = state.progress.notesCollected || {};
+  const readNotes = state.progress.readNotes || {};
+  const hasUnreadNotes = Object.keys(notesCollected).some(
+    (noteId) => notesCollected[noteId] && !readNotes[noteId]
+  );
 
 
 
@@ -339,11 +345,7 @@ export default function CampScreen({ navigation }) {
   }, [nowTs]);
 
   return (
-    <ScreenLoader assets={[
-      require('../../assets/sprites/background-hub.png'),
-      require('../../assets/sprites/items/icons-1.png'),
-    ]}>
-      <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container}>
         <ScrollView
           contentContainerStyle={styles.scroll}
           showsVerticalScrollIndicator={false}
@@ -389,6 +391,24 @@ export default function CampScreen({ navigation }) {
                     >
                       <ItemSprite spritesheet="icons-1" frameIndex={28} displaySize={18} />
                       <Text style={styles.bannerTagText}>STATS</Text>
+                    </TouchableOpacity>
+
+                    <View style={styles.bannerTagBadge}>
+                      <Text style={styles.bannerTagBadgeText}>!</Text>
+                    </View>
+                  </View>
+                )}
+
+                {/* Tag 4: Notes (Clickable) — only shown when there are unread notes */}
+                {hasUnreadNotes && (
+                  <View style={styles.bannerTagClickableWrapper}>
+                    <TouchableOpacity
+                      style={styles.bannerTagClickableInner}
+                      onPress={() => navigation.navigate('Journal', { initialTab: 'notes' })}
+                      activeOpacity={0.7}
+                    >
+                      <ItemSprite spritesheet="icons-map" frameIndex={36} displaySize={18} />
+                      <Text style={styles.bannerTagText}>NOTES</Text>
                     </TouchableOpacity>
 
                     <View style={styles.bannerTagBadge}>
@@ -523,10 +543,10 @@ export default function CampScreen({ navigation }) {
               >
                 <View style={styles.subSpriteContainer}>
                   <IconGlowBackground size={44} />
-                  <Image
+                  <ExpoImage
                     source={require('../../assets/sprites/units/hero/hero_head.png')}
                     style={{ width: 38, height: 38 }}
-                    resizeMode="contain"
+                    contentFit="contain"
                   />
                 </View>
                 <Text style={styles.subCardLabel}>PROFILE</Text>
@@ -716,7 +736,6 @@ export default function CampScreen({ navigation }) {
         </Modal>
 
       </SafeAreaView>
-    </ScreenLoader>
   );
 }
 
@@ -1023,6 +1042,8 @@ const styles = StyleSheet.create({
   },
   bannerTagsRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'flex-end',
     alignSelf: 'flex-end',
     gap: 8,
   },

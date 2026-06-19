@@ -18,7 +18,8 @@
  */
 
 import React from 'react';
-import { View, Image } from 'react-native';
+import { View } from 'react-native';
+import { Image as ExpoImage } from 'expo-image';
 
 /**
  * @param {object} source       – require() result for the sprite sheet PNG
@@ -50,7 +51,7 @@ export default function SpriteFrame({
         style,
       ]}
     >
-      <Image
+      <ExpoImage
         source={source}
         style={{
           // Stretch the full sheet to the scaled dimensions
@@ -61,7 +62,7 @@ export default function SpriteFrame({
           left: -(frameIndex * displaySize),
           top: 0,
         }}
-        resizeMode="stretch"
+        contentFit="fill"
       />
     </View>
   );

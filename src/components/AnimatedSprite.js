@@ -22,7 +22,10 @@
  */
 
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Image, Animated } from 'react-native';
+import { View, Animated } from 'react-native';
+import { Image as ExpoImage } from 'expo-image';
+
+const AnimatedExpoImage = Animated.createAnimatedComponent(ExpoImage);
 
 export default function AnimatedSprite({
   source,
@@ -123,9 +126,9 @@ export default function AnimatedSprite({
         style,
       ]}
     >
-      <Image
+      <ExpoImage
         source={source}
-        fadeDuration={0}
+        transition={0}
         style={{
           // Stretch the full sheet to scale, then shift left to expose current frame
           width:    frameSize * finalTotalFrames * scale,
@@ -134,12 +137,12 @@ export default function AnimatedSprite({
           left:     -(currentFrame * displaySize),
           top:      0,
         }}
-        resizeMode="stretch"
+        contentFit="fill"
       />
       {!!tintColor && (
-        <Animated.Image
+        <AnimatedExpoImage
           source={source}
-          fadeDuration={0}
+          transition={0}
           style={{
             width:    frameSize * finalTotalFrames * scale,
             height:   displaySize,
@@ -149,7 +152,7 @@ export default function AnimatedSprite({
             tintColor: tintColor,
             opacity: tintOpacity,
           }}
-          resizeMode="stretch"
+          contentFit="fill"
         />
       )}
     </View>

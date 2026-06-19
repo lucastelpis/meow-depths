@@ -20,8 +20,8 @@ import {
   Modal,
   Pressable,
   Dimensions,
-  Image,
 } from 'react-native';
+import { Image as ExpoImage } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import Svg, {
@@ -371,7 +371,7 @@ export default function DungeonFloorScreen() {
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: '#133131' }]}>
+      <View style={[styles.container, { backgroundColor: '#133131' }]}>
       {/* Full-screen ambient gradient */}
       <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
         <Defs>
@@ -416,10 +416,10 @@ export default function DungeonFloorScreen() {
         {/* ── Zone Banner ────────────────────────────────────────────── */}
         <View style={[styles.banner, { borderColor: zc.accent, width: '100%', marginHorizontal: 0, marginTop: 4, marginBottom: 20 }]}>
           {/* Dungeon artwork as banner background */}
-          <Image
+          <ExpoImage
             source={DUNGEON_BANNERS[zoneId]}
             style={styles.bannerBgImage}
-            resizeMode="cover"
+            contentFit="cover"
           />
           {/* Dark overlay for readability */}
           <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">

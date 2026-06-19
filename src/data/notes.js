@@ -30,7 +30,7 @@ export const NOTES = {
       id: 'zone1_floor1',
       floor: 1,
       title: 'Soggy Ruins — Note I',
-      context: 'Scratched into the concrete wall near the entrance. Deep cuts made deliberately, meant to last.',
+      context: 'Scratched into the wall near the entrance. Old enough that some words are difficult to read.',
       body:
         'We came down on the [unclear] of March. Forty-three of us from the [unclear] district. Mira said the tunnels would protect us from what was in the air above.\n\n' +
         'We brought what we could carry. Food for [unclear] weeks if we were careful. Some medicine. Blankets.\n\n' +
@@ -43,7 +43,7 @@ export const NOTES = {
       id: 'zone1_floor2',
       floor: 2,
       title: 'Soggy Ruins — Note II',
-      context: 'Found folded inside a sealed metal container. Paper brittle but intact. Written in two different hands.',
+      context: 'Found folded inside a sealed metal container. Paper brittle and some words already fading. Written in two different hands.',
       body:
         'Day 12 underground. Food manageable if careful. Water from the pipes still running, Domenico says safe enough for now. Counting heads every morning. Still forty-three.\n\n' +
         'We\'ve organized the space. The children sleep in the eastern section where it\'s driest. The [unclear] ones take shifts watching the entrance. Mira has set up a medical area near the [unclear] pipes where it\'s warmest.\n\n' +
@@ -55,7 +55,7 @@ export const NOTES = {
       id: 'zone1_floor3',
       floor: 3,
       title: 'Soggy Ruins — Note III',
-      context: 'Found pinned to a pipe with a piece of wire. The handwriting is careful — someone who had time to write slowly.',
+      context: 'Found pinned to a pipe with a piece of wire. The handwriting is careful — someone who had time to write slowly. Sadly the time has not been kind to the ink.',
       body:
         'I keep thinking about my apartment. The window that looked east. I used to watch the light change in the morning while the [unclear] cooled on the counter.\n\n' +
         'None of that exists anymore probably.\n\n' +
@@ -80,7 +80,7 @@ export const NOTES = {
       id: 'zone1_floor5',
       floor: 5,
       title: 'Soggy Ruins — Note V',
-      context: 'Found scratched directly into the sewer floor in an area that appears to have been used as a living space.',
+      context: 'Found scratched directly into the floor in an area that appears to have been used as a living space. Some words are unreadable.',
       body:
         'My brother fought in the [unclear] campaign. He wrote to me twice after the [unclear] started. The first letter said he was [unclear] and that his unit was holding the [unclear] line and that I shouldn\'t [unclear].\n\n' +
         'The second letter said he was sorry.\n\n' +
@@ -94,7 +94,7 @@ export const NOTES = {
       id: 'zone1_floor6',
       floor: 6,
       title: 'Soggy Ruins — Note VI',
-      context: 'Found in a child\'s exercise book, most pages water damaged. This page survived because it was in the middle.',
+      context: 'Found in a child\'s exercise book, most pages water damaged. This page was still somewhat legible because it was in the middle.',
       body:
         'My name is [unclear] and I am [unclear] years old and I am writing this because my father said to write things down so we remember.\n\n' +
         'We have been underground for a long time. I don\'t know how long exactly because I lost count and Papa lost count too.\n\n' +
@@ -109,7 +109,7 @@ export const NOTES = {
       id: 'zone1_floor7',
       floor: 7,
       title: 'Soggy Ruins — Note VII',
-      context: 'Found carved into a section of pipe that had been deliberately removed from the wall and placed flat. The carving is deep and precise.',
+      context: 'Found carved into a section of pipe that had been deliberately removed from the wall and placed flat. Corrosion has made some words unclear.',
       body:
         'I am writing this for whoever finds it. I don\'t think it will be one of us.\n\n' +
         'We came down here [unclear] months ago. There were sixty-one of us. I won\'t write the number now.\n\n' +
@@ -124,7 +124,7 @@ export const NOTES = {
       id: 'zone1_floor8',
       floor: 8,
       title: 'Soggy Ruins — Note VIII',
-      context: 'Found in a sealed metal box stamped with official markings.',
+      context: 'Found in a sealed metal box stamped with official markings. Even though the box was sealed, the paper inside was still somewhat degraded.',
       body:
         'INTERNAL COMMUNICATION — [classification unclear]\n' +
         'STATUS REPORT — Underground Shelter Network — Sector [unclear]\n\n' +
@@ -159,18 +159,17 @@ export const NOTES = {
       id: 'zone1_floor10',
       floor: 10,
       title: 'Soggy Ruins — Note X',
-      context: 'Found carved into the wall directly outside what the Order now calls the Stronghold. The deepest and most deliberate carving in the entire Soggy Ruins.',
+      context: 'Found carved into the wall directly outside one of the deepest chambers. Corrosion really took a toll on this one.',
       body:
         'This is the last note I will write down here.\n\n' +
         'The [unclear] is smaller now. Much smaller. I won\'t write the number. I wrote the number once, months ago, and I [unclear] I had.\n\n' +
         'I want to write something that [unclear]. Something true and final that whoever finds this will carry with them.\n\n' +
         'Here is what I know:\n\n' +
-        'The war was not an accident. It was the result of [unclear] made by [unclear] people who wanted things they didn\'t [unclear] and couldn\'t stop [unclear] even when they could see what they were [unclear]. We watched it happen for [unclear] years before it [unclear] and we told ourselves it wouldn\'t and then it [unclear].\n\n' +
+        'This [unclear] was not an accident. It was the result of [unclear] made by [unclear] people who wanted things they didn\'t [unclear] and couldn\'t stop [unclear] even when they could see what they were [unclear]. We watched it happen for [unclear] years before it [unclear] and we told ourselves it wouldn\'t and then it [unclear].\n\n' +
         'I don\'t know if that\'s a [unclear] nature thing or a [unclear] circumstance thing. I don\'t know if it could have been [unclear] differently. I used to think about that a lot. I think about it less now.\n\n' +
-        'What I think about now is the grey cat that has been sitting at the end of this tunnel for [unclear] days. Just sitting. Watching.\n\n' +
-        'I\'ve never seen a cat sit so [unclear].\n\n' +
+        'What I think about now is the weird rat that has been sitting at the end of this tunnel for [unclear] days. Just sitting. Watching.\n\n' +
+        'I\'ve never seen a rat so [unclear].\n\n' +
         'I don\'t know what it [unclear].\n\n' +
-        'I hope whatever comes after us does better.\n\n' +
         'I really [unclear].',
     },
   ],

@@ -8,13 +8,13 @@ import React, { useState, useMemo } from 'react';
 import {
   View,
   Text,
-  Image,
   ScrollView,
   TouchableOpacity,
   StyleSheet,
   Modal,
   Pressable,
 } from 'react-native';
+import { Image as ExpoImage } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import Svg, { Defs, LinearGradient, RadialGradient, Stop, Rect } from 'react-native-svg';
@@ -389,10 +389,10 @@ export default function ProfileScreen() {
           <Text style={styles.backText}>← Hub</Text>
         </TouchableOpacity>
         <View style={styles.titleContainer}>
-          <Image
+          <ExpoImage
             source={require('../../assets/sprites/units/hero/hero_head.png')}
             style={{ width: 24, height: 24 }}
-            resizeMode="contain"
+            contentFit="contain"
           />
           <Text style={styles.titleText}>Profile</Text>
         </View>
@@ -434,10 +434,10 @@ export default function ProfileScreen() {
           {/* Avatar & level badge */}
           <View style={styles.avatarContainer}>
             <View style={styles.avatarCircle}>
-              <Image
+              <ExpoImage
                 source={require('../../assets/sprites/units/hero/hero_idle1.png')}
                 style={{ width: 110, height: 110 }}
-                resizeMode="contain"
+                contentFit="contain"
               />
             </View>
             <View style={styles.levelBadge}>
@@ -868,10 +868,10 @@ export default function ProfileScreen() {
                                 displaySize={36}
                               />
                             ) : (
-                              <Image
+                              <ExpoImage
                                 source={GEAR_ICON_PLACEHOLDER}
                                 style={styles.slotIconImage}
-                                resizeMode="contain"
+                                contentFit="contain"
                               />
                             )
                           )}
@@ -926,10 +926,10 @@ export default function ProfileScreen() {
                             displaySize={36}
                           />
                         ) : (
-                          <Image
+                          <ExpoImage
                             source={GEAR_ICON_PLACEHOLDER}
                             style={{ width: 36, height: 36 }}
-                            resizeMode="contain"
+                            contentFit="contain"
                           />
                         )}
                         <View style={{ flex: 1 }}>
@@ -1042,7 +1042,7 @@ function SpriteFrame({ source, frameIndex, frameSize, totalFrames, displaySize =
   const scale = displaySize / frameSize;
   return (
     <View style={{ width: displaySize, height: displaySize, overflow: 'hidden', opacity }}>
-      <Image
+      <ExpoImage
         source={source}
         style={{
           width: frameSize * totalFrames * scale,
@@ -1051,7 +1051,7 @@ function SpriteFrame({ source, frameIndex, frameSize, totalFrames, displaySize =
           left: -(frameIndex * displaySize),
           top: 0,
         }}
-        resizeMode="stretch"
+        contentFit="fill"
       />
     </View>
   );

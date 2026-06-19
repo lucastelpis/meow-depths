@@ -20,7 +20,7 @@ import { View, Text, Animated, StyleSheet, Easing } from 'react-native';
 import usePreloadAssets from '../hooks/usePreloadAssets';
 
 export default function ScreenLoader({ assets = [], children }) {
-  const ready = usePreloadAssets(assets);
+  const [ready, preloadElements] = usePreloadAssets(assets);
   const overlayOpacity = useRef(new Animated.Value(1)).current;
   const overlayVisible = useRef(true);
 
@@ -63,6 +63,7 @@ export default function ScreenLoader({ assets = [], children }) {
 
   return (
     <View style={styles.root}>
+      {preloadElements}
       {/* Screen content — rendered in background immediately so layout is ready */}
       {children}
 
