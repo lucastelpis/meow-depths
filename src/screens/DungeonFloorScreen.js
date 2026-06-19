@@ -43,40 +43,40 @@ import { calculateEffectiveStats } from '../logic/progressionEngine';
 import ItemSprite from '../components/ItemSprite';
 import { DUNGEON_BANNERS } from '../constants/sprites';
 
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 // ─── Zone config ──────────────────────────────────────────────────────────────
 const ZONE_CONFIG = {
   zone1: {
-    accent:     '#3FB56E',
-    accentDim:  'rgba(63,181,110,0.12)',
+    accent: '#3FB56E',
+    accentDim: 'rgba(63,181,110,0.12)',
     accentGlow: 'rgba(63,181,110,0.18)',
-    border:     'rgba(63,181,110,0.25)',
-    bg:         '#0A120C',
-    bgGrad1:    '#0F1A0F',
-    bgGrad2:    '#07090A',
+    border: 'rgba(63,181,110,0.25)',
+    bg: '#0A120C',
+    bgGrad1: '#0F1A0F',
+    bgGrad2: '#07090A',
     iconSprite: { spritesheet: 'crystals-1', frameIndex: 1 },
     bannerDesc: 'Damp tunnels. Rats, slime, and worse lurk in every shadow.',
   },
   zone2: {
-    accent:     '#A855F7',
-    accentDim:  'rgba(168,85,247,0.12)',
+    accent: '#A855F7',
+    accentDim: 'rgba(168,85,247,0.12)',
     accentGlow: 'rgba(168,85,247,0.18)',
-    border:     'rgba(168,85,247,0.25)',
-    bg:         '#0C0A12',
-    bgGrad1:    '#150F1A',
-    bgGrad2:    '#09060B',
+    border: 'rgba(168,85,247,0.25)',
+    bg: '#0C0A12',
+    bgGrad1: '#150F1A',
+    bgGrad2: '#09060B',
     iconSprite: { spritesheet: 'crystals-1', frameIndex: 5 },
     bannerDesc: 'Overgrown ruins where roots move and fungi glow with malice.',
   },
   zone3: {
-    accent:     '#06B6D4',
-    accentDim:  'rgba(6,182,212,0.12)',
+    accent: '#06B6D4',
+    accentDim: 'rgba(6,182,212,0.12)',
     accentGlow: 'rgba(6,182,212,0.18)',
-    border:     'rgba(6,182,212,0.25)',
-    bg:         '#0A0F1A',
-    bgGrad1:    '#0F151F',
-    bgGrad2:    '#06090B',
+    border: 'rgba(6,182,212,0.25)',
+    bg: '#0A0F1A',
+    bgGrad1: '#0F151F',
+    bgGrad2: '#06090B',
     iconSprite: { spritesheet: 'crystals-1', frameIndex: 9 },
     bannerDesc: 'Salt-crusted wharves haunted by drowned things.',
   },
@@ -93,26 +93,26 @@ const GRID_SIZES = {
 // Difficulty on a 5-star scale: floor 1 starts at half a star, +0.5 per floor,
 // floor 10 ends at a full 5 stars.
 const DIFF_DATA = {
-  1:  { rating: 0.5, color: '#5A9FE0' },
-  2:  { rating: 1.0, color: '#5A9FE0' },
-  3:  { rating: 1.5, color: '#5A9FE0' },
-  4:  { rating: 2.0, color: '#F08A4A' },
-  5:  { rating: 2.5, color: '#F08A4A' },
-  6:  { rating: 3.0, color: '#F08A4A' },
-  7:  { rating: 3.5, color: '#D8483F' },
-  8:  { rating: 4.0, color: '#D8483F' },
-  9:  { rating: 4.5, color: '#D8483F' },
+  1: { rating: 0.5, color: '#5A9FE0' },
+  2: { rating: 1.0, color: '#5A9FE0' },
+  3: { rating: 1.5, color: '#5A9FE0' },
+  4: { rating: 2.0, color: '#F08A4A' },
+  5: { rating: 2.5, color: '#F08A4A' },
+  6: { rating: 3.0, color: '#F08A4A' },
+  7: { rating: 3.5, color: '#D8483F' },
+  8: { rating: 4.0, color: '#D8483F' },
+  9: { rating: 4.5, color: '#D8483F' },
   10: { rating: 5.0, color: '#DD7A86', skull: true },
 };
 
 // Dynamic bag slots computed from player equipment
 const CONSUMABLE_ICONS = {
-  potion:        '🧪',
-  super_potion:  '🧪',
-  mega_potion:   '🧪',
-  ultra_potion:  '🧪',
-  antidote:      '🌿',
-  smoke_vial:    '💨',
+  potion: '🧪',
+  super_potion: '🧪',
+  mega_potion: '🧪',
+  ultra_potion: '🧪',
+  antidote: '🌿',
+  smoke_vial: '💨',
   mystery_chest: '🎁',
 };
 
@@ -172,8 +172,8 @@ export default function DungeonFloorScreen() {
   const zone = ZONES[zoneId];
   const zc = ZONE_CONFIG[zoneId] || ZONE_CONFIG.zone1;
 
-  const floorsCleared   = state.progress.floorsCleared?.[zoneId] || 0;
-  const isZoneCleared   = !!state.progress[`${zoneId}Cleared`];
+  const floorsCleared = state.progress.floorsCleared?.[zoneId] || 0;
+  const isZoneCleared = !!state.progress[`${zoneId}Cleared`];
   const effectiveCleared = isZoneCleared ? 10 : floorsCleared;
 
   // Constants for the circular progress ring
@@ -186,7 +186,7 @@ export default function DungeonFloorScreen() {
   const maxSlots = effectiveStats.bagSlots || 0;
 
   const [selectedFloor, setSelectedFloor] = useState(null);
-  const [loadout, setLoadout]             = useState({});
+  const [loadout, setLoadout] = useState({});
 
   const totalPacked = useMemo(
     () => Object.values(loadout).reduce((s, v) => s + v, 0),
@@ -230,34 +230,34 @@ export default function DungeonFloorScreen() {
   if (!zone) return null;
 
   const selectedStatus = selectedFloor ? getFloorStatus(selectedFloor, effectiveCleared) : null;
-  const selectedDiff   = selectedFloor ? DIFF_DATA[selectedFloor] : null;
+  const selectedDiff = selectedFloor ? DIFF_DATA[selectedFloor] : null;
 
   // ── Render one floor row ────────────────────────────────────────────────────
   const renderFloorRow = (floor) => {
-    const status   = getFloorStatus(floor, effectiveCleared);
-    const diff     = DIFF_DATA[floor];
+    const status = getFloorStatus(floor, effectiveCleared);
+    const diff = DIFF_DATA[floor];
     const isLocked = status === 'locked';
-    const isAvail  = status === 'available';
+    const isAvail = status === 'available';
     const isCleared = status === 'cleared';
-    const isBoss   = floor === 10;
-    const isLast   = floor === 10;
-    const isFirst  = floor === 1;
+    const isBoss = floor === 10;
+    const isLast = floor === 10;
+    const isFirst = floor === 1;
 
     // Rail dot + line colors
-    const dotColor  = isCleared  ? '#3FB56E'
-                    : isAvail    ? (isBoss ? '#DD7A86' : '#F5CF4A')
-                    : 'rgba(255,255,255,0.12)';
+    const dotColor = isCleared ? '#3FB56E'
+      : isAvail ? (isBoss ? '#DD7A86' : '#F5CF4A')
+        : 'rgba(255,255,255,0.12)';
     const lineColor = (floor - 1 < effectiveCleared + 1)
       ? zc.accent + '55'
       : 'rgba(255,255,255,0.06)';
 
     // Card colors — zone-tinted backgrounds for all states
-    const cardBorder = isCleared  ? `${zc.accent}35`
-                     : isAvail    ? (isBoss ? 'rgba(221,122,134,0.5)' : `${zc.accent}70`)
-                     : 'rgba(255,255,255,0.06)';
-    const cardBg    = isCleared  ? `${zc.accent}0A`
-                    : isAvail    ? (isBoss ? 'rgba(221,122,134,0.08)' : `${zc.accent}12`)
-                    : `${zc.accent}05`;
+    const cardBorder = isCleared ? `${zc.accent}35`
+      : isAvail ? (isBoss ? 'rgba(221,122,134,0.5)' : `${zc.accent}70`)
+        : 'rgba(255,255,255,0.06)';
+    const cardBg = isCleared ? `${zc.accent}0A`
+      : isAvail ? (isBoss ? 'rgba(221,122,134,0.08)' : `${zc.accent}12`)
+        : `${zc.accent}05`;
     const cardBorderWidth = isAvail ? 2 : 1;
 
     const rowOpacity = isLocked ? 0.45 : 1;
@@ -414,7 +414,7 @@ export default function DungeonFloorScreen() {
       >
 
         {/* ── Zone Banner ────────────────────────────────────────────── */}
-        <View style={[styles.banner, { borderColor: zc.accent, marginHorizontal: 0, marginTop: 4, marginBottom: 20 }]}>
+        <View style={[styles.banner, { borderColor: zc.accent, width: '100%', marginHorizontal: 0, marginTop: 4, marginBottom: 20 }]}>
           {/* Dungeon artwork as banner background */}
           <Image
             source={DUNGEON_BANNERS[zoneId]}
@@ -425,9 +425,9 @@ export default function DungeonFloorScreen() {
           <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
             <Defs>
               <LinearGradient id="bannerOverlay" x1="0" y1="0" x2="1" y2="0">
-                <Stop offset="0%" stopColor="#000000" stopOpacity="0.82" />
-                <Stop offset="60%" stopColor="#000000" stopOpacity="0.6" />
-                <Stop offset="100%" stopColor="#000000" stopOpacity="0.3" />
+                <Stop offset="0%" stopColor="#000000" stopOpacity="0.92" />
+                <Stop offset="60%" stopColor="#000000" stopOpacity="0.75" />
+                <Stop offset="100%" stopColor="#000000" stopOpacity="0.5" />
               </LinearGradient>
               <RadialGradient id="bannerAccent" cx="85%" cy="50%" rx="55%" ry="75%">
                 <Stop offset="0%" stopColor={zc.accent} stopOpacity="0.18" />
@@ -503,7 +503,7 @@ export default function DungeonFloorScreen() {
                   <Text style={styles.progressRingTotal}>10</Text>
                 </View>
               </View>
-              <Text style={styles.progressRingLabel}>CLEARED</Text>
+              <Text style={styles.progressRingLabel}>ZONES CLEARED</Text>
             </View>
           </View>
         </View>
@@ -524,7 +524,7 @@ export default function DungeonFloorScreen() {
           style={styles.modalBackdrop}
           onPress={() => setSelectedFloor(null)}
         >
-          <Pressable style={styles.modalSheet} onPress={() => {}}>
+          <Pressable style={styles.modalSheet} onPress={() => { }}>
             {/* Sheet SVG background */}
             <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
               <Defs>
@@ -651,17 +651,17 @@ export default function DungeonFloorScreen() {
                           </View>
                           <View style={styles.itemControls}>
                             <TouchableOpacity
-                               style={[styles.counterBtn, packed === 0 && styles.counterBtnDim]}
-                               onPress={() => removeItem(entry.id)}
-                               disabled={packed === 0}
+                              style={[styles.counterBtn, packed === 0 && styles.counterBtnDim]}
+                              onPress={() => removeItem(entry.id)}
+                              disabled={packed === 0}
                             >
                               <Text style={[styles.counterBtnText, packed === 0 && { color: 'rgba(255,255,255,0.2)' }]}>−</Text>
                             </TouchableOpacity>
                             <Text style={styles.packedCount}>{packed}</Text>
                             <TouchableOpacity
-                               style={[styles.counterBtn, !canAdd && styles.counterBtnDim]}
-                               onPress={() => addItem(entry.id)}
-                               disabled={!canAdd}
+                              style={[styles.counterBtn, !canAdd && styles.counterBtnDim]}
+                              onPress={() => addItem(entry.id)}
+                              disabled={!canAdd}
                             >
                               <Text style={[styles.counterBtnText, !canAdd && { color: 'rgba(255,255,255,0.2)' }]}>+</Text>
                             </TouchableOpacity>
@@ -697,9 +697,9 @@ export default function DungeonFloorScreen() {
 }
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
-const RAIL_WIDTH   = 48;
+const RAIL_WIDTH = 48;
 const RAIL_DOT_SIZE = 18;
-const CARD_MARGIN  = 10;
+const CARD_MARGIN = 10;
 
 const styles = StyleSheet.create({
   container: {
@@ -722,7 +722,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   backText: {
-    fontFamily: 'PixelifySans-Regular',
+    fontFamily: 'Jersey10-Regular',
     color: '#D4A754',
     fontSize: 16,
     letterSpacing: 0.5,
@@ -734,7 +734,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   title: {
-    fontFamily: 'PixelifySans-Regular',
+    fontFamily: 'Jersey10-Regular',
     fontSize: 20,
     color: '#F8FAFC',
     letterSpacing: 0.8,
@@ -749,6 +749,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 14,
     marginTop: 12,
     marginBottom: 10,
+    aspectRatio: 600 / 296,
     borderRadius: 18,
     overflow: 'hidden',
     borderWidth: 2,
@@ -804,7 +805,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   bannerDesc: {
-    fontFamily: 'PixelifySans-Regular',
+    fontFamily: 'Jersey10-Regular',
     fontSize: 12,
     color: 'rgba(207,224,238,0.55)',
     lineHeight: 17,
@@ -829,7 +830,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   progressRingCount: {
-    fontFamily: 'PixelifySans-Regular',
+    fontFamily: 'Jersey10-Regular',
     fontWeight: 'normal',
     fontSize: 16,
   },
@@ -979,7 +980,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   floorName: {
-    fontFamily: 'PixelifySans-Regular',
+    fontFamily: 'Jersey10-Regular',
     fontWeight: 'normal',
     fontSize: 14,
     color: '#CFE0EE',
@@ -1166,7 +1167,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   modalFloorName: {
-    fontFamily: 'PixelifySans-Regular',
+    fontFamily: 'Jersey10-Regular',
     fontWeight: 'normal',
     fontSize: 20,
     color: '#F8FAFC',
@@ -1222,7 +1223,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   loadoutTitle: {
-    fontFamily: 'PixelifySans-Regular',
+    fontFamily: 'Jersey10-Regular',
     fontSize: 14,
     fontWeight: 'normal',
     color: '#F8FAFC',
@@ -1254,7 +1255,7 @@ const styles = StyleSheet.create({
     marginBottom: 18,
   },
   emptyText: {
-    fontFamily: 'PixelifySans-Regular',
+    fontFamily: 'Jersey10-Regular',
     fontSize: 12,
     color: 'rgba(207,224,238,0.4)',
     textAlign: 'center',
@@ -1284,7 +1285,7 @@ const styles = StyleSheet.create({
   itemIcon: { fontSize: 19 },
   itemInfo: { flex: 1 },
   itemName: {
-    fontFamily: 'PixelifySans-Regular',
+    fontFamily: 'Jersey10-Regular',
     fontSize: 13,
     fontWeight: 'normal',
     color: '#F0E8D8',
@@ -1315,14 +1316,14 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255,255,255,0.05)',
   },
   counterBtnText: {
-    fontFamily: 'PixelifySans-Regular',
+    fontFamily: 'Jersey10-Regular',
     fontSize: 18,
     color: '#D4A754',
     fontWeight: 'normal',
     lineHeight: 22,
   },
   packedCount: {
-    fontFamily: 'PixelifySans-Regular',
+    fontFamily: 'Jersey10-Regular',
     fontSize: 15,
     fontWeight: 'normal',
     color: '#F8FAFC',
@@ -1342,7 +1343,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   enterBtnText: {
-    fontFamily: 'PixelifySans-Regular',
+    fontFamily: 'Jersey10-Regular',
     color: '#1A1200',
     fontWeight: 'normal',
     fontSize: 15,

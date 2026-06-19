@@ -46,7 +46,7 @@
 | Buff Mint | `#5CC489` | Buffs, success states |
 
 ### Zone background tints
-- Soggy Sewers: green-black `#0A120C`
+- Soggy Ruins: green-black `#0A120C`
 - Twisted Garden: deep green `#0C1A08`
 - Sunken Docks: deep navy `#08101F`
 

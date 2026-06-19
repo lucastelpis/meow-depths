@@ -3,6 +3,10 @@
  *
  * Every creature the player can encounter across the three dungeon zones.
  * Bosses carry `isBoss: true` and define `phaseChanges` for mid-fight events.
+ *
+ * Optional `minFloor` (default 1): the earliest floor of a zone on which the
+ * enemy can spawn in normal/ambush encounters. e.g. `minFloor: 5` means the
+ * creature only starts appearing from floor 5 onward.
  */
 
 // Applied to both HP and ATK at encounter generation time.
@@ -16,15 +20,16 @@ export const STAR_MULTIPLIERS = {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Zone 1 — The Soggy Sewers (Black Crystals)
+// Zone 1 — The Soggy Ruins (Black Crystals)
 // ─────────────────────────────────────────────────────────────────────────────
 
 // Zone 1 — skittery melee
 const sewer_rat = {
   id: 'sewer_rat',
-  name: 'Sewer Rat',
+  name: 'Rat Warrior',
+  lore: "They move before you see them move. Fast, low, always at the edge of the light. They've been in these tunnels longer than anyone. You can tell. They don't seem afraid of you. They seem like they're waiting for you to make a mistake.",
   stars: 1,
-  hp: 35,
+  hp: 20,
   attack: 5,
   def: 0,
   dodge: 0.10,
@@ -52,8 +57,9 @@ const sewer_rat = {
 const slimeling = {
   id: 'slimeling',
   name: 'Slimeling',
+  lore: "It doesn't rush. It doesn't need to — whatever it leaves on you does the work. The residue it coats things with is warm. That's the part that stays with you. I don't know what it is. I'm not sure it matters",
   stars: 1,
-  hp: 40,
+  hp: 25,
   attack: 4,
   def: 0,
   dodge: 0.00,
@@ -85,13 +91,15 @@ const slimeling = {
 const cockroach_knight = {
   id: 'cockroach_knight',
   name: 'Cockroach Knight',
+  lore: "The armor is assembled from things found in the ruins. It chose each piece. It doesn't attack immediately. It watches first. Assesses. I've fought things that were aggressive. This one was something else. Careful.",
   stars: 2,
-  hp: 50,
+  hp: 35,
   attack: 7,
   def: 3,
   dodge: 0.00,
   crit: 0.00,
   zone: 1,
+  minFloor: 3, // DEF-stacking tank; debuts on floor 3+ after the 1★ trio teaches the basics
   isBoss: false,
   isElite: false,
   baseXp: 30,
@@ -126,8 +134,9 @@ const cockroach_knight = {
 const plague_frog = {
   id: 'plague_frog',
   name: 'Plague Frog',
+  lore: "It didn't attack until I stepped into its space. Then it didn't stop. Whatever it carries in its skin, the bite delivers it directly. It looked at me for a long time after. Like it was waiting to see what happened.",
   stars: 1,
-  hp: 45,
+  hp: 30,
   attack: 5,
   def: 0,
   dodge: 0.05,
@@ -161,6 +170,7 @@ const plague_frog = {
 const king_rat = {
   id: 'king_rat',
   name: 'King Rat',
+  lore: "He's way larger and stronger than other rats. When he's wounded he doesn't seem to retreat. He gets more aggressive. The crown doesn't fit him. He wears it anyway. He's been wearing it a long time.",
   stars: 5,
   hp: 1000,
   attack: 30,
@@ -216,6 +226,7 @@ const king_rat = {
 const thorn_sprite = {
   id: 'thorn_sprite',
   name: 'Thorn Sprite',
+  lore: 'Born from seed stock the scholars tried to save. It grew faster than they could record, and learned to move while they slept.',
   stars: 2,
   hp: 130,
   attack: 12,
@@ -239,6 +250,7 @@ const thorn_sprite = {
 const giant_beetle = {
   id: 'giant_beetle',
   name: 'Giant Beetle',
+  lore: 'It fed on the accelerated growth until the growth began feeding on everything else. Now it simply endures, armored and patient.',
   stars: 2,
   hp: 160,
   attack: 10,
@@ -261,6 +273,7 @@ const giant_beetle = {
 const mushroom_puffer = {
   id: 'mushroom_puffer',
   name: 'Mushroom Puffer',
+  lore: 'Its spores carry the same wrongness that crept through the greenhouse soil. Breathe deep enough and you join the garden.',
   stars: 1,
   hp: 135,
   attack: 9,
@@ -283,6 +296,7 @@ const mushroom_puffer = {
 const vine_lurker = {
   id: 'vine_lurker',
   name: 'Vine Lurker',
+  lore: 'The roots learned to wait. They remember which corridors the living still use, and they hold very, very still until they pass.',
   stars: 2,
   hp: 150,
   attack: 13,
@@ -305,6 +319,7 @@ const vine_lurker = {
 const rootmother = {
   id: 'rootmother',
   name: 'Rootmother',
+  lore: 'The heart the garden grew for itself once the last caretaker fell silent. The roots frame her like something they were always meant to protect.',
   stars: 5,
   hp: 600,
   attack: 25,
@@ -344,6 +359,7 @@ const rootmother = {
 const barnacle_crab = {
   id: 'barnacle_crab',
   name: 'Barnacle Crab',
+  lore: 'Crusted with the hulls of boats that never came back. It scuttles through the places the tide left the dead.',
   stars: 3,
   hp: 240,
   attack: 16,
@@ -367,6 +383,7 @@ const barnacle_crab = {
 const sea_witch_eel = {
   id: 'sea_witch_eel',
   name: 'Sea Witch Eel',
+  lore: 'It coiled in the water the biologist could find no words for. The sailors who saw it called it a hex, and they were not wrong.',
   stars: 3,
   hp: 200,
   attack: 20,
@@ -389,6 +406,7 @@ const sea_witch_eel = {
 const drowned_sailor = {
   id: 'drowned_sailor',
   name: 'Drowned Sailor',
+  lore: 'One of the many who booked passage and never made shore. The water gave back the body but kept everything that made it a person.',
   stars: 3,
   hp: 220,
   attack: 17,
@@ -415,6 +433,7 @@ const drowned_sailor = {
 const pufferfish_bomb = {
   id: 'pufferfish_bomb',
   name: 'Pufferfish Bomb',
+  lore: 'Bloated with the poison of the changed sea, it bursts the moment it is certain you are close enough to share it.',
   stars: 3,
   hp: 180,
   attack: 25,
@@ -422,6 +441,7 @@ const pufferfish_bomb = {
   dodge: 0.00,
   crit: 0.00,
   zone: 3,
+  minFloor: 3, // mechanical outlier (self-destruct punishes target priority); debuts on floor 3+
   isBoss: false,
   isElite: false,
   baseXp: 115,
@@ -437,6 +457,7 @@ const pufferfish_bomb = {
 const captain_moray = {
   id: 'captain_moray',
   name: 'Captain Moray',
+  lore: 'Master of the last port, anchored to the wreck of his final voyage. He will not let go of the harbor, and he will not let you leave it.',
   stars: 5,
   hp: 900,
   attack: 30,

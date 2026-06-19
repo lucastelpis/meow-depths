@@ -41,6 +41,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { ZONES } from '../data/zones';
 import { ZONE_COMBAT_POOLS } from '../logic/dungeonGenerator';
 import { MATERIALS, CONSUMABLES, GEAR } from '../data/gear';
+import { getNote, NOTE_SPRITE } from '../data/notes';
 import { calculateEffectiveStats, getXpForLevel, applyHealingEfficiency } from '../logic/progressionEngine';
 import { generateTreasureDrops } from '../logic/lootEngine';
 import Button from '../components/ui/Button';
@@ -152,7 +153,7 @@ const ZONE_SPRITES = {
 // Zone themes config — aligned to design system palette
 const ZONE_THEMES = {
   zone1: {
-    bg: '#0A120C',   // sewerBlack (Soggy Sewers)
+    bg: '#0A120C',   // sewerBlack (Soggy Ruins)
     accent: '#3FB56E',  // healthGreen
     accentGlow: 'rgba(63, 181, 110, 0.08)',
     border: 'rgba(63, 181, 110, 0.22)',
@@ -180,7 +181,7 @@ const renderCellSVG = (zoneId, tile, isPlayerHere, isFog) => {
   let accentColor = '#D4A754';
   
   if (zoneId === 'zone1') {
-    // Soggy Sewers — design system sewerBlack palette
+    // Soggy Ruins — design system sewerBlack palette
     bgStart = isFog ? '#060B06' : '#0B170B';
     bgEnd = isFog ? '#020402' : '#040904';
     elementColor = isFog ? 'rgba(63, 181, 110, 0.04)' : 'rgba(63, 181, 110, 0.12)';
@@ -1355,6 +1356,30 @@ export default function DungeonMapScreen({ navigation }) {
                 : <Text style={[styles.noLostLootText, { textAlign: 'center', marginBottom: 12 }]}>No loot collected.</Text>
               }
 
+              {/* Field Note — awarded on first-time clear of this floor */}
+              {(() => {
+                const isFirstClear =
+                  (currentRun.floorNumber || 1) >
+                  (state.progress.floorsCleared?.[currentRun.zoneId] || 0);
+                const note = isFirstClear
+                  ? getNote(currentRun.zoneId, currentRun.floorNumber || 1)
+                  : null;
+                if (!note) return null;
+                return (
+                  <View style={styles.noteFound}>
+                    <ItemSprite
+                      spritesheet={NOTE_SPRITE.spritesheet}
+                      frameIndex={NOTE_SPRITE.frameIndex}
+                      displaySize={28}
+                    />
+                    <View style={{ flex: 1, marginLeft: 10 }}>
+                      <Text style={styles.noteFoundLabel}>Field Note Discovered</Text>
+                      <Text style={styles.noteFoundTitle}>{note.title}</Text>
+                    </View>
+                  </View>
+                );
+              })()}
+
               <TouchableOpacity activeOpacity={0.85} onPress={handleFloorComplete} style={[styles.cozyButton, { marginTop: 12 }]}>
                 <View style={styles.cozyButtonInner}>
                   <Text style={styles.cozyButtonText}>Return to Camp</Text>
@@ -1966,7 +1991,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   confirmBtnText: {
-    fontFamily: 'PixelifySans-Regular',
+    fontFamily: 'Jersey10-Regular',
     fontSize: 13,
     color: '#1A1200',
     fontWeight: 'normal',
@@ -2033,7 +2058,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   lostLootTitle: {
-    fontFamily: 'PixelifySans-Regular',
+    fontFamily: 'Jersey10-Regular',
     fontSize: 12,
     color: '#EF4444',
     fontWeight: 'normal',
@@ -2047,19 +2072,19 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
   },
   lostLootGold: {
-    fontFamily: 'PixelifySans-Regular',
+    fontFamily: 'Jersey10-Regular',
     color: '#707F94',
     fontSize: 15,
     textDecorationLine: 'line-through',
   },
   lostLootXp: {
-    fontFamily: 'PixelifySans-Regular',
+    fontFamily: 'Jersey10-Regular',
     color: '#707F94',
     fontSize: 15,
     textDecorationLine: 'line-through',
   },
   deathRecoverMsg: {
-    fontFamily: 'PixelifySans-Regular',
+    fontFamily: 'Jersey10-Regular',
     fontSize: 12,
     color: '#E2E8F0',
     textAlign: 'center',
@@ -2092,7 +2117,7 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(239, 68, 68, 0.25)',
   },
   actionMapBtnText: {
-    fontFamily: 'PixelifySans-Regular',
+    fontFamily: 'Jersey10-Regular',
     fontSize: 13,
     fontWeight: 'normal',
     color: '#F8FAFC',
@@ -2137,13 +2162,13 @@ const styles = StyleSheet.create({
     fontSize: 15,
   },
   bagLootText: {
-    fontFamily: 'PixelifySans-Regular',
+    fontFamily: 'Jersey10-Regular',
     fontSize: 12,
     color: '#F8FAFC',
     fontWeight: 'normal',
   },
   emptyBagText: {
-    fontFamily: 'PixelifySans-Regular',
+    fontFamily: 'Jersey10-Regular',
     fontSize: 13,
     color: '#707F94',
     textAlign: 'center',
@@ -2184,7 +2209,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   bagItemName: {
-    fontFamily: 'PixelifySans-Regular',
+    fontFamily: 'Jersey10-Regular',
     fontSize: 13,
     fontWeight: 'normal',
     color: '#F8FAFC',
@@ -2215,7 +2240,7 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255, 255, 255, 0.05)',
   },
   bagItemUseBtnText: {
-    fontFamily: 'PixelifySans-Regular',
+    fontFamily: 'Jersey10-Regular',
     fontSize: 12,
     fontWeight: 'normal',
     color: '#D4A754',
@@ -2234,7 +2259,7 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   closeBagBtnText: {
-    fontFamily: 'PixelifySans-Regular',
+    fontFamily: 'Jersey10-Regular',
     fontSize: 13,
     fontWeight: 'normal',
     color: '#707F94',
@@ -2329,7 +2354,7 @@ const styles = StyleSheet.create({
     color: '#FFF',
   },
   fleeButtonText: {
-    fontFamily: 'PixelifySans-Regular',
+    fontFamily: 'Jersey10-Regular',
     color: '#EF4444',
     fontWeight: 'normal',
     fontSize: 14,
@@ -2345,7 +2370,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   fleeCostWarning: {
-    fontFamily: 'PixelifySans-Regular',
+    fontFamily: 'Jersey10-Regular',
     fontSize: 12,
     color: '#EF4444',
     fontWeight: 'normal',
@@ -2366,13 +2391,13 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   retainedGold: {
-    fontFamily: 'PixelifySans-Regular',
+    fontFamily: 'Jersey10-Regular',
     color: '#FBBF24',
     fontWeight: 'normal',
     fontSize: 15,
   },
   retainedLootItemText: {
-    fontFamily: 'PixelifySans-Regular',
+    fontFamily: 'Jersey10-Regular',
     color: '#E2E8F0',
     fontSize: 13,
   },
@@ -2393,7 +2418,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#EF4444',
   },
   fleeConfirmBtnText: {
-    fontFamily: 'PixelifySans-Regular',
+    fontFamily: 'Jersey10-Regular',
     fontSize: 13,
     color: '#FFF',
     fontWeight: 'normal',
@@ -2406,7 +2431,7 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255, 255, 255, 0.12)',
   },
   fleeCancelBtnText: {
-    fontFamily: 'PixelifySans-Regular',
+    fontFamily: 'Jersey10-Regular',
     fontSize: 13,
     color: '#F8FAFC',
     fontWeight: 'normal',
@@ -2452,6 +2477,33 @@ const styles = StyleSheet.create({
     fontSize: 9,
     color: 'rgba(207,224,238,0.5)',
     marginBottom: 6,
+  },
+
+  // ── Field Note discovered callout (floor-clear modal) ────────
+  noteFound: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'stretch',
+    marginTop: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+    borderWidth: 1.5,
+    borderColor: '#C9A86A',
+    backgroundColor: 'rgba(201,168,106,0.18)',
+  },
+  noteFoundLabel: {
+    ...theme.FONTS.label,
+    fontSize: 8,
+    color: '#8A6E44',
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+    marginBottom: 2,
+  },
+  noteFoundTitle: {
+    fontFamily: 'Jersey10-Regular',
+    fontSize: 13,
+    color: '#5A4528',
   },
 
   // ── Sealed Boss and Player Glow ──────────────────────────────
@@ -2623,7 +2675,7 @@ const styles = StyleSheet.create({
     zIndex: 2,
   },
   cozyGoldText: {
-    fontFamily: 'PixelifySans-Regular',
+    fontFamily: 'Jersey10-Regular',
     fontSize: 16,
     color: '#A85A00',
     fontWeight: 'bold',
@@ -2640,7 +2692,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   cozyChoiceCardText: {
-    fontFamily: 'PixelifySans-Regular',
+    fontFamily: 'Jersey10-Regular',
     fontSize: 12,
     color: '#4A2E14',
     fontWeight: 'bold',

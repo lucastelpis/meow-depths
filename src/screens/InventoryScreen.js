@@ -27,33 +27,33 @@ import ItemSprite from '../components/ItemSprite';
 // ─── Tabs ────────────────────────────────────────────────────────────────────
 const TABS = [
   { key: 'consumables', frameIndex: 26, label: 'Supplies' },
-  { key: 'gear',        frameIndex: 10, label: 'Gear'  },
-  { key: 'crafting',    frameIndex: 29, label: 'Materials'  },
+  { key: 'gear', frameIndex: 10, label: 'Gear' },
+  { key: 'crafting', frameIndex: 29, label: 'Materials' },
 ];
 
 
 
 const GEAR_TYPE_ICON = {
-  weapon:  '⚔️',
-  chest:   '🛡️',
+  weapon: '⚔️',
+  chest: '🛡️',
   trinket: '💎',
 };
 
 // ─── Consumable icons ─────────────────────────────────────────────────────────
 const CONSUMABLE_ICONS = {
-  potion:        '🧪',
-  super_potion:  '🧪',
-  mega_potion:   '🧪',
-  ultra_potion:  '🧪',
-  antidote:      '🌿',
-  smoke_vial:    '💨',
+  potion: '🧪',
+  super_potion: '🧪',
+  mega_potion: '🧪',
+  ultra_potion: '🧪',
+  antidote: '🌿',
+  smoke_vial: '💨',
   mystery_chest: '🎁',
 };
 
 // ─── Material zone groupings ──────────────────────────────────────────────────
 const MATERIAL_ZONES = [
   {
-    label: 'Soggy Sewers',
+    label: 'Soggy Ruins',
     zoneColor: '#3FB56E',
     emoji: '🖤',
     ids: ['black_shard', 'black_crystal_small', 'black_crystal_big', 'black_crystal_core'],
@@ -148,7 +148,7 @@ const LORE_DESCRIPTIONS = {
   sewer_shiv: "A jagged piece of metal wrapped in dirty rags. Crude, but dangerous.",
   rat_hide_vest: "Tough leather made from sewer rats. Surprisingly flexible and waterproof.",
   slimecrawler_shell: "A hardened shell coated in slick mucus. Repels toxic liquids.",
-  plague_cloak: "A tattered cowl that has survived the worst of the sewers.",
+  plague_cloak: "A tattered cowl that has survived the worst of the soggyness.",
   gnarlcrown: "A crown woven from thorny roots. Increases precision in combat.",
   cockroach_carapace: "A shield-like plate made of thick insect shell. Highly durable.",
   thorn_dagger: "A weapon crafted from giant garden thorns. Coated in natural toxins.",
@@ -217,18 +217,18 @@ export default function InventoryScreen() {
       return 'core';
     };
     for (let i = 0; i < 3; i++) {
-      const fam  = families[Math.floor(Math.random() * families.length)];
+      const fam = families[Math.floor(Math.random() * families.length)];
       const tier = rollTier();
-      const key  = tier === 'shard' ? `${fam}_shard`
-                 : tier === 'core'  ? `${fam}_crystal_core`
-                 : `${fam}_${tier}`;
+      const key = tier === 'shard' ? `${fam}_shard`
+        : tier === 'core' ? `${fam}_crystal_core`
+          : `${fam}_${tier}`;
       rolledMaterials[key] = (rolledMaterials[key] || 0) + 1;
     }
     const lines = [`💰 ${rolledGold} gold`];
     Object.entries(rolledMaterials).forEach(([id, qty]) => {
       let e = '💎';
-      if (id.startsWith('black'))  e = '🖤';
-      if (id.startsWith('green'))  e = '💚';
+      if (id.startsWith('black')) e = '🖤';
+      if (id.startsWith('green')) e = '💚';
       if (id.startsWith('yellow')) e = '💛';
       lines.push(`${e} ${MATERIALS[id]?.name || id} ×${qty}`);
     });
@@ -254,8 +254,8 @@ export default function InventoryScreen() {
     return (
       <View style={styles.gridContainer}>
         {items.map((entry) => {
-          const def     = CONSUMABLES.find(c => c.id === entry.id);
-          const icon    = CONSUMABLE_ICONS[entry.id] || '🧪';
+          const def = CONSUMABLES.find(c => c.id === entry.id);
+          const icon = CONSUMABLE_ICONS[entry.id] || '🧪';
           const iconSize = def?.spritesheet === 'icons-1' ? 48 : 42;
           return (
             <TouchableOpacity
@@ -507,8 +507,8 @@ export default function InventoryScreen() {
         key={activeTab}
       >
         {activeTab === 'consumables' && renderConsumables()}
-        {activeTab === 'crafting'    && renderCrafting()}
-        {activeTab === 'gear'        && renderGear()}
+        {activeTab === 'crafting' && renderCrafting()}
+        {activeTab === 'gear' && renderGear()}
       </ScrollView>
 
       {/* ── Details Popup Modal ──────────────────────────────── */}
@@ -566,18 +566,18 @@ export default function InventoryScreen() {
                   showEquipBtn = true;
 
                   if (selectedItem.stats) {
-                    if (selectedItem.stats.attack)     statsList.push({ label: 'ATK', value: `+${selectedItem.stats.attack}`, emoji: '⚔️' });
-                    if (selectedItem.stats.defence)    statsList.push({ label: 'DEF', value: `+${selectedItem.stats.defence}`, emoji: '🛡️' });
-                    if (selectedItem.stats.maxHp)      statsList.push({ label: 'HP', value: `+${selectedItem.stats.maxHp}`, emoji: '❤️', color: '#EF4444' });
+                    if (selectedItem.stats.attack) statsList.push({ label: 'ATK', value: `+${selectedItem.stats.attack}`, emoji: '⚔️' });
+                    if (selectedItem.stats.defence) statsList.push({ label: 'DEF', value: `+${selectedItem.stats.defence}`, emoji: '🛡️' });
+                    if (selectedItem.stats.maxHp) statsList.push({ label: 'HP', value: `+${selectedItem.stats.maxHp}`, emoji: '❤️', color: '#EF4444' });
                     if (selectedItem.stats.critChance) statsList.push({ label: 'CRIT', value: pct(selectedItem.stats.critChance), emoji: '💥', color: '#FBBF24' });
-                    if (selectedItem.stats.dodge)      statsList.push({ label: 'DODGE', value: pct(selectedItem.stats.dodge), emoji: '💨', color: '#06B6D4' });
+                    if (selectedItem.stats.dodge) statsList.push({ label: 'DODGE', value: pct(selectedItem.stats.dodge), emoji: '💨', color: '#06B6D4' });
                     if (selectedItem.stats.bleedChance) statsList.push({ label: 'BLEED', value: pct(selectedItem.stats.bleedChance), emoji: '🩸', color: '#EF4444' });
                     if (selectedItem.stats.poisonChance) statsList.push({ label: 'POISON', value: pct(selectedItem.stats.poisonChance), emoji: '🤢', color: '#10B981' });
                     if (selectedItem.stats.stunChance) statsList.push({ label: 'STUN', value: pct(selectedItem.stats.stunChance), emoji: '⚡', color: '#FBBF24' });
                     if (selectedItem.stats.poisonImmune) statsList.push({ label: 'IMMUNITY', value: 'Poison', emoji: '🟢', color: '#10B981' });
                     if (selectedItem.stats.skillDamage) statsList.push({ label: 'SKILL DMG', value: `+${pct(selectedItem.stats.skillDamage)}`, emoji: '✨', color: '#A855F7' });
                     if (selectedItem.stats.bleedExtraDamage) statsList.push({ label: 'BLEED DMG', value: `+${selectedItem.stats.bleedExtraDamage}`, emoji: '🩸', color: '#EF4444' });
-                    if (selectedItem.stats.bagSlots)   statsList.push({ label: 'Bag Slots', value: `+${selectedItem.stats.bagSlots}`, emoji: '🎒', color: '#D4A754' });
+                    if (selectedItem.stats.bagSlots) statsList.push({ label: 'Bag Slots', value: `+${selectedItem.stats.bagSlots}`, emoji: '🎒', color: '#D4A754' });
                   }
                 }
 
@@ -909,7 +909,7 @@ const styles = StyleSheet.create({
   cardIcon: { fontSize: 22 },
   cardInfo: { flex: 1, justifyContent: 'center' },
   cardName: {
-    fontFamily: 'PixelifySans-Regular',
+    fontFamily: 'Jersey10-Regular',
     fontSize: 14,
     color: '#F8FAFC',
     fontWeight: 'normal',
@@ -931,7 +931,7 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(212,167,84,0.2)',
   },
   qtyText: {
-    fontFamily: 'PixelifySans-Regular',
+    fontFamily: 'Jersey10-Regular',
     fontSize: 14,
     color: '#D4A754',
     fontWeight: 'normal',
@@ -946,7 +946,7 @@ const styles = StyleSheet.create({
     flexShrink: 0,
   },
   openChestText: {
-    fontFamily: 'PixelifySans-Regular',
+    fontFamily: 'Jersey10-Regular',
     fontSize: 12,
     fontWeight: 'normal',
     color: '#1A1200',
@@ -999,7 +999,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   materialName: {
-    fontFamily: 'PixelifySans-Regular',
+    fontFamily: 'Jersey10-Regular',
     fontSize: 13,
     color: '#CFE0EE',
     flex: 1,
@@ -1012,7 +1012,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   materialQty: {
-    fontFamily: 'PixelifySans-Regular',
+    fontFamily: 'Jersey10-Regular',
     fontSize: 12,
     fontWeight: 'normal',
   },
@@ -1022,7 +1022,7 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   subSectionTitle: {
-    fontFamily: 'PixelifySans-Regular',
+    fontFamily: 'Jersey10-Regular',
     fontWeight: 'normal',
     fontSize: 13,
     color: '#D4A754',
@@ -1040,13 +1040,13 @@ const styles = StyleSheet.create({
     zIndex: 2,
   },
   setBonusName: {
-    fontFamily: 'PixelifySans-Regular',
+    fontFamily: 'Jersey10-Regular',
     fontSize: 14,
     color: '#D4A754',
     fontWeight: 'normal',
   },
   setBonusDesc: {
-    fontFamily: 'PixelifySans-Regular',
+    fontFamily: 'Jersey10-Regular',
     fontSize: 12,
     color: 'rgba(255,255,255,0.5)',
     marginTop: 5,
@@ -1074,7 +1074,7 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(212,167,84,0.15)',
   },
   gearStats: {
-    fontFamily: 'PixelifySans-Regular',
+    fontFamily: 'Jersey10-Regular',
     fontSize: 12,
     color: '#D4A754',
     marginTop: 3,
@@ -1090,7 +1090,7 @@ const styles = StyleSheet.create({
     flexShrink: 0,
   },
   equipBtnText: {
-    fontFamily: 'PixelifySans-Regular',
+    fontFamily: 'Jersey10-Regular',
     fontSize: 12,
     color: '#F8FAFC',
     fontWeight: 'normal',
@@ -1136,14 +1136,14 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   emptyTitle: {
-    fontFamily: 'PixelifySans-Regular',
+    fontFamily: 'Jersey10-Regular',
     fontSize: 15,
     fontWeight: 'normal',
     color: 'rgba(255,243,218,0.6)',
     marginBottom: 6,
   },
   emptyDesc: {
-    fontFamily: 'PixelifySans-Regular',
+    fontFamily: 'Jersey10-Regular',
     fontSize: 12,
     color: 'rgba(255,243,218,0.4)',
     textAlign: 'center',
@@ -1315,7 +1315,7 @@ const styles = StyleSheet.create({
     zIndex: 15,
   },
   modalTitleText: {
-    fontFamily: 'PixelifySans-Regular',
+    fontFamily: 'Jersey10-Regular',
     fontSize: 22,
     fontWeight: 'normal',
     color: '#FFFFFF',
@@ -1327,7 +1327,7 @@ const styles = StyleSheet.create({
     textShadowRadius: 4,
   },
   modalStatusText: {
-    fontFamily: 'PixelifySans-Regular',
+    fontFamily: 'Jersey10-Regular',
     fontSize: 12,
     color: 'rgba(255, 255, 255, 0.5)',
     fontWeight: 'normal',
@@ -1458,7 +1458,7 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   modalCloseText: {
-    fontFamily: 'PixelifySans-Regular',
+    fontFamily: 'Jersey10-Regular',
     fontSize: 13,
     color: 'rgba(255, 255, 255, 0.65)',
     fontWeight: 'normal',
@@ -1476,7 +1476,7 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   modalConfirmText: {
-    fontFamily: 'PixelifySans-Regular',
+    fontFamily: 'Jersey10-Regular',
     fontSize: 13,
     color: '#120C00',
     fontWeight: 'normal',
@@ -1494,7 +1494,7 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   modalUnequipText: {
-    fontFamily: 'PixelifySans-Regular',
+    fontFamily: 'Jersey10-Regular',
     fontSize: 13,
     color: '#EF4444',
     fontWeight: 'normal',

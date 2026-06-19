@@ -31,6 +31,7 @@ import ShopScreen from './src/screens/ShopScreen';
 import SkillTreeScreen from './src/screens/SkillTreeScreen';
 import LoadoutScreen from './src/screens/LoadoutScreen';
 import ProfileScreen from './src/screens/ProfileScreen';
+import JournalScreen from './src/screens/JournalScreen';
 import DungeonMapScreen from './src/screens/DungeonMapScreen';
 import DungeonFloorScreen from './src/screens/DungeonFloorScreen';
 import NameInputScreen from './src/screens/NameInputScreen';
@@ -49,6 +50,7 @@ const APP_FONTS = {
   'PixelifySans-Regular': require('./assets/fonts/PixelifySans-Regular.ttf'),
   'PixelifySans-Medium': require('./assets/fonts/PixelifySans-Medium.ttf'),
   'Silkscreen-Regular': require('./assets/fonts/Silkscreen-Regular.ttf'),
+  'Jersey10-Regular': require('./assets/fonts/Jersey10-Regular.ttf'),
 };
 
 /**
@@ -94,6 +96,7 @@ function AppNavigator() {
             <Stack.Screen name="SkillTree" component={SkillTreeScreen} />
             <Stack.Screen name="Loadout" component={LoadoutScreen} />
             <Stack.Screen name="Profile" component={ProfileScreen} />
+            <Stack.Screen name="Journal" component={JournalScreen} />
           </>
         )}
       </Stack.Navigator>

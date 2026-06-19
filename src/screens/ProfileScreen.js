@@ -57,6 +57,78 @@ const TABS = [
   { key: 'equipment', frameIndex: 10, label: 'Gear' },
 ];
 
+// ─── Stat & attribute explanations (shown in the (i) info popup) ──────────────
+const STAT_INFO = {
+  // Core attributes
+  str: {
+    title: 'Strength',
+    color: '#F9D99A',
+    desc: "Mochi's raw physical might — the muscle behind every claw swipe.",
+    effects: ['+1 Attack per point'],
+  },
+  agi: {
+    title: 'Agility',
+    color: '#06B6D4',
+    desc: 'Reflexes and footwork. Helps land critical hits and slip past blows.',
+    effects: ['+0.5% Crit Rate per point', '+0.5% Dodge Rate per point'],
+  },
+  vit: {
+    title: 'Vitality',
+    color: '#5CC489',
+    desc: 'Toughness and resilience. Keeps Mochi standing and shrugging off ailments.',
+    effects: ['+5 Max HP per point', '+0.5% Status Resistance per point'],
+  },
+  // Combat stats
+  atk: {
+    title: 'Attack',
+    color: theme.COLORS.candleGold,
+    desc: 'The base power of Mochi\'s hits, before the enemy\'s defence is applied.',
+    effects: ['Strength (+1 per point)', 'Weapons & gear', 'Set bonuses', 'Fire stance (+ATK%)'],
+  },
+  def: {
+    title: 'Defence',
+    color: theme.COLORS.candleGold,
+    desc: 'Reduces incoming damage on a diminishing-returns curve (min 1 dmg).',
+    effects: ['Armor & gear', 'Earth stance (+1 DEF/level)', 'Set bonuses'],
+  },
+  maxHp: {
+    title: 'Max HP',
+    color: theme.COLORS.candleGold,
+    desc: 'Total health. If it reaches 0, the expedition ends.',
+    effects: ['Vitality (+5 per point)', 'Gear & set bonuses', 'Water stance (+HP%)'],
+  },
+  bagSlots: {
+    title: 'Bag Slots',
+    color: theme.COLORS.candleGold,
+    desc: 'How many consumables Mochi can pack to bring on an expedition.',
+    effects: ['Storage gear'],
+  },
+  critRate: {
+    title: 'Crit Rate',
+    color: theme.COLORS.candleGold,
+    desc: 'Chance for an attack to land as a critical hit for bonus damage.',
+    effects: ['Agility (+0.5% per point)', 'Gear', 'Wind stance'],
+  },
+  critDmg: {
+    title: 'Crit Damage',
+    color: theme.COLORS.candleGold,
+    desc: 'The damage multiplier applied when an attack crits.',
+    effects: ['Base 150%', 'Critical Wind passive'],
+  },
+  dodge: {
+    title: 'Dodge Rate',
+    color: theme.COLORS.candleGold,
+    desc: 'Chance to avoid an incoming attack entirely, taking no damage.',
+    effects: ['Agility (+0.5% per point)', 'Swiftness passive', 'Gear', 'Wind stance'],
+  },
+  statusRes: {
+    title: 'Status Resistance',
+    color: theme.COLORS.candleGold,
+    desc: 'Chance to resist an incoming status effect such as bleed or stun.',
+    effects: ['Vitality (+0.5% per point)', 'Fortitude passive', 'Capped at 90%'],
+  },
+};
+
 // ─── Equipment slot config ────────────────────────────────────────────────────
 const SLOT_CONFIG = [
   { key: 'head',     label: 'Head',     emoji: '🪖' },
@@ -99,6 +171,9 @@ export default function ProfileScreen() {
   const [tempStrAlloc, setTempStrAlloc] = useState(0);
   const [tempAgiAlloc, setTempAgiAlloc] = useState(0);
   const [tempVitAlloc, setTempVitAlloc] = useState(0);
+
+  // Which stat's info popup is open (null = closed)
+  const [infoStat, setInfoStat] = useState(null);
 
   const totalAllocated = tempStrAlloc + tempAgiAlloc + tempVitAlloc;
   const remainingPoints = (hero.statPoints || 0) - totalAllocated;
@@ -437,6 +512,14 @@ export default function ProfileScreen() {
             <View style={styles.attributeGrid}>
               {/* Strength Card */}
               <View style={[styles.attributeCard, { borderColor: 'rgba(212, 167, 84, 0.25)' }]}>
+                <TouchableOpacity
+                  style={styles.infoTag}
+                  onPress={() => setInfoStat('str')}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  activeOpacity={0.6}
+                >
+                  <Text style={styles.infoTagText}>?</Text>
+                </TouchableOpacity>
                 <View style={styles.attributeHeader}>
                   <ItemSprite spritesheet="icons-1" frameIndex={21} displaySize={20} />
                   <Text style={[styles.attributeLabel, { color: '#F9D99A' }]}>STR</Text>
@@ -465,11 +548,18 @@ export default function ProfileScreen() {
                     </TouchableOpacity>
                   </View>
                 )}
-                <Text style={styles.attributeSubLabel}>+1 ATK/pt</Text>
               </View>
 
               {/* Agility Card */}
               <View style={[styles.attributeCard, { borderColor: 'rgba(6, 182, 212, 0.25)' }]}>
+                <TouchableOpacity
+                  style={styles.infoTag}
+                  onPress={() => setInfoStat('agi')}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  activeOpacity={0.6}
+                >
+                  <Text style={styles.infoTagText}>?</Text>
+                </TouchableOpacity>
                 <View style={styles.attributeHeader}>
                   <ItemSprite spritesheet="icons-1" frameIndex={20} displaySize={20} />
                   <Text style={[styles.attributeLabel, { color: '#06B6D4' }]}>AGI</Text>
@@ -498,11 +588,18 @@ export default function ProfileScreen() {
                     </TouchableOpacity>
                   </View>
                 )}
-                <Text style={styles.attributeSubLabel}>+0.5% CRT/DDG</Text>
               </View>
 
               {/* Vitality Card */}
               <View style={[styles.attributeCard, { borderColor: 'rgba(92, 196, 137, 0.25)' }]}>
+                <TouchableOpacity
+                  style={styles.infoTag}
+                  onPress={() => setInfoStat('vit')}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  activeOpacity={0.6}
+                >
+                  <Text style={styles.infoTagText}>?</Text>
+                </TouchableOpacity>
                 <View style={styles.attributeHeader}>
                   <ItemSprite spritesheet="icons-1" frameIndex={22} displaySize={20} />
                   <Text style={[styles.attributeLabel, { color: '#5CC489' }]}>VIT</Text>
@@ -531,7 +628,6 @@ export default function ProfileScreen() {
                     </TouchableOpacity>
                   </View>
                 )}
-                <Text style={styles.attributeSubLabel}>+5 HP</Text>
               </View>
             </View>
 
@@ -557,50 +653,76 @@ export default function ProfileScreen() {
 
             {/* Combat Stats Grid */}
             <Text style={[styles.sectionTitle, { marginTop: 14 }]}>Combat Stats</Text>
-            <View style={[styles.statsRow, { marginBottom: 16 }]}>
+            <View style={styles.statsRow}>
               <StatBox
-                flex={0.85}
                 label="ATK"
+                infoKey="atk"
+                onInfo={setInfoStat}
                 value={previewEffectiveStats.attack}
                 bonus={previewEffectiveStats.attack - previewBaseStats.attack}
                 highlighted={previewEffectiveStats.attack !== effectiveStats.attack}
               />
               <StatBox
-                flex={0.85}
                 label="DEF"
+                infoKey="def"
+                onInfo={setInfoStat}
                 value={previewEffectiveStats.defence}
                 bonus={previewEffectiveStats.defence - previewBaseStats.defence}
                 highlighted={previewEffectiveStats.defence !== effectiveStats.defence}
               />
               <StatBox
-                flex={1.0}
                 label="MAX HP"
+                infoKey="maxHp"
+                onInfo={setInfoStat}
                 value={previewEffectiveStats.maxHp}
                 bonus={previewEffectiveStats.maxHp - previewBaseStats.maxHp}
                 highlighted={previewEffectiveStats.maxHp !== effectiveStats.maxHp}
               />
               <StatBox
-                flex={1.1}
+                label="BAG SLOTS"
+                infoKey="bagSlots"
+                onInfo={setInfoStat}
+                value={previewEffectiveStats.bagSlots}
+                bonus={previewEffectiveStats.bagSlots - previewBaseStats.bagSlots}
+                highlighted={previewEffectiveStats.bagSlots !== effectiveStats.bagSlots}
+              />
+            </View>
+            <View style={[styles.statsRow, { marginBottom: 16 }]}>
+              <StatBox
                 label="CRIT RATE"
+                infoKey="critRate"
+                onInfo={setInfoStat}
                 value={pct(previewEffectiveStats.critChance)}
                 bonus={previewEffectiveStats.critChance - previewBaseStats.critChance}
                 isPercent
                 highlighted={previewEffectiveStats.critChance !== effectiveStats.critChance}
               />
               <StatBox
-                flex={1.1}
+                label="CRIT DMG"
+                infoKey="critDmg"
+                onInfo={setInfoStat}
+                value={pct(previewEffectiveStats.passives?.critMultiplier || 1.5)}
+                bonus={(previewEffectiveStats.passives?.critMultiplier || 1.5) - 1.5}
+                isPercent
+                highlighted={(previewEffectiveStats.passives?.critMultiplier || 1.5) !== (effectiveStats.passives?.critMultiplier || 1.5)}
+              />
+              <StatBox
                 label="DODGE RATE"
+                infoKey="dodge"
+                onInfo={setInfoStat}
                 value={pct(previewEffectiveStats.dodge)}
                 bonus={previewEffectiveStats.dodge - previewBaseStats.dodge}
                 isPercent
                 highlighted={previewEffectiveStats.dodge !== effectiveStats.dodge}
               />
               <StatBox
-                flex={1.1}
-                label="BAG SLOTS"
-                value={previewEffectiveStats.bagSlots}
-                bonus={previewEffectiveStats.bagSlots - previewBaseStats.bagSlots}
-                highlighted={previewEffectiveStats.bagSlots !== effectiveStats.bagSlots}
+                label="STATUS RES"
+                infoKey="statusRes"
+                onInfo={setInfoStat}
+                value={pct(previewEffectiveStats.passives?.statusResistChance || 0)}
+                bonus={(previewEffectiveStats.passives?.statusResistChance || 0) - previewVit * 0.005}
+                isPercent
+                highlighted={(previewEffectiveStats.passives?.statusResistChance || 0) !== (effectiveStats.passives?.statusResistChance || 0)}
               />
             </View>
 
@@ -864,6 +986,53 @@ export default function ProfileScreen() {
           </Pressable>
         </Pressable>
       </Modal>
+
+      {/* ── Stat / Attribute Info Popup ── */}
+      <Modal
+        visible={infoStat !== null}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setInfoStat(null)}
+      >
+        <Pressable style={styles.infoModalOverlay} onPress={() => setInfoStat(null)}>
+          <Pressable style={styles.infoModalContent} onPress={(e) => e.stopPropagation()}>
+            <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
+              <Defs>
+                <LinearGradient id="statInfoGrad" x1="0" y1="0" x2="0" y2="1">
+                  <Stop offset="0%" stopColor="#102719" stopOpacity="1" />
+                  <Stop offset="100%" stopColor="#0A160F" stopOpacity="1" />
+                </LinearGradient>
+              </Defs>
+              <Rect width="100%" height="100%" fill="url(#statInfoGrad)" rx={18} />
+              <Rect x="1" y="1" width="98%" height="98%" rx={17} fill="none" stroke="rgba(212, 167, 84, 0.18)" strokeWidth={1} />
+            </Svg>
+
+            {infoStat && STAT_INFO[infoStat] && (
+              <View style={styles.infoModalInner}>
+                <Text style={[styles.infoModalTitle, { color: STAT_INFO[infoStat].color }]}>
+                  {STAT_INFO[infoStat].title}
+                </Text>
+                <Text style={styles.infoModalDesc}>{STAT_INFO[infoStat].desc}</Text>
+                <View style={styles.infoModalEffects}>
+                  {STAT_INFO[infoStat].effects.map((line) => (
+                    <View key={line} style={styles.infoEffectRow}>
+                      <Text style={styles.infoEffectBullet}>›</Text>
+                      <Text style={styles.infoEffectText}>{line}</Text>
+                    </View>
+                  ))}
+                </View>
+                <TouchableOpacity
+                  style={styles.infoCloseBtn}
+                  onPress={() => setInfoStat(null)}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.infoCloseBtnText}>Got it</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          </Pressable>
+        </Pressable>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -889,12 +1058,22 @@ function SpriteFrame({ source, frameIndex, frameSize, totalFrames, displaySize =
 }
 
 // ─── StatBox ─────────────────────────────────────────────────────────────────
-function StatBox({ label, value, bonus, isPercent, variant, flex = 1, highlighted }) {
+function StatBox({ label, value, bonus, isPercent, variant, flex = 1, highlighted, infoKey, onInfo }) {
   const showBonus = bonus !== undefined && Math.abs(bonus) > 0.0001;
   const bonusText = isPercent ? `+${Math.round(bonus * 100)}%` : `+${bonus}`;
   const isAttribute = variant === 'attribute';
   return (
     <View style={[styles.statBox, { flex }, isAttribute && styles.statBoxAttribute]}>
+      {infoKey && onInfo && (
+        <TouchableOpacity
+          style={styles.infoTagSmall}
+          onPress={() => onInfo(infoKey)}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          activeOpacity={0.6}
+        >
+          <Text style={styles.infoTagText}>?</Text>
+        </TouchableOpacity>
+      )}
       <Text style={styles.statLabel} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>{label}</Text>
       <Text style={[
         styles.statValue, 
@@ -967,7 +1146,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   pointsBadgeText: {
-    fontFamily: 'PixelifySans-Regular',
+    fontFamily: 'Jersey10-Regular',
     fontSize: 13,
     color: 'rgba(255, 255, 255, 0.8)',
     fontWeight: 'normal',
@@ -987,11 +1166,12 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     borderWidth: 1,
     borderColor: 'rgba(92, 196, 137, 0.18)',
-    paddingVertical: 10,
+    paddingVertical: 12,
     paddingHorizontal: 4,
     alignItems: 'center',
-    justifyContent: 'space-between',
-    minHeight: 100,
+    justifyContent: 'center',
+    gap: 6,
+    minHeight: 78,
   },
   attributeHeader: {
     flexDirection: 'row',
@@ -1007,11 +1187,12 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
   },
   attributeValue: {
-    fontFamily: 'PixelifySans-Regular',
-    fontSize: 22,
+    fontFamily: 'Jersey10-Regular',
+    fontSize: 26,
     fontWeight: 'normal',
     color: '#F8FAFC',
     marginVertical: 0,
+    letterSpacing: 1,
   },
   attributeValueHighlight: {
     color: '#D4A754',
@@ -1040,25 +1221,18 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255, 255, 255, 0.08)',
   },
   attrControlBtnText: {
-    fontFamily: 'PixelifySans-Regular',
+    fontFamily: 'Jersey10-Regular',
     color: '#D4A754',
     fontSize: 14,
     fontWeight: 'normal',
     marginTop: -2,
   },
   attrAllocatedText: {
-    fontFamily: 'PixelifySans-Regular',
+    fontFamily: 'Jersey10-Regular',
     color: '#F8FAFC',
-    fontSize: 12,
+    fontSize: 16,
     fontWeight: 'normal',
     minWidth: 14,
-    textAlign: 'center',
-  },
-  attributeSubLabel: {
-    fontFamily: 'Silkscreen-Regular',
-    fontSize: 9,
-    color: '#64748B',
-    marginTop: 2,
     textAlign: 'center',
   },
   confirmBtn: {
@@ -1071,7 +1245,7 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   confirmBtnText: {
-    fontFamily: 'PixelifySans-Regular',
+    fontFamily: 'Jersey10-Regular',
     fontSize: 14,
     fontWeight: 'normal',
     color: '#1A1200',
@@ -1110,7 +1284,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
   },
   stanceName: {
-    fontFamily: 'PixelifySans-Regular',
+    fontFamily: 'Jersey10-Regular',
     fontSize: 15,
     fontWeight: 'normal',
     color: '#F8FAFC',
@@ -1140,7 +1314,7 @@ const styles = StyleSheet.create({
     color: '#64748B',
   },
   stanceBonusVal: {
-    fontFamily: 'PixelifySans-Regular',
+    fontFamily: 'Jersey10-Regular',
     fontSize: 13,
     color: '#5CC489',
     marginTop: 2,
@@ -1149,7 +1323,7 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   subSectionTitle: {
-    fontFamily: 'PixelifySans-Regular',
+    fontFamily: 'Jersey10-Regular',
     fontWeight: 'normal',
     fontSize: 13,
     color: '#D4A754',
@@ -1167,7 +1341,7 @@ const styles = StyleSheet.create({
     zIndex: 2,
   },
   setBonusName: {
-    fontFamily: 'PixelifySans-Regular',
+    fontFamily: 'Jersey10-Regular',
     fontSize: 13,
     fontWeight: 'normal',
     color: '#F8FAFC',
@@ -1190,7 +1364,7 @@ const styles = StyleSheet.create({
   backBtn: { width: 70, paddingVertical: 6 },
   backText: {
     color: '#D4A754',
-    fontFamily: 'PixelifySans-Regular',
+    fontFamily: 'Jersey10-Regular',
     fontSize: 16,
     letterSpacing: 0.5,
   },
@@ -1202,7 +1376,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   titleText: {
-    fontFamily: 'PixelifySans-Regular',
+    fontFamily: 'Jersey10-Regular',
     fontSize: 20,
     color: '#F8FAFC',
     letterSpacing: 0.8,
@@ -1278,10 +1452,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   levelBadgeText: {
-    fontFamily: 'Silkscreen-Regular',
+    fontFamily: 'Jersey10-Regular',
     color: '#1A1200',
     fontWeight: 'normal',
-    fontSize: 9,
+    fontSize: 15,
     textAlign: 'center',
   },
   heroDetails: {
@@ -1299,7 +1473,7 @@ const styles = StyleSheet.create({
     gap: theme.SPACING.tight,
   },
   sectionTitle: {
-    fontFamily: 'PixelifySans-Regular',
+    fontFamily: 'Jersey10-Regular',
     fontWeight: 'normal',
     fontSize: 13,
     color: theme.COLORS.parchment,
@@ -1314,12 +1488,12 @@ const styles = StyleSheet.create({
   statBox: {
     flex: 1,
     borderRadius: 10,
-    minHeight: 44,
-    paddingVertical: 5,
+    minHeight: 56,
+    paddingVertical: 8,
     paddingHorizontal: 2,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 1,
+    gap: 2,
     backgroundColor: 'rgba(16, 44, 28, 0.35)',
     borderWidth: 1,
     borderColor: 'rgba(92, 196, 137, 0.18)',
@@ -1337,19 +1511,126 @@ const styles = StyleSheet.create({
     maxWidth: '100%',
   },
   statValue: {
-    fontFamily: 'PixelifySans-Regular',
-    fontSize: 13,
+    fontFamily: 'Jersey10-Regular',
+    fontSize: 17,
     fontWeight: 'normal',
     color: theme.COLORS.candleGold,
+    letterSpacing: 0.5,
   },
   statValueAttribute: {
     color: theme.COLORS.buffMint,
   },
   statBonus: {
-    fontFamily: 'Silkscreen-Regular',
-    fontSize: 7,
+    fontFamily: 'Jersey10-Regular',
+    fontSize: 12,
+    lineHeight: 12,
     fontWeight: 'normal',
+    letterSpacing: 0.5,
     color: '#5CC489',
+  },
+  // ── (i) info tag — mirrors the battle skill info button ──
+  infoTag: {
+    position: 'absolute',
+    top: 5,
+    right: 5,
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: theme.COLORS.panelBorderGoldStrong,
+    backgroundColor: 'rgba(0,0,0,0.35)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 10,
+  },
+  infoTagSmall: {
+    position: 'absolute',
+    top: 2,
+    right: 2,
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    borderWidth: 1,
+    borderColor: theme.COLORS.panelBorderGoldStrong,
+    backgroundColor: 'rgba(0,0,0,0.35)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 10,
+  },
+  infoTagText: {
+    fontFamily: 'Jersey10-Regular',
+    fontSize: 12,
+    lineHeight: 13,
+    color: theme.COLORS.candleGold,
+    fontStyle: 'italic',
+    fontWeight: 'bold',
+    textTransform: 'none',
+  },
+  // ── Stat / attribute info modal ──
+  infoModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 32,
+  },
+  infoModalContent: {
+    width: '100%',
+    maxWidth: 360,
+    borderRadius: 18,
+    overflow: 'hidden',
+  },
+  infoModalInner: {
+    padding: 20,
+  },
+  infoModalTitle: {
+    fontFamily: 'Silkscreen-Regular',
+    fontSize: 16,
+    letterSpacing: 0.5,
+    marginBottom: 8,
+  },
+  infoModalDesc: {
+    fontFamily: 'Jersey10-Regular',
+    fontSize: 14,
+    lineHeight: 19,
+    color: theme.COLORS.parchment,
+    marginBottom: 14,
+  },
+  infoModalEffects: {
+    gap: 6,
+    marginBottom: 18,
+  },
+  infoEffectRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 7,
+  },
+  infoEffectBullet: {
+    fontFamily: 'Jersey10-Regular',
+    fontSize: 14,
+    color: theme.COLORS.candleGold,
+    lineHeight: 18,
+  },
+  infoEffectText: {
+    flex: 1,
+    fontFamily: 'Jersey10-Regular',
+    fontSize: 13,
+    lineHeight: 18,
+    color: '#C9D6C0',
+  },
+  infoCloseBtn: {
+    height: 40,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(212, 167, 84, 0.15)',
+    borderWidth: 1,
+    borderColor: 'rgba(212, 167, 84, 0.4)',
+  },
+  infoCloseBtnText: {
+    fontFamily: 'Silkscreen-Regular',
+    fontSize: 12,
+    color: theme.COLORS.candleGold,
   },
   equipmentGrid: {
     marginBottom: 16,
@@ -1472,14 +1753,14 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   modalTitle: {
-    fontFamily: 'PixelifySans-Regular',
+    fontFamily: 'Jersey10-Regular',
     fontSize: 17,
     color: '#FFF3DA',
     flex: 1,
     marginRight: 8,
   },
   modalCloseText: {
-    fontFamily: 'PixelifySans-Regular',
+    fontFamily: 'Jersey10-Regular',
     color: 'rgba(255, 243, 218, 0.6)',
     fontSize: 16,
   },
@@ -1505,7 +1786,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   compareItemName: {
-    fontFamily: 'PixelifySans-Regular',
+    fontFamily: 'Jersey10-Regular',
     fontWeight: 'normal',
     fontSize: 14,
     color: theme.COLORS.parchment,
@@ -1556,7 +1837,7 @@ const styles = StyleSheet.create({
     fontSize: 40,
   },
   emptyStateText: {
-    fontFamily: 'PixelifySans-Regular',
+    fontFamily: 'Jersey10-Regular',
     fontSize: 13,
     color: theme.COLORS.parchment,
     textAlign: 'center',
@@ -1572,7 +1853,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   shopBtnText: {
-    fontFamily: 'PixelifySans-Regular',
+    fontFamily: 'Jersey10-Regular',
     fontWeight: 'normal',
     fontSize: 13,
     color: theme.COLORS.candleGold,
@@ -1588,7 +1869,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   unequipBtnText: {
-    fontFamily: 'PixelifySans-Regular',
+    fontFamily: 'Jersey10-Regular',
     fontWeight: 'normal',
     fontSize: 13,
     color: '#EF4444',

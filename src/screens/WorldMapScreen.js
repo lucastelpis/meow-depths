@@ -9,7 +9,6 @@ import {
   TouchableOpacity,
   ScrollView,
   StyleSheet,
-  Dimensions,
   Image,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -32,12 +31,10 @@ import { ZONES } from '../data/zones';
 import ItemSprite from '../components/ItemSprite';
 import { DUNGEON_BANNERS } from '../constants/sprites';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
-
 // Define specific gradient colors for each zone for rich visual aesthetics
 const ZONE_GRADIENTS = {
   zone1: {
-    start: '#0F1A0F', // Soggy Sewers - Swamp/Venom green tint
+    start: '#0F1A0F', // Soggy Ruins - Swamp/Venom green tint
     end: '#060B06',
     border: 'rgba(76, 175, 80, 0.25)',
     accent: '#10B981',
@@ -149,9 +146,9 @@ export default function WorldMapScreen({ navigation }) {
               <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
                 <Defs>
                   <LinearGradient id={`overlayGrad_${zone.id}`} x1="0" y1="0" x2="1" y2="1">
-                    <Stop offset="0%" stopColor="#000000" stopOpacity="0.25" />
-                    <Stop offset="50%" stopColor="#000000" stopOpacity="0.1" />
-                    <Stop offset="100%" stopColor="#000000" stopOpacity="0.0" />
+                    <Stop offset="0%" stopColor="#000000" stopOpacity="0.6" />
+                    <Stop offset="50%" stopColor="#000000" stopOpacity="0.4" />
+                    <Stop offset="100%" stopColor="#000000" stopOpacity="0.25" />
                   </LinearGradient>
                 </Defs>
                 <Rect width="100%" height="100%" fill={`url(#overlayGrad_${zone.id})`} />
@@ -247,13 +244,13 @@ const styles = StyleSheet.create({
   // Header (shared hub style)
   header:       { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: 'rgba(255, 255, 255, 0.04)' },
   backButton:   { width: 70, paddingVertical: 6, justifyContent: 'center' },
-  backText:     { fontFamily: 'PixelifySans-Regular', color: '#D4A754', fontSize: 16, letterSpacing: 0.5 },
+  backText:     { fontFamily: 'Jersey10-Regular', color: '#D4A754', fontSize: 16, letterSpacing: 0.5 },
   titleContainer: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
-  title:        { fontFamily: 'PixelifySans-Regular', fontSize: 20, color: '#F8FAFC', letterSpacing: 0.8, textAlign: 'center' },
+  title:        { fontFamily: 'Jersey10-Regular', fontSize: 20, color: '#F8FAFC', letterSpacing: 0.8, textAlign: 'center' },
   headerSpacer: { width: 70 },
 
   // Zone cards
-  zoneCard:         { width: SCREEN_WIDTH - 32, height: 190, borderRadius: 20, marginBottom: 24, position: 'relative', overflow: 'hidden', borderWidth: 3, borderColor: theme.COLORS.candleGold, backgroundColor: theme.COLORS.voidNavy },
+  zoneCard:         { width: '100%', aspectRatio: 600 / 296, borderRadius: 20, marginBottom: 24, position: 'relative', overflow: 'hidden', borderWidth: 3, borderColor: theme.COLORS.candleGold, backgroundColor: theme.COLORS.voidNavy },
   zoneCardLocked:   { opacity: 0.35 },
   lockOverlay:      { ...StyleSheet.absoluteFillObject, justifyContent: 'center', alignItems: 'center', zIndex: 10, backgroundColor: 'rgba(0,0,0,0.65)' },
   lockIcon:         { fontSize: 48, opacity: 0.4 },

@@ -10,7 +10,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const MATERIALS = {
-  // Zone 1 — Soggy Sewers (Black Crystals)
+  // Zone 1 — Soggy Ruins (Black Crystals)
   black_shard:         { name: 'Black Crystal Shard', spritesheet: 'crystals-1', frameIndex: 0 },
   black_crystal_small: { name: 'Small Black Crystal', spritesheet: 'crystals-1', frameIndex: 1 },
   black_crystal_big:   { name: 'Big Black Crystal', spritesheet: 'crystals-1', frameIndex: 2 },
@@ -58,7 +58,7 @@ export const SET_BONUSES = {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Zone 1 Gear — The Soggy Sewers
+// Zone 1 Gear — The Soggy Ruins
 // ─────────────────────────────────────────────────────────────────────────────
 
 const toy_sword = {

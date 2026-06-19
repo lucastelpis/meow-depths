@@ -116,7 +116,7 @@ graph TD
 ```
 
 #### 🔓 Skill Unlock & Star-Up Prerequisites
-Skills no longer cost Skill Points (SP) to unlock or upgrade. Instead, they require specific character levels and crystal materials (e.g. shards, crystals, cores) from the Soggy Sewers (Zone 1).
+Skills no longer cost Skill Points (SP) to unlock or upgrade. Instead, they require specific character levels and crystal materials (e.g. shards, crystals, cores) from the Soggy Ruins (Zone 1).
 
 ##### **Tier 1 (T1) Skills**
 Requires character level and Black Crystal materials:
@@ -142,7 +142,7 @@ To help players acquire higher-tier crystals, they can use the **Forge** tab in 
 
 ###### **Progression Lock**
 Crystals and fusion recipes are locked by region progression to match the active zone:
-1. **Black Crystals** (Region 1 - Soggy Sewers): Always unlocked and available from the start.
+1. **Black Crystals** (Region 1 - Soggy Ruins): Always unlocked and available from the start.
 2. **Green Crystals** (Region 2 - Twisted Garden): Visible in the Forge and inventory only after Region 1 is cleared.
 3. **Yellow Crystals** (Region 3 - Sunken Docks): Visible in the Forge and inventory only after Region 2 is cleared.
 
@@ -418,7 +418,7 @@ Common enemies have their base HP, Attack, and Defense scaled by room star ratin
 
 ---
 
-### Zone 1: The Soggy Sewers (Black Crystals)
+### Zone 1: The Soggy Ruins (Black Crystals)
 *Recommended Levels: 1–5*
 
 1. **Sewer Rat (1★)**

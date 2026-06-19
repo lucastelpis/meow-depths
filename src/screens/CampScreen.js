@@ -22,29 +22,37 @@ import {
   Animated,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import Svg, { Defs, RadialGradient, Stop, Circle, Path, G, Ellipse } from 'react-native-svg';
+import { useFocusEffect } from '@react-navigation/native';
+import Svg, { Defs, RadialGradient, Stop, Circle, Path, G } from 'react-native-svg';
 
 // ── Project imports ──────────────────────────────────────────────────────────
 import theme from '../constants/theme';
 import { useGame } from '../state/gameState';
 import { calculateEffectiveStats } from '../logic/progressionEngine';
 import ScreenLoader from '../components/ScreenLoader';
-import Button from '../components/ui/Button';
 import { SKILLS } from '../data/skills';
 import ItemSprite from '../components/ItemSprite';
+import { pickRandomThought } from '../data/mochiThoughts';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const BANNER_WIDTH = SCREEN_WIDTH - 40;
+
+const ELEMENT_SPRITES = {
+  fire: 33,
+  wind: 34,
+  water: 35,
+  earth: 36,
+};
 
 
 // ─── SVG Rugged Border Background Component ──────────────────────────────────
 function RuggedBorderBackground({ width, height }) {
   if (!width || !height) return null;
-  
+
   const notch = 6; // corner notch size
   const shadowHeight = 5; // bottom shadow bevel height
   const strokePadding = 3; // padding to prevent stroke clipping
-  
+
   // Coordinates for the notched rectangle shape (straight sides)
   const path = `M ${notch} 0 
                 L ${width - notch} 0 
@@ -76,13 +84,13 @@ function RuggedBorderBackground({ width, height }) {
 
   return (
     <View style={StyleSheet.absoluteFillObject}>
-      <Svg 
-        width={width + strokePadding * 2} 
-        height={height + shadowHeight + strokePadding * 2} 
-        style={{ 
-          position: 'absolute', 
-          top: -strokePadding, 
-          left: -strokePadding 
+      <Svg
+        width={width + strokePadding * 2}
+        height={height + shadowHeight + strokePadding * 2}
+        style={{
+          position: 'absolute',
+          top: -strokePadding,
+          left: -strokePadding
         }}
       >
         <G transform={`translate(${strokePadding}, ${strokePadding})`}>
@@ -90,20 +98,20 @@ function RuggedBorderBackground({ width, height }) {
           <Path d={path} fill="#4E1D0C" transform={`translate(0, ${shadowHeight})`} />
 
           {/* 2. Main Button Face with Dark Outline */}
-          <Path 
-            d={path} 
-            fill="#A84C27" 
-            stroke="#4E1D0C" 
-            strokeWidth={3} 
-            strokeLinejoin="miter" 
+          <Path
+            d={path}
+            fill="#A84C27"
+            stroke="#4E1D0C"
+            strokeWidth={3}
+            strokeLinejoin="miter"
           />
           {/* 3. Inner line border highlight */}
-          <Path 
-            d={innerPath} 
-            fill="none" 
-            stroke="#D67545" 
-            strokeWidth={1.5} 
-            opacity={0.75} 
+          <Path
+            d={innerPath}
+            fill="none"
+            stroke="#D67545"
+            strokeWidth={1.5}
+            opacity={0.75}
           />
         </G>
       </Svg>
@@ -130,35 +138,19 @@ function IconGlowBackground({ size = 56 }) {
   );
 }
 
-// ─── Decorative 4-point sparkle ──────────────────────────────────────────────
-function Sparkle({ size = 12, color = '#F4D079', style }) {
-  const c = size / 2;
-  const r = size / 2;
-  const i = r * 0.28; // inner waist
-  const d = `M${c},${c - r} L${c + i},${c - i} L${c + r},${c} L${c + i},${c + i} L${c},${c + r} L${c - i},${c + i} L${c - r},${c} L${c - i},${c - i} Z`;
+// ─── Mochi Speech Bubble (banner thought balloon) ────────────────────────────
+// Cozy parchment bubble with a downward tail pointing toward Mochi in the art.
+// Visual-only for now; phrase pool / unlock logic comes later.
+function MochiSpeechBubble({ text }) {
   return (
-    <View style={style} pointerEvents="none">
-      <Svg width={size} height={size}>
-        <Path d={d} fill={color} />
-      </Svg>
-    </View>
-  );
-}
-
-// ─── Soft blurred ellipse shadow (ground shadow under the gift) ───────────────
-function SoftEllipseShadow({ width = 80, height = 18, color = '#2A1A0C', style }) {
-  return (
-    <View style={style} pointerEvents="none">
-      <Svg width={width} height={height}>
-        <Defs>
-          <RadialGradient id="softShadowGrad" cx="50%" cy="50%" rx="50%" ry="50%">
-            <Stop offset="0%" stopColor={color} stopOpacity="0.8" />
-            <Stop offset="55%" stopColor={color} stopOpacity="0.6" />
-            <Stop offset="100%" stopColor={color} stopOpacity="0" />
-          </RadialGradient>
-        </Defs>
-        <Ellipse cx={width / 2} cy={height / 2} rx={width / 2} ry={height / 2} fill="url(#softShadowGrad)" />
-      </Svg>
+    <View style={styles.mochiBubble} pointerEvents="none">
+      <View style={styles.mochiBubbleBody}>
+        <Text style={styles.mochiBubbleText}>{text}</Text>
+      </View>
+      {/* Tail: a bordered square rotated 45°, tucked under the body so only the
+          downward point shows. Rendered after the body so its fill covers the
+          body's bottom border across the join. */}
+      <View style={styles.mochiBubbleTail} />
     </View>
   );
 }
@@ -166,7 +158,7 @@ function SoftEllipseShadow({ width = 80, height = 18, color = '#2A1A0C', style }
 // ─── Animated Hub Background Component ───────────────────────────────────────
 function AnimatedHubBackground({ width, height }) {
   const [frame, setFrame] = React.useState(0);
-  
+
   React.useEffect(() => {
     const interval = setInterval(() => {
       setFrame(prev => (prev + 1) % 4);
@@ -198,8 +190,21 @@ export default function CampScreen({ navigation }) {
   const [dungeonCardLayout, setDungeonCardLayout] = React.useState({ width: 0, height: 0 });
   const [dailyModalVisible, setDailyModalVisible] = React.useState(false);
   const [dailyClaimedView, setDailyClaimedView] = React.useState(false);
+  const [settingsModalVisible, setSettingsModalVisible] = React.useState(false);
   const [dailyJustClaimed, setDailyJustClaimed] = React.useState(false);
+  const [claimedRows, setClaimedRows] = React.useState(null); // frozen rewards snapshot at claim time
   const [nowTs, setNowTs] = React.useState(Date.now());
+
+  // Mochi's banner thought — re-rolled from the unlocked pool each time the hub
+  // gains focus, so the hero "says" something new on every visit.
+  const [mochiThought, setMochiThought] = React.useState(() =>
+    pickRandomThought(state.progress.notesCollected)
+  );
+  useFocusEffect(
+    React.useCallback(() => {
+      setMochiThought(pickRandomThought(state.progress.notesCollected));
+    }, [state.progress.notesCollected])
+  );
 
   // Tick every second while the modal is open so the reset countdown stays live
   React.useEffect(() => {
@@ -258,7 +263,7 @@ export default function CampScreen({ navigation }) {
     inputRange: [0.3, 1],
     outputRange: ['rgba(232, 167, 58, 0.35)', 'rgba(232, 167, 58, 0.95)'],
   });
-  
+
   const bgPulseColor = pulseAnim.interpolate({
     inputRange: [0.3, 1],
     outputRange: ['rgba(20, 44, 28, 0.85)', 'rgba(32, 74, 46, 0.95)'],
@@ -288,12 +293,24 @@ export default function CampScreen({ navigation }) {
 
   const closeDailyModal = () => setDailyModalVisible(false);
 
+  // Reward rows to render in the modal (filters out empty quantities)
+  const dailyRewardRows = [
+    { key: 'gold', spritesheet: 'icons-1', frameIndex: 11, label: 'Gold', qty: dailyRewards.goldReward },
+    { key: 'potion', spritesheet: 'consumables-1', frameIndex: 0, label: 'Potion', qty: dailyRewards.healthPotionQty },
+    { key: 'super_potion', spritesheet: 'consumables-1', frameIndex: 1, label: 'Super Potion', qty: dailyRewards.superPotionQty },
+  ].filter((r) => r.qty > 0);
+
   const confirmDailyClaim = () => {
     const { goldReward, healthPotionQty, superPotionQty } = dailyRewards;
 
     const consumablesReward = {};
     if (healthPotionQty > 0) consumablesReward['potion'] = healthPotionQty;
     if (superPotionQty > 0) consumablesReward['super_potion'] = superPotionQty;
+
+    // Snapshot the rows BEFORE dispatching — claiming sets lastDailyClaim,
+    // which recomputes dailyRewards (isFirstClaim flips), so without this the
+    // post-claim view would show different items than were actually granted.
+    setClaimedRows(dailyRewardRows);
 
     dispatch({
       type: 'CLAIM_DAILY_REWARD',
@@ -307,12 +324,9 @@ export default function CampScreen({ navigation }) {
     setDailyClaimedView(true);
   };
 
-  // Reward rows to render in the modal (filters out empty quantities)
-  const dailyRewardRows = [
-    { key: 'gold', spritesheet: 'icons-1', frameIndex: 11, label: 'Gold', qty: dailyRewards.goldReward },
-    { key: 'potion', spritesheet: 'consumables-1', frameIndex: 0, label: 'Potion', qty: dailyRewards.healthPotionQty },
-    { key: 'super_potion', spritesheet: 'consumables-1', frameIndex: 1, label: 'Super Potion', qty: dailyRewards.superPotionQty },
-  ].filter((r) => r.qty > 0);
+  // Items to display in the modal: the frozen snapshot right after claiming,
+  // otherwise the live preview of what's claimable.
+  const displayedRewardRows = (dailyJustClaimed && claimedRows) ? claimedRows : dailyRewardRows;
 
   // Time until the daily reward resets (next local midnight), formatted HH:MM
   const resetCountdown = React.useMemo(() => {
@@ -329,72 +343,76 @@ export default function CampScreen({ navigation }) {
       require('../../assets/sprites/background-hub.png'),
       require('../../assets/sprites/items/icons-1.png'),
     ]}>
-    <SafeAreaView style={styles.container}>
-      <ScrollView
-        contentContainerStyle={styles.scroll}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* ═══════════════════════════════════════════════════════════════════
+      <SafeAreaView style={styles.container}>
+        <ScrollView
+          contentContainerStyle={styles.scroll}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* ═══════════════════════════════════════════════════════════════════
             ANIMATED HUB BANNER
             ═══════════════════════════════════════════════════════════════════ */}
-        <View style={[styles.bannerContainer, theme.SHADOWS.cardShadow]}>
-          <AnimatedHubBackground width={BANNER_WIDTH - 6} height={BANNER_WIDTH - 6} />
-          <View style={styles.bannerOverlayContent}>
-            {/* Centered Plaque Title */}
-            <View style={styles.bannerTitleOuterBorder}>
-              <View style={styles.bannerTitleInnerBorder}>
-                <Text style={styles.bannerTitleText}>MEOW DEPTHS</Text>
-              </View>
-            </View>
+          <View style={[styles.bannerContainer, theme.SHADOWS.cardShadow]}>
+            <AnimatedHubBackground width={BANNER_WIDTH - 6} height={BANNER_WIDTH - 6} />
 
-            {/* Tags Stack */}
-            <View style={styles.bannerTagsRow}>
-              {/* Tag 1: Gold */}
-              <View style={styles.bannerTag}>
-                <ItemSprite spritesheet="icons-1" frameIndex={11} displaySize={18} />
-                <Text style={styles.bannerTagText}>{hero.gold}</Text>
-              </View>
+            {/* Mochi's thought balloon — random phrase from the unlocked pool */}
+            <MochiSpeechBubble text={mochiThought.text} />
 
-              {/* Tag 2: Level */}
-              <View style={styles.bannerTag}>
-                <ItemSprite spritesheet="icons-map" frameIndex={105} displaySize={18} />
-                <Text style={styles.bannerTagText}>LV {hero.level}</Text>
-              </View>
-
-              {/* Tag 3: Stats (Clickable) — only shown when stat points are available */}
-              {(hero.statPoints || 0) > 0 && (
-                <View style={styles.bannerTagClickableWrapper}>
-                  <TouchableOpacity
-                    style={styles.bannerTagClickableInner}
-                    onPress={() => navigation.navigate('Profile', { initialTab: 'stats' })}
-                    activeOpacity={0.7}
-                  >
-                    <ItemSprite spritesheet="icons-1" frameIndex={28} displaySize={18} />
-                    <Text style={styles.bannerTagText}>STATS</Text>
-                  </TouchableOpacity>
-
-                  <View style={styles.bannerTagBadge}>
-                    <Text style={styles.bannerTagBadgeText}>!</Text>
-                  </View>
+            <View style={styles.bannerOverlayContent}>
+              {/* Centered Plaque Title */}
+              <View style={styles.bannerTitleOuterBorder}>
+                <View style={styles.bannerTitleInnerBorder}>
+                  <Text style={styles.bannerTitleText}>MEOW DEPTHS</Text>
                 </View>
-              )}
+              </View>
+
+              {/* Tags Stack */}
+              <View style={styles.bannerTagsRow}>
+                {/* Tag 1: Gold */}
+                <View style={styles.bannerTag}>
+                  <ItemSprite spritesheet="icons-1" frameIndex={11} displaySize={18} />
+                  <Text style={styles.bannerTagText}>{hero.gold}</Text>
+                </View>
+
+                {/* Tag 2: Level */}
+                <View style={styles.bannerTag}>
+                  <ItemSprite spritesheet="icons-1" frameIndex={ELEMENT_SPRITES[hero.element] || 33} displaySize={18} />
+                  <Text style={styles.bannerTagText}>LV {hero.level}</Text>
+                </View>
+
+                {/* Tag 3: Stats (Clickable) — only shown when stat points are available */}
+                {(hero.statPoints || 0) > 0 && (
+                  <View style={styles.bannerTagClickableWrapper}>
+                    <TouchableOpacity
+                      style={styles.bannerTagClickableInner}
+                      onPress={() => navigation.navigate('Profile', { initialTab: 'stats' })}
+                      activeOpacity={0.7}
+                    >
+                      <ItemSprite spritesheet="icons-1" frameIndex={28} displaySize={18} />
+                      <Text style={styles.bannerTagText}>STATS</Text>
+                    </TouchableOpacity>
+
+                    <View style={styles.bannerTagBadge}>
+                      <Text style={styles.bannerTagBadgeText}>!</Text>
+                    </View>
+                  </View>
+                )}
+              </View>
             </View>
           </View>
-        </View>
 
 
 
-        {/* Daily Reward Button */}
-        <TouchableOpacity
-          activeOpacity={0.8}
-          onPress={openDailyModal}
-        >
-          <Animated.View
-            style={[
-              styles.dailyRewardBtn,
-              hasClaimedToday()
-                ? styles.dailyRewardBtnClaimed
-                : {
+          {/* Daily Reward Button */}
+          <TouchableOpacity
+            activeOpacity={0.8}
+            onPress={openDailyModal}
+          >
+            <Animated.View
+              style={[
+                styles.dailyRewardBtn,
+                hasClaimedToday()
+                  ? styles.dailyRewardBtnClaimed
+                  : {
                     backgroundColor: bgPulseColor,
                     borderColor: borderPulseColor,
                     shadowColor: '#E8A73A',
@@ -403,199 +421,188 @@ export default function CampScreen({ navigation }) {
                     shadowRadius: glowShadowRadius,
                     elevation: 4,
                   },
-            ]}
-          >
-            <View style={styles.dailyRewardSpriteContainer}>
-              <ItemSprite spritesheet="icons-1" frameIndex={5} displaySize={56} />
-            </View>
-            <View style={styles.dailyRewardTextContainer}>
-              <Text style={[
-                styles.dailyRewardTitle,
-                hasClaimedToday() ? styles.dailyRewardTitleClaimed : styles.dailyRewardTitleActive
-              ]}>
-                {hasClaimedToday() ? "DAILY REWARD CLAIMED" : "CLAIM DAILY REWARD"}
-              </Text>
-              <Text style={[
-                styles.dailyRewardSub,
-                hasClaimedToday() ? styles.dailyRewardSubClaimed : styles.dailyRewardSubActive
-              ]}>
-                {hasClaimedToday() ? "Come Back Tomorrow" : "Collect Gold & Potions"}
-              </Text>
-            </View>
-          </Animated.View>
-        </TouchableOpacity>
-
-        {/* ═══════════════════════════════════════════════════════════════════
-            NAVIGATION GRID — Glassmorphic Grid Layout
-            ═══════════════════════════════════════════════════════════════════ */}
-        {/* ═══════════════════════════════════════════════════════════════════
-            NAVIGATION GRID — Asymmetric Cozy Layout
-            ═══════════════════════════════════════════════════════════════════ */}
-        <View style={styles.navGrid}>
-          {/* Enter Regions (WorldMap) — Full Width */}
-          <TouchableOpacity
-            style={styles.dungeonCard}
-            activeOpacity={0.8}
-            onPress={() => navigation.navigate('WorldMap')}
-            onLayout={(e) => {
-              const { width, height } = e.nativeEvent.layout;
-              setDungeonCardLayout({ width, height });
-            }}
-          >
-            <RuggedBorderBackground width={dungeonCardLayout.width} height={dungeonCardLayout.height} />
-            <View style={styles.dungeonSpriteContainer}>
-              <IconGlowBackground size={64} />
-              <ItemSprite spritesheet="icons-1" frameIndex={0} displaySize={56} />
-            </View>
-            <View style={styles.dungeonTextContainer}>
-              <Text style={styles.dungeonLabel}>START EXPEDITION</Text>
-              <Text style={styles.dungeonSub}>EXPLORE REGIONS</Text>
-            </View>
+              ]}
+            >
+              <View style={styles.dailyRewardSpriteContainer}>
+                <ItemSprite spritesheet="icons-1" frameIndex={5} displaySize={56} />
+              </View>
+              <View style={styles.dailyRewardTextContainer}>
+                <Text style={[
+                  styles.dailyRewardTitle,
+                  hasClaimedToday() ? styles.dailyRewardTitleClaimed : styles.dailyRewardTitleActive
+                ]}>
+                  {hasClaimedToday() ? "DAILY RATIONS CLAIMED" : "CLAIM DAILY RATIONS"}
+                </Text>
+                <Text style={[
+                  styles.dailyRewardSub,
+                  hasClaimedToday() ? styles.dailyRewardSubClaimed : styles.dailyRewardSubActive
+                ]}>
+                  {hasClaimedToday() ? "COME BACK TOMORROW" : "COLLECT SUPPLIES"}
+                </Text>
+              </View>
+            </Animated.View>
           </TouchableOpacity>
 
-          {/* Sub Navigation Cards Row */}
-          <View style={styles.subButtonsRow}>
-            {/* Shopping */}
+          {/* ═══════════════════════════════════════════════════════════════════
+            NAVIGATION GRID — Glassmorphic Grid Layout
+            ═══════════════════════════════════════════════════════════════════ */}
+          {/* ═══════════════════════════════════════════════════════════════════
+            NAVIGATION GRID — Asymmetric Cozy Layout
+            ═══════════════════════════════════════════════════════════════════ */}
+          <View style={styles.navGrid}>
+            {/* Enter Regions (WorldMap) — Full Width */}
             <TouchableOpacity
-              style={styles.subCard}
+              style={styles.dungeonCard}
               activeOpacity={0.8}
-              onPress={() => navigation.navigate('Shop')}
+              onPress={() => navigation.navigate('WorldMap')}
+              onLayout={(e) => {
+                const { width, height } = e.nativeEvent.layout;
+                setDungeonCardLayout({ width, height });
+              }}
             >
-              <View style={styles.subSpriteContainer}>
-                <IconGlowBackground size={44} />
-                <ItemSprite spritesheet="icons-1" frameIndex={1} displaySize={38} />
+              <RuggedBorderBackground width={dungeonCardLayout.width} height={dungeonCardLayout.height} />
+              <View style={styles.dungeonSpriteContainer}>
+                <IconGlowBackground size={64} />
+                <ItemSprite spritesheet="icons-1" frameIndex={0} displaySize={56} />
               </View>
-              <Text style={styles.subCardLabel}>MARKET</Text>
+              <View style={styles.dungeonTextContainer}>
+                <Text style={styles.dungeonLabel}>START EXPEDITION</Text>
+                <Text style={styles.dungeonSub}>EXPLORE REGIONS</Text>
+              </View>
             </TouchableOpacity>
 
-            {/* Skills */}
-            <TouchableOpacity
-              style={styles.subCard}
-              activeOpacity={0.8}
-              onPress={() => navigation.navigate('SkillTree')}
-            >
-              <View style={styles.subSpriteContainer}>
-                <IconGlowBackground size={44} />
-                <ItemSprite spritesheet="icons-1" frameIndex={4} displaySize={38} />
-              </View>
-              <Text style={styles.subCardLabel}>SKILLS</Text>
-            </TouchableOpacity>
+            {/* Sub Navigation Cards — Row 1 */}
+            <View style={styles.subButtonsRow}>
+              {/* Shopping */}
+              <TouchableOpacity
+                style={styles.subCard}
+                activeOpacity={0.8}
+                onPress={() => navigation.navigate('Shop')}
+              >
+                <View style={styles.subSpriteContainer}>
+                  <IconGlowBackground size={44} />
+                  <ItemSprite spritesheet="icons-1" frameIndex={1} displaySize={38} />
+                </View>
+                <Text style={styles.subCardLabel}>MARKET</Text>
+              </TouchableOpacity>
 
-            {/* Loadout */}
-            <TouchableOpacity
-              style={styles.subCard}
-              activeOpacity={0.8}
-              onPress={() => navigation.navigate('Loadout')}
-            >
-              <View style={styles.subSpriteContainer}>
-                <IconGlowBackground size={44} />
-                <ItemSprite spritesheet="icons-1" frameIndex={12} displaySize={38} />
-              </View>
-              <Text style={styles.subCardLabel}>LOADOUT</Text>
-            </TouchableOpacity>
+              {/* Skills */}
+              <TouchableOpacity
+                style={styles.subCard}
+                activeOpacity={0.8}
+                onPress={() => navigation.navigate('SkillTree')}
+              >
+                <View style={styles.subSpriteContainer}>
+                  <IconGlowBackground size={44} />
+                  <ItemSprite spritesheet="icons-1" frameIndex={4} displaySize={38} />
+                </View>
+                <Text style={styles.subCardLabel}>SKILLS</Text>
+              </TouchableOpacity>
 
-            {/* Profile */}
-            <TouchableOpacity
-              style={styles.subCard}
-              activeOpacity={0.8}
-              onPress={() => navigation.navigate('Profile')}
-            >
-              <View style={styles.subSpriteContainer}>
-                <IconGlowBackground size={44} />
-                <Image
-                  source={require('../../assets/sprites/units/hero/hero_head.png')}
-                  style={{ width: 38, height: 38 }}
-                  resizeMode="contain"
-                />
-              </View>
-              <Text style={styles.subCardLabel}>PROFILE</Text>
-            </TouchableOpacity>
+              {/* Loadout */}
+              <TouchableOpacity
+                style={styles.subCard}
+                activeOpacity={0.8}
+                onPress={() => navigation.navigate('Loadout')}
+              >
+                <View style={styles.subSpriteContainer}>
+                  <IconGlowBackground size={44} />
+                  <ItemSprite spritesheet="icons-1" frameIndex={12} displaySize={38} />
+                </View>
+                <Text style={styles.subCardLabel}>LOADOUT</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Sub Navigation Cards — Row 2 */}
+            <View style={[styles.subButtonsRow, { marginTop: 8 }]}>
+              {/* Profile */}
+              <TouchableOpacity
+                style={styles.subCard}
+                activeOpacity={0.8}
+                onPress={() => navigation.navigate('Profile')}
+              >
+                <View style={styles.subSpriteContainer}>
+                  <IconGlowBackground size={44} />
+                  <Image
+                    source={require('../../assets/sprites/units/hero/hero_head.png')}
+                    style={{ width: 38, height: 38 }}
+                    resizeMode="contain"
+                  />
+                </View>
+                <Text style={styles.subCardLabel}>PROFILE</Text>
+              </TouchableOpacity>
+
+              {/* Journal */}
+              <TouchableOpacity
+                style={styles.subCard}
+                activeOpacity={0.8}
+                onPress={() => navigation.navigate('Journal')}
+              >
+                <View style={styles.subSpriteContainer}>
+                  <IconGlowBackground size={44} />
+                  <ItemSprite spritesheet="icons-map" frameIndex={121} displaySize={38} />
+                </View>
+                <Text style={styles.subCardLabel}>JOURNAL</Text>
+              </TouchableOpacity>
+
+              {/* Settings */}
+              <TouchableOpacity
+                style={styles.subCard}
+                activeOpacity={0.8}
+                onPress={() => setSettingsModalVisible(true)}
+              >
+                <View style={styles.subSpriteContainer}>
+                  <IconGlowBackground size={44} />
+                  <ItemSprite spritesheet="icons-map" frameIndex={111} displaySize={38} />
+                </View>
+                <Text style={styles.subCardLabel}>SETTINGS</Text>
+              </TouchableOpacity>
+            </View>
           </View>
-        </View>
+        </ScrollView>
 
         {/* ═══════════════════════════════════════════════════════════════════
-            DEV TOOLS — Reset button
-            ═══════════════════════════════════════════════════════════════════ */}
-        <Button
-          title="Reset Save Data"
-          variant="danger"
-          onPress={() => {
-            Alert.alert(
-              'Reset Game Data',
-              'Are you sure you want to nuke your save and start completely fresh?',
-              [
-                { text: 'Cancel', style: 'cancel' },
-                {
-                  text: 'Reset Data',
-                  style: 'destructive',
-                  onPress: () => dispatch({ type: 'RESET_GAME' }),
-                },
-              ]
-            );
-          }}
-        />
-      </ScrollView>
-
-      {/* ═══════════════════════════════════════════════════════════════════
           DAILY REWARD MODAL — themed to match the hub redesign
           ═══════════════════════════════════════════════════════════════════ */}
-      <Modal
-        visible={dailyModalVisible}
-        transparent
-        animationType="fade"
-        onRequestClose={closeDailyModal}
-        statusBarTranslucent
-      >
-        {(() => {
-          // Three states: already claimed earlier today, just claimed now, or claimable
-          const alreadyClaimed = dailyClaimedView && !dailyJustClaimed;
-          const claimed = alreadyClaimed || dailyJustClaimed;
-          return (
-            <Pressable style={styles.drOverlay} onPress={closeDailyModal}>
-              <Pressable style={[styles.drFrame, theme.SHADOWS.cardShadow]} onPress={() => {}}>
-                <View style={styles.drParchment}>
-                  {/* Inner paper bevel highlight */}
-                  <View style={styles.drBevel} pointerEvents="none" />
+        <Modal
+          visible={dailyModalVisible}
+          transparent
+          animationType="fade"
+          onRequestClose={closeDailyModal}
+          statusBarTranslucent
+        >
+          {(() => {
+            // Three states: already claimed earlier today, just claimed now, or claimable
+            const alreadyClaimed = dailyClaimedView && !dailyJustClaimed;
+            return (
+              <Pressable style={styles.drOverlay} onPress={closeDailyModal}>
+                <Pressable style={[styles.drFrame, theme.SHADOWS.cardShadow]} onPress={() => { }}>
+                  <View style={styles.drParchment}>
+                    {/* Inner paper bevel highlight */}
+                    <View style={styles.drBevel} pointerEvents="none" />
 
-                  {/* Close button — inside the panel */}
-                  <TouchableOpacity
-                    style={styles.drClose}
-                    onPress={closeDailyModal}
-                    activeOpacity={0.8}
-                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                  >
-                    <Text style={styles.drCloseText}>✕</Text>
-                  </TouchableOpacity>
+                    {/* Close button — inside the panel */}
+                    <TouchableOpacity
+                      style={styles.drClose}
+                      onPress={closeDailyModal}
+                      activeOpacity={0.8}
+                      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                    >
+                      <Text style={styles.drCloseText}>✕</Text>
+                    </TouchableOpacity>
 
-                  {/* Hero: gift box — claimed version has its own checkmark */}
-                  <View style={styles.drHero}>
-                    <SoftEllipseShadow width={100} height={24} style={styles.drGiftShadow} />
-                    {!claimed && <IconGlowBackground size={120} />}
-                    <Sparkle size={14} color="#F4D079" style={styles.drSparkle1} />
-                    <Sparkle size={9} color="#F8E7AC" style={styles.drSparkle2} />
-                    <Sparkle size={7} color="#F4D079" style={styles.drSparkle3} />
-                    <ItemSprite spritesheet="reward-icons" frameSize={128} frameIndex={claimed ? 1 : 0} displaySize={104} />
-                  </View>
+                    {/* Subtitle */}
+                    <Text style={styles.drSubtitle}>
+                      {alreadyClaimed
+                        ? "You've claimed today's rations."
+                        : dailyJustClaimed
+                          ? 'Added to your bag!'
+                          : 'Claim your rations for today.'}
+                    </Text>
 
-                  {/* Subtitle */}
-                  <Text style={styles.drSubtitle}>
-                    {alreadyClaimed
-                      ? "You've claimed today's reward."
-                      : dailyJustClaimed
-                      ? 'Added to your bag!'
-                      : 'Claim your reward for today.'}
-                  </Text>
-
-                  {alreadyClaimed ? (
-                    /* Countdown — centered, no box, no clock */
-                    <View style={styles.drCountdown}>
-                      <Text style={styles.drWatchLabel}>NEXT REWARD IN</Text>
-                      <Text style={styles.drWatchValue}>{resetCountdown}</Text>
-                    </View>
-                  ) : (
-                    /* Reward items — single container each, no nested wells */
+                    {/* Ration items — always show which supplies are/were given */}
                     <View style={styles.drRewards}>
-                      {dailyRewardRows.map((row) => (
+                      {displayedRewardRows.map((row) => (
                         <View key={row.key} style={styles.drChip}>
                           <ItemSprite spritesheet={row.spritesheet} frameIndex={row.frameIndex} displaySize={40} />
                           <Text style={styles.drChipQty}>+{row.qty}</Text>
@@ -603,40 +610,112 @@ export default function CampScreen({ navigation }) {
                         </View>
                       ))}
                     </View>
-                  )}
 
-                  {/* Wooden action button */}
-                  {dailyClaimedView ? (
-                    <TouchableOpacity activeOpacity={0.85} onPress={closeDailyModal} style={styles.drButton}>
-                      <View style={styles.drButtonInner}>
-                        <Text style={styles.drButtonText}>{dailyJustClaimed ? 'CONTINUE' : 'GREAT, THANKS!'}</Text>
+                    {alreadyClaimed && (
+                      /* Countdown — centered, no box, no clock */
+                      <View style={styles.drCountdown}>
+                        <Text style={styles.drWatchLabel}>NEXT RATIONS IN</Text>
+                        <Text style={styles.drWatchValue}>{resetCountdown}</Text>
                       </View>
-                    </TouchableOpacity>
-                  ) : (
-                    <TouchableOpacity activeOpacity={0.85} onPress={confirmDailyClaim} style={styles.drButton}>
-                      <View style={styles.drButtonInner}>
-                        <Text style={styles.drButtonText}>CLAIM REWARD</Text>
+                    )}
+
+                    {/* Wooden action button */}
+                    {dailyClaimedView ? (
+                      <TouchableOpacity activeOpacity={0.85} onPress={closeDailyModal} style={styles.drButton}>
+                        <View style={styles.drButtonInner}>
+                          <Text style={styles.drButtonText}>{dailyJustClaimed ? 'CONTINUE' : 'GREAT, THANKS!'}</Text>
+                        </View>
+                      </TouchableOpacity>
+                    ) : (
+                      <TouchableOpacity activeOpacity={0.85} onPress={confirmDailyClaim} style={styles.drButton}>
+                        <View style={styles.drButtonInner}>
+                          <Text style={styles.drButtonText}>CLAIM RATIONS</Text>
+                        </View>
+                      </TouchableOpacity>
+                    )}
+
+                  </View>
+
+                  {/* Title sign — mounted on the top border (MEOW DUNGEONS style) */}
+                  <View style={styles.drTopWrap} pointerEvents="none">
+                    <View style={styles.drTopOuter}>
+                      <View style={styles.drTopInner}>
+                        <Text style={styles.drTopText}>DAILY RATIONS</Text>
                       </View>
-                    </TouchableOpacity>
-                  )}
-
-                </View>
-
-                {/* Title sign — mounted on the top border (MEOW DUNGEONS style) */}
-                <View style={styles.drTopWrap} pointerEvents="none">
-                  <View style={styles.drTopOuter}>
-                    <View style={styles.drTopInner}>
-                      <Text style={styles.drTopText}>DAILY REWARDS</Text>
                     </View>
                   </View>
-                </View>
+                </Pressable>
               </Pressable>
-            </Pressable>
-          );
-        })()}
-      </Modal>
+            );
+          })()}
+        </Modal>
 
-    </SafeAreaView>
+        {/* ═══════════════════════════════════════════════════════════════════
+          SETTINGS MODAL — holds destructive/save actions
+          ═══════════════════════════════════════════════════════════════════ */}
+        <Modal
+          visible={settingsModalVisible}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setSettingsModalVisible(false)}
+          statusBarTranslucent
+        >
+          <Pressable style={styles.drOverlay} onPress={() => setSettingsModalVisible(false)}>
+            <Pressable style={[styles.drFrame, theme.SHADOWS.cardShadow]} onPress={() => { }}>
+              <View style={styles.drParchment}>
+                <View style={styles.drBevel} pointerEvents="none" />
+
+                <TouchableOpacity
+                  style={styles.drClose}
+                  onPress={() => setSettingsModalVisible(false)}
+                  activeOpacity={0.8}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                >
+                  <Text style={styles.drCloseText}>✕</Text>
+                </TouchableOpacity>
+
+                <Text style={styles.settingsSectionLabel}>Save Data</Text>
+
+                <TouchableOpacity
+                  activeOpacity={0.85}
+                  style={styles.settingsResetBtn}
+                  onPress={() => {
+                    Alert.alert(
+                      'Reset Game Data',
+                      'Are you sure you want to nuke your save and start completely fresh?',
+                      [
+                        { text: 'Cancel', style: 'cancel' },
+                        {
+                          text: 'Reset Data',
+                          style: 'destructive',
+                          onPress: () => {
+                            dispatch({ type: 'RESET_GAME' });
+                            setSettingsModalVisible(false);
+                          },
+                        },
+                      ]
+                    );
+                  }}
+                >
+                  <View style={styles.settingsResetBtnInner}>
+                    <Text style={styles.settingsResetBtnText}>RESET SAVE DATA</Text>
+                  </View>
+                </TouchableOpacity>
+                <Text style={styles.settingsHint}>This permanently deletes all of your progress.</Text>
+              </View>
+
+              <View style={styles.drTopWrap} pointerEvents="none">
+                <View style={styles.drTopOuter}>
+                  <View style={styles.drTopInner}>
+                    <Text style={styles.drTopText}>SETTINGS</Text>
+                  </View>
+                </View>
+              </View>
+            </Pressable>
+          </Pressable>
+        </Modal>
+
+      </SafeAreaView>
     </ScreenLoader>
   );
 }
@@ -691,14 +770,14 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   ctaTitle: {
-    fontFamily: 'PixelifySans-Regular',
+    fontFamily: 'Jersey10-Regular',
     fontWeight: 'normal',
     fontSize: 18,
     color: '#07070A',
     letterSpacing: 0.3,
   },
   ctaSub: {
-    fontFamily: 'PixelifySans-Regular',
+    fontFamily: 'Jersey10-Regular',
     fontWeight: 'normal',
     fontSize: 12,
     color: 'rgba(7, 7, 10, 0.65)',
@@ -717,13 +796,13 @@ const styles = StyleSheet.create({
   },
   dungeonCard: {
     width: '100%',
-    paddingVertical: 14,
+    paddingVertical: 10,
     paddingHorizontal: 20,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'flex-start',
     gap: 16,
-    marginBottom: theme.SPACING.section + 5, // 16px visual gap + 5px shadow height offset
+    marginBottom: 12, // 7px visual gap + 5px shadow height offset
   },
   dungeonSpriteContainer: {
     justifyContent: 'center',
@@ -737,16 +816,18 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
   },
   dungeonLabel: {
-    fontFamily: 'PixelifySans-Regular',
+    fontFamily: 'Jersey10-Regular',
     fontWeight: 'normal',
-    fontSize: 24,
+    fontSize: 30,
+    letterSpacing: 1.5,
     color: '#FFF3DA',
     textTransform: 'uppercase',
   },
   dungeonSub: {
-    fontFamily: 'Silkscreen-Regular',
+    fontFamily: 'Jersey10-Regular',
     fontWeight: 'normal',
-    fontSize: 10,
+    fontSize: 13,
+    letterSpacing: 0.5,
     color: '#FFEED0',
     marginTop: 2,
   },
@@ -761,8 +842,8 @@ const styles = StyleSheet.create({
     borderColor: theme.COLORS.candleGold,
     borderWidth: 2,
     borderRadius: theme.BORDER_RADIUS.card,
-    paddingTop: 10,
-    paddingBottom: 8,
+    paddingTop: 7,
+    paddingBottom: 6,
     paddingHorizontal: 4,
     alignItems: 'center',
     justifyContent: 'center',
@@ -772,16 +853,17 @@ const styles = StyleSheet.create({
   subSpriteContainer: {
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 6,
+    marginBottom: 4,
     width: 44,
     height: 44,
     position: 'relative',
   },
   subCardLabel: {
-    fontFamily: 'PixelifySans-Regular',
+    fontFamily: 'Jersey10-Regular',
     fontWeight: 'normal',
-    fontSize: 11,
-    lineHeight: 12,
+    fontSize: 14,
+    lineHeight: 15,
+    letterSpacing: 0.5,
     color: '#FFF3DA',
     textAlign: 'center',
     textTransform: 'uppercase',
@@ -803,10 +885,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'flex-start',
     gap: 16,
-    marginBottom: theme.SPACING.section,
+    marginBottom: 10,
     borderRadius: theme.BORDER_RADIUS.card,
     borderWidth: 3,
-    paddingVertical: 14,
+    paddingVertical: 10,
     paddingHorizontal: 20,
   },
   dailyRewardBtnClaimed: {
@@ -825,28 +907,30 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
   },
   dailyRewardTitle: {
-    fontFamily: 'PixelifySans-Regular',
+    fontFamily: 'Jersey10-Regular',
     fontWeight: 'normal',
-    fontSize: 20,
+    fontSize: 25,
+    letterSpacing: 1.5,
     textTransform: 'uppercase',
   },
   dailyRewardTitleActive: {
     color: '#FFF3DA',
   },
   dailyRewardTitleClaimed: {
-    color: '#6E6E73',
+    color: '#A6AC9E',
   },
   dailyRewardSub: {
-    fontFamily: 'Silkscreen-Regular',
+    fontFamily: 'Jersey10-Regular',
     fontWeight: 'normal',
-    fontSize: 10,
+    fontSize: 13,
+    letterSpacing: 0.5,
     marginTop: 2,
   },
   dailyRewardSubActive: {
     color: '#FFEED0',
   },
   dailyRewardSubClaimed: {
-    color: '#6E6E73',
+    color: '#8A9384',
   },
 
   /* ═══ Stat Point Buttons & Badge ══════════════════════════════════════════ */
@@ -859,7 +943,47 @@ const styles = StyleSheet.create({
     borderColor: '#4A3917',
     overflow: 'hidden',
     position: 'relative',
-    marginBottom: theme.SPACING.section,
+    marginBottom: 10,
+  },
+  /* ═══ Mochi Speech Bubble ══════════════════════════════════════════════════ */
+  mochiBubble: {
+    position: 'absolute',
+    left: 14,
+    bottom: '34%',
+    maxWidth: '34%',
+    alignItems: 'flex-start',
+    zIndex: 20,
+  },
+  mochiBubbleBody: {
+    backgroundColor: '#F4E6C0',
+    borderColor: '#4A3917',
+    borderWidth: 2,
+    borderRadius: 10,
+    paddingVertical: 7,
+    paddingHorizontal: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 3,
+    elevation: 4,
+  },
+  mochiBubbleText: {
+    fontFamily: 'Jersey10-Regular',
+    fontSize: 14,
+    lineHeight: 16,
+    letterSpacing: 0.3,
+    color: '#3A2410',
+  },
+  mochiBubbleTail: {
+    width: 14,
+    height: 14,
+    backgroundColor: '#F4E6C0',
+    borderColor: '#4A3917',
+    borderRightWidth: 2,
+    borderBottomWidth: 2,
+    transform: [{ rotate: '45deg' }],
+    marginLeft: 50,
+    marginTop: -8,
   },
   bannerOverlayContent: {
     ...StyleSheet.absoluteFillObject,
@@ -1017,24 +1141,6 @@ const styles = StyleSheet.create({
     lineHeight: 15,
     color: '#6E4524',
   },
-  drHero: {
-    width: 150,
-    height: 100,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 6,
-    marginBottom: 0,
-    position: 'relative',
-    zIndex: 2,
-  },
-  drGiftShadow: {
-    position: 'absolute',
-    bottom: 2,
-    left: 25, // (hero width 150 - 100) / 2 → centered
-  },
-  drSparkle1: { position: 'absolute', top: 8, left: 24 },
-  drSparkle2: { position: 'absolute', top: 18, right: 28 },
-  drSparkle3: { position: 'absolute', bottom: 20, left: 34 },
   drTopWrap: {
     position: 'absolute',
     top: -17,
@@ -1168,5 +1274,57 @@ const styles = StyleSheet.create({
     textShadowColor: '#4A2A10',
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 1,
+  },
+
+  /* ═══ Settings Modal ═══════════════════════════════════════════════════════ */
+  settingsSectionLabel: {
+    fontFamily: 'Silkscreen-Regular',
+    fontSize: 10,
+    color: '#8A6E44',
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+    alignSelf: 'flex-start',
+    marginBottom: 8,
+  },
+  settingsResetBtn: {
+    alignSelf: 'stretch',
+    backgroundColor: '#6E2A24',
+    borderColor: '#3A1410',
+    borderWidth: 2,
+    borderRadius: 12,
+    padding: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 3,
+    elevation: 4,
+  },
+  settingsResetBtnInner: {
+    backgroundColor: '#9A332F',
+    borderRadius: 9,
+    paddingVertical: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderTopWidth: 1.5,
+    borderTopColor: '#C5584E',
+    borderBottomWidth: 2,
+    borderBottomColor: '#5A1818',
+  },
+  settingsResetBtnText: {
+    fontFamily: 'Silkscreen-Regular',
+    fontSize: 12,
+    color: '#FFF3DA',
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+    textShadowColor: '#4A1010',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 1,
+  },
+  settingsHint: {
+    fontFamily: 'Jersey10-Regular',
+    fontSize: 11,
+    color: '#8A6E44',
+    textAlign: 'center',
+    marginTop: 10,
   },
 });

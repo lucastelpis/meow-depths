@@ -152,7 +152,7 @@ export default function NameInputScreen({ navigation }) {
 
           {/* Lore text */}
           <Text style={styles.loreText}>
-            For generations, the Meow Order has protected the world from evil. As a new recruit following your family's tradition, explore endless regions and grow stronger to cleanse the world.
+            For generations, the Meow Order has protected the world from evil. As a new recruit, explore dangerous regions and grow stronger to cleanse the world and uncover its secrets.
           </Text>
 
           {/* Name input */}
@@ -298,9 +298,9 @@ const styles = StyleSheet.create({
 
   /* Lore text */
   loreText: {
-    fontFamily: 'PixelifySans-Regular',
-    fontSize: 12,
-    lineHeight: 18,
+    fontFamily: 'Jersey10-Regular',
+    fontSize: 15,
+    lineHeight: 22,
     color: 'rgba(255, 243, 218, 0.7)',
     textAlign: 'center',
     marginBottom: 28,
@@ -337,8 +337,8 @@ const styles = StyleSheet.create({
     paddingBottom: 5,
     borderBottomWidth: 2,
     borderBottomColor: 'rgba(232, 167, 58, 0.55)',
-    fontFamily: 'PixelifySans-Regular',
-    fontSize: 22,
+    fontFamily: 'Jersey10-Regular',
+    fontSize: 28,
     fontWeight: 'normal',
     color: '#FFF3DA',
   },
@@ -358,9 +358,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   continueText: {
-    fontFamily: 'PixelifySans-Regular',
+    fontFamily: 'Jersey10-Regular',
     fontWeight: 'normal',
-    fontSize: 20,
+    fontSize: 25,
     color: '#FFF3DA',
     letterSpacing: 1,
     textTransform: 'uppercase',

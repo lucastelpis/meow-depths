@@ -14,7 +14,7 @@ Meow Depths is an RPG/region-crawler game built using React Native and Expo, fea
 - **Inventory/Loadout Screen**: Accessible from the hub. Contains three tabs (Supplies, Gear, Materials) styled as cozy parchment/wood tabs.
 - **Market (Shop) Screen**: Accessible from the hub. Contains three tabs (Supplies shop, Gear armory, Forge fusion) styled as cozy parchment/wood tabs.
 - **Region Map Screen**: Allows entering zones to fight enemies.
-- **Expeditions Screen**: Displays available regions (Soggy Sewers, Twisted Gardens, Sunken Docks) with custom level ranges, run completion statistics, and zone completion status. Each region card features a full-bleed premium background banner image scaled to a perfect 2:1 aspect ratio matching the dimensions of the assets.
+- **Expeditions Screen**: Displays available regions (Soggy Ruins, Twisted Gardens, Sunken Docks) with custom level ranges, run completion statistics, and zone completion status. Each region card features a full-bleed premium background banner image scaled to a perfect 2:1 aspect ratio matching the dimensions of the assets.
 - **Skill Tree Screen**: Unlocks and upgrades active and passive skills using gold/crystals.
 
 ## Crystal Forging & Fusion
@@ -24,7 +24,7 @@ Players can fuse lower-tier crystal shards and crystals into higher-tier ones in
   - 10x Small Crystals ➔ 1x Big Crystal of the same color.
 - **Cores**: Crystal Cores cannot be forged and are only obtained as rare boss/chest drops.
 - **Progression Lock**: Crystals and fusion recipes are locked by region progression:
-  - **Black Crystals (Zone 1 - Soggy Sewers)**: Always unlocked and available from the start.
+  - **Black Crystals (Zone 1 - Soggy Ruins)**: Always unlocked and available from the start.
   - **Green Crystals (Zone 2 - Twisted Garden)**: Unlocked/visible only after Zone 1 is cleared (`state.progress.zone1Cleared` is true).
   - **Yellow Crystals (Zone 3 - Sunken Docks)**: Unlocked/visible only after Zone 2 is cleared (`state.progress.zone2Cleared` is true).
 
@@ -106,7 +106,7 @@ Crystals and shards use frames from the `crystals-1` spritesheet:
 
 ## Region Banners Reference
 Region cards on the Expeditions screen use high-quality banner images as backgrounds, which are preloaded and tinted dynamically using zone-specific colors:
-- **Zone 1 (Soggy Sewers)**: `assets/sprites/banners/soggy_sewers_banner_600x300.png`
+- **Zone 1 (Soggy Ruins)**: `assets/sprites/banners/soggy_sewers_banner_600x300.png`
 - **Zone 2 (Twisted Garden)**: `assets/sprites/banners/twisted_gardens_banner_600x300.png`
 - **Zone 3 (Sunken Docks)**: `assets/sprites/banners/sunken_docks_banner_600x300.png`
 

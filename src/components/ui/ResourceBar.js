@@ -40,8 +40,8 @@ export default function ResourceBar({
   let barConfig = {
     fillColor: theme.COLORS.healthGreen,
     trackColor: '#0D2618',
-    height: 10,
-    radius: 4,
+    height: 13,
+    radius: 5,
     showText: true,
   };
 
@@ -49,16 +49,16 @@ export default function ResourceBar({
     barConfig = {
       fillColor: theme.COLORS.damageRed,
       trackColor: '#241016',
-      height: 10,
-      radius: 4,
+      height: 13,
+      radius: 5,
       showText: true,
     };
   } else if (variant === 'xp') {
     barConfig = {
       fillColor: theme.COLORS.candleGold,
       trackColor: '#2A2010',
-      height: 10,
-      radius: 4,
+      height: 13,
+      radius: 5,
       showText: true,
     };
   }
@@ -151,18 +151,19 @@ const styles = StyleSheet.create({
   },
   valueTextOverlay: {
     ...StyleSheet.absoluteFillObject,
-    ...theme.FONTS.label,
-    fontSize: 8,
-    fontWeight: 'bold',
+    fontFamily: 'Jersey10-Regular',
+    fontSize: 13,
+    letterSpacing: 0.5,
     color: '#FFFFFF',
     textAlign: 'center',
-    lineHeight: 10,
+    textAlignVertical: 'center',
+    lineHeight: 13,
     textShadowColor: 'rgba(0, 0, 0, 0.75)',
     textShadowOffset: { width: 0.5, height: 0.5 },
     textShadowRadius: 1,
   },
   valueTextSmallOverlay: {
-    fontSize: 8,
-    lineHeight: 10,
+    fontSize: 12,
+    lineHeight: 13,
   },
 });

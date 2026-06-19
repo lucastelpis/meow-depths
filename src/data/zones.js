@@ -24,7 +24,7 @@
 export const ZONES = {
   zone1: {
     id: 'zone1',
-    name: 'The Soggy Sewers',
+    name: 'The Soggy Ruins',
     description:
       'Damp tunnels crawling with rats and worse. The stench alone could kill you.',
     minLevel: 1,

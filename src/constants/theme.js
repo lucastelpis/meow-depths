@@ -32,7 +32,7 @@ const COLORS = {
   buffMint: '#5CC489',
 
   // Zone background tints
-  zoneSoggySewers: '#0A120C',
+  zoneSoggyRuins: '#0A120C',
   zoneTwistedGarden: '#0C1A08',
   zoneSunkenDocks: '#08101F',
 
@@ -96,12 +96,12 @@ const FONTS = {
     fontSize: 18, // Decreased from 24 as Press Start is wider and taller
   },
   heading: {
-    fontFamily: 'PixelifySans-Regular', // Proportional clean pixel font for headers
+    fontFamily: 'Jersey10-Regular', // Cozy, highly legible pixel font for headers
     fontWeight: 'normal',
     fontSize: 16,
   },
   body: {
-    fontFamily: 'PixelifySans-Regular', // High legibility proportional pixel font
+    fontFamily: 'Jersey10-Regular', // Cozy, highly legible pixel font for body text
     fontWeight: 'normal',
     fontSize: 13,
     lineHeight: 19.5, // 1.5x of 13px

@@ -784,8 +784,13 @@ export default function CombatScreen() {
     // 4. Generate the encounter based on the room type
     let taggedEnemies = [];
     let pool = zone.enemies.map(id => ENEMIES[id]).filter(Boolean);
+    // Respect per-enemy floor gating (e.g. Cockroach Knight has minFloor: 5).
+    // Fall back to the unfiltered pool if gating would leave nothing to spawn.
+    const floorGated = pool.filter(e => (e.minFloor || 1) <= floorNumber);
+    if (floorGated.length > 0) pool = floorGated;
     if (floorNumber === 1) {
-      pool = pool.filter(e => e.stars === 1);
+      const starGated = pool.filter(e => e.stars === 1);
+      if (starGated.length > 0) pool = starGated;
     }
 
     if (roomType === 'boss') {
@@ -851,6 +856,15 @@ export default function CombatScreen() {
     }));
 
     setEnemies(taggedEnemies);
+
+    // Mark these creatures as encountered (unlocks their bestiary card in the
+    // Journal). Marking on combat start means fleeing/losing still counts.
+    const encounteredIds = taggedEnemies
+      .map((e) => (e.id || '').replace(/^elite_/, ''))
+      .filter(Boolean);
+    if (encounteredIds.length > 0) {
+      dispatch({ type: 'ENCOUNTER_CREATURES', payload: { enemyIds: encounteredIds } });
+    }
 
     // 5. Initialise cooldowns for equipped skills
     const initCooldowns = {};
@@ -1447,6 +1461,10 @@ export default function CombatScreen() {
         updatedHero,
       );
 
+      if (turnResult.log) {
+        addLog(turnResult.log);
+      }
+
       // ── COOLDOWN FIX: executeEnemyTurn mutates enemy.cooldowns in-place.
       // Write the updated cooldowns back into the array so they persist.
       updatedEnemies[i] = { ...enemy, cooldowns: { ...(enemy.cooldowns || {}) } };
@@ -1567,12 +1585,12 @@ export default function CombatScreen() {
             };
           });
         } else {
-          // Fortitude — chance to completely resist each incoming status effect
+          // VIT + Fortitude — chance to completely resist each incoming status effect
           const resistChance = updatedHero.passives?.statusResistChance || 0;
           const effectsToApply = resistChance > 0
             ? turnResult.effects.filter(effect => {
               if (Math.random() < resistChance) {
-                addLog(`🛡️ Fortitude resisted ${effect.type.replace(/_/g, ' ')}!`);
+                addLog(`🛡️ ${updatedHero.name || 'Mochi'} resisted ${effect.type.replace(/_/g, ' ')}!`);
                 return false;
               }
               return true;
@@ -3209,7 +3227,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   loadingText: {
-    fontFamily: 'PixelifySans-Regular',
+    fontFamily: 'Jersey10-Regular',
     fontSize: 16,
     color: '#707F94',
     fontWeight: 'normal',
@@ -3317,7 +3335,7 @@ const styles = StyleSheet.create({
     zIndex: 6,
   },
   charName: {
-    fontFamily: 'PixelifySans-Regular',
+    fontFamily: 'Jersey10-Regular',
     fontSize: 10,
     lineHeight: 11,
     color: theme.COLORS.parchment,
@@ -3657,7 +3675,7 @@ const styles = StyleSheet.create({
     zIndex: 2,
   },
   modalTitle: {
-    fontFamily: 'PixelifySans-Regular',
+    fontFamily: 'Jersey10-Regular',
     fontSize: 18,
     color: '#F8FAFC',
     fontWeight: 'normal',
@@ -3671,7 +3689,7 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   fleeConfirmText: {
-    fontFamily: 'PixelifySans-Regular',
+    fontFamily: 'Jersey10-Regular',
     fontSize: 16,
     color: '#EADCB9',
     textAlign: 'center',
@@ -3725,7 +3743,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   infoSkillName: {
-    fontFamily: 'PixelifySans-Regular',
+    fontFamily: 'Jersey10-Regular',
     fontSize: 18,
     color: '#F8FAFC',
     fontWeight: 'normal',
@@ -3801,7 +3819,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   modalItemName: {
-    fontFamily: 'PixelifySans-Regular',
+    fontFamily: 'Jersey10-Regular',
     fontSize: 16,
     color: '#F8FAFC',
     marginBottom: 4,
@@ -3846,7 +3864,7 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   lostLootTitle: {
-    fontFamily: 'PixelifySans-Regular',
+    fontFamily: 'Jersey10-Regular',
     fontSize: 12,
     color: '#9E2A2B',
     textTransform: 'uppercase',
@@ -4117,7 +4135,7 @@ const styles = StyleSheet.create({
   },
   levelUpText: {
     ...theme.FONTS.body,
-    color: theme.COLORS.stun,
+    color: '#4A2E14',
     fontWeight: 'bold',
     textAlign: 'center',
   },

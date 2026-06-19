@@ -73,8 +73,8 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1, borderBottomColor: 'rgba(255, 255, 255, 0.04)',
   },
   backBtn: { width: 70, paddingVertical: 6 },
-  backText: { color: '#D4A754', fontFamily: 'PixelifySans-Regular', fontSize: 16, letterSpacing: 0.5 },
+  backText: { color: '#D4A754', fontFamily: 'Jersey10-Regular', fontSize: 16, letterSpacing: 0.5 },
   titleContainer: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
-  titleText: { fontFamily: 'PixelifySans-Regular', fontSize: 20, color: '#F8FAFC', letterSpacing: 0.8 },
+  titleText: { fontFamily: 'Jersey10-Regular', fontSize: 20, color: '#F8FAFC', letterSpacing: 0.8 },
   headerSpacer: { width: 70 },
 });

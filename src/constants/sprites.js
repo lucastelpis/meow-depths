@@ -12,7 +12,7 @@
  *
  * Color coding:
  *   Blue   = Hero (Mochi)
- *   Black  = Zone 1 enemies (Soggy Sewers)
+ *   Black  = Zone 1 enemies (Soggy Ruins)
  *   Red    = Zone 2 enemies (Twisted Garden)
  *   Purple = Zone 3 enemies (Sunken Docks)
  *   Yellow = Bosses (any zone)
@@ -133,7 +133,7 @@ export const HERO_FIREPLACE_SPRITE = {
 
 export const ENEMY_SPRITES = {
 
-  // ── Zone 1 — Soggy Sewers (Black units) ──────────────────────────────────
+  // ── Zone 1 — Soggy Ruins (Black units) ──────────────────────────────────
 
   sewer_rat: {
     platformOffsetFactor: 0.0,
@@ -223,7 +223,7 @@ export const CAMP_MONASTERY = require('../../assets/sprites/Tiny Swords (Free Pa
 // ─── Dungeon Banners ─────────────────────────────────────────────────────────
 
 export const DUNGEON_BANNERS = {
-  zone1: require('../../assets/sprites/banners/soggy_sewers_banner_600x300.png'),
+  zone1: require('../../assets/sprites/banners/soggy_sewers.png'),
   zone2: require('../../assets/sprites/banners/twisted_gardens_banner_600x300.png'),
   zone3: require('../../assets/sprites/banners/sunken_docks_banner_600x300.png'),
 };
@@ -328,7 +328,7 @@ export const ALL_SPRITESHEET_ASSETS = [
   require('../../assets/sprites/Tiny Swords (Free Pack)/Buildings/Yellow Buildings/Castle.png'),
   require('../../assets/sprites/Tiny Swords (Free Pack)/Buildings/Yellow Buildings/Monastery.png'),
   // Dungeon Banners
-  require('../../assets/sprites/banners/soggy_sewers_banner_600x300.png'),
+  require('../../assets/sprites/banners/soggy_sewers.png'),
   require('../../assets/sprites/banners/twisted_gardens_banner_600x300.png'),
   require('../../assets/sprites/banners/sunken_docks_banner_600x300.png'),
 ];

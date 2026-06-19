@@ -117,6 +117,8 @@ const initialState = {
       zone2: 0,
       zone3: 0,
     },
+    encounteredCreatures: {}, // { enemyId: true } — unlocks bestiary cards
+    notesCollected: {},       // { noteId: true } — e.g. 'zone1_floor3'
   },
 
   // -- Current Run (temporary, reset after each dungeon run) ----------------
@@ -774,11 +776,14 @@ function gameReducer(state, action) {
       const newRunsCompleted = { ...currentRunsCompleted };
       const currentFloorsCleared = currentProgress.floorsCleared || { zone1: 0, zone2: 0, zone3: 0 };
       const newFloorsCleared = { ...currentFloorsCleared };
+      const newNotesCollected = { ...(currentProgress.notesCollected || {}) };
       if (outcome === 'win' && zoneId) {
         newRunsCompleted[zoneId] = (newRunsCompleted[zoneId] || 0) + 1;
         // Only advance if this floor hasn't been cleared before (prevent re-farming advancement)
         if (completedFloor > (newFloorsCleared[zoneId] || 0)) {
           newFloorsCleared[zoneId] = completedFloor;
+          // Award the field note for clearing this floor for the first time
+          newNotesCollected[`${zoneId}_floor${completedFloor}`] = true;
         }
       }
 
@@ -798,6 +803,7 @@ function gameReducer(state, action) {
           ...state.progress,
           runsCompleted: newRunsCompleted,
           floorsCleared: newFloorsCleared,
+          notesCollected: newNotesCollected,
         },
         currentRun: {
           active: false,
@@ -1156,6 +1162,28 @@ function gameReducer(state, action) {
           statPoints: newStatPoints,
           hp: newHp,
         },
+      };
+    }
+
+    // -----------------------------------------------------------------------
+    // ENCOUNTER_CREATURES — mark creatures as seen (unlocks bestiary cards)
+    // Payload: { enemyIds: string[] }
+    // -----------------------------------------------------------------------
+    case 'ENCOUNTER_CREATURES': {
+      const ids = action.payload?.enemyIds || [];
+      if (ids.length === 0) return state;
+      const next = { ...(state.progress.encounteredCreatures || {}) };
+      let changed = false;
+      for (const id of ids) {
+        if (id && !next[id]) {
+          next[id] = true;
+          changed = true;
+        }
+      }
+      if (!changed) return state;
+      return {
+        ...state,
+        progress: { ...state.progress, encounteredCreatures: next },
       };
     }
 

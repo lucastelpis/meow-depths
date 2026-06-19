@@ -157,7 +157,7 @@ function IconGlowBackground({ size = 56 }) {
 const ELEMENTS = [
     {
         id: 'fire',
-        name: 'Fire',
+        name: 'FIRE',
         icon: '🔥',
         tagline: 'Burn everything. Patient pressure, relentless damage.',
         color: '#FF6B35',
@@ -167,7 +167,7 @@ const ELEMENTS = [
     },
     {
         id: 'water',
-        name: 'Water',
+        name: 'WATER',
         icon: '💧',
         tagline: 'Sustain and endure. Wear enemies down while staying alive.',
         color: '#3B9EFF',
@@ -177,7 +177,7 @@ const ELEMENTS = [
     },
     {
         id: 'earth',
-        name: 'Earth',
+        name: 'EARTH',
         icon: '⛰️',
         tagline: 'Immovable. Absorb punishment, resist everything.',
         color: '#D4A754',
@@ -187,7 +187,7 @@ const ELEMENTS = [
     },
     {
         id: 'wind',
-        name: 'Wind',
+        name: 'WIND',
         icon: '🌪️',
         tagline: 'Fast and precise. Evade attacks, strike with deadly accuracy.',
         color: '#5CC4B8',
@@ -223,7 +223,9 @@ export default function ElementSelectionScreen({ route, navigation }) {
         const scrollOffset = event.nativeEvent.contentOffset.x;
         const index = Math.round(scrollOffset / SNAP_INTERVAL);
         if (index >= 0 && index < ELEMENTS.length) {
-            setSelectedElement(ELEMENTS[index].id);
+            const id = ELEMENTS[index].id;
+            // Guard against redundant setState while onScroll fires every frame
+            setSelectedElement((prev) => (prev === id ? prev : id));
         }
     };
 
@@ -275,7 +277,7 @@ export default function ElementSelectionScreen({ route, navigation }) {
                     <View style={styles.titlePlaqueOuter}>
                         <View style={styles.titlePlaqueInner}>
                             <Text style={styles.titlePlaqueText}>
-                                CHOOSE YOUR{'\n'}FIGHTING STYLE
+                                CHOOSE YOUR{'\n'}AFFINITY
                             </Text>
                         </View>
                         <View style={styles.topTagOverlay}>
@@ -288,13 +290,15 @@ export default function ElementSelectionScreen({ route, navigation }) {
                     {/* Element Selection Carousel */}
                     <View style={styles.carouselSection}>
                         <Text style={styles.carouselSubtitle}>
-                            New recruits must choose an elemental skill path to follow. Choose your path and start your journey. Each path has a different skill set.
+                            Every recruit carries an elemental affinity. Unlock yours and begin your journey.
                         </Text>
 
                         <ScrollView
                             ref={scrollViewRef}
                             horizontal
                             showsHorizontalScrollIndicator={false}
+                            onScroll={handleScroll}
+                            scrollEventThrottle={16}
                             onMomentumScrollEnd={handleScroll}
                             style={styles.carouselScrollView}
                             contentContainerStyle={styles.carouselContainer}
@@ -387,8 +391,8 @@ export default function ElementSelectionScreen({ route, navigation }) {
                             <ItemSprite spritesheet="icons-1" frameIndex={elementDef ? elementDef.spriteFrame : 0} displaySize={48} />
                         </View>
                         <View style={styles.startTextContainer}>
-                            <Text style={styles.startLabel}>START PLAYING</Text>
-                            <Text style={styles.startSub}>BEGIN AS {elementDef ? elementDef.name.toUpperCase() : ''}</Text>
+                            <Text style={styles.startLabel}>BEGIN ADVENTURE</Text>
+                            <Text style={styles.startSub}>PATH OF {elementDef ? elementDef.name.toUpperCase() : ''}</Text>
                         </View>
                     </TouchableOpacity>
                 </View>
@@ -455,7 +459,7 @@ export default function ElementSelectionScreen({ route, navigation }) {
                                         <Text style={{ color: elementDef?.color, fontWeight: 'bold' }}>
                                             {elementDef?.name} element
                                         </Text>{' '}
-                                        for this adventure. This defines your playstyle.
+                                        affinity for this adventure. This defines your skills and playstyle.
                                     </Text>
                                     <Text style={styles.modalWarning}>
                                         This choice is permanent until you start a new game.
@@ -593,9 +597,9 @@ const styles = StyleSheet.create({
         marginBottom: 6,
     },
     carouselSubtitle: {
-        fontFamily: 'PixelifySans-Regular',
-        fontSize: 12,
-        lineHeight: 18,
+        fontFamily: 'Jersey10-Regular',
+        fontSize: 15,
+        lineHeight: 22,
         color: 'rgba(255, 243, 218, 0.6)',
         textAlign: 'center',
         paddingHorizontal: 16,
@@ -645,9 +649,9 @@ const styles = StyleSheet.create({
         letterSpacing: 1,
     },
     elementTagline: {
-        fontFamily: 'PixelifySans-Regular',
-        fontSize: 12,
-        lineHeight: 16,
+        fontFamily: 'Jersey10-Regular',
+        fontSize: 15,
+        lineHeight: 20,
         color: 'rgba(255, 243, 218, 0.65)',
         textAlign: 'center',
         paddingHorizontal: 45,
@@ -713,9 +717,9 @@ const styles = StyleSheet.create({
         alignItems: 'flex-start',
     },
     startLabel: {
-        fontFamily: 'PixelifySans-Regular',
+        fontFamily: 'Jersey10-Regular',
         fontWeight: 'normal',
-        fontSize: 24,
+        fontSize: 30,
         color: '#FFF3DA',
         textTransform: 'uppercase',
     },
@@ -795,8 +799,8 @@ const styles = StyleSheet.create({
         backgroundColor: 'rgba(255, 243, 218, 0.15)',
     },
     dividerDiamond: {
-        fontFamily: 'PixelifySans-Regular',
-        fontSize: 10,
+        fontFamily: 'Jersey10-Regular',
+        fontSize: 13,
         color: '#D4A754',
         marginHorizontal: 8,
         opacity: 0.8,
@@ -811,16 +815,16 @@ const styles = StyleSheet.create({
         marginBottom: 20,
     },
     modalBody: {
-        fontFamily: 'PixelifySans-Regular',
-        fontSize: 13,
+        fontFamily: 'Jersey10-Regular',
+        fontSize: 16,
         color: 'rgba(255, 255, 255, 0.8)',
         textAlign: 'center',
-        lineHeight: 19,
+        lineHeight: 23,
         marginBottom: 8,
     },
     modalWarning: {
-        fontFamily: 'PixelifySans-Regular',
-        fontSize: 11,
+        fontFamily: 'Jersey10-Regular',
+        fontSize: 14,
         color: '#FF8A8A',
         textAlign: 'center',
         fontWeight: 'normal',
@@ -841,8 +845,8 @@ const styles = StyleSheet.create({
         backgroundColor: 'rgba(255, 255, 255, 0.03)',
     },
     modalCancelText: {
-        fontFamily: 'PixelifySans-Regular',
-        fontSize: 13,
+        fontFamily: 'Jersey10-Regular',
+        fontSize: 16,
         fontWeight: 'normal',
         color: 'rgba(255, 243, 218, 0.6)',
     },
@@ -859,8 +863,8 @@ const styles = StyleSheet.create({
         elevation: 4,
     },
     modalConfirmText: {
-        fontFamily: 'PixelifySans-Regular',
-        fontSize: 13,
+        fontFamily: 'Jersey10-Regular',
+        fontSize: 16,
         fontWeight: 'normal',
         color: '#1A1200',
         zIndex: 2,

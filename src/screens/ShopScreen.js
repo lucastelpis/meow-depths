@@ -59,7 +59,7 @@ const MATERIAL_ICONS = {
 
 const MATERIAL_ZONES = [
   {
-    label: 'Soggy Sewers',
+    label: 'Soggy Ruins',
     zoneColor: '#3FB56E',
     emoji: '🖤',
     ids: ['black_shard', 'black_crystal_small', 'black_crystal_big', 'black_crystal_core'],
@@ -80,7 +80,7 @@ const MATERIAL_ZONES = [
 
 // ─── Forge Fusion Recipes ───────────────────────────────────────────────────
 const FORGE_RECIPES = [
-  // Zone 1: Soggy Sewers (Black Crystals)
+  // Zone 1: Soggy Ruins (Black Crystals)
   {
     inputId: 'black_shard',
     outputId: 'black_crystal_small',
@@ -140,7 +140,7 @@ const FORGE_RECIPES = [
 ];
 
 const ZONE_LABELS = {
-  1: '🐀 Zone 1 — Soggy Sewers (Black Crystals)',
+  1: '🐀 Zone 1 — Soggy Ruins (Black Crystals)',
   2: '🌿 Zone 2 — Twisted Garden (Green Crystals)',
   3: '⚓ Zone 3 — Sunken Docks (Yellow Crystals)',
 };
@@ -778,7 +778,7 @@ const styles = StyleSheet.create({
   },
   backText: {
     color: '#D4A754',
-    fontFamily: 'PixelifySans-Regular',
+    fontFamily: 'Jersey10-Regular',
     fontWeight: 'normal',
     fontSize: 16,
     letterSpacing: 0.5,
@@ -791,7 +791,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   titleText: {
-    fontFamily: 'PixelifySans-Regular',
+    fontFamily: 'Jersey10-Regular',
     fontWeight: 'normal',
     fontSize: 20,
     color: '#F8FAFC',
@@ -811,7 +811,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   goldBadgeText: {
-    fontFamily: 'PixelifySans-Regular',
+    fontFamily: 'Jersey10-Regular',
     fontSize: 12,
     fontWeight: 'normal',
     color: '#FFD700',
@@ -838,7 +838,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
   },
   emptyMaterials: {
-    fontFamily: 'PixelifySans-Regular',
+    fontFamily: 'Jersey10-Regular',
     fontSize: 12,
     color: 'rgba(255, 255, 255, 0.25)',
     fontStyle: 'italic',
@@ -861,13 +861,13 @@ const styles = StyleSheet.create({
     marginRight: 6,
   },
   materialName: {
-    fontFamily: 'PixelifySans-Regular',
+    fontFamily: 'Jersey10-Regular',
     fontSize: 12,
     color: 'rgba(255, 255, 255, 0.7)',
     marginRight: 8,
   },
   materialQty: {
-    fontFamily: 'PixelifySans-Regular',
+    fontFamily: 'Jersey10-Regular',
     fontSize: 12,
     color: '#D4A754',
     fontWeight: 'normal',
@@ -927,13 +927,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
   },
   introTitle: {
-    fontFamily: 'PixelifySans-Regular',
+    fontFamily: 'Jersey10-Regular',
     fontSize: 16,
     fontWeight: 'normal',
     color: '#F8FAFC',
   },
   introDesc: {
-    fontFamily: 'PixelifySans-Regular',
+    fontFamily: 'Jersey10-Regular',
     fontSize: 12,
     color: '#707F94',
     marginTop: 3,
@@ -951,7 +951,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   emptyArmoryTitle: {
-    fontFamily: 'PixelifySans-Regular',
+    fontFamily: 'Jersey10-Regular',
     fontSize: 16,
     color: '#D4A754',
     fontWeight: 'normal',
@@ -1008,7 +1008,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   shopRowName: {
-    fontFamily: 'PixelifySans-Regular',
+    fontFamily: 'Jersey10-Regular',
     fontSize: 13,
     color: '#F8FAFC',
     fontWeight: 'normal',
@@ -1029,7 +1029,7 @@ const styles = StyleSheet.create({
     color: '#10B981',
   },
   shopRowDesc: {
-    fontFamily: 'PixelifySans-Regular',
+    fontFamily: 'Jersey10-Regular',
     fontSize: 12,
     color: '#707F94',
     marginTop: 4,
@@ -1114,7 +1114,7 @@ const styles = StyleSheet.create({
     marginTop: 18,
   },
   zoneHeader: {
-    fontFamily: 'PixelifySans-Regular',
+    fontFamily: 'Jersey10-Regular',
     fontSize: 15,
     fontWeight: 'normal',
     color: '#D4A754',
@@ -1146,7 +1146,7 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   gearName: {
-    fontFamily: 'PixelifySans-Regular',
+    fontFamily: 'Jersey10-Regular',
     fontSize: 13,
     color: '#F8FAFC',
     fontWeight: 'normal',
@@ -1211,7 +1211,7 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(92, 196, 137, 0.2)',
   },
   armoryBuyBtnOwnedText: {
-    fontFamily: 'PixelifySans-Regular',
+    fontFamily: 'Jersey10-Regular',
     fontSize: 12,
     fontWeight: 'normal',
     color: '#5CC489',
@@ -1230,7 +1230,7 @@ const styles = StyleSheet.create({
     minHeight: 80,
   },
   lockedZoneText: {
-    fontFamily: 'PixelifySans-Regular',
+    fontFamily: 'Jersey10-Regular',
     fontSize: 12,
     color: 'rgba(255, 255, 255, 0.25)',
     fontStyle: 'italic',
@@ -1239,7 +1239,7 @@ const styles = StyleSheet.create({
 
   /* ── Forge Section ───────────────────────────────────────── */
   subSectionTitle: {
-    fontFamily: 'PixelifySans-Regular',
+    fontFamily: 'Jersey10-Regular',
     fontWeight: 'normal',
     fontSize: 13,
     color: '#D4A754',
@@ -1324,7 +1324,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.01)',
   },
   vaultItemQtyText: {
-    fontFamily: 'PixelifySans-Regular',
+    fontFamily: 'Jersey10-Regular',
     fontSize: 11,
     fontWeight: 'normal',
   },
@@ -1355,7 +1355,7 @@ const styles = StyleSheet.create({
     fontSize: 26,
   },
   recipeMaterialName: {
-    fontFamily: 'PixelifySans-Regular',
+    fontFamily: 'Jersey10-Regular',
     fontSize: 13,
     color: '#F8FAFC',
     textAlign: 'center',

@@ -233,6 +233,9 @@ export function calculateEffectiveStats(hero, skillDefinitions = SKILLS, runBuff
   let critChance = agility * 0.005;
   let dodge = agility * 0.005;
   let bagSlots = 0;
+  // VIT grants status resistance: +0.5% chance to resist an incoming status
+  // application (bleed, stun, atk_reduce, etc.) per point of vitality.
+  let statusResistChance = vitality * 0.005;
   const gearSpecials = [];
   const passives = {};
 
@@ -297,7 +300,8 @@ export function calculateEffectiveStats(hero, skillDefinitions = SKILLS, runBuff
     if (skillId === 'fortitude' && hero.equippedSkills && hero.equippedSkills.includes('fortitude')) {
       const stars = unlockedSkills[skillId].stars || 1;
       if (skillDef.stars[stars]) {
-        passives.statusResistChance = skillDef.stars[stars].statusResistChance || 0;
+        // Stacks on top of the VIT-based resistance below.
+        statusResistChance += skillDef.stars[stars].statusResistChance || 0;
       }
     }
 
@@ -367,6 +371,9 @@ export function calculateEffectiveStats(hero, skillDefinitions = SKILLS, runBuff
     stanceHpBonus = Math.floor(baseHp * stanceBonus.maxHpPercent);
   }
   maxHp = baseHp + gearHp + stanceHpBonus;
+
+  // Cap status resistance so the hero can never be fully immune.
+  passives.statusResistChance = Math.min(0.9, statusResistChance);
 
   return {
     maxHp,
