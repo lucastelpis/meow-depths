@@ -135,6 +135,10 @@ export function calculateDamage(attacker, target, options = {}) {
   if (defBuff && defBuff.value) {
     defVal += defBuff.value;
   }
+  const defReduce = target.effects?.find(e => e.type === 'def_reduce');
+  if (defReduce && defReduce.value) {
+    defVal = defVal * (1 - defReduce.value);
+  }
   const effectiveDef = Math.max(0, defVal - 1); // DEF 1 = 0% reduction baseline
   const reduction = effectiveDef / (effectiveDef + 15);
   let finalDamage = Math.max(1, Math.floor(baseDamage * (1 - reduction)));
@@ -225,6 +229,16 @@ export function checkHeroDodge(heroState) {
  *   log: string
  * }}
  */
+/**
+ * Clamp a raw damage number for *display* in the battle log to what the target
+ * can actually lose (its remaining HP). The returned/applied damage stays raw —
+ * the screen clamps HP to 0 — but the log should never over-report a killing blow.
+ */
+export function displayDamage(raw, remainingHp) {
+  const cap = (typeof remainingHp === 'number') ? remainingHp : raw;
+  return Math.max(0, Math.min(raw, cap));
+}
+
 export function executeAttack(attacker, target, attackerState) {
   // --- Build a human-readable log string for the combat feed ---------------
   const attackerName = attacker.name || 'Hero';
@@ -299,7 +313,7 @@ export function executeAttack(attacker, target, attackerState) {
   }
 
   // --- Build combat log ----------------------------------------------------
-  let log = `${attackerName} attacks ${targetName} for ${result.damage} damage`;
+  let log = `${attackerName} attacks ${targetName} for ${displayDamage(result.damage, target.hp)} damage`;
   if (result.isCrit) log += ' (CRIT!)';
   if (isStealth)     log += ' from stealth';
   if (bleedApplied)  log += ' — applied Bleed!';
@@ -767,7 +781,7 @@ export function executeEnemyTurn(enemy, enemyState, target, targetState) {
   const selfDestruct = isSelfDestruct;
 
   // -- Build log ------------------------------------------------------------
-  let log = `${enemy.name} uses ${move.name} for ${dmgResult.damage} damage`;
+  let log = `${enemy.name} uses ${move.name} for ${displayDamage(dmgResult.damage, target.hp)} damage`;
   if (dmgResult.isCrit) log += ' (CRIT!)';
   if (appliedEffects.length > 0) {
     log += ` — applied ${appliedEffects.map(e => e.type).join(', ')}!`;
@@ -848,18 +862,22 @@ export function processStatusEffects(entityState) {
     }
     switch (effect.type) {
       // -- Burn: deal damage then decrement duration ------------------------
-      case 'burn':
+      case 'burn': {
+        const shown = displayDamage(effect.damage, (entityState.hp || 0) - totalDamage);
         totalDamage += effect.damage;
-        logParts.push(`Burn deals ${effect.damage} damage`);
+        logParts.push(`Burn deals ${shown} damage`);
         effect.duration -= 1;
         break;
+      }
 
       // -- Bleed: deal damage then decrement duration -----------------------
-      case 'bleed':
+      case 'bleed': {
+        const shown = displayDamage(effect.damage, (entityState.hp || 0) - totalDamage);
         totalDamage += effect.damage;
-        logParts.push(`Bleed deals ${effect.damage} damage`);
+        logParts.push(`Bleed deals ${shown} damage`);
         effect.duration -= 1;
         break;
+      }
 
       // -- Stun: just decrement (the "skip turn" is handled elsewhere) ------
       case 'stun':
@@ -902,6 +920,7 @@ export function processStatusEffects(entityState) {
         break;
 
       case 'atk_reduce':
+      case 'def_reduce':
       case 'dodge_reduce':
       case 'crit_reduce':
       case 'debuff_attack':
@@ -909,6 +928,7 @@ export function processStatusEffects(entityState) {
         if (effect.duration <= 0) {
           const names = {
             atk_reduce: 'Attack debuff',
+            def_reduce: 'Defense debuff',
             dodge_reduce: 'Dodge debuff',
             crit_reduce: 'Crit debuff',
             debuff_attack: 'Attack debuff'
@@ -1008,7 +1028,7 @@ export function executeFireSlash(skillDef, stars, heroState, target, burnBonus) 
   return {
     damage,
     targetUid: target.uid || target.id,
-    log: `${heroState.name || 'Mochi'} uses Fire Slash: hits ${target.name} for ${damage}${critText} and applies burn (${burnDmg}/turn for ${starData.burnDuration} turns)!`,
+    log: `${heroState.name || 'Mochi'} uses Fire Slash: hits ${target.name} for ${displayDamage(damage, target.hp)}${critText} and applies burn (${burnDmg}/turn for ${starData.burnDuration} turns)!`,
   };
 }
 
@@ -1038,7 +1058,7 @@ export function executeFireBurst(skillDef, stars, heroState, enemies, targetIdx,
     const burnDmg = calculateBurnDamage(starData.burnDamage, burnBonus);
     applyBurn(primary.effects || (primary.effects = []), burnDmg, starData.burnDuration);
     results.push({ damage, targetUid: primary.uid || primary.id });
-    logParts.push(`${primary.name} takes ${damage}${isCrit ? ' (CRIT!)' : ''} + burn`);
+    logParts.push(`${primary.name} takes ${displayDamage(damage, primary.hp)}${isCrit ? ' (CRIT!)' : ''} + burn`);
   }
 
   // Adjacent enemies (index ±1)
@@ -1053,7 +1073,7 @@ export function executeFireBurst(skillDef, stars, heroState, enemies, targetIdx,
     const spreadDmg = Math.max(1, Math.floor(rawDmg * (1 - reduction)));
 
     results.push({ damage: spreadDmg, targetUid: adj.uid || adj.id });
-    logParts.push(`${adj.name} splashed for ${spreadDmg}`);
+    logParts.push(`${adj.name} splashed for ${displayDamage(spreadDmg, adj.hp)}`);
 
     if (Math.random() < starData.spreadBurnChance) {
       const burnDmg = calculateBurnDamage(starData.burnDamage, burnBonus);
@@ -1099,7 +1119,21 @@ export function applyAtkReduce(effects, value, duration) {
 }
 
 /**
- * Execute Tidal Strike: deals damage and applies ATK reduce to a single target.
+ * Merge a DEF reduce effect onto an entity.
+ * Keeps the highest value and longest duration.
+ */
+export function applyDefReduce(effects, value, duration) {
+  const existing = effects.find(e => e.type === 'def_reduce');
+  if (existing) {
+    existing.value = Math.max(existing.value, value);
+    existing.duration = Math.max(existing.duration, duration);
+  } else {
+    effects.push({ type: 'def_reduce', value, duration });
+  }
+}
+
+/**
+ * Execute Tidal Strike: deals damage and applies DEF reduce to a single target.
  */
 export function executeTidalStrike(skillDef, stars, heroState, target) {
   const starData = skillDef.stars[stars];
@@ -1109,18 +1143,18 @@ export function executeTidalStrike(skillDef, stars, heroState, target) {
     { multiplier: starData.damageMultiplier }
   );
 
-  applyAtkReduce(target.effects || (target.effects = []), starData.atkReduce, starData.duration);
+  applyDefReduce(target.effects || (target.effects = []), starData.defReduce, starData.duration);
 
   const critText = isCrit ? ' (CRIT!)' : '';
   return {
     damage,
     targetUid: target.uid || target.id,
-    log: `${heroState.name || 'Mochi'} uses Tidal Strike: hits ${target.name} for ${damage}${critText} and reduces their ATK by ${Math.round(starData.atkReduce * 100)}% for ${starData.duration} turns!`,
+    log: `${heroState.name || 'Mochi'} uses Tidal Strike: hits ${target.name} for ${displayDamage(damage, target.hp)}${critText} and reduces their DEF by ${Math.round(starData.defReduce * 100)}% for ${starData.duration} turns!`,
   };
 }
 
 /**
- * Execute Tidal Wave: damage + ATK reduce on primary + spread to adjacent.
+ * Execute Tidal Wave: damage + DEF reduce on primary + spread to adjacent.
  */
 export function executeTidalWave(skillDef, stars, heroState, enemies, targetIdx) {
   const starData = skillDef.stars[stars];
@@ -1135,9 +1169,9 @@ export function executeTidalWave(skillDef, stars, heroState, enemies, targetIdx)
       primary,
       { multiplier: starData.damageMultiplier }
     );
-    applyAtkReduce(primary.effects || (primary.effects = []), starData.atkReduce, starData.duration);
+    applyDefReduce(primary.effects || (primary.effects = []), starData.defReduce, starData.duration);
     results.push({ damage, targetUid: primary.uid || primary.id });
-    logParts.push(`${primary.name} takes ${damage}${isCrit ? ' (CRIT!)' : ''} + ATK Reduce`);
+    logParts.push(`${primary.name} takes ${displayDamage(damage, primary.hp)}${isCrit ? ' (CRIT!)' : ''} + DEF Reduce`);
   }
 
   // Adjacent enemies (index ±1)
@@ -1153,11 +1187,11 @@ export function executeTidalWave(skillDef, stars, heroState, enemies, targetIdx)
     const spreadDmg = Math.max(1, Math.floor(rawDmg * (1 - reduction)));
 
     results.push({ damage: spreadDmg, targetUid: adj.uid || adj.id });
-    logParts.push(`${adj.name} splashed for ${spreadDmg}`);
+    logParts.push(`${adj.name} splashed for ${displayDamage(spreadDmg, adj.hp)}`);
 
-    if (Math.random() < starData.spreadAtkReduceChance) {
-      applyAtkReduce(adj.effects || (adj.effects = []), starData.atkReduce, starData.duration);
-      logParts[logParts.length - 1] += ' + ATK Reduce';
+    if (Math.random() < starData.spreadDefReduceChance) {
+      applyDefReduce(adj.effects || (adj.effects = []), starData.defReduce, starData.duration);
+      logParts[logParts.length - 1] += ' + DEF Reduce';
     }
   }
 
@@ -1201,7 +1235,7 @@ export function executeBoulderSlash(skillDef, stars, heroState, target) {
   const stunApplied = Math.random() < starData.stunChance;
 
   const critText = isCrit ? ' (CRIT!)' : '';
-  let log = `${heroState.name || 'Mochi'} uses Boulder Slash: hits ${target.name} for ${damage}${critText}`;
+  let log = `${heroState.name || 'Mochi'} uses Boulder Slash: hits ${target.name} for ${displayDamage(damage, target.hp)}${critText}`;
   if (stunApplied) {
     log += ' and stuns them for 1 turn!';
   } else {
@@ -1253,6 +1287,10 @@ export function executeDualSlash(skillDef, stars, heroState, target) {
   const hits = [];
   const logParts = [];
 
+  // Track remaining HP across hits so the log never shows more than was dealt.
+  let remainingHp = (typeof target.hp === 'number') ? target.hp : Infinity;
+  let totalShown = 0;
+
   for (let i = 0; i < 2; i++) {
     const { damage, isCrit, isDodged } = calculateDamage(heroState, target, {
       multiplier: starData.damageMultiplier,
@@ -1268,14 +1306,16 @@ export function executeDualSlash(skillDef, stars, heroState, target) {
         }
       ]
     });
-    logParts.push(`${damage}${isCrit ? '(CRIT!)' : ''}`);
+    const shown = displayDamage(damage, remainingHp);
+    remainingHp -= damage;
+    totalShown += shown;
+    logParts.push(`${shown}${isCrit ? '(CRIT!)' : ''}`);
   }
 
-  const totalDamage = hits.reduce((s, h) => s + h.targets[0].damage, 0);
   return {
     hits,
     targetUid: target.uid || target.id,
-    log: `${heroState.name || 'Mochi'} uses Dual Slash: hits ${target.name} — ${logParts.join(' + ')} = ${totalDamage} total!`,
+    log: `${heroState.name || 'Mochi'} uses Dual Slash: hits ${target.name} — ${logParts.join(' + ')} = ${totalShown} total!`,
   };
 }
 
@@ -1298,6 +1338,9 @@ export function executeWhirlwind(skillDef, stars, heroState, enemies, targetIdx)
   const primary = enemies[targetIdx];
   if (!primary) return { hits: [], log: `${heroState.name || 'Mochi'} uses Whirlwind: No target!` };
 
+  // Track the primary target's remaining HP across hits for accurate log display.
+  let primaryRemainingHp = (typeof primary.hp === 'number') ? primary.hp : Infinity;
+
   for (let hit = 0; hit < 3; hit++) {
     const targets = [];
 
@@ -1312,7 +1355,9 @@ export function executeWhirlwind(skillDef, stars, heroState, enemies, targetIdx)
       isCrit: pCrit,
       isDodged: pDodge,
     });
-    primaryLogParts.push(`${pDmg}${pCrit ? '(CRIT!)' : ''}`);
+    const pShown = displayDamage(pDmg, primaryRemainingHp);
+    primaryRemainingHp -= pDmg;
+    primaryLogParts.push(`${pShown}${pCrit ? '(CRIT!)' : ''}`);
 
     // Spread to adjacent enemies at 40% of the hit's full damage
     for (const adjIdx of [targetIdx - 1, targetIdx + 1]) {

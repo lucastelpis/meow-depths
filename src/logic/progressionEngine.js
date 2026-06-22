@@ -80,10 +80,9 @@ export function applyHealingEfficiency(baseHeal, heroOrStats) {
   if (!heroOrStats) return baseHeal;
 
   let efficiency = 0;
-  // If it's a raw hero state
-  if (heroOrStats.equippedSkills && heroOrStats.unlockedSkills) {
-    const isEquipped = heroOrStats.equippedSkills.includes('hydration');
-    if (isEquipped && heroOrStats.unlockedSkills['hydration']) {
+  // If it's a raw hero state — Hydration is always active once unlocked.
+  if (heroOrStats.unlockedSkills) {
+    if (heroOrStats.unlockedSkills['hydration']) {
       const stars = heroOrStats.unlockedSkills['hydration'].stars || 1;
       const hydrationDef = SKILLS['hydration'];
       if (hydrationDef && hydrationDef.stars[stars]) {
@@ -288,8 +287,10 @@ export function calculateEffectiveStats(hero, skillDefinitions = SKILLS, runBuff
     const skillDef = skillDefinitions[skillId];
     if (!skillDef || skillDef.type !== 'passive') continue;
 
+    // Passive skills are ALWAYS active once unlocked — no equip required.
+
     // Add Hydration passive healingEfficiency to effective passives
-    if (skillId === 'hydration' && hero.equippedSkills && hero.equippedSkills.includes('hydration')) {
+    if (skillId === 'hydration') {
       const stars = unlockedSkills[skillId].stars || 1;
       if (skillDef.stars[stars]) {
         passives.healingEfficiency = skillDef.stars[stars].healingEfficiency || 0;
@@ -297,7 +298,7 @@ export function calculateEffectiveStats(hero, skillDefinitions = SKILLS, runBuff
     }
 
     // Fortitude — status resistance chance (checked at runtime in combat)
-    if (skillId === 'fortitude' && hero.equippedSkills && hero.equippedSkills.includes('fortitude')) {
+    if (skillId === 'fortitude') {
       const stars = unlockedSkills[skillId].stars || 1;
       if (skillDef.stars[stars]) {
         // Stacks on top of the VIT-based resistance below.
@@ -306,7 +307,7 @@ export function calculateEffectiveStats(hero, skillDefinitions = SKILLS, runBuff
     }
 
     // Stone Thorns — raw damage reflection (checked at runtime in combat)
-    if (skillId === 'stone_thorns' && hero.equippedSkills && hero.equippedSkills.includes('stone_thorns')) {
+    if (skillId === 'stone_thorns') {
       const stars = unlockedSkills[skillId].stars || 1;
       if (skillDef.stars[stars]) {
         passives.stoneThornsReflect = skillDef.stars[stars].reflectPercent || 0;
@@ -314,7 +315,7 @@ export function calculateEffectiveStats(hero, skillDefinitions = SKILLS, runBuff
     }
 
     // Swiftness — flat dodge bonus baked directly into dodge stat
-    if (skillId === 'swiftness' && hero.equippedSkills && hero.equippedSkills.includes('swiftness')) {
+    if (skillId === 'swiftness') {
       const stars = unlockedSkills[skillId].stars || 1;
       if (skillDef.stars[stars]) {
         dodge += skillDef.stars[stars].dodgeBonus || 0;
@@ -322,7 +323,7 @@ export function calculateEffectiveStats(hero, skillDefinitions = SKILLS, runBuff
     }
 
     // Critical Wind — overrides crit multiplier (replaces base 150%, not additive)
-    if (skillId === 'critical_wind' && hero.equippedSkills && hero.equippedSkills.includes('critical_wind')) {
+    if (skillId === 'critical_wind') {
       const stars = unlockedSkills[skillId].stars || 1;
       if (skillDef.stars[stars]) {
         passives.critMultiplier = skillDef.stars[stars].critMultiplier;

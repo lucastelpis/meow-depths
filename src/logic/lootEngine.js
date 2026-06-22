@@ -331,9 +331,12 @@ export function generateTreasureDrops(zoneId, floorNumber, isDouble = false) {
   gold *= mult;
   potionCount *= mult;
 
+  // Potions are no longer dropped in the dungeons
+  /*
   if (potionCount > 0) {
     consumables[potionType] = potionCount;
   }
+  */
 
   return { gold, materials, consumables };
 }

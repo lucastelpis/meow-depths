@@ -50,6 +50,7 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 import { ZONES } from '../data/zones';
 import { ENEMIES, STAR_MULTIPLIERS } from '../data/enemies';
 import { SKILLS, SKILL_SPRITE_FRAMES } from '../data/skills';
+import { SKILL_STAT_LABELS, formatSkillStatValue } from './SkillTreeScreen';
 import { CONSUMABLES, MATERIALS, GEAR } from '../data/gear';
 import AnimatedSprite from '../components/AnimatedSprite';
 import Button from '../components/ui/Button';
@@ -74,6 +75,7 @@ import {
   executeFortify,
   executeDualSlash,
   executeWhirlwind,
+  displayDamage,
 } from '../logic/combatEngine';
 import { calculateEncounterLoot } from '../logic/lootEngine';
 import { calculateEffectiveStats, checkLevelUp, getStanceBonus, applyHealingEfficiency } from '../logic/progressionEngine';
@@ -411,6 +413,7 @@ const STATUS_EMOJIS = {
   dodge_reduce: '📉',
   crit_reduce: '📉',
   hot: '💧',
+  def_reduce: '🛡️',
 };
 
 // Sprite frames from status-icons-1.png (18-frame horizontal sheet).
@@ -423,12 +426,24 @@ const STATUS_SPRITE_FRAMES = {
   debuff_attack: 5,
   def_buff: 6,
   guard: 6,
+  def_reduce: 7,
   hot: 8,
   counter: 17,
   dodge_reduce: 19,
   stealth: 20,
   deathMark: 21,
   crit_reduce: 23,
+};
+
+// ─── Per-effect icon override ───────────────────────────────────────────────
+// By default a status badge shows the generic effect icon (STATUS_SPRITE_FRAMES
+// above, from the status-icons-1 sheet). Add an entry here to instead show the
+// originating SKILL's icon (from the skill-icons-1 sheet) for that effect type.
+// Keyed by effect type → skill id.
+const EFFECT_SKILL_ICON = {
+  hot: 'healing_current',  // Healing Current's HoT shows the skill icon, not 💧
+  guard: 'flame_guard',    // Flame Guard shows its skill icon (was frame 6 = 🛡️)
+  def_buff: 'fortify',     // Fortify shows its skill icon (was frame 6 = 🛡️)
 };
 
 function consolidateEffectsArray(effectsList) {
@@ -439,7 +454,7 @@ function consolidateEffectsArray(effectsList) {
       groups[eff.type] = { ...eff, stacks: eff.stacks || 1 };
     } else {
       const existing = groups[eff.type];
-      if (eff.type === 'atk_reduce' || eff.type === 'dodge_reduce' || eff.type === 'crit_reduce' || eff.type === 'def_buff') {
+      if (eff.type === 'atk_reduce' || eff.type === 'dodge_reduce' || eff.type === 'crit_reduce' || eff.type === 'def_buff' || eff.type === 'def_reduce') {
         existing.duration = eff.duration;
         existing.value = eff.value;
         existing.stacks = 1;
@@ -544,7 +559,21 @@ export default function CombatScreen() {
   const [showItemModal, setShowItemModal] = useState(false);
   const [showFleeConfirmModal, setShowFleeConfirmModal] = useState(false);
   const [infoSkillId, setInfoSkillId] = useState(null);
+  const [showPassivesModal, setShowPassivesModal] = useState(false);
   const [levelUpMessages, setLevelUpMessages] = useState([]);
+
+  // All unlocked passive skills — these are always active in combat (no equip needed).
+  const activePassives = React.useMemo(() => {
+    const unlocked = state.hero.unlockedSkills || {};
+    return Object.keys(unlocked).filter((id) => SKILLS[id]?.type === 'passive');
+  }, [state.hero.unlockedSkills]);
+
+  // Element-tinted accent color used by skill / passive buttons.
+  const heroElementColor = state.hero.element === 'fire' ? '#FF6B35'
+    : state.hero.element === 'water' ? '#3B9EFF'
+      : state.hero.element === 'earth' ? '#639922'
+        : state.hero.element === 'wind' ? '#5CC4B8'
+          : '#A98EE0';
 
   // ── Animation state ───────────────────────────────────────────────────────
   // 'idle' | 'attack' | 'guard'  — controls which sprite sheet plays for the hero
@@ -838,7 +867,9 @@ export default function CombatScreen() {
       const hot = updatedHero.playerHoT;
       const baseHeal = Math.floor(updatedHero.maxHp * hot.healPerTurn);
       const finalHeal = applyHealingEfficiency(baseHeal, updatedHero);
-      updatedHero.hp = Math.min(updatedHero.maxHp, updatedHero.hp + finalHeal);
+      // Actual HP recovered is clamped by max HP — log what was really healed.
+      const actualHeal = Math.min(updatedHero.maxHp, updatedHero.hp + finalHeal) - updatedHero.hp;
+      updatedHero.hp = updatedHero.hp + actualHeal;
 
       const newTurns = hot.turnsRemaining - 1;
       if (newTurns > 0) {
@@ -850,7 +881,7 @@ export default function CombatScreen() {
         updatedHero.playerHoT = null;
       }
 
-      addLog(`💧 Healing Current tick: ${updatedHero.name || 'Mochi'} recovers ${finalHeal} HP!`);
+      addLog(`💧 Healing Current tick: ${updatedHero.name || 'Mochi'} recovers ${actualHeal} HP!`);
       logged = true;
     }
 
@@ -907,9 +938,10 @@ export default function CombatScreen() {
     if (result.damage > 0) {
       triggerEnemyRecoil(target.uid, animDuration);
       if (result.isCrit) {
-        // Fire crit popup directly and mark UID so the HP-watcher skips it
+        // Fire crit popup directly and mark UID so the HP-watcher skips it.
+        // Clamp to remaining HP so a killing blow doesn't over-report.
         pendingCritUids.current.add(target.uid);
-        triggerDamagePopup(target.uid, result.damage, false, false, true);
+        triggerDamagePopup(target.uid, displayDamage(result.damage, target.hp), false, false, true);
       }
     }
     if (result.isDodged) {
@@ -979,7 +1011,7 @@ export default function CombatScreen() {
     const stanceBonus = getStanceBonus(state.hero.element, state.hero.level);
     const stanceBurn = stanceBonus.burnTickBonus || 0;
     const smolderingEntry = (state.hero.unlockedSkills || {})['smoldering'];
-    const smolderingBurn = smolderingEntry && state.hero.equippedSkills.includes('smoldering')
+    const smolderingBurn = smolderingEntry
       ? (SKILLS['smoldering']?.stars?.[smolderingEntry.stars]?.burnTickBonus || 0)
       : 0;
     return stanceBurn + smolderingBurn;
@@ -1183,18 +1215,22 @@ export default function CombatScreen() {
           setHeroAnim(animKey);
           triggerHeroAttackLunge(currentHitDuration);
 
-          // Trigger recoils and popups for this hit's targets
+          // Trigger recoils and popups for this hit's targets.
+          // updatedEnemies still holds pre-hit HP here, so clamp the popup
+          // amount to remaining HP to avoid over-reporting a killing blow.
           hit.targets.forEach(t => {
+            const enemyNow = updatedEnemies.find(e => e.uid === t.uid);
+            const shownDmg = displayDamage(t.damage, enemyNow ? enemyNow.hp : t.damage);
             if (t.isDodged) {
               triggerDamagePopup(t.uid, 0, false, true);
             } else if (t.damage > 0) {
               triggerEnemyRecoil(t.uid, currentHitDuration);
               if (t.isCrit) {
                 pendingCritUids.current.add(t.uid);
-                triggerDamagePopup(t.uid, t.damage, false, false, true);
+                triggerDamagePopup(t.uid, shownDmg, false, false, true);
               } else {
                 pendingCritUids.current.add(t.uid);
-                triggerDamagePopup(t.uid, t.damage, false, false, false);
+                triggerDamagePopup(t.uid, shownDmg, false, false, false);
               }
             } else {
               pendingCritUids.current.add(t.uid);
@@ -1468,16 +1504,19 @@ export default function CombatScreen() {
 
           hit.targets.forEach(t => {
             if (t.uid === 'hero') {
+              // updatedHero.hp is still pre-hit here — clamp the popup so a
+              // killing blow doesn't over-report.
+              const shownDmg = displayDamage(t.damage, updatedHero.hp);
               if (t.isDodged) {
                 triggerDamagePopup('hero', 0, false, true);
               } else if (t.damage > 0) {
                 triggerHeroRecoil(currentHitDuration);
                 if (t.isCrit) {
                   pendingCritUids.current.add('hero');
-                  triggerDamagePopup('hero', t.damage, false, false, true);
+                  triggerDamagePopup('hero', shownDmg, false, false, true);
                 } else {
                   pendingCritUids.current.add('hero');
-                  triggerDamagePopup('hero', t.damage, false, false, false);
+                  triggerDamagePopup('hero', shownDmg, false, false, false);
                 }
               } else {
                 pendingCritUids.current.add('hero');
@@ -2085,6 +2124,7 @@ export default function CombatScreen() {
 
                   {renderSkillButton(0)}
                   {renderSkillButton(1)}
+                  {renderPassivesButton()}
                 </View>
 
                 {/* Row 2: Flee and Items buttons, side-by-side */}
@@ -2259,6 +2299,9 @@ export default function CombatScreen() {
 
         {/* ── Skill info popup ─────────────────────────────────────────── */}
         {renderSkillInfoModal()}
+
+        {/* ── Active passives popup ────────────────────────────────────── */}
+        {renderPassivesModal()}
 
         {/* ── Flee confirmation popup ─────────────────────────────────── */}
         <Modal
@@ -2483,10 +2526,15 @@ export default function CombatScreen() {
           contentContainerStyle={styles.effectsRowScroll}
         >
           {consolidated.map((eff, ei) => {
+            // Prefer the originating skill's icon when configured for this effect.
+            const skillIconId = EFFECT_SKILL_ICON[eff.type];
+            const skillFrame = skillIconId != null ? SKILL_SPRITE_FRAMES[skillIconId] : undefined;
             const frame = STATUS_SPRITE_FRAMES[eff.type];
             return (
               <View key={`${keyPrefix}_${eff.type}_${ei}`} style={styles.effectBadge}>
-                {frame != null ? (
+                {skillFrame != null ? (
+                  <ItemSprite spritesheet="skill-icons-1" frameIndex={skillFrame} displaySize={18} />
+                ) : frame != null ? (
                   <ItemSprite spritesheet="status-icons-1" frameIndex={frame} displaySize={18} />
                 ) : (
                   <Text style={styles.effectText}>{STATUS_EMOJIS[eff.type] || '❓'}</Text>
@@ -2520,9 +2568,16 @@ export default function CombatScreen() {
             <Rect width="100%" height="100%" fill="url(#heroBacklight)" />
           </Svg>
 
-          {/* Status effects row - locked to the top inside sprite container */}
+          {/* Status effects row - locked to the top inside sprite container.
+              Flame Guard has no status-effect entry of its own, so inject a
+              transient 'guard' badge driven by its active fields. */}
           <View style={[styles.enemyEffectsTop, { position: 'absolute', top: 20, left: 0, right: 0 }]}>
-            {renderEffectsRow(heroState.effects, 'hero')}
+            {renderEffectsRow(
+              heroState.flameGuardActive
+                ? [...(heroState.effects || []), { type: 'guard', duration: heroState.flameGuardTurnsRemaining }]
+                : heroState.effects,
+              'hero'
+            )}
           </View>
 
           {/* Animated View wrapper for lunge/recoil translation */}
@@ -2865,16 +2920,6 @@ export default function CombatScreen() {
           ? `${cd} turn${cd !== 1 ? 's' : ''}`
           : 'Ready';
 
-    // Show Flame Guard active indicator
-    const isFlameGuardActive = skillId === 'flame_guard' && heroState?.flameGuardActive;
-
-    // Show Healing Current active indicator
-    const isHealingCurrentActive = skillId === 'healing_current' && heroState?.playerHoT;
-    const isHealingCurrentReady = skillId === 'healing_current' && !isDisabled;
-
-    // Show Fortify active indicator
-    const isFortifyActive = skillId === 'fortify' && heroState?.effects?.some(e => e.type === 'def_buff');
-
     return (
       <TouchableOpacity
         key={slotIndex}
@@ -2882,16 +2927,6 @@ export default function CombatScreen() {
           styles.actionBtn, btnStyle,
           isDisabled && !isPassive && { opacity: isOnCooldown ? 0.65 : 0.38 },
           isPassive && { opacity: 0.7 },
-          isFlameGuardActive && { borderColor: elColor, borderWidth: 1.5 },
-          isHealingCurrentReady && {
-            borderColor: '#3B9EFF',
-            borderWidth: 1.5,
-            shadowColor: '#3B9EFF',
-            shadowOffset: { width: 0, height: 0 },
-            shadowOpacity: 0.8,
-            shadowRadius: 6,
-            elevation: 4,
-          },
         ]}
         onPress={() => !isDisabled && handleSkill(slotIndex)}
         activeOpacity={0.75}
@@ -2929,22 +2964,137 @@ export default function CombatScreen() {
           {hasSkill ? skillDef.name.toUpperCase() : `SKILL ${slotIndex + 1}`}
         </Text>
         <Text style={styles.actionBtnSub}>{subText}</Text>
-        {isFlameGuardActive && (
-          <Text style={[styles.actionBtnSub, { color: elColor }]}>
-            🛡️ {heroState.flameGuardTurnsRemaining}t
-          </Text>
-        )}
-        {isHealingCurrentActive && (
-          <Text style={[styles.actionBtnSub, { color: '#3B9EFF' }]}>
-            💧 {heroState.playerHoT.turnsRemaining}t
-          </Text>
-        )}
-        {isFortifyActive && (
-          <Text style={[styles.actionBtnSub, { color: elColor }]}>
-            ⛰️ 1t
-          </Text>
-        )}
       </TouchableOpacity>
+    );
+  }
+
+  // ── Passives button — always-on passive skills currently in effect ─────────
+  function renderPassivesButton() {
+    const count = activePassives.length;
+    const hasPassives = count > 0;
+
+    return (
+      <TouchableOpacity
+        style={[
+          styles.actionBtn,
+          hasPassives ? styles.actionBtnPassive : styles.actionBtnEmpty,
+          !hasPassives && { opacity: 0.45 },
+        ]}
+        onPress={() => hasPassives && setShowPassivesModal(true)}
+        activeOpacity={0.75}
+        disabled={!hasPassives}
+      >
+        <View style={styles.passiveIconRow}>
+          {hasPassives ? (
+            activePassives.slice(0, 2).map((id) => {
+              const frame = SKILL_SPRITE_FRAMES[id];
+              return (
+                <View key={id} style={styles.passiveIconSmall}>
+                  {frame != null ? (
+                    <ItemSprite spritesheet="skill-icons-1" frameIndex={frame} displaySize={22} />
+                  ) : (
+                    <Text style={{ fontSize: 18 }}>{SKILLS[id]?.icon || '✨'}</Text>
+                  )}
+                </View>
+              );
+            })
+          ) : (
+            <View style={[styles.actionBtnSprite, { opacity: 0.3 }]}>
+              <ItemSprite spritesheet="icons-1" frameIndex={4} displaySize={24} />
+            </View>
+          )}
+        </View>
+        <Text
+          style={[styles.actionBtnTitle, { color: hasPassives ? heroElementColor : '#5A5A5A' }]}
+          numberOfLines={1}
+          adjustsFontSizeToFit
+          minimumScaleFactor={0.7}
+        >
+          PASSIVES
+        </Text>
+        <Text style={styles.actionBtnSub}>{hasPassives ? `${count} active` : 'none'}</Text>
+      </TouchableOpacity>
+    );
+  }
+
+  // ── Passives popup — lists every always-on passive and its current effect ───
+  function renderPassivesModal() {
+    return (
+      <Modal
+        visible={showPassivesModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowPassivesModal(false)}
+      >
+        <Pressable style={styles.modalOverlay} onPress={() => setShowPassivesModal(false)}>
+          <Pressable style={styles.modalContent}>
+            <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
+              <Defs>
+                <LinearGradient id="passivesGrad" x1="0" y1="0" x2="0" y2="1">
+                  <Stop offset="0%" stopColor={theme.COLORS.panelGreenTop} stopOpacity="1" />
+                  <Stop offset="100%" stopColor={theme.COLORS.panelGreenBottom} stopOpacity="1" />
+                </LinearGradient>
+              </Defs>
+              <Rect width="100%" height="100%" fill="url(#passivesGrad)" rx={20} />
+              <Rect x="1" y="1" width="98%" height="98%" rx={19} fill="none" stroke="rgba(212, 167, 84, 0.18)" strokeWidth={1} />
+            </Svg>
+
+            <View style={styles.modalContentInner}>
+              <Text style={styles.passivesModalTitle}>ACTIVE PASSIVES · ALWAYS ON</Text>
+
+              <ScrollView style={{ maxHeight: 380, width: '100%' }} showsVerticalScrollIndicator={false}>
+                {activePassives.length === 0 ? (
+                  <Text style={styles.infoDesc}>No passive skills unlocked yet.</Text>
+                ) : (
+                  activePassives.map((id) => {
+                    const sk = SKILLS[id];
+                    if (!sk) return null;
+                    const stars = state.hero.unlockedSkills?.[id]?.stars || 1;
+                    const frame = SKILL_SPRITE_FRAMES[id];
+                    const starData = sk.stars?.[stars];
+                    return (
+                      <View key={id} style={styles.passiveRow}>
+                        <View style={styles.passiveRowHeader}>
+                          {frame != null ? (
+                            <ItemSprite spritesheet="skill-icons-1" frameIndex={frame} displaySize={36} />
+                          ) : (
+                            <Text style={{ fontSize: 28 }}>{sk.icon || '✨'}</Text>
+                          )}
+                          <View style={{ flex: 1 }}>
+                            <Text style={styles.infoSkillName}>{sk.name}</Text>
+                            <View style={styles.infoStarsRow}>
+                              {Array.from({ length: 5 }, (_, i) => (
+                                <Text key={i} style={{ color: i < stars ? heroElementColor : 'rgba(255,243,218,0.14)', fontSize: 12 }}>★</Text>
+                              ))}
+                            </View>
+                          </View>
+                        </View>
+                        <Text style={styles.passiveRowDesc}>{sk.description}</Text>
+                        {starData && (
+                          <View style={styles.passiveStatBox}>
+                            {Object.entries(starData).map(([k, v]) => (
+                              <Text key={k} style={styles.infoStatLine}>
+                                {SKILL_STAT_LABELS[k] || k}: <Text style={styles.infoStatStrong}>{formatSkillStatValue(k, v)}</Text>
+                              </Text>
+                            ))}
+                          </View>
+                        )}
+                      </View>
+                    );
+                  })
+                )}
+              </ScrollView>
+
+              <Button
+                title="Close"
+                variant="secondary"
+                onPress={() => setShowPassivesModal(false)}
+                style={{ width: '100%', marginTop: 16 }}
+              />
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
     );
   }
 
@@ -3013,6 +3163,17 @@ export default function CombatScreen() {
                 </View>
 
                 <Text style={styles.infoDesc}>{infoSkill.description}</Text>
+
+                {stars > 0 && infoSkill.stars?.[stars] && (
+                  <View style={styles.infoStatBox}>
+                    <Text style={styles.infoStatLabel}>★{stars} CURRENT STATS</Text>
+                    {Object.entries(infoSkill.stars[stars]).map(([k, v]) => (
+                      <Text key={k} style={styles.infoStatLine}>
+                        {SKILL_STAT_LABELS[k] || k}: <Text style={styles.infoStatStrong}>{formatSkillStatValue(k, v)}</Text>
+                      </Text>
+                    ))}
+                  </View>
+                )}
 
                 <Button
                   title="Close"
@@ -3564,6 +3725,21 @@ const styles = StyleSheet.create({
     backgroundColor: '#141414',
     borderColor: '#222222',
   },
+  actionBtnPassive: {
+    backgroundColor: '#10221F',
+    borderColor: '#23463F',
+  },
+  passiveIconRow: {
+    flexDirection: 'row',
+    height: 26,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 2,
+  },
+  passiveIconSmall: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   actionBtnIcon: {
     fontSize: 22,
     lineHeight: 26,
@@ -3761,6 +3937,69 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 19,
     color: theme.COLORS.parchment,
+  },
+  infoStatBox: {
+    backgroundColor: 'rgba(0, 0, 0, 0.22)',
+    borderRadius: 10,
+    padding: 10,
+    marginTop: 12,
+    marginBottom: 4,
+    borderWidth: 1,
+    borderColor: 'rgba(212, 167, 84, 0.15)',
+  },
+  infoStatLabel: {
+    fontFamily: 'Silkscreen-Regular',
+    fontSize: 9,
+    color: 'rgba(243,226,189,0.55)',
+    letterSpacing: 1,
+    marginBottom: 6,
+  },
+  infoStatLine: {
+    fontFamily: 'Jersey10-Regular',
+    fontSize: 13,
+    color: 'rgba(243,226,189,0.8)',
+    marginBottom: 2,
+  },
+  infoStatStrong: {
+    fontFamily: 'Jersey10-Regular',
+    color: '#FFF3DA',
+  },
+  passivesModalTitle: {
+    ...theme.FONTS.label,
+    fontSize: 13,
+    letterSpacing: 1,
+    fontWeight: '800',
+    color: theme.COLORS.candleGold,
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  passiveRow: {
+    width: '100%',
+    backgroundColor: 'rgba(0,0,0,0.22)',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(212,167,84,0.16)',
+    padding: 12,
+    marginBottom: 10,
+  },
+  passiveRowHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 6,
+  },
+  passiveRowDesc: {
+    ...theme.FONTS.small,
+    fontSize: 11,
+    color: 'rgba(243,226,189,0.7)',
+    lineHeight: 15,
+    marginBottom: 6,
+  },
+  passiveStatBox: {
+    backgroundColor: 'rgba(0,0,0,0.25)',
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
   },
   modalItemScroll: {
     maxHeight: 250,

@@ -404,8 +404,11 @@ function gameReducer(state, action) {
     // Payload: { slotIndex: 0|1, skillId: string|null }
     // -----------------------------------------------------------------------
     case 'EQUIP_SKILL': {
+      // Passive skills are always active and never occupy a combat slot.
+      const incoming = action.payload.skillId;
+      if (incoming && SKILLS[incoming]?.type === 'passive') return state;
       const newSlots = [...state.hero.equippedSkills];
-      newSlots[action.payload.slotIndex] = action.payload.skillId;
+      newSlots[action.payload.slotIndex] = incoming;
       return {
         ...state,
         hero: {
@@ -424,7 +427,7 @@ function gameReducer(state, action) {
       const zone = ZONES[zoneId];
       if (!zone) return state;
 
-      const { gridWidth, gridHeight } = getGridSizeForFloor(floorNumber);
+      const { gridWidth, gridHeight } = getGridSizeForFloor(floorNumber, zoneId);
       const grid = generateDungeonGrid(gridWidth, gridHeight, zoneId, floorNumber);
 
       // Flatten grid tiles
@@ -1336,6 +1339,14 @@ export function GameProvider({ children }) {
         // Migrate unlockedSkills from old array format to new object format.
         if (merged.hero && Array.isArray(merged.hero.unlockedSkills)) {
           merged.hero.unlockedSkills = {};
+        }
+
+        // Passive skills are now always active — clear any legacy passive that
+        // was equipped into a combat slot so the slots only hold active skills.
+        if (merged.hero && Array.isArray(merged.hero.equippedSkills)) {
+          merged.hero.equippedSkills = merged.hero.equippedSkills.map(
+            (id) => (id && SKILLS[id]?.type === 'passive' ? null : id)
+          );
         }
 
         dispatch({ type: 'SET_STATE', payload: merged });

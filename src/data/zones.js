@@ -71,15 +71,18 @@ export const ZONES = {
 
 /**
  * Returns the grid dimensions for a given floor number.
- * All zones share the same scaling table.
  *
  * @param {number} floorNumber – 1-indexed floor (1–10)
+ * @param {string} zoneId - unique zone key (e.g. 'zone1')
  * @returns {{ gridWidth: number, gridHeight: number }}
  */
-export function getGridSizeForFloor(floorNumber) {
+export function getGridSizeForFloor(floorNumber, zoneId) {
   if (floorNumber <= 3) return { gridWidth: 3, gridHeight: 3 };
   if (floorNumber <= 6) return { gridWidth: 3, gridHeight: 4 };
   if (floorNumber <= 9) return { gridWidth: 4, gridHeight: 4 };
+  if (floorNumber === 10 && (zoneId === 'zone1' || zoneId === 1 || zoneId === '1')) {
+    return { gridWidth: 4, gridHeight: 4 };
+  }
   return { gridWidth: 4, gridHeight: 5 }; // floor 10 (boss floor)
 }
 

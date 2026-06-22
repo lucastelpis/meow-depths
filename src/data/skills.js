@@ -110,13 +110,13 @@ const tidal_strike = {
   cooldown: 3,
   unlockedBy: null,
   icon: '💧',
-  description: 'Deals damage and reduces enemy ATK for a duration. Reliable and methodical.',
+  description: 'Deals damage and reduces enemy DEF for a duration. Reliable and methodical.',
   stars: {
-    1: { damageMultiplier: 1.20, atkReduce: 0.10, duration: 2 },
-    2: { damageMultiplier: 1.35, atkReduce: 0.10, duration: 3 },
-    3: { damageMultiplier: 1.50, atkReduce: 0.15, duration: 3 },
-    4: { damageMultiplier: 1.65, atkReduce: 0.15, duration: 3 },
-    5: { damageMultiplier: 1.80, atkReduce: 0.20, duration: 3 },
+    1: { damageMultiplier: 1.20, defReduce: 0.10, duration: 2 },
+    2: { damageMultiplier: 1.35, defReduce: 0.10, duration: 3 },
+    3: { damageMultiplier: 1.50, defReduce: 0.15, duration: 3 },
+    4: { damageMultiplier: 1.65, defReduce: 0.15, duration: 3 },
+    5: { damageMultiplier: 1.80, defReduce: 0.20, duration: 3 },
   },
 };
 
@@ -150,13 +150,13 @@ const tidal_wave = {
   cooldown: 4,
   unlockedBy: 'tidal_strike',
   icon: '🌊',
-  description: 'Crashing wave hits target for damage and ATK reduce. Adjacent enemies take 40% splash with a 30% chance for ATK reduce.',
+  description: 'Crashing wave hits target for damage and DEF reduce. Adjacent enemies take 40% splash with a 30% chance for DEF reduce.',
   stars: {
-    1: { damageMultiplier: 1.10, atkReduce: 0.10, duration: 3, spreadPercent: 0.20, spreadAtkReduceChance: 0.30 },
-    2: { damageMultiplier: 1.20, atkReduce: 0.15, duration: 3, spreadPercent: 0.30, spreadAtkReduceChance: 0.30 },
-    3: { damageMultiplier: 1.30, atkReduce: 0.20, duration: 3, spreadPercent: 0.40, spreadAtkReduceChance: 0.40 },
-    4: { damageMultiplier: 1.40, atkReduce: 0.25, duration: 3, spreadPercent: 0.50, spreadAtkReduceChance: 0.40 },
-    5: { damageMultiplier: 1.50, atkReduce: 0.30, duration: 3, spreadPercent: 0.60, spreadAtkReduceChance: 0.50 },
+    1: { damageMultiplier: 1.10, defReduce: 0.10, duration: 3, spreadPercent: 0.20, spreadDefReduceChance: 0.30 },
+    2: { damageMultiplier: 1.20, defReduce: 0.15, duration: 3, spreadPercent: 0.30, spreadDefReduceChance: 0.30 },
+    3: { damageMultiplier: 1.30, defReduce: 0.20, duration: 3, spreadPercent: 0.40, spreadDefReduceChance: 0.40 },
+    4: { damageMultiplier: 1.40, defReduce: 0.25, duration: 3, spreadPercent: 0.50, spreadDefReduceChance: 0.40 },
+    5: { damageMultiplier: 1.50, defReduce: 0.30, duration: 3, spreadPercent: 0.60, spreadDefReduceChance: 0.50 },
   },
 };
 
@@ -167,16 +167,16 @@ const healing_current = {
   tier: 2,
   type: 'active',
   targetType: 'self',
-  cooldown: 6,
+  cooldown: 8,
   unlockedBy: 'tidal_strike',
   icon: '🫧',
-  description: 'No damage — healing only. Applies a HoT effect restoring % of max HP each turn for 3 turns.',
+  description: 'Heals the user for a % of max HP each turn for 3 turns.',
   stars: {
-    1: { healPerTurn: 0.05, duration: 3 },
-    2: { healPerTurn: 0.08, duration: 3 },
-    3: { healPerTurn: 0.12, duration: 3 },
-    4: { healPerTurn: 0.16, duration: 3 },
-    5: { healPerTurn: 0.20, duration: 3 },
+    1: { healPerTurn: 0.10, duration: 3 },
+    2: { healPerTurn: 0.15, duration: 3 },
+    3: { healPerTurn: 0.20, duration: 3 },
+    4: { healPerTurn: 0.25, duration: 3 },
+    5: { healPerTurn: 0.30, duration: 3 },
   },
 };
 

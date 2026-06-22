@@ -35,7 +35,6 @@ import Svg, {
     G,
 } from 'react-native-svg';
 
-import { useGame } from '../state/gameState';
 import ItemSprite from '../components/ItemSprite';
 
 const { width: W } = Dimensions.get('window');
@@ -200,8 +199,6 @@ const ELEMENTS = [
 // ─── Component ───────────────────────────────────────────────────────────────
 
 export default function ElementSelectionScreen({ route, navigation }) {
-    const { dispatch } = useGame();
-
     const heroName = route?.params?.heroName || 'Mochi';
     const [selectedElement, setSelectedElement] = useState('fire'); // defaults to fire
     const [confirmModalVisible, setConfirmModalVisible] = useState(false);
@@ -244,21 +241,20 @@ export default function ElementSelectionScreen({ route, navigation }) {
 
     const handleFinalConfirm = () => {
         if (!selectedElement) return;
-        dispatch({
-            type: 'SELECT_ELEMENT',
-            payload: {
-                element: selectedElement,
-                name: heroName.trim() || 'Mochi',
-            },
-        });
         setConfirmModalVisible(false);
+        // Element is only committed (SELECT_ELEMENT) after the lore intro, so
+        // the navigator stays in the onboarding stack until the player begins.
+        navigation.navigate('LoreIntro', {
+            heroName: heroName.trim() || 'Mochi',
+            element: selectedElement,
+        });
     };
 
     return (
         <SafeAreaView style={styles.root}>
             <StatusBar barStyle="light-content" backgroundColor="#000" />
 
-                <Animated.View style={[styles.content, { opacity: fadeAnim }]}>
+            <Animated.View style={[styles.content, { opacity: fadeAnim }]}>
                 <ScrollView
                     contentContainerStyle={styles.scroll}
                     showsVerticalScrollIndicator={false}
@@ -391,7 +387,7 @@ export default function ElementSelectionScreen({ route, navigation }) {
                             <ItemSprite spritesheet="icons-1" frameIndex={elementDef ? elementDef.spriteFrame : 0} displaySize={48} />
                         </View>
                         <View style={styles.startTextContainer}>
-                            <Text style={styles.startLabel}>BEGIN ADVENTURE</Text>
+                            <Text style={styles.startLabel}>CONFIRM CHOICE</Text>
                             <Text style={styles.startSub}>PATH OF {elementDef ? elementDef.name.toUpperCase() : ''}</Text>
                         </View>
                     </TouchableOpacity>
@@ -665,7 +661,7 @@ const styles = StyleSheet.create({
         borderWidth: 2,
         borderRadius: 8,
         paddingVertical: 3,
-        paddingHorizontal: 8,
+        paddingHorizontal: 5,
     },
     powerTagText: {
         fontFamily: 'Silkscreen-Regular',

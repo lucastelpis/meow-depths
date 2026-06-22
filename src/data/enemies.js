@@ -13,10 +13,10 @@
 // 5★ bosses are excluded — their stats are fixed in the definition.
 export const STAR_MULTIPLIERS = {
   1: 1.00,
-  2: 1.40,
-  3: 1.80,
-  4: 2.20,
-  5: 2.50,
+  2: 1.50,
+  3: 2.00,
+  4: 2.50,
+  5: 3.00,
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -27,7 +27,7 @@ export const STAR_MULTIPLIERS = {
 const sewer_rat = {
   id: 'sewer_rat',
   name: 'Rat Warrior',
-  lore: "They move before you see them move. Fast, low, always at the edge of the light. They've been in these tunnels longer than anyone. You can tell. They don't seem afraid of you. They seem like they're waiting for you to make a mistake.",
+  lore: "They are not very smart but they're fast and seem used to the dark. I believe they've been in these tunnels longer than anyone.",
   stars: 1,
   hp: 20,
   attack: 5,
@@ -38,7 +38,7 @@ const sewer_rat = {
   isBoss: false,
   isElite: false,
   baseXp: 20,
-  baseGold: 6,
+  baseGold: 5,
   drops: [],
   moves: [
     { name: 'Gnaw', damage: 5, minStars: 1 },
@@ -57,7 +57,7 @@ const sewer_rat = {
 const slimeling = {
   id: 'slimeling',
   name: 'Slimeling',
-  lore: "It doesn't rush. It doesn't need to — whatever it leaves on you does the work. The residue it coats things with is warm. That's the part that stays with you. I don't know what it is. I'm not sure it matters",
+  lore: "I don't know what they are. I'm not sure it matters. The residue they leave behind is warm and sticky.",
   stars: 1,
   hp: 25,
   attack: 4,
@@ -68,7 +68,7 @@ const slimeling = {
   isBoss: false,
   isElite: false,
   baseXp: 25,
-  baseGold: 6,
+  baseGold: 7,
   drops: [],
   moves: [
     {
@@ -91,7 +91,7 @@ const slimeling = {
 const cockroach_knight = {
   id: 'cockroach_knight',
   name: 'Cockroach Knight',
-  lore: "The armor is assembled from things found in the ruins. It chose each piece. It doesn't attack immediately. It watches first. Assesses. I've fought things that were aggressive. This one was something else. Careful.",
+  lore: "Oversized ugly bugs covered in a heavy natural caparace. They are tough bastards. And they hit harder than I expected.",
   stars: 2,
   hp: 35,
   attack: 7,
@@ -103,7 +103,7 @@ const cockroach_knight = {
   isBoss: false,
   isElite: false,
   baseXp: 30,
-  baseGold: 8,
+  baseGold: 10,
   drops: [],
   moves: [
     {
@@ -115,7 +115,7 @@ const cockroach_knight = {
     {
       name: 'Fortify',
       effect: 'fortify_self',
-      minStars: 2,
+      minStars: 3,
       cooldown: 4,
       priority: 3,
     },
@@ -134,7 +134,7 @@ const cockroach_knight = {
 const plague_frog = {
   id: 'plague_frog',
   name: 'Plague Frog',
-  lore: "It didn't attack until I stepped into its space. Then it didn't stop. Whatever it carries in its skin, the bite delivers it directly. It looked at me for a long time after. Like it was waiting to see what happened.",
+  lore: "They don't look very healthy. The warts all over their bodies are pulsating. Whatever they carry in their skin, I don't want to know.",
   stars: 1,
   hp: 30,
   attack: 5,
@@ -145,7 +145,7 @@ const plague_frog = {
   isBoss: false,
   isElite: false,
   baseXp: 25,
-  baseGold: 7,
+  baseGold: 8,
   drops: [],
   moves: [
     {

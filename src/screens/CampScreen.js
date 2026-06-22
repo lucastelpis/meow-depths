@@ -1055,8 +1055,8 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderRadius: 8,
     paddingVertical: 4,
-    paddingHorizontal: 8,
-    gap: 6,
+    paddingHorizontal: 5,
+    gap: 3,
   },
   bannerTagText: {
     fontFamily: 'Silkscreen-Regular',
@@ -1075,8 +1075,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 4,
-    paddingHorizontal: 8,
-    gap: 6,
+    paddingHorizontal: 5,
+    gap: 3,
   },
   bannerTagBadge: {
     position: 'absolute',

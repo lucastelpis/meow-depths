@@ -18,30 +18,78 @@
 
 export const ZONE_FLOOR_CONFIGS = {
   zone1: {
-    1:  { gridWidth: 3, gridHeight: 3, numCombat: 4,  numRest: 2, numGamble: 1, numTreasure: 1, hasBoss: false },
-    2:  { gridWidth: 3, gridHeight: 3, numCombat: 5,  numRest: 1, numGamble: 1, numTreasure: 1, hasBoss: false },
-    3:  { gridWidth: 3, gridHeight: 3, numCombat: 5,  numRest: 1, numGamble: 1, numTreasure: 1, hasBoss: false },
-    4:  { gridWidth: 3, gridHeight: 4, numCombat: 7,  numRest: 2, numGamble: 1, numTreasure: 1, hasBoss: false },
-    5:  { gridWidth: 3, gridHeight: 4, numCombat: 8,  numRest: 1, numGamble: 1, numTreasure: 1, hasBoss: false },
-    6:  { gridWidth: 3, gridHeight: 4, numCombat: 8,  numRest: 1, numGamble: 1, numTreasure: 1, hasBoss: false },
-    7:  { gridWidth: 4, gridHeight: 4, numCombat: 11, numRest: 2, numGamble: 1, numTreasure: 1, hasBoss: false },
-    8:  { gridWidth: 4, gridHeight: 4, numCombat: 11, numRest: 2, numGamble: 1, numTreasure: 1, hasBoss: false },
-    9:  { gridWidth: 4, gridHeight: 4, numCombat: 11, numRest: 2, numGamble: 1, numTreasure: 1, hasBoss: false },
-    10: { gridWidth: 4, gridHeight: 5, numCombat: 13, numRest: 2, numGamble: 1, numTreasure: 2, hasBoss: true  },
+    1: { gridWidth: 3, gridHeight: 3, numCombat: 4, numRest: 2, numGamble: 1, numTreasure: 1, hasBoss: false },
+    2: { gridWidth: 3, gridHeight: 3, numCombat: 5, numRest: 1, numGamble: 1, numTreasure: 1, hasBoss: false },
+    3: { gridWidth: 3, gridHeight: 3, numCombat: 5, numRest: 1, numGamble: 1, numTreasure: 1, hasBoss: false },
+    4: { gridWidth: 3, gridHeight: 4, numCombat: 7, numRest: 2, numGamble: 1, numTreasure: 1, hasBoss: false },
+    5: { gridWidth: 3, gridHeight: 4, numCombat: 8, numRest: 1, numGamble: 1, numTreasure: 1, hasBoss: false },
+    6: { gridWidth: 3, gridHeight: 4, numCombat: 8, numRest: 1, numGamble: 1, numTreasure: 1, hasBoss: false },
+    7: { gridWidth: 4, gridHeight: 4, numCombat: 11, numRest: 2, numGamble: 1, numTreasure: 1, hasBoss: false },
+    8: { gridWidth: 4, gridHeight: 4, numCombat: 11, numRest: 2, numGamble: 1, numTreasure: 1, hasBoss: false },
+    9: { gridWidth: 4, gridHeight: 4, numCombat: 11, numRest: 2, numGamble: 1, numTreasure: 1, hasBoss: false },
+    10: { gridWidth: 4, gridHeight: 4, numCombat: 9, numRest: 2, numGamble: 1, numTreasure: 2, hasBoss: true },
+  },
+  zone2: {
+    1: { gridWidth: 3, gridHeight: 3, numCombat: 4, numRest: 2, numGamble: 1, numTreasure: 1, hasBoss: false },
+    2: { gridWidth: 3, gridHeight: 3, numCombat: 5, numRest: 1, numGamble: 1, numTreasure: 1, hasBoss: false },
+    3: { gridWidth: 3, gridHeight: 3, numCombat: 5, numRest: 1, numGamble: 1, numTreasure: 1, hasBoss: false },
+    4: { gridWidth: 3, gridHeight: 4, numCombat: 7, numRest: 2, numGamble: 1, numTreasure: 1, hasBoss: false },
+    5: { gridWidth: 3, gridHeight: 4, numCombat: 8, numRest: 1, numGamble: 1, numTreasure: 1, hasBoss: false },
+    6: { gridWidth: 3, gridHeight: 4, numCombat: 8, numRest: 1, numGamble: 1, numTreasure: 1, hasBoss: false },
+    7: { gridWidth: 4, gridHeight: 4, numCombat: 11, numRest: 2, numGamble: 1, numTreasure: 1, hasBoss: false },
+    8: { gridWidth: 4, gridHeight: 4, numCombat: 11, numRest: 2, numGamble: 1, numTreasure: 1, hasBoss: false },
+    9: { gridWidth: 4, gridHeight: 4, numCombat: 11, numRest: 2, numGamble: 1, numTreasure: 1, hasBoss: false },
+    10: { gridWidth: 4, gridHeight: 5, numCombat: 13, numRest: 2, numGamble: 1, numTreasure: 2, hasBoss: true },
+  },
+  zone3: {
+    1: { gridWidth: 3, gridHeight: 3, numCombat: 4, numRest: 2, numGamble: 1, numTreasure: 1, hasBoss: false },
+    2: { gridWidth: 3, gridHeight: 3, numCombat: 5, numRest: 1, numGamble: 1, numTreasure: 1, hasBoss: false },
+    3: { gridWidth: 3, gridHeight: 3, numCombat: 5, numRest: 1, numGamble: 1, numTreasure: 1, hasBoss: false },
+    4: { gridWidth: 3, gridHeight: 4, numCombat: 7, numRest: 2, numGamble: 1, numTreasure: 1, hasBoss: false },
+    5: { gridWidth: 3, gridHeight: 4, numCombat: 8, numRest: 1, numGamble: 1, numTreasure: 1, hasBoss: false },
+    6: { gridWidth: 3, gridHeight: 4, numCombat: 8, numRest: 1, numGamble: 1, numTreasure: 1, hasBoss: false },
+    7: { gridWidth: 4, gridHeight: 4, numCombat: 11, numRest: 2, numGamble: 1, numTreasure: 1, hasBoss: false },
+    8: { gridWidth: 4, gridHeight: 4, numCombat: 11, numRest: 2, numGamble: 1, numTreasure: 1, hasBoss: false },
+    9: { gridWidth: 4, gridHeight: 4, numCombat: 11, numRest: 2, numGamble: 1, numTreasure: 1, hasBoss: false },
+    10: { gridWidth: 4, gridHeight: 5, numCombat: 13, numRest: 2, numGamble: 1, numTreasure: 2, hasBoss: true },
   }
 };
 
 export const ZONE_COMBAT_POOLS = {
   zone1: {
-    1:  { ratings: [1, 1, 1, 1], enemyCounts: [1, 1, 1, 2] },
-    2:  { ratings: [1, 1, 2, 2, 2], enemyCounts: [1, 1, 2, 2, 2] },
-    3:  { ratings: [2, 2, 2, 2, 2], enemyCounts: [2, 2, 2, 3, 3] },
-    4:  { ratings: [2, 2, 2, 3, 3, 3, 3], enemyCounts: [2, 2, 3, 3, 3, 3, 3] },
-    5:  { ratings: [3, 3, 3, 3, 3, 3, 3, 3], enemyCounts: [2, 2, 3, 3, 3, 3, 3, 3] },
-    6:  { ratings: [3, 3, 3, 3, 4, 4, 4, 4], enemyCounts: [2, 2, 3, 3, 3, 3, 4, 4] },
-    7:  { ratings: [4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4], enemyCounts: [3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4] },
-    8:  { ratings: [4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 5], enemyCounts: [3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4] },
-    9:  { ratings: [5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5], enemyCounts: [3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4] },
+    1: { ratings: [1, 1, 1, 1], enemyCounts: [1, 1, 1, 1] },
+    2: { ratings: [1, 1, 2, 2, 2], enemyCounts: [1, 1, 2, 2, 2] },
+    3: { ratings: [2, 2, 2, 2, 2], enemyCounts: [2, 2, 2, 3, 3] },
+    4: { ratings: [2, 2, 2, 3, 3, 3, 3], enemyCounts: [2, 2, 2, 3, 3, 3, 3] },
+    5: { ratings: [3, 3, 3, 3, 3, 3, 3, 3], enemyCounts: [2, 2, 3, 3, 3, 3, 3, 3] },
+    6: { ratings: [3, 3, 3, 3, 4, 4, 4, 4], enemyCounts: [2, 2, 3, 3, 3, 3, 3, 3] },
+    7: { ratings: [4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4], enemyCounts: [3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3] },
+    8: { ratings: [4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 5], enemyCounts: [3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4] },
+    9: { ratings: [5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5], enemyCounts: [3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4] },
+    10: { ratings: [5, 5, 5, 5, 5, 5, 5, 5, 5], enemyCounts: [3, 3, 3, 3, 3, 4, 4, 4, 4] },
+  },
+  zone2: {
+    1: { ratings: [1, 1, 1, 1], enemyCounts: [1, 1, 1, 2] },
+    2: { ratings: [1, 1, 2, 2, 2], enemyCounts: [1, 1, 2, 2, 2] },
+    3: { ratings: [2, 2, 2, 2, 2], enemyCounts: [2, 2, 2, 3, 3] },
+    4: { ratings: [2, 2, 2, 3, 3, 3, 3], enemyCounts: [2, 2, 3, 3, 3, 3, 3] },
+    5: { ratings: [3, 3, 3, 3, 3, 3, 3, 3], enemyCounts: [2, 2, 3, 3, 3, 3, 3, 3] },
+    6: { ratings: [3, 3, 3, 3, 4, 4, 4, 4], enemyCounts: [2, 2, 3, 3, 3, 3, 4, 4] },
+    7: { ratings: [4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4], enemyCounts: [3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4] },
+    8: { ratings: [4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 5], enemyCounts: [3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4] },
+    9: { ratings: [5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5], enemyCounts: [3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4] },
+    10: { ratings: [5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5], enemyCounts: [3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4] },
+  },
+  zone3: {
+    1: { ratings: [1, 1, 1, 1], enemyCounts: [1, 1, 1, 2] },
+    2: { ratings: [1, 1, 2, 2, 2], enemyCounts: [1, 1, 2, 2, 2] },
+    3: { ratings: [2, 2, 2, 2, 2], enemyCounts: [2, 2, 2, 3, 3] },
+    4: { ratings: [2, 2, 2, 3, 3, 3, 3], enemyCounts: [2, 2, 3, 3, 3, 3, 3] },
+    5: { ratings: [3, 3, 3, 3, 3, 3, 3, 3], enemyCounts: [2, 2, 3, 3, 3, 3, 3, 3] },
+    6: { ratings: [3, 3, 3, 3, 4, 4, 4, 4], enemyCounts: [2, 2, 3, 3, 3, 3, 4, 4] },
+    7: { ratings: [4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4], enemyCounts: [3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4] },
+    8: { ratings: [4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 5], enemyCounts: [3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4] },
+    9: { ratings: [5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5], enemyCounts: [3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4] },
     10: { ratings: [5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5], enemyCounts: [3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4] },
   }
 };
@@ -69,9 +117,9 @@ function findPathBFS(gridWidth, gridHeight, start, target) {
 
     const dirs = [
       { x: 0, y: -1 },
-      { x: 0, y:  1 },
+      { x: 0, y: 1 },
       { x: -1, y: 0 },
-      { x:  1, y: 0 },
+      { x: 1, y: 0 },
     ];
 
     for (const d of dirs) {
@@ -105,15 +153,15 @@ function findPathBFS(gridWidth, gridHeight, start, target) {
 export function validateGrid(grid, gridWidth, gridHeight, hasBoss = false) {
   const report = [];
   let startTile = null;
-  let bossTile  = null;
+  let bossTile = null;
   const restTiles = [];
 
   for (let y = 0; y < gridHeight; y++) {
     for (let x = 0; x < gridWidth; x++) {
       const tile = grid[y][x];
-      if (tile.type === 'start')  startTile = tile;
-      if (tile.type === 'boss')   bossTile  = tile;
-      if (tile.type === 'rest')   restTiles.push(tile);
+      if (tile.type === 'start') startTile = tile;
+      if (tile.type === 'boss') bossTile = tile;
+      if (tile.type === 'rest') restTiles.push(tile);
     }
   }
 
@@ -232,7 +280,7 @@ export function validateGrid(grid, gridWidth, gridHeight, hasBoss = false) {
  * @returns {Array} 2D array of tile objects (tiles[y][x]).
  */
 export function generateDungeonGrid(gridWidth, gridHeight, zoneId, floorNumber = 1) {
-  const MAX_ATTEMPTS    = 100;
+  const MAX_ATTEMPTS = 100;
   const SOFT_RELAX_LIMIT = 50;
 
   // Retrieve configurations for this specific zone & floor (fall back to zone1 if undefined)
@@ -264,9 +312,9 @@ export function generateDungeonGrid(gridWidth, gridHeight, zoneId, floorNumber =
     // 2. Place start (bottom-left, always revealed + cleared)
     const startX = 0;
     const startY = h - 1;
-    grid[startY][startX].type    = 'start';
+    grid[startY][startX].type = 'start';
     grid[startY][startX].revealed = true;
-    grid[startY][startX].cleared  = true;
+    grid[startY][startX].cleared = true;
 
     // 3. Place boss (top row or rightmost column, not adjacent to start)
     if (hasBoss) {
@@ -295,10 +343,10 @@ export function generateDungeonGrid(gridWidth, gridHeight, zoneId, floorNumber =
 
     // 5. Build and shuffle room pool
     const roomPool = [];
-    for (let i = 0; i < numRest;     i++) roomPool.push('rest');
+    for (let i = 0; i < numRest; i++) roomPool.push('rest');
     for (let i = 0; i < numTreasure; i++) roomPool.push('treasure');
-    for (let i = 0; i < numGamble;   i++) roomPool.push('gamble');
-    for (let i = 0; i < numCombat;   i++) roomPool.push('combat');
+    for (let i = 0; i < numGamble; i++) roomPool.push('gamble');
+    for (let i = 0; i < numCombat; i++) roomPool.push('combat');
 
     const shuffledRoomPool = shuffle(roomPool);
 

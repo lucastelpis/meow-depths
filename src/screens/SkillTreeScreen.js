@@ -130,7 +130,7 @@ function Stars({ count, max = 5, color = C.candleGold, size = 12 }) {
 
 // ─── Stat Labels & Formatters ──────────────────────────────────────────────────
 
-const SKILL_STAT_LABELS = {
+export const SKILL_STAT_LABELS = {
   damageMultiplier: 'Base Damage',
   burnDamage: 'Burn Damage / Turn',
   burnDuration: 'Burn Duration',
@@ -141,8 +141,10 @@ const SKILL_STAT_LABELS = {
   counterBurnDuration: 'Counter Duration',
   guardDuration: 'Guard Duration',
   atkReduce: 'Attack Reduction',
+  defReduce: 'Defense Reduction',
   duration: 'Duration',
   spreadAtkReduceChance: 'Splash ATK Reduce Chance',
+  spreadDefReduceChance: 'Splash DEF Reduce Chance',
   healPerTurn: 'Healing / Turn',
   cooldown: 'Cooldown',
   healingEfficiency: 'Healing Efficiency',
@@ -155,9 +157,9 @@ const SKILL_STAT_LABELS = {
   critMultiplier: 'Crit Damage Multiplier',
 };
 
-const formatSkillStatValue = (key, value) => {
+export const formatSkillStatValue = (key, value) => {
   if (key === 'damageMultiplier') return `${Math.round(value * 100)}% ATK`;
-  if (key === 'spreadPercent' || key === 'spreadBurnChance' || key === 'spreadAtkReduceChance' || key === 'atkReduce') {
+  if (key === 'spreadPercent' || key === 'spreadBurnChance' || key === 'spreadAtkReduceChance' || key === 'atkReduce' || key === 'defReduce' || key === 'spreadDefReduceChance') {
     return `${Math.round(value * 100)}%`;
   }
   if (key === 'healingEfficiency') return `+${Math.round(value * 100)}%`;
@@ -765,7 +767,14 @@ export default function SkillTreeScreen() {
                       </View>
                     )}
 
-                    {(selectedCardState === 'unlocked' || selectedCardState === 'maxed') && (
+                    {(selectedCardState === 'unlocked' || selectedCardState === 'maxed') && targetSkill.type === 'passive' && (
+                      <View style={styles.equipSection}>
+                        <Text style={[styles.equippedLabel, { color: elementColor }]}>✓ ALWAYS ACTIVE</Text>
+                        <Text style={styles.equipPrompt}>Passive skills are always in effect once unlocked — no slot needed.</Text>
+                      </View>
+                    )}
+
+                    {(selectedCardState === 'unlocked' || selectedCardState === 'maxed') && targetSkill.type === 'active' && (
                       <View style={styles.equipSection}>
                         {selectedEquipped ? (
                           <>

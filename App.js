@@ -37,6 +37,7 @@ import DungeonMapScreen from './src/screens/DungeonMapScreen';
 import DungeonFloorScreen from './src/screens/DungeonFloorScreen';
 import NameInputScreen from './src/screens/NameInputScreen';
 import ElementSelectionScreen from './src/screens/ElementSelectionScreen';
+import LoreIntroScreen from './src/screens/LoreIntroScreen';
 import { ONBOARDING_ASSETS, HUB_ASSETS } from './src/constants/sprites';
 
 const Stack = createStackNavigator();
@@ -91,6 +92,7 @@ function AppNavigator() {
             <>
               <Stack.Screen name="NameInput" component={NameInputScreen} />
               <Stack.Screen name="ElementSelection" component={ElementSelectionScreen} />
+              <Stack.Screen name="LoreIntro" component={LoreIntroScreen} />
             </>
           ) : (
             <>

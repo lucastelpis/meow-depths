@@ -361,7 +361,7 @@ export default function DungeonFloorScreen() {
                 {renderDifficultyStars(diff, 10)}
               </View>
               <View style={styles.floorMeta}>
-                <Text style={styles.gridSize}>{GRID_SIZES[floor]}</Text>
+                <Text style={styles.gridSize}>{floor === 10 && zoneId === 'zone1' ? '4×4' : GRID_SIZES[floor]}</Text>
               </View>
             </View>
           </View>
@@ -590,7 +590,7 @@ export default function DungeonFloorScreen() {
                   <View style={styles.modalBadgeRow}>
                     {selectedDiff && renderDifficultyStars(selectedDiff, 10)}
                     <View style={styles.gridSizeBadge}>
-                      <Text style={styles.gridSizeBadgeText}>{GRID_SIZES[selectedFloor || 1]}</Text>
+                      <Text style={styles.gridSizeBadgeText}>{(selectedFloor === 10 && zoneId === 'zone1') ? '4×4' : GRID_SIZES[selectedFloor || 1]}</Text>
                     </View>
                     {selectedStatus === 'cleared' && (
                       <View style={styles.clearedBadge}>
