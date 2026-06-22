@@ -5,6 +5,10 @@ Meow Depths is an RPG/region-crawler game built using React Native and Expo, fea
 
 ## Dungeon Floor Rules & Loot
 - **Dungeon Loot**: Potions (health potions, super potions, mega potions, ultra potions) do not drop from treasure chests, gamble rooms, or combat in the dungeons. They must be purchased from the Market (Shop) or obtained via daily rewards at the Camp hub.
+- **Floor Completion Rewards**: Each floor has pre-disclosed Gold and EXP rewards visible on its selection card and entry modal. These are awarded upon clearing all tiles on the floor grid and displayed in the floor complete modal.
+  - **Zone 1**: Starts at 100g/xp on Floor 1, increasing by +100g/xp per floor (reaching 1000g/xp on Floor 10).
+  - **Zone 2**: Starts at 1000g/xp on Floor 1, increasing by +500g/xp per floor (reaching 5500g/xp on Floor 10).
+  - **Zone 3**: Starts at 6000g/xp on Floor 1, increasing by +100g/xp per floor (reaching 6900g/xp on Floor 10).
 - **Floor Grid Sizes & Enemies**: Dungeon grid sizes grow as the player descends. For **Dungeon 1 (Soggy Ruins)**, Floor 10 (Boss Floor) is specifically configured as **4x4 tiles** (instead of 4x5) and all combat tiles on this floor spawn exactly **4 enemies** at the same time.
 - **Skill Popups in Combat**: In battle, opening the detail modal for an equipped skill displays its current level's multipliers and specific effects (damage multiplier, defense reduction, cooldown, etc.) rather than just the generic description.
 - **Water Skill Mechanics**: Water active skills (**Tidal Strike** and **Tidal Wave**) reduce the target's Defense (DEF) instead of Attack (ATK).

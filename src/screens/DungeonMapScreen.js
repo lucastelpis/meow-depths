@@ -38,7 +38,7 @@ import Svg, {
 import theme from '../constants/theme';
 import { useGame } from '../state/gameState';
 import { useFocusEffect } from '@react-navigation/native';
-import { ZONES } from '../data/zones';
+import { ZONES, getFloorCompletionReward } from '../data/zones';
 import { ZONE_COMBAT_POOLS } from '../logic/dungeonGenerator';
 import { MATERIALS, CONSUMABLES, GEAR } from '../data/gear';
 import { getNote, NOTE_SPRITE } from '../data/notes';
@@ -826,16 +826,14 @@ export default function DungeonMapScreen({ navigation }) {
       <View style={styles.bagChipsContainer}>
         {xp > 0 && (
           <View style={chipStyle}>
-            <ItemSprite spritesheet="icons-1" frameIndex={4} displaySize={32} />
+            <ItemSprite spritesheet="icons-map" frameIndex={146} displaySize={32} />
             <Text style={styles.bagChipQty}>{xp}</Text>
-            <Text style={styles.bagChipLabel}>XP</Text>
           </View>
         )}
         {gold > 0 && (
           <View style={chipStyle}>
             <ItemSprite spritesheet="icons-1" frameIndex={11} displaySize={32} />
-            <Text style={styles.bagChipQty}>{gold}g</Text>
-            <Text style={styles.bagChipLabel}>Gold</Text>
+            <Text style={styles.bagChipQty}>{gold}</Text>
           </View>
         )}
         {items.map(({ id, qty, isConsumable }) => {
@@ -850,9 +848,6 @@ export default function DungeonMapScreen({ navigation }) {
                 />
               )}
               <Text style={styles.bagChipQty}>{qty}</Text>
-              <Text style={styles.bagChipLabel}>
-                {def?.name || id.replace(/_/g, ' ')}
-              </Text>
             </View>
           );
         })}
@@ -926,7 +921,7 @@ export default function DungeonMapScreen({ navigation }) {
               <ItemSprite spritesheet="icons-1" frameIndex={11} displaySize={18} />
               <View>
                 <Text style={styles.lootStatLabel}>Gold Collected</Text>
-                <Text style={styles.lootStatValueGold}>{currentRun.lootCollected.gold}g</Text>
+                <Text style={styles.lootStatValueGold}>{currentRun.lootCollected.gold}</Text>
               </View>
             </View>
             
@@ -1281,8 +1276,7 @@ export default function DungeonMapScreen({ navigation }) {
                   {Math.floor(currentRun.lootCollected.gold / 2) > 0 && (
                     <View style={styles.bagItemChip}>
                       <ItemSprite spritesheet="icons-1" frameIndex={11} displaySize={32} />
-                      <Text style={styles.bagChipQty}>{Math.floor(currentRun.lootCollected.gold / 2)}g</Text>
-                      <Text style={styles.bagChipLabel}>Gold</Text>
+                      <Text style={styles.bagChipQty}>{Math.floor(currentRun.lootCollected.gold / 2)}</Text>
                     </View>
                   )}
                   {(() => {
@@ -1308,9 +1302,6 @@ export default function DungeonMapScreen({ navigation }) {
                             />
                           )}
                           <Text style={styles.bagChipQty}>{keptQty}</Text>
-                          <Text style={styles.bagChipLabel}>
-                            {def?.name || id.replace(/_/g, ' ')}
-                          </Text>
                         </View>
                       );
                     });
@@ -1358,6 +1349,25 @@ export default function DungeonMapScreen({ navigation }) {
                   ? `You have conquered the entire region. It trembles before ${hero.name || 'Mochi'}!`
                   : 'Every room in this zone has been explored. Return to camp and prepare for the next descent.'}
               </Text>
+
+              {(() => {
+                const clearReward = getFloorCompletionReward(currentRun.zoneId, currentRun.floorNumber);
+                return (
+                  <View style={styles.clearRewardContainer}>
+                    <Text style={styles.clearRewardHeader}>Floor Clear Bonus:</Text>
+                    <View style={styles.clearRewardChips}>
+                      <View style={styles.clearRewardChip}>
+                        <ItemSprite spritesheet="icons-1" frameIndex={11} displaySize={32} />
+                        <Text style={styles.clearRewardQty}>{clearReward.gold}</Text>
+                      </View>
+                      <View style={styles.clearRewardChip}>
+                        <ItemSprite spritesheet="icons-map" frameIndex={146} displaySize={32} />
+                        <Text style={styles.clearRewardQty}>{clearReward.xp}</Text>
+                      </View>
+                    </View>
+                  </View>
+                );
+              })()}
 
               <Text style={[styles.floorLootTitle, { color: '#8A6E44', fontWeight: 'bold', marginBottom: 8, textAlign: 'center' }]}>Loot Collected This Run:</Text>
               {(Object.keys(currentRun.lootCollected.materials).length > 0 || Object.keys(currentRun.lootCollected.consumables || {}).length > 0 || currentRun.lootCollected.gold > 0)
@@ -1499,8 +1509,7 @@ export default function DungeonMapScreen({ navigation }) {
                       {currentRun.lootCollected.gold > 0 && (
                         <View style={styles.bagItemChip}>
                           <ItemSprite spritesheet="icons-1" frameIndex={11} displaySize={32} />
-                          <Text style={styles.bagChipQty}>{currentRun.lootCollected.gold}g</Text>
-                          <Text style={styles.bagChipLabel}>Gold</Text>
+                          <Text style={styles.bagChipQty}>{currentRun.lootCollected.gold}</Text>
                         </View>
                       )}
                       {Object.entries(currentRun.lootCollected.materials).map(([id, qty]) => {
@@ -1516,9 +1525,6 @@ export default function DungeonMapScreen({ navigation }) {
                                 />
                             )}
                             <Text style={styles.bagChipQty}>{qty}</Text>
-                            <Text style={styles.bagChipLabel}>
-                              {def?.name || id.replace(/_/g, ' ')}
-                            </Text>
                           </View>
                         );
                       })}
@@ -2298,7 +2304,7 @@ const styles = StyleSheet.create({
     paddingTop: 10,
     paddingBottom: 8,
     paddingHorizontal: 8,
-    minWidth: 96,
+    minWidth: 76,
     maxWidth: 130,
     flexGrow: 0,
   },
@@ -2311,7 +2317,7 @@ const styles = StyleSheet.create({
     paddingTop: 10,
     paddingBottom: 8,
     paddingHorizontal: 8,
-    minWidth: 96,
+    minWidth: 76,
     maxWidth: 130,
     flexGrow: 0,
   },
@@ -2482,6 +2488,49 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 6,
   },
+  clearRewardContainer: {
+    alignSelf: 'stretch',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  clearRewardHeader: {
+    ...theme.FONTS.label,
+    fontSize: 9,
+    color: '#8A6E44',
+    fontWeight: 'bold',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  clearRewardChips: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 12,
+  },
+  clearRewardChip: {
+    alignItems: 'center',
+    backgroundColor: '#F4E6C0',
+    borderColor: '#C9A86A',
+    borderWidth: 1.5,
+    borderRadius: 10,
+    paddingTop: 8,
+    paddingBottom: 6,
+    paddingHorizontal: 12,
+    minWidth: 76,
+  },
+  clearRewardQty: {
+    fontFamily: 'Silkscreen-Regular',
+    fontSize: 11,
+    color: '#3A2210',
+    marginTop: 4,
+  },
+  clearRewardLabel: {
+    fontFamily: 'Silkscreen-Regular',
+    fontSize: 7,
+    color: '#9A7A4A',
+    textTransform: 'uppercase',
+    marginTop: 1,
+  },
+
   floorLootTitle: {
     ...theme.FONTS.label,
     fontSize: 9,

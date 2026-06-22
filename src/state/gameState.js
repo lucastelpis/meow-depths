@@ -40,8 +40,8 @@ import React, {
 } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { generateDungeonGrid } from '../logic/dungeonGenerator';
-import { ZONES, getGridSizeForFloor } from '../data/zones';
-import { calculateEffectiveStats, applyHealingEfficiency } from '../logic/progressionEngine';
+import { ZONES, getGridSizeForFloor, getFloorCompletionReward } from '../data/zones';
+import { calculateEffectiveStats, applyHealingEfficiency, checkLevelUp } from '../logic/progressionEngine';
 import { GEAR, CONSUMABLES } from '../data/gear';
 import { SKILLS, getSkillUpgradeCost } from '../data/skills';
 
@@ -696,7 +696,9 @@ function gameReducer(state, action) {
       let heroStats = { ...state.hero };
 
       if (outcome === 'win') {
-        updatedGold += state.currentRun.lootCollected.gold;
+        const reward = getFloorCompletionReward(state.currentRun.zoneId, state.currentRun.floorNumber);
+
+        updatedGold += state.currentRun.lootCollected.gold + reward.gold;
         for (const [id, qty] of Object.entries(state.currentRun.lootCollected.materials)) {
           updatedMaterials[id] = (updatedMaterials[id] || 0) + qty;
         }
@@ -713,6 +715,22 @@ function gameReducer(state, action) {
           } else {
             updatedInventoryConsumables.push({ id, quantity: qty });
           }
+        }
+
+        // Add pre-disclosed EXP and check for level up
+        heroStats.xp = heroStats.xp + reward.xp;
+        const lvlResult = checkLevelUp(heroStats);
+        if (lvlResult.levelsGained > 0) {
+          heroStats = {
+            ...heroStats,
+            level: lvlResult.newLevel,
+            maxHp: lvlResult.newMaxHp,
+            attack: lvlResult.newAttack,
+            defence: lvlResult.newDefence,
+            statPoints: lvlResult.newStatPoints,
+            critChance: lvlResult.newCritChance !== undefined ? lvlResult.newCritChance : heroStats.critChance,
+            dodge: lvlResult.newDodge !== undefined ? lvlResult.newDodge : heroStats.dodge,
+          };
         }
       } else if (outcome === 'flee') {
         updatedGold += Math.floor(state.currentRun.lootCollected.gold / 2);

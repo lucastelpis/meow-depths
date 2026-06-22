@@ -37,7 +37,7 @@ import Svg, {
 } from 'react-native-svg';
 
 import { useGame } from '../state/gameState';
-import { ZONES } from '../data/zones';
+import { ZONES, getFloorCompletionReward } from '../data/zones';
 import { CONSUMABLES } from '../data/gear';
 import { calculateEffectiveStats } from '../logic/progressionEngine';
 import ItemSprite from '../components/ItemSprite';
@@ -231,10 +231,12 @@ export default function DungeonFloorScreen() {
 
   const selectedStatus = selectedFloor ? getFloorStatus(selectedFloor, effectiveCleared) : null;
   const selectedDiff = selectedFloor ? DIFF_DATA[selectedFloor] : null;
+  const selectedReward = selectedFloor ? getFloorCompletionReward(zoneId, selectedFloor) : { gold: 0, xp: 0 };
 
   // ── Render one floor row ────────────────────────────────────────────────────
   const renderFloorRow = (floor) => {
     const status = getFloorStatus(floor, effectiveCleared);
+    const reward = getFloorCompletionReward(zoneId, floor);
     const diff = DIFF_DATA[floor];
     const isLocked = status === 'locked';
     const isAvail = status === 'available';
@@ -319,50 +321,63 @@ export default function DungeonFloorScreen() {
             </Text>
           </View>
 
-          {/* Content */}
-          <View style={styles.floorCardContent}>
-            <View style={styles.floorCardTop}>
-              <Text style={[
-                styles.floorName,
-                isCleared && { color: 'rgba(207,224,238,0.6)' },
-                isAvail && { color: '#F8FAFC' },
-                isLocked && { color: 'rgba(207,224,238,0.45)' },
-                isBoss && { color: '#DD7A86' },
-              ]} numberOfLines={1}>
-                Zone {floor}
-              </Text>
-              {/* Status badge */}
-              {isCleared && (
-                <View style={styles.badgeCleared}>
-                  <Text style={styles.badgeClearedText}>Cleared</Text>
-                </View>
-              )}
-              {isAvail && !isBoss && (
-                <View style={styles.badgeNext}>
-                  <Text style={styles.badgeNextText}>Unlocked</Text>
-                </View>
-              )}
-              {isAvail && isBoss && (
-                <View style={styles.badgeBoss}>
-                  <ItemSprite spritesheet="status-icons-1" frameIndex={21} displaySize={9} />
-                  <Text style={styles.badgeBossText}>Boss</Text>
-                </View>
-              )}
-              {isLocked && (
-                <View style={styles.badgeLocked}>
-                  <ItemSprite spritesheet="icons-map" frameIndex={49} displaySize={9} opacity={0.5} />
-                  <Text style={styles.badgeLockedText}>Locked</Text>
-                </View>
-              )}
+          {/* Name & Stars Column (Left-Center) */}
+          <View style={styles.floorCardNameCol}>
+            <Text style={[
+              styles.floorName,
+              isCleared && { color: 'rgba(207,224,238,0.6)' },
+              isAvail && { color: '#F8FAFC' },
+              isLocked && { color: 'rgba(207,224,238,0.45)' },
+              isBoss && { color: '#DD7A86' },
+            ]} numberOfLines={1}>
+              Zone {floor}
+            </Text>
+            <View style={styles.floorDiff}>
+              {renderDifficultyStars(diff, 10)}
             </View>
+          </View>
 
-            <View style={styles.floorCardBottom}>
-              <View style={styles.floorDiff}>
-                {renderDifficultyStars(diff, 10)}
+          {/* Pre-disclosed floor completion rewards (Center) */}
+          <View style={styles.floorCardRewards}>
+            <View style={styles.floorRewardCardMini}>
+              <ItemSprite spritesheet="icons-1" frameIndex={11} displaySize={14} />
+              <Text style={styles.floorRewardCardQty}>{reward.gold}</Text>
+            </View>
+            <View style={styles.floorRewardCardMini}>
+              <ItemSprite spritesheet="icons-map" frameIndex={146} displaySize={14} />
+              <Text style={styles.floorRewardCardQty}>{reward.xp}</Text>
+            </View>
+          </View>
+
+          {/* Status & Meta Column (Right) */}
+          <View style={styles.floorCardStatusCol}>
+            {/* Status badge */}
+            {isCleared && (
+              <View style={styles.badgeCleared}>
+                <Text style={styles.badgeClearedText}>Cleared</Text>
               </View>
-              <View style={styles.floorMeta}>
-                <Text style={styles.gridSize}>{floor === 10 && zoneId === 'zone1' ? '4×4' : GRID_SIZES[floor]}</Text>
+            )}
+            {isAvail && !isBoss && (
+              <View style={styles.badgeNext}>
+                <Text style={styles.badgeNextText}>Unlocked</Text>
               </View>
+            )}
+            {isAvail && isBoss && (
+              <View style={styles.badgeBoss}>
+                <ItemSprite spritesheet="status-icons-1" frameIndex={21} displaySize={9} />
+                <Text style={styles.badgeBossText}>Boss</Text>
+              </View>
+            )}
+            {isLocked && (
+              <View style={styles.badgeLocked}>
+                <ItemSprite spritesheet="icons-map" frameIndex={49} displaySize={9} opacity={0.5} />
+                <Text style={styles.badgeLockedText}>Locked</Text>
+              </View>
+            )}
+
+            {/* Grid size */}
+            <View style={styles.floorMetaMini}>
+              <Text style={styles.gridSizeMini}>{floor === 10 && zoneId === 'zone1' ? '4×4' : GRID_SIZES[floor]}</Text>
             </View>
           </View>
         </TouchableOpacity>
@@ -598,6 +613,22 @@ export default function DungeonFloorScreen() {
                       </View>
                     )}
                   </View>
+                </View>
+              </View>
+
+              {/* Pre-disclosed completion rewards */}
+              <View style={styles.rewardsHeader}>
+                <ItemSprite spritesheet="icons-1" frameIndex={12} displaySize={16} />
+                <Text style={styles.rewardsTitle}>Clear Rewards</Text>
+              </View>
+              <View style={styles.modalRewardsContainer}>
+                <View style={styles.modalRewardChip}>
+                  <ItemSprite spritesheet="icons-1" frameIndex={11} displaySize={32} />
+                  <Text style={styles.modalRewardQty}>{selectedReward.gold}</Text>
+                </View>
+                <View style={styles.modalRewardChip}>
+                  <ItemSprite spritesheet="icons-map" frameIndex={146} displaySize={32} />
+                  <Text style={styles.modalRewardQty}>{selectedReward.xp}</Text>
                 </View>
               </View>
 
@@ -1349,5 +1380,90 @@ const styles = StyleSheet.create({
     fontSize: 15,
     zIndex: 2,
     letterSpacing: 0.3,
+  },
+
+  /* Pre-disclosed rewards for floor cards */
+  floorCardNameCol: {
+    flex: 2,
+    gap: 4,
+    justifyContent: 'center',
+  },
+  floorCardRewards: {
+    flex: 2.5,
+    flexDirection: 'row',
+    gap: 4,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  floorRewardCardMini: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.03)',
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingVertical: 4,
+    paddingHorizontal: 6,
+    minWidth: 46,
+  },
+  floorRewardCardQty: {
+    fontFamily: 'Jersey10-Regular',
+    fontSize: 12,
+    color: '#CFE0EE',
+    textAlign: 'center',
+    lineHeight: 12,
+  },
+  floorCardStatusCol: {
+    flex: 1.5,
+    alignItems: 'flex-end',
+    justifyContent: 'center',
+    gap: 4,
+  },
+  floorMetaMini: {
+    marginTop: 2,
+  },
+  gridSizeMini: {
+    fontFamily: 'Silkscreen-Regular',
+    fontSize: 9,
+    color: 'rgba(207,224,238,0.45)',
+  },
+
+  /* Pre-disclosed rewards for entry details modal */
+  rewardsHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 8,
+  },
+  rewardsTitle: {
+    fontFamily: 'Jersey10-Regular',
+    fontSize: 16,
+    fontWeight: 'normal',
+    color: '#D4A754',
+    letterSpacing: 0.3,
+  },
+  modalRewardsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 12,
+    marginTop: 2,
+    marginBottom: 16,
+  },
+  modalRewardChip: {
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.03)',
+    borderColor: 'rgba(212, 167, 84, 0.18)',
+    borderWidth: 1.5,
+    borderRadius: 10,
+    paddingTop: 8,
+    paddingBottom: 6,
+    paddingHorizontal: 12,
+    minWidth: 76,
+  },
+  modalRewardQty: {
+    fontFamily: 'Silkscreen-Regular',
+    fontSize: 11,
+    color: '#F8FAFC',
+    marginTop: 4,
   },
 });

@@ -113,3 +113,58 @@ export const FLOOR_MATERIAL_POOLS = {
     { maxFloor: 9, allowed: ['yellow_crystal_small', 'yellow_crystal_big'] },
   ],
 };
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Floor Completion Rewards — Pre-disclosed Gold & EXP per floor
+// ─────────────────────────────────────────────────────────────────────────────
+export const ZONE_COMPLETION_REWARDS = {
+  zone1: {
+    1: { gold: 100, xp: 100 },
+    2: { gold: 200, xp: 200 },
+    3: { gold: 300, xp: 300 },
+    4: { gold: 400, xp: 400 },
+    5: { gold: 500, xp: 500 },
+    6: { gold: 600, xp: 600 },
+    7: { gold: 700, xp: 700 },
+    8: { gold: 800, xp: 800 },
+    9: { gold: 900, xp: 900 },
+    10: { gold: 1000, xp: 1000 },
+  },
+  zone2: {
+    1: { gold: 1000, xp: 1000 },
+    2: { gold: 1500, xp: 1500 },
+    3: { gold: 2000, xp: 2000 },
+    4: { gold: 2500, xp: 2500 },
+    5: { gold: 3000, xp: 3000 },
+    6: { gold: 3500, xp: 3500 },
+    7: { gold: 4000, xp: 4000 },
+    8: { gold: 4500, xp: 4500 },
+    9: { gold: 5000, xp: 5000 },
+    10: { gold: 5500, xp: 5500 },
+  },
+  zone3: {
+    1: { gold: 6000, xp: 6000 },
+    2: { gold: 6100, xp: 6100 },
+    3: { gold: 6200, xp: 6200 },
+    4: { gold: 6300, xp: 6300 },
+    5: { gold: 6400, xp: 6400 },
+    6: { gold: 6500, xp: 6500 },
+    7: { gold: 6600, xp: 6600 },
+    8: { gold: 6700, xp: 6700 },
+    9: { gold: 6800, xp: 6800 },
+    10: { gold: 6900, xp: 6900 },
+  },
+};
+
+/**
+ * Returns the pre-disclosed gold and exp completion rewards for a given floor.
+ *
+ * @param {string} zoneId - unique zone key (e.g. 'zone1')
+ * @param {number} floorNumber - 1-indexed floor (1–10)
+ * @returns {{ gold: number, xp: number }}
+ */
+export function getFloorCompletionReward(zoneId, floorNumber) {
+  const zoneRewards = ZONE_COMPLETION_REWARDS[zoneId] || ZONE_COMPLETION_REWARDS.zone1;
+  return zoneRewards[floorNumber] || { gold: 0, xp: 0 };
+}
+

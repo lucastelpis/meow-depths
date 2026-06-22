@@ -302,9 +302,15 @@ const styles = StyleSheet.create({
     borderBottomColor: 'rgba(255,255,255,0.04)',
   },
   backButton: { width: 70, paddingVertical: 6, justifyContent: 'center' },
-  backText: { fontFamily: 'Jersey10-Regular', fontSize: 14, color: theme.COLORS.candleGold },
+  backText: { fontFamily: 'Jersey10-Regular', fontSize: 16, color: theme.COLORS.candleGold, letterSpacing: 0.5 },
   titleContainer: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  title: { ...theme.FONTS.display, fontSize: 16, color: theme.COLORS.warmGlow },
+  title: {
+    fontFamily: 'Jersey10-Regular',
+    fontWeight: 'normal',
+    fontSize: 20,
+    color: '#F8FAFC',
+    letterSpacing: 0.8,
+  },
   headerSpacer: { width: 70 },
 
   // Top tabs
@@ -327,7 +333,13 @@ const styles = StyleSheet.create({
     borderColor: theme.COLORS.candleGold,
     backgroundColor: 'rgba(232,167,58,0.12)',
   },
-  tabText: { fontFamily: 'Jersey10-Regular', fontSize: 14, color: 'rgba(207,224,238,0.55)', textTransform: 'uppercase' },
+  tabText: {
+    fontFamily: 'Silkscreen-Regular',
+    fontSize: 10,
+    fontWeight: 'normal',
+    color: 'rgba(207,224,238,0.55)',
+    textTransform: 'uppercase',
+  },
   tabTextActive: { color: theme.COLORS.warmGlow },
 
   scroll: { padding: 16, paddingBottom: 40 },
