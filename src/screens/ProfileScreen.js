@@ -53,7 +53,7 @@ const WEAPONS_FRAME_SIZE = 32;
 const WEAPONS_FRAMES = 7;
 
 const TABS = [
-  { key: 'stats',     frameIndex: 28, label: 'Stats' },
+  { key: 'stats', frameIndex: 28, label: 'Stats' },
   { key: 'equipment', frameIndex: 10, label: 'Gear' },
 ];
 
@@ -63,7 +63,7 @@ const STAT_INFO = {
   str: {
     title: 'Strength',
     color: '#F9D99A',
-    desc: "Mochi's raw physical might — the muscle behind every claw swipe.",
+    desc: "Your raw physical might — the muscle behind every swipe.",
     effects: ['+1 Attack per point'],
   },
   agi: {
@@ -75,33 +75,33 @@ const STAT_INFO = {
   vit: {
     title: 'Vitality',
     color: '#5CC489',
-    desc: 'Toughness and resilience. Keeps Mochi standing and shrugging off ailments.',
+    desc: 'Toughness and resilience. Keeps you standing and shrugging off ailments.',
     effects: ['+5 Max HP per point', '+0.5% Status Resistance per point'],
   },
   // Combat stats
   atk: {
     title: 'Attack',
     color: theme.COLORS.candleGold,
-    desc: 'The base power of Mochi\'s hits, before the enemy\'s defence is applied.',
-    effects: ['Strength (+1 per point)', 'Weapons & gear', 'Set bonuses', 'Fire stance (+ATK%)'],
+    desc: 'The base power of Your hits, before the enemy\'s defence is applied.',
+    effects: ['Strength (+1 per point)', 'Gear', 'Fire stance (+ATK%)'],
   },
   def: {
     title: 'Defence',
     color: theme.COLORS.candleGold,
-    desc: 'Reduces incoming damage on a diminishing-returns curve (min 1 dmg).',
-    effects: ['Armor & gear', 'Earth stance (+1 DEF/level)', 'Set bonuses'],
+    desc: 'Reduces incoming damage.',
+    effects: ['Earth stance (+1 DEF/level)', 'Gear'],
   },
   maxHp: {
     title: 'Max HP',
     color: theme.COLORS.candleGold,
-    desc: 'Total health. If it reaches 0, the expedition ends.',
-    effects: ['Vitality (+5 per point)', 'Gear & set bonuses', 'Water stance (+HP%)'],
+    desc: 'Your total health. If it reaches 0 during an expedition, the run ends and you lose any hoarded items.',
+    effects: ['Vitality (+5 per point)', 'Gear', 'Water stance (+HP%)'],
   },
   bagSlots: {
     title: 'Bag Slots',
     color: theme.COLORS.candleGold,
-    desc: 'How many consumables Mochi can pack to bring on an expedition.',
-    effects: ['Storage gear'],
+    desc: 'How many consumables you can pack to bring on an expedition.',
+    effects: ['Gear'],
   },
   critRate: {
     title: 'Crit Rate',
@@ -112,33 +112,33 @@ const STAT_INFO = {
   critDmg: {
     title: 'Crit Damage',
     color: theme.COLORS.candleGold,
-    desc: 'The damage multiplier applied when an attack crits.',
-    effects: ['Base 150%', 'Critical Wind passive'],
+    desc: 'The damage multiplier of a critical hit.',
+    effects: ['Skills', 'Gear'],
   },
   dodge: {
     title: 'Dodge Rate',
     color: theme.COLORS.candleGold,
     desc: 'Chance to avoid an incoming attack entirely, taking no damage.',
-    effects: ['Agility (+0.5% per point)', 'Swiftness passive', 'Gear', 'Wind stance'],
+    effects: ['Agility (+0.5% per point)', 'Gear', 'Wind stance', 'Skills'],
   },
   statusRes: {
     title: 'Status Resistance',
     color: theme.COLORS.candleGold,
     desc: 'Chance to resist an incoming status effect such as bleed or stun.',
-    effects: ['Vitality (+0.5% per point)', 'Fortitude passive', 'Capped at 90%'],
+    effects: ['Vitality (+0.5% per point)', 'Skills'],
   },
 };
 
 // ─── Equipment slot config ────────────────────────────────────────────────────
 const SLOT_CONFIG = [
-  { key: 'head',     label: 'Head',     emoji: '🪖' },
-  { key: 'chest',    label: 'Chest',    emoji: '🛡️' },
-  { key: 'gloves',   label: 'Gloves',   emoji: '🧤' },
-  { key: 'legs',     label: 'Legs',     emoji: '👖' },
-  { key: 'boots',    label: 'Boots',    emoji: '👢' },
-  { key: 'weapon',   label: 'Weapon',   emoji: '⚔️' },
-  { key: 'trinket',  label: 'Trinket',  emoji: '💎' },
-  { key: 'storage',  label: 'Storage',  emoji: '🎒' },
+  { key: 'head', label: 'Head', emoji: '🪖' },
+  { key: 'chest', label: 'Chest', emoji: '🛡️' },
+  { key: 'gloves', label: 'Gloves', emoji: '🧤' },
+  { key: 'legs', label: 'Legs', emoji: '👖' },
+  { key: 'boots', label: 'Boots', emoji: '👢' },
+  { key: 'weapon', label: 'Weapon', emoji: '⚔️' },
+  { key: 'trinket', label: 'Trinket', emoji: '💎' },
+  { key: 'storage', label: 'Storage', emoji: '🎒' },
 ];
 
 // Slot keys laid out per row of the equipment grid (2 cards per row)
@@ -239,9 +239,9 @@ export default function ProfileScreen() {
   const activeSets = useMemo(() => getActiveSetBonuses(hero.gear), [hero.gear]);
 
   const xpForCurrent = getXpForLevel(hero.level);
-  const xpForNext    = getXpForLevel(hero.level + 1);
-  const xpIntoLevel  = hero.xp - xpForCurrent;
-  const xpNeeded     = xpForNext - xpForCurrent;
+  const xpForNext = getXpForLevel(hero.level + 1);
+  const xpIntoLevel = hero.xp - xpForCurrent;
+  const xpNeeded = xpForNext - xpForCurrent;
 
   // Base stats (no gear) for the "+gear bonus" annotations
   const baseStats = useMemo(() => {
@@ -296,24 +296,24 @@ export default function ProfileScreen() {
   const statSummary = (gearDef) => {
     if (!gearDef?.stats) return '';
     const parts = [];
-    if (gearDef.stats.attack)     parts.push(`ATK +${gearDef.stats.attack}`);
-    if (gearDef.stats.defence)    parts.push(`DEF +${gearDef.stats.defence}`);
-    if (gearDef.stats.maxHp)      parts.push(`HP +${gearDef.stats.maxHp}`);
+    if (gearDef.stats.attack) parts.push(`ATK +${gearDef.stats.attack}`);
+    if (gearDef.stats.defence) parts.push(`DEF +${gearDef.stats.defence}`);
+    if (gearDef.stats.maxHp) parts.push(`HP +${gearDef.stats.maxHp}`);
     if (gearDef.stats.critChance) parts.push(`CRIT +${pct(gearDef.stats.critChance)}`);
-    if (gearDef.stats.dodge)      parts.push(`DODGE +${pct(gearDef.stats.dodge)}`);
-    if (gearDef.stats.bagSlots)   parts.push(`Bag Slots +${gearDef.stats.bagSlots}`);
+    if (gearDef.stats.dodge) parts.push(`DODGE +${pct(gearDef.stats.dodge)}`);
+    if (gearDef.stats.bagSlots) parts.push(`Bag Slots +${gearDef.stats.bagSlots}`);
     return parts.join('  ');
   };
 
   // Stat-by-stat delta of `candidate` vs the currently equipped piece
   const statDeltas = (candidateDef, currentDef) => {
     const STAT_FIELDS = [
-      { key: 'attack',     label: 'ATK',       percent: false },
-      { key: 'defence',    label: 'DEF',       percent: false },
-      { key: 'maxHp',      label: 'HP',        percent: false },
-      { key: 'critChance', label: 'CRIT',      percent: true },
-      { key: 'dodge',      label: 'DODGE',     percent: true },
-      { key: 'bagSlots',   label: 'Bag Slots', percent: false },
+      { key: 'attack', label: 'ATK', percent: false },
+      { key: 'defence', label: 'DEF', percent: false },
+      { key: 'maxHp', label: 'HP', percent: false },
+      { key: 'critChance', label: 'CRIT', percent: true },
+      { key: 'dodge', label: 'DODGE', percent: true },
+      { key: 'bagSlots', label: 'Bag Slots', percent: false },
     ];
     const deltas = [];
     STAT_FIELDS.forEach(({ key, label, percent }) => {
@@ -428,7 +428,7 @@ export default function ProfileScreen() {
           {/* Gold chip */}
           <View style={styles.goldChip}>
             <ItemSprite spritesheet="icons-1" frameIndex={11} displaySize={14} />
-            <Text style={[styles.goldChipText, { marginLeft: 4 }]}>{hero.gold}</Text>
+            <Text style={[styles.goldChipText, { marginLeft: 4 }]}>{hero.gold} G</Text>
           </View>
 
           {/* Avatar & level badge */}
@@ -528,7 +528,7 @@ export default function ProfileScreen() {
                   {hero.strength || 10}
                   {tempStrAlloc > 0 && <Text style={styles.attributeValueHighlight}> ➔ {previewStr}</Text>}
                 </Text>
-                
+
                 {showControls && (
                   <View style={styles.attributeControls}>
                     <TouchableOpacity
@@ -568,7 +568,7 @@ export default function ProfileScreen() {
                   {hero.agility || 10}
                   {tempAgiAlloc > 0 && <Text style={styles.attributeValueHighlight}> ➔ {previewAgi}</Text>}
                 </Text>
-                
+
                 {showControls && (
                   <View style={styles.attributeControls}>
                     <TouchableOpacity
@@ -608,7 +608,7 @@ export default function ProfileScreen() {
                   {hero.vitality || 10}
                   {tempVitAlloc > 0 && <Text style={styles.attributeValueHighlight}> ➔ {previewVit}</Text>}
                 </Text>
-                
+
                 {showControls && (
                   <View style={styles.attributeControls}>
                     <TouchableOpacity
@@ -750,9 +750,9 @@ export default function ProfileScreen() {
                           spritesheet="icons-1"
                           frameIndex={
                             (hero.element || '').toLowerCase() === 'fire' ? 33 :
-                            (hero.element || '').toLowerCase() === 'wind' ? 34 :
-                            (hero.element || '').toLowerCase() === 'water' ? 35 :
-                            36 // earth fallback
+                              (hero.element || '').toLowerCase() === 'wind' ? 34 :
+                                (hero.element || '').toLowerCase() === 'water' ? 35 :
+                                  36 // earth fallback
                           }
                           displaySize={24}
                         />
@@ -896,92 +896,92 @@ export default function ProfileScreen() {
         <Pressable style={styles.modalBackdrop} onPress={() => setSelectedSlot(null)}>
           <Pressable style={styles.modalCardOuter} onPress={(e) => e.stopPropagation()}>
             <View style={styles.modalCardInner}>
-            <View style={styles.modalHeaderRow}>
-              <Text style={styles.modalTitle}>
-                {modalData.candidates.length > 0 ? `Choose a ${modalData.slotConfig?.label}` : `No ${modalData.slotConfig?.label} Yet`}
-              </Text>
-              <TouchableOpacity onPress={() => setSelectedSlot(null)} activeOpacity={0.7}>
-                <Text style={styles.modalCloseText}>✕</Text>
-              </TouchableOpacity>
-            </View>
+              <View style={styles.modalHeaderRow}>
+                <Text style={styles.modalTitle}>
+                  {modalData.candidates.length > 0 ? `Choose a ${modalData.slotConfig?.label}` : `No ${modalData.slotConfig?.label} Yet`}
+                </Text>
+                <TouchableOpacity onPress={() => setSelectedSlot(null)} activeOpacity={0.7}>
+                  <Text style={styles.modalCloseText}>✕</Text>
+                </TouchableOpacity>
+              </View>
 
-            {modalData.candidates.length > 0 ? (
-              <ScrollView style={styles.modalList} showsVerticalScrollIndicator={false}>
-                {modalData.candidates.map((item) => {
-                  const isEquipped = item.isEquipped;
-                  const deltas = item.deltas;
-                  return (
-                    <TouchableOpacity
-                      key={item.id}
-                      style={[styles.compareRow, isEquipped && styles.compareRowEquipped]}
-                      onPress={() => !isEquipped && handleEquipFromSlot(item.id)}
-                      activeOpacity={isEquipped ? 1 : 0.8}
-                      disabled={isEquipped}
-                    >
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                        {item.spritesheet ? (
-                          <ItemSprite
-                            spritesheet={item.spritesheet}
-                            frameIndex={item.frameIndex}
-                            displaySize={36}
-                          />
-                        ) : (
-                          <ExpoImage
-                            source={GEAR_ICON_PLACEHOLDER}
-                            style={{ width: 36, height: 36 }}
-                            contentFit="contain"
-                          />
-                        )}
-                        <View style={{ flex: 1 }}>
-                          <View style={styles.compareRowHeader}>
-                            <Text style={styles.compareItemName}>{item.name}</Text>
-                            {isEquipped && (
-                              <View style={styles.equippedBadge}>
-                                <Text style={styles.equippedBadgeText}>EQUIPPED</Text>
+              {modalData.candidates.length > 0 ? (
+                <ScrollView style={styles.modalList} showsVerticalScrollIndicator={false}>
+                  {modalData.candidates.map((item) => {
+                    const isEquipped = item.isEquipped;
+                    const deltas = item.deltas;
+                    return (
+                      <TouchableOpacity
+                        key={item.id}
+                        style={[styles.compareRow, isEquipped && styles.compareRowEquipped]}
+                        onPress={() => !isEquipped && handleEquipFromSlot(item.id)}
+                        activeOpacity={isEquipped ? 1 : 0.8}
+                        disabled={isEquipped}
+                      >
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                          {item.spritesheet ? (
+                            <ItemSprite
+                              spritesheet={item.spritesheet}
+                              frameIndex={item.frameIndex}
+                              displaySize={36}
+                            />
+                          ) : (
+                            <ExpoImage
+                              source={GEAR_ICON_PLACEHOLDER}
+                              style={{ width: 36, height: 36 }}
+                              contentFit="contain"
+                            />
+                          )}
+                          <View style={{ flex: 1 }}>
+                            <View style={styles.compareRowHeader}>
+                              <Text style={styles.compareItemName}>{item.name}</Text>
+                              {isEquipped && (
+                                <View style={styles.equippedBadge}>
+                                  <Text style={styles.equippedBadgeText}>EQUIPPED</Text>
+                                </View>
+                              )}
+                            </View>
+                            {!!statSummary(item) && (
+                              <Text style={styles.compareItemStats}>{statSummary(item)}</Text>
+                            )}
+                            {!!item.description && (
+                              <Text style={styles.compareItemDesc}>{item.description}</Text>
+                            )}
+                            {!isEquipped && deltas.length > 0 && (
+                              <View style={styles.deltaRow}>
+                                {deltas.map((d) => (
+                                  <Text
+                                    key={d.label}
+                                    style={[styles.deltaText, { color: d.positive ? '#5CC489' : '#EF4444' }]}
+                                  >
+                                    {d.label} {d.text}
+                                  </Text>
+                                ))}
                               </View>
                             )}
                           </View>
-                          {!!statSummary(item) && (
-                            <Text style={styles.compareItemStats}>{statSummary(item)}</Text>
-                          )}
-                          {!!item.description && (
-                            <Text style={styles.compareItemDesc}>{item.description}</Text>
-                          )}
-                          {!isEquipped && deltas.length > 0 && (
-                            <View style={styles.deltaRow}>
-                              {deltas.map((d) => (
-                                <Text
-                                  key={d.label}
-                                  style={[styles.deltaText, { color: d.positive ? '#5CC489' : '#EF4444' }]}
-                                >
-                                  {d.label} {d.text}
-                                </Text>
-                              ))}
-                            </View>
-                          )}
                         </View>
-                      </View>
-                    </TouchableOpacity>
-                  );
-                })}
-              </ScrollView>
-            ) : (
-              <View style={styles.emptyStateBody}>
-                <Text style={styles.emptyStateEmoji}>🏛️</Text>
-                <Text style={styles.emptyStateText}>
-                  No {modalData.slotConfig?.label} gear owned yet. Visit the Shop to find gear for this slot!
-                </Text>
-                <TouchableOpacity style={styles.shopBtn} onPress={handleGoToShop} activeOpacity={0.8}>
-                  <Text style={styles.shopBtnText}>Go to Shop →</Text>
-                </TouchableOpacity>
-              </View>
-            )}
+                      </TouchableOpacity>
+                    );
+                  })}
+                </ScrollView>
+              ) : (
+                <View style={styles.emptyStateBody}>
+                  <Text style={styles.emptyStateEmoji}>🏛️</Text>
+                  <Text style={styles.emptyStateText}>
+                    No {modalData.slotConfig?.label} gear owned yet. Visit the Shop to find gear for this slot!
+                  </Text>
+                  <TouchableOpacity style={styles.shopBtn} onPress={handleGoToShop} activeOpacity={0.8}>
+                    <Text style={styles.shopBtnText}>Go to Shop →</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
 
-            {!!modalData.currentGearId && (
-              <TouchableOpacity style={styles.unequipBtn} onPress={handleUnequip} activeOpacity={0.8}>
-                <Text style={styles.unequipBtnText}>Unequip {modalData.slotConfig?.label}</Text>
-              </TouchableOpacity>
-            )}
+              {!!modalData.currentGearId && (
+                <TouchableOpacity style={styles.unequipBtn} onPress={handleUnequip} activeOpacity={0.8}>
+                  <Text style={styles.unequipBtnText}>Unequip {modalData.slotConfig?.label}</Text>
+                </TouchableOpacity>
+              )}
             </View>
           </Pressable>
         </Pressable>
@@ -1076,7 +1076,7 @@ function StatBox({ label, value, bonus, isPercent, variant, flex = 1, highlighte
       )}
       <Text style={styles.statLabel} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>{label}</Text>
       <Text style={[
-        styles.statValue, 
+        styles.statValue,
         isAttribute && styles.statValueAttribute,
         highlighted && { color: '#5CC489' }
       ]}>{value}</Text>

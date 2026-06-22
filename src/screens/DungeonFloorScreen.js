@@ -341,11 +341,11 @@ export default function DungeonFloorScreen() {
           <View style={styles.floorCardRewards}>
             <View style={styles.floorRewardCardMini}>
               <ItemSprite spritesheet="icons-1" frameIndex={11} displaySize={14} />
-              <Text style={styles.floorRewardCardQty}>{reward.gold}</Text>
+              <Text style={styles.floorRewardCardQty}>{reward.gold} G</Text>
             </View>
             <View style={styles.floorRewardCardMini}>
               <ItemSprite spritesheet="icons-map" frameIndex={146} displaySize={14} />
-              <Text style={styles.floorRewardCardQty}>{reward.xp}</Text>
+              <Text style={styles.floorRewardCardQty}>{reward.xp} XP</Text>
             </View>
           </View>
 
@@ -624,11 +624,11 @@ export default function DungeonFloorScreen() {
               <View style={styles.modalRewardsContainer}>
                 <View style={styles.modalRewardChip}>
                   <ItemSprite spritesheet="icons-1" frameIndex={11} displaySize={32} />
-                  <Text style={styles.modalRewardQty}>{selectedReward.gold}</Text>
+                  <Text style={styles.modalRewardQty}>{selectedReward.gold} G</Text>
                 </View>
                 <View style={styles.modalRewardChip}>
                   <ItemSprite spritesheet="icons-map" frameIndex={146} displaySize={32} />
-                  <Text style={styles.modalRewardQty}>{selectedReward.xp}</Text>
+                  <Text style={styles.modalRewardQty}>{selectedReward.xp} XP</Text>
                 </View>
               </View>
 

@@ -827,7 +827,7 @@ export default function DungeonMapScreen({ navigation }) {
         {xp > 0 && (
           <View style={chipStyle}>
             <ItemSprite spritesheet="icons-map" frameIndex={146} displaySize={32} />
-            <Text style={styles.bagChipQty}>{xp}</Text>
+            <Text style={styles.bagChipQty}>{xp} XP</Text>
           </View>
         )}
         {gold > 0 && (
@@ -921,7 +921,7 @@ export default function DungeonMapScreen({ navigation }) {
               <ItemSprite spritesheet="icons-1" frameIndex={11} displaySize={18} />
               <View>
                 <Text style={styles.lootStatLabel}>Gold Collected</Text>
-                <Text style={styles.lootStatValueGold}>{currentRun.lootCollected.gold}</Text>
+                <Text style={styles.lootStatValueGold}>{currentRun.lootCollected.gold} G</Text>
               </View>
             </View>
             
@@ -1276,7 +1276,7 @@ export default function DungeonMapScreen({ navigation }) {
                   {Math.floor(currentRun.lootCollected.gold / 2) > 0 && (
                     <View style={styles.bagItemChip}>
                       <ItemSprite spritesheet="icons-1" frameIndex={11} displaySize={32} />
-                      <Text style={styles.bagChipQty}>{Math.floor(currentRun.lootCollected.gold / 2)}</Text>
+                      <Text style={styles.bagChipQty}>{Math.floor(currentRun.lootCollected.gold / 2)} G</Text>
                     </View>
                   )}
                   {(() => {
@@ -1358,11 +1358,11 @@ export default function DungeonMapScreen({ navigation }) {
                     <View style={styles.clearRewardChips}>
                       <View style={styles.clearRewardChip}>
                         <ItemSprite spritesheet="icons-1" frameIndex={11} displaySize={32} />
-                        <Text style={styles.clearRewardQty}>{clearReward.gold}</Text>
+                        <Text style={styles.clearRewardQty}>{clearReward.gold} G</Text>
                       </View>
                       <View style={styles.clearRewardChip}>
                         <ItemSprite spritesheet="icons-map" frameIndex={146} displaySize={32} />
-                        <Text style={styles.clearRewardQty}>{clearReward.xp}</Text>
+                        <Text style={styles.clearRewardQty}>{clearReward.xp} XP</Text>
                       </View>
                     </View>
                   </View>
@@ -1509,7 +1509,7 @@ export default function DungeonMapScreen({ navigation }) {
                       {currentRun.lootCollected.gold > 0 && (
                         <View style={styles.bagItemChip}>
                           <ItemSprite spritesheet="icons-1" frameIndex={11} displaySize={32} />
-                          <Text style={styles.bagChipQty}>{currentRun.lootCollected.gold}</Text>
+                          <Text style={styles.bagChipQty}>{currentRun.lootCollected.gold} G</Text>
                         </View>
                       )}
                       {Object.entries(currentRun.lootCollected.materials).map(([id, qty]) => {

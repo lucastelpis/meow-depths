@@ -276,7 +276,7 @@ export default function ShopScreen() {
   const handleBuyGear = (item) => {
     Alert.alert(
       'Purchase Equipment',
-      `Buy "${item.name}" for 💰 ${item.goldCost} gold?`,
+      `Buy "${item.name}" for 💰 ${item.goldCost} G?`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -476,7 +476,7 @@ export default function ShopScreen() {
         </View>
         <View style={[styles.goldBadge, theme.SHADOWS.glowPrimary]}>
           <ItemSprite spritesheet="icons-1" frameIndex={11} displaySize={16} />
-          <Text style={styles.goldBadgeText}>{hero.gold}g</Text>
+          <Text style={styles.goldBadgeText}>{hero.gold} G</Text>
         </View>
       </View>
 
@@ -605,7 +605,7 @@ export default function ShopScreen() {
                           <View style={styles.buyBtnContent}>
                             <ItemSprite spritesheet="icons-1" frameIndex={11} displaySize={16} />
                             <Text style={[styles.buyBtnText, !canAffordTotal && styles.buyBtnTextDisabled, canAffordTotal && styles.buyBtnTextActive]}>
-                              {totalCost}g
+                              {totalCost} G
                             </Text>
                           </View>
                         </TouchableOpacity>
@@ -730,7 +730,7 @@ export default function ShopScreen() {
                                   !canAfford && styles.armoryBuyBtnTextDisabled
                                 ]}
                               >
-                                {item.goldCost}g
+                                {item.goldCost} G
                               </Text>
                             </View>
                           </TouchableOpacity>

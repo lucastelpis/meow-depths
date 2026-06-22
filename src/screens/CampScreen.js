@@ -372,7 +372,7 @@ export default function CampScreen({ navigation }) {
                 {/* Tag 1: Gold */}
                 <View style={styles.bannerTag}>
                   <ItemSprite spritesheet="icons-1" frameIndex={11} displaySize={18} />
-                  <Text style={styles.bannerTagText}>{hero.gold}</Text>
+                  <Text style={styles.bannerTagText}>{hero.gold} G</Text>
                 </View>
 
                 {/* Tag 2: Level */}
@@ -625,7 +625,7 @@ export default function CampScreen({ navigation }) {
                       {displayedRewardRows.map((row) => (
                         <View key={row.key} style={styles.drChip}>
                           <ItemSprite spritesheet={row.spritesheet} frameIndex={row.frameIndex} displaySize={40} />
-                          <Text style={styles.drChipQty}>+{row.qty}</Text>
+                          <Text style={styles.drChipQty}>+{row.qty}{row.key === 'gold' ? ' G' : ''}</Text>
                           <Text style={styles.drChipLabel}>{row.label}</Text>
                         </View>
                       ))}

@@ -2374,14 +2374,14 @@ export default function CombatScreen() {
                   {lootResult.xp > 0 && (
                     <View style={styles.lootItemChip}>
                       <ItemSprite spritesheet="icons-map" frameIndex={146} displaySize={32} />
-                      <Text style={styles.lootChipQty}>{lootResult.xp}</Text>
+                      <Text style={styles.lootChipQty}>{lootResult.xp} XP</Text>
                       <Text style={styles.lootChipLabel}>XP</Text>
                     </View>
                   )}
                   {lootResult.gold > 0 && (
                     <View style={styles.lootItemChip}>
                       <ItemSprite spritesheet="icons-1" frameIndex={11} displaySize={32} />
-                      <Text style={styles.lootChipQty}>{lootResult.gold}g</Text>
+                      <Text style={styles.lootChipQty}>{lootResult.gold} G</Text>
                       <Text style={styles.lootChipLabel}>Gold</Text>
                     </View>
                   )}
@@ -2458,7 +2458,7 @@ export default function CombatScreen() {
                       <View style={styles.lootItemChip}>
                         <ItemSprite spritesheet="icons-map" frameIndex={146} displaySize={32} opacity={0.5} />
                         <Text style={[styles.lootChipQty, { textDecorationLine: 'line-through', opacity: 0.6 }]}>
-                          {state.currentRun.lootCollected.xp}
+                          {state.currentRun.lootCollected.xp} XP
                         </Text>
                         <Text style={styles.lootChipLabel}>XP</Text>
                       </View>
@@ -2467,7 +2467,7 @@ export default function CombatScreen() {
                       <View style={styles.lootItemChip}>
                         <ItemSprite spritesheet="icons-1" frameIndex={11} displaySize={32} opacity={0.5} />
                         <Text style={[styles.lootChipQty, { textDecorationLine: 'line-through', opacity: 0.6 }]}>
-                          {state.currentRun.lootCollected.gold}g
+                          {state.currentRun.lootCollected.gold} G
                         </Text>
                         <Text style={styles.lootChipLabel}>Gold</Text>
                       </View>

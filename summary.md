@@ -6,9 +6,9 @@ Meow Depths is an RPG/region-crawler game built using React Native and Expo, fea
 ## Dungeon Floor Rules & Loot
 - **Dungeon Loot**: Potions (health potions, super potions, mega potions, ultra potions) do not drop from treasure chests, gamble rooms, or combat in the dungeons. They must be purchased from the Market (Shop) or obtained via daily rewards at the Camp hub.
 - **Floor Completion Rewards**: Each floor has pre-disclosed Gold and EXP rewards visible on its selection card and entry modal. These are awarded upon clearing all tiles on the floor grid and displayed in the floor complete modal.
-  - **Zone 1**: Starts at 100g/xp on Floor 1, increasing by +100g/xp per floor (reaching 1000g/xp on Floor 10).
-  - **Zone 2**: Starts at 1000g/xp on Floor 1, increasing by +500g/xp per floor (reaching 5500g/xp on Floor 10).
-  - **Zone 3**: Starts at 6000g/xp on Floor 1, increasing by +100g/xp per floor (reaching 6900g/xp on Floor 10).
+  - **Zone 1**: Starts at 100 G and 100 XP on Floor 1, increasing by +100 G and +100 XP per floor (reaching 1000 G and 1000 XP on Floor 10).
+  - **Zone 2**: Starts at 1000 G and 1000 XP on Floor 1, increasing by +500 G and +500 XP per floor (reaching 5500 G and 5500 XP on Floor 10).
+  - **Zone 3**: Starts at 6000 G and 6000 XP on Floor 1, increasing by +100 G and +100 XP per floor (reaching 6900 G and 6900 XP on Floor 10).
 - **Floor Grid Sizes & Enemies**: Dungeon grid sizes grow as the player descends. For **Dungeon 1 (Soggy Ruins)**, Floor 10 (Boss Floor) is specifically configured as **4x4 tiles** (instead of 4x5) and all combat tiles on this floor spawn exactly **4 enemies** at the same time.
 - **Skill Popups in Combat**: In battle, opening the detail modal for an equipped skill displays its current level's multipliers and specific effects (damage multiplier, defense reduction, cooldown, etc.) rather than just the generic description.
 - **Water Skill Mechanics**: Water active skills (**Tidal Strike** and **Tidal Wave**) reduce the target's Defense (DEF) instead of Attack (ATK).
@@ -18,8 +18,8 @@ Meow Depths is an RPG/region-crawler game built using React Native and Expo, fea
   - **Name Input Screen**: The player enters their character's name (defaults to "Mochi").
   - **Element Selection Screen**: A horizontal snap-carousel where players choose their starting element path (Fire, Water, Earth, Wind). Confirming dispatches the `SELECT_ELEMENT` action, locking in their choice and transitioning to the main game.
 - **Camp Hub (Main Screen)**: The player can navigate to the Region Map, Loadout (Inventory), Skills, Market (Shop), and Profile.
-- **Profile Screen**: Accessible from the hub. Split into two tabs:
-  - **Stats tab**: Displays base attributes (STR, AGI, VIT) where players allocate points earned from leveling up, previews and displays effective combat stats (ATK, DEF, MAX HP, etc.), and describes their current elemental stance.
+- **Profile Screen**: Accessible from the hub. Features a scaled-up avatar, a modern font style (`Jersey10-Regular`), and is split into two tabs:
+  - **Stats tab**: Displays base attributes (STR, AGI, VIT) where players allocate points earned from leveling up, previews and displays effective combat stats (ATK, DEF, MAX HP, etc.), describes their current elemental stance, and includes interactive `?` info tags next to attributes and stats which open a custom explanation popup modal.
   - **Gear tab**: Displays equipped gear across 8 slots (Head, Chest, Gloves, Legs, Boots, Weapon, Trinket, Storage) and displays active set bonuses.
 - **Inventory/Loadout Screen**: Accessible from the hub. Contains three tabs (Supplies, Gear, Materials) styled as cozy parchment/wood tabs.
 - **Market (Shop) Screen**: Accessible from the hub. Contains three tabs (Supplies shop, Gear armory, Forge fusion) styled as cozy parchment/wood tabs.
