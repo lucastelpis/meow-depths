@@ -1230,6 +1230,87 @@ function gameReducer(state, action) {
     }
 
     // -----------------------------------------------------------------------
+    // RESET_STATS_AND_SKILLS — reset attribute points and skills, refunding spent crystals
+    // -----------------------------------------------------------------------
+    case 'RESET_STATS_AND_SKILLS': {
+      // 1. Calculate crystals/materials to refund
+      const refundMaterials = {};
+      for (const [skillId, entry] of Object.entries(state.hero.unlockedSkills || {})) {
+        const skill = SKILLS[skillId];
+        if (!skill) continue;
+        const stars = entry.stars || 1;
+        for (let star = 1; star <= stars; star++) {
+          const cost = getSkillUpgradeCost(skill, star);
+          if (cost && cost.materials) {
+            for (const [itemId, qty] of Object.entries(cost.materials)) {
+              refundMaterials[itemId] = (refundMaterials[itemId] || 0) + qty;
+            }
+          }
+        }
+      }
+
+      // 2. Add refund materials to inventory
+      const newMaterials = { ...state.hero.inventory.materials };
+      for (const [itemId, qty] of Object.entries(refundMaterials)) {
+        newMaterials[itemId] = (newMaterials[itemId] || 0) + qty;
+      }
+
+      // 3. Reset attributes
+      const newStr = 10;
+      const newAgi = 10;
+      const newVit = 10;
+
+      const newMaxHp = newVit * 5;
+      const newAttack = newStr * 1;
+      const newDefence = 0;
+      const newCritChance = newAgi * 0.005;
+      const newDodge = newAgi * 0.005;
+
+      const newStatPoints = (state.hero.level - 1) * 3;
+
+      const tempHero = {
+        ...state.hero,
+        strength: newStr,
+        agility: newAgi,
+        vitality: newVit,
+        maxHp: newMaxHp,
+        attack: newAttack,
+        defence: newDefence,
+        critChance: newCritChance,
+        dodge: newDodge,
+        statPoints: newStatPoints,
+        unlockedSkills: {},
+        equippedSkills: [null, null],
+      };
+
+      const effectiveMaxHp = calculateEffectiveStats(tempHero).maxHp;
+      const newHp = effectiveMaxHp;
+
+      return {
+        ...state,
+        hero: {
+          ...state.hero,
+          strength: newStr,
+          agility: newAgi,
+          vitality: newVit,
+          maxHp: newMaxHp,
+          attack: newAttack,
+          defence: newDefence,
+          critChance: newCritChance,
+          dodge: newDodge,
+          statPoints: newStatPoints,
+          unlockedSkills: {},
+          equippedSkills: [null, null],
+          hp: newHp,
+          inventory: {
+            ...state.hero.inventory,
+            materials: newMaterials,
+          },
+        },
+      };
+    }
+
+    // -----------------------------------------------------------------------
     // RESET_GAME — nuke everything and start fresh
     // -----------------------------------------------------------------------
     case 'RESET_GAME':

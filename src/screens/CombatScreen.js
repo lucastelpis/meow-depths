@@ -71,7 +71,7 @@ import {
   executeTidalStrike,
   executeHealingCurrent,
   executeBoulderSlash,
-  executeFortify,
+  executeLandslide,
   executeDualSlash,
   executeWhirlwind,
   displayDamage,
@@ -442,7 +442,6 @@ const STATUS_SPRITE_FRAMES = {
 const EFFECT_SKILL_ICON = {
   hot: 'healing_current',  // Healing Current's HoT shows the skill icon, not 💧
   guard: 'flame_guard',    // Flame Guard shows its skill icon (was frame 6 = 🛡️)
-  def_buff: 'fortify',     // Fortify shows its skill icon (was frame 6 = 🛡️)
 };
 
 function consolidateEffectsArray(effectsList) {
@@ -887,6 +886,21 @@ export default function CombatScreen() {
     return { updatedHero, logged };
   }, [addLog]);
 
+  const triggerPlayerTurnStartEffects = useCallback((currentHero) => {
+    let updatedHero = { ...currentHero };
+    const calcifyRegen = updatedHero.passives?.calcifyRegen || 0;
+    if (calcifyRegen > 0 && updatedHero.hp > 0 && updatedHero.hp < updatedHero.maxHp) {
+      const baseHeal = Math.floor(updatedHero.maxHp * calcifyRegen);
+      const finalHeal = applyHealingEfficiency(baseHeal, updatedHero);
+      const actualHeal = Math.min(updatedHero.maxHp, updatedHero.hp + finalHeal) - updatedHero.hp;
+      if (actualHeal > 0) {
+        updatedHero.hp += actualHeal;
+        addLog(`⛰️ Calcify: ${updatedHero.name || 'Mochi'} regenerates ${actualHeal} HP!`);
+      }
+    }
+    return updatedHero;
+  }, [addLog]);
+
   // ── Initialisation (runs once on mount) ──────────────────────────────────
   useEffect(() => {
     if (!initialCombatData) return;
@@ -898,6 +912,12 @@ export default function CombatScreen() {
     if (encounteredIds.length > 0) {
       dispatch({ type: 'ENCOUNTER_CREATURES', payload: { enemyIds: encounteredIds } });
     }
+
+    // Apply Turn 1 Calcify healing if active
+    setHeroState(prev => {
+      if (!prev) return prev;
+      return triggerPlayerTurnStartEffects(prev);
+    });
 
     defeatedEnemiesRef.current = [];
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1065,9 +1085,9 @@ export default function CombatScreen() {
       setHeroAnim(skillId);
     }
 
-    // Set cooldown — fortify and whirlwind use per-star cooldowns defined in star data
+    // Set cooldown — landslide and whirlwind use per-star cooldowns defined in star data
     const stars = (state.hero.unlockedSkills[skillId]?.stars) || 1;
-    const skillCooldown = (skillId === 'fortify' || skillId === 'whirlwind')
+    const skillCooldown = (skillId === 'landslide' || skillId === 'whirlwind')
       ? (skillDef.stars[stars]?.cooldown ?? skillDef.cooldown)
       : skillDef.cooldown;
     const newCooldowns = { ...cooldowns, [skillId]: skillCooldown };
@@ -1156,14 +1176,23 @@ export default function CombatScreen() {
       });
       addLog(result.log);
 
-    } else if (skillId === 'fortify') {
-      const fyStars = (state.hero.unlockedSkills[skillId]?.stars) || 1;
-      const result = executeFortify(skillDef, fyStars, updatedHero);
-      updatedHero = {
-        ...updatedHero,
-        effects: addStatusEffects(updatedHero.effects, result.defBuff),
-      };
+    } else if (skillId === 'landslide') {
+      const lsStars = (state.hero.unlockedSkills[skillId]?.stars) || 1;
+      const result = executeLandslide(skillDef, lsStars, updatedHero, updatedEnemies);
+      for (const res of result.results) {
+        updatedEnemies = updatedEnemies.map(e => {
+          if (e.uid !== res.targetUid) return e;
+          const newEffects = res.stunApplied
+            ? addStatusEffects(e.effects, { type: 'stun', duration: 1 })
+            : e.effects;
+          return { ...e, hp: Math.max(0, e.hp - res.damage), effects: newEffects };
+        });
+      }
+      updatedHero.hp = Math.max(0, updatedHero.hp - result.backfireDamage);
       addLog(result.log);
+      if (result.backfireDamage > 0) {
+        addLog(`💥 Landslide backfire: ${updatedHero.name || 'Mochi'} takes ${result.backfireDamage} recoil damage!`);
+      }
 
     } else if (skillId === 'dual_slash' || skillId === 'whirlwind') {
       let result;
@@ -1560,19 +1589,6 @@ export default function CombatScreen() {
         }
       }
 
-      // Stone Thorns — reflect raw incoming damage (before DEF) back to the attacker
-      const stoneThornsReflect = updatedHero.passives?.stoneThornsReflect || 0;
-      if (stoneThornsReflect > 0 && turnResult.damage > 0) {
-        const rawDmg = turnResult.rawDamage || turnResult.damage;
-        const reflectDmg = Math.max(1, Math.floor(rawDmg * stoneThornsReflect));
-        const thornsAttacker = updatedEnemies[i];
-        if (thornsAttacker && thornsAttacker.hp > 0) {
-          updatedEnemies = updatedEnemies.map((e, idx) =>
-            idx === i ? { ...e, hp: Math.max(0, e.hp - reflectDmg) } : e
-          );
-          addLog(`🌵 Stone Thorns reflects ${reflectDmg} to ${thornsAttacker.name}!`);
-        }
-      }
 
       // Apply status effects from this attack (bleed, stun, etc.)
       if (turnResult.effects?.length > 0) {
@@ -1741,6 +1757,9 @@ export default function CombatScreen() {
       }
       return e;
     });
+
+    // ── Apply Calcify start-of-turn regeneration ───────────────────────────
+    updatedHero = triggerPlayerTurnStartEffects(updatedHero);
 
     // ── Refresh enemy intents for next player turn ───────────────────────────
     updatedEnemies = refreshIntents(updatedEnemies);
@@ -3055,7 +3074,7 @@ export default function CombatScreen() {
                         <Text style={styles.passiveRowDesc}>{sk.description}</Text>
                         {starData && (
                           <View style={styles.passiveStatBox}>
-                            {Object.entries(starData).map(([k, v]) => (
+                            {Object.entries(starData).filter(([k]) => k !== 'atkMultiplier').map(([k, v]) => (
                               <Text key={k} style={styles.infoStatLine}>
                                 {SKILL_STAT_LABELS[k] || k}: <Text style={styles.infoStatStrong}>{formatSkillStatValue(k, v)}</Text>
                               </Text>
@@ -3150,7 +3169,7 @@ export default function CombatScreen() {
                 {stars > 0 && infoSkill.stars?.[stars] && (
                   <View style={styles.infoStatBox}>
                     <Text style={styles.infoStatLabel}>★{stars} CURRENT STATS</Text>
-                    {Object.entries(infoSkill.stars[stars]).map(([k, v]) => (
+                    {Object.entries(infoSkill.stars[stars]).filter(([k]) => k !== 'atkMultiplier').map(([k, v]) => (
                       <Text key={k} style={styles.infoStatLine}>
                         {SKILL_STAT_LABELS[k] || k}: <Text style={styles.infoStatStrong}>{formatSkillStatValue(k, v)}</Text>
                       </Text>

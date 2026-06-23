@@ -17,7 +17,7 @@ Meow Depths is an RPG/region-crawler game built using React Native and Expo, fea
 - **Onboarding Flow (First Launch)**: Shown when `hero.element` is null.
   - **Name Input Screen**: The player enters their character's name (defaults to "Mochi").
   - **Element Selection Screen**: A horizontal snap-carousel where players choose their starting element path (Fire, Water, Earth, Wind). Confirming dispatches the `SELECT_ELEMENT` action, locking in their choice and transitioning to the main game.
-- **Camp Hub (Main Screen)**: The player can navigate to the Region Map, Loadout (Inventory), Skills, Market (Shop), and Profile.
+- **Camp Hub (Main Screen)**: The player can navigate to the Region Map, Loadout (Inventory), Skills, Market (Shop), and Profile. Features a Settings modal accessible via the gear icon, which contains options to reset game data or reset character progression (reclaiming spent attribute points and refunding all crystal materials spent on skill tree unlocks and upgrades).
 - **Profile Screen**: Accessible from the hub. Features a scaled-up avatar, a modern font style (`Jersey10-Regular`), and is split into two tabs:
   - **Stats tab**: Displays base attributes (STR, AGI, VIT) where players allocate points earned from leveling up, previews and displays effective combat stats (ATK, DEF, MAX HP, etc.), describes their current elemental stance, and includes interactive `?` info tags next to attributes and stats which open a custom explanation popup modal.
   - **Gear tab**: Displays equipped gear across 8 slots (Head, Chest, Gloves, Legs, Boots, Weapon, Trinket, Storage) and displays active set bonuses.
@@ -84,9 +84,9 @@ Crystals and shards use frames from the `crystals-1` spritesheet:
 - **Tidal Wave** (Water Passive Tier 2): Frame index 6
 - **Healing Current** (Water Active Tier 2): Frame index 7
 - **Boulder Slash** (Earth Active Tier 1): Frame index 8
-- **Fortitude** (Earth Passive Tier 1): Frame index 9
-- **Fortify** (Earth Active Tier 2): Frame index 10
-- **Stone Thorns** (Earth Passive Tier 2): Frame index 11
+- **Living Stone** (Earth Passive Tier 1): Frame index 9
+- **Landslide** (Earth Active Tier 2): Frame index 10
+- **Calcify** (Earth Passive Tier 2): Frame index 11
 - **Dual Slash** (Wind Active Tier 1): Frame index 12
 - **Swiftness** (Wind Passive Tier 1): Frame index 13
 - **Whirlwind Strike** (Wind Active Tier 2): Frame index 14

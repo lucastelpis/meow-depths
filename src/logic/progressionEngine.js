@@ -297,20 +297,11 @@ export function calculateEffectiveStats(hero, skillDefinitions = SKILLS, runBuff
       }
     }
 
-    // Fortitude — status resistance chance (checked at runtime in combat)
-    if (skillId === 'fortitude') {
+    // Calcify — regeneration rate
+    if (skillId === 'calcify') {
       const stars = unlockedSkills[skillId].stars || 1;
       if (skillDef.stars[stars]) {
-        // Stacks on top of the VIT-based resistance below.
-        statusResistChance += skillDef.stars[stars].statusResistChance || 0;
-      }
-    }
-
-    // Stone Thorns — raw damage reflection (checked at runtime in combat)
-    if (skillId === 'stone_thorns') {
-      const stars = unlockedSkills[skillId].stars || 1;
-      if (skillDef.stars[stars]) {
-        passives.stoneThornsReflect = skillDef.stars[stars].reflectPercent || 0;
+        passives.calcifyRegen = skillDef.stars[stars].healPercent || 0;
       }
     }
 
@@ -380,6 +371,17 @@ export function calculateEffectiveStats(hero, skillDefinitions = SKILLS, runBuff
     stanceHpBonus = Math.floor(baseHp * stanceBonus.maxHpPercent);
   }
   maxHp = baseHp + gearHp + stanceHpBonus;
+
+  // Add Living Stone bonus to ATK attribute based on the calculated maxHp
+  if (unlockedSkills['living_stone']) {
+    const stars = unlockedSkills['living_stone'].stars || 1;
+    const livingStoneDef = skillDefinitions['living_stone'];
+    if (livingStoneDef && livingStoneDef.stars[stars]) {
+      const hpPercent = livingStoneDef.stars[stars].hpPercent || 0;
+      const bonusAtk = Math.floor(maxHp * hpPercent);
+      attack += bonusAtk;
+    }
+  }
 
   // Cap status resistance so the hero can never be fully immune.
   passives.statusResistChance = Math.min(0.9, statusResistChance);

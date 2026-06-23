@@ -204,9 +204,9 @@ const boulder_slash = {
   },
 };
 
-const fortitude = {
-  id: 'fortitude',
-  name: 'Fortitude',
+const living_stone = {
+  id: 'living_stone',
+  name: 'Living Stone',
   element: 'earth',
   tier: 1,
   type: 'passive',
@@ -214,53 +214,53 @@ const fortitude = {
   cooldown: 0,
   unlockedBy: null,
   icon: '🛡️',
-  description: 'Passive — incoming status effects (bleed, stun, atk_reduce, etc.) have a chance to be completely resisted.',
+  description: 'Your body has hardened through mutation, turning mass into might. Adds flat bonus damage to your ATK attribute equal to a percentage of your maximum HP.',
   stars: {
-    1: { statusResistChance: 0.15 },
-    2: { statusResistChance: 0.30 },
-    3: { statusResistChance: 0.45 },
-    4: { statusResistChance: 0.60 },
-    5: { statusResistChance: 0.75 },
+    1: { hpPercent: 0.03 },
+    2: { hpPercent: 0.06 },
+    3: { hpPercent: 0.09 },
+    4: { hpPercent: 0.12 },
+    5: { hpPercent: 0.15 },
   },
 };
 
-const fortify = {
-  id: 'fortify',
-  name: 'Fortify',
+const landslide = {
+  id: 'landslide',
+  name: 'Landslide',
   element: 'earth',
   tier: 2,
   type: 'active',
-  targetType: 'self',
-  cooldown: 5, // base cooldown (★1-2); overridden per star in combat
+  targetType: 'all_enemies',
+  cooldown: 8,
   unlockedBy: 'boulder_slash',
   icon: '⛰️',
-  description: 'Substantialy boosts DEF for 1 turn, greatly reducing incoming damage.',
+  description: 'Channel your full earthen force into a devastating ground slam, sending shockwaves through all enemies. Deals heavy damage to all enemies equal to a percentage of base ATK plus a percentage of your maximum HP, with a chance to stun each target for 1 turn. The sheer force deals you backfire damage equal to the HP-based portion.',
   stars: {
-    1: { defBoostPercent: 0.50, cooldown: 5 },
-    2: { defBoostPercent: 0.75, cooldown: 5 },
-    3: { defBoostPercent: 1.00, cooldown: 4 },
-    4: { defBoostPercent: 1.25, cooldown: 4 },
-    5: { defBoostPercent: 1.50, cooldown: 3 },
+    1: { damageHpPercent: 0.05, stunChance: 0.20, backfireHpPercent: 0.10, atkMultiplier: 0.15 },
+    2: { damageHpPercent: 0.10, stunChance: 0.30, backfireHpPercent: 0.20, atkMultiplier: 0.30 },
+    3: { damageHpPercent: 0.15, stunChance: 0.40, backfireHpPercent: 0.30, atkMultiplier: 0.45 },
+    4: { damageHpPercent: 0.20, stunChance: 0.50, backfireHpPercent: 0.40, atkMultiplier: 0.60 },
+    5: { damageHpPercent: 0.25, stunChance: 0.60, backfireHpPercent: 0.50, atkMultiplier: 0.75 },
   },
 };
 
-const stone_thorns = {
-  id: 'stone_thorns',
-  name: 'Stone Thorns',
+const calcify = {
+  id: 'calcify',
+  name: 'Calcify',
   element: 'earth',
   tier: 2,
   type: 'passive',
   targetType: 'passive',
   cooldown: 0,
-  unlockedBy: 'fortitude',
+  unlockedBy: 'living_stone',
   icon: '🌵',
-  description: 'Passive — reflects a portion of raw incoming damage (before DEF reduction) back to attackers. Minimum 1.',
+  description: 'Your body slowly hardens and repairs itself like stone reforming, drawing sustenance from the earth. Regenerates a percentage of maximum HP at the start of every turn in combat. Heal amount calculated from current max HP.',
   stars: {
-    1: { reflectPercent: 0.05 },
-    2: { reflectPercent: 0.10 },
-    3: { reflectPercent: 0.15 },
-    4: { reflectPercent: 0.20 },
-    5: { reflectPercent: 0.25 },
+    1: { healPercent: 0.02 },
+    2: { healPercent: 0.04 },
+    3: { healPercent: 0.06 },
+    4: { healPercent: 0.08 },
+    5: { healPercent: 0.10 },
   },
 };
 
@@ -367,9 +367,9 @@ export const SKILLS = {
   healing_current,
   // Earth
   boulder_slash,
-  fortitude,
-  fortify,
-  stone_thorns,
+  living_stone,
+  landslide,
+  calcify,
   // Wind
   dual_slash,
   swiftness,
@@ -388,9 +388,10 @@ export const SKILL_SPRITE_FRAMES = {
   tidal_wave: 6,
   healing_current: 7,
   boulder_slash: 8,
-  fortitude: 9,
-  fortify: 10,
-  stone_thorns: 11,
+  living_stone: 9,
+  landslide: 10,
+  calcify: 11,
+  fortify: 10, // kept for Cockroach Knight's def_buff status badge
   dual_slash: 12,
   swiftness: 13,
   whirlwind: 14,
@@ -401,7 +402,7 @@ export const SKILL_SPRITE_FRAMES = {
 export const ELEMENT_SKILLS = {
   fire: ['fire_slash', 'smoldering', 'fire_burst', 'flame_guard'],
   water: ['tidal_strike', 'hydration', 'tidal_wave', 'healing_current'],
-  earth: ['boulder_slash', 'fortitude', 'fortify', 'stone_thorns'],
+  earth: ['boulder_slash', 'living_stone', 'landslide', 'calcify'],
   wind: ['dual_slash', 'swiftness', 'whirlwind', 'critical_wind'],
 };
 

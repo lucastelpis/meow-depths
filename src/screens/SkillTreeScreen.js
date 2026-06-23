@@ -155,6 +155,10 @@ export const SKILL_STAT_LABELS = {
   dodgeBonus: 'Dodge Bonus',
   bonusCritChance: 'Bonus Crit Chance (per hit)',
   critMultiplier: 'Crit Damage Multiplier',
+  hpPercent: 'Max HP as Bonus ATK',
+  damageHpPercent: 'Total AoE Damage',
+  backfireHpPercent: 'Self Backfire (% Max HP)',
+  healPercent: 'Regeneration per Turn',
 };
 
 export const formatSkillStatValue = (key, value) => {
@@ -172,6 +176,14 @@ export const formatSkillStatValue = (key, value) => {
   }
   if (key === 'dodgeBonus' || key === 'bonusCritChance') return `+${Math.round(value * 100)}%`;
   if (key === 'critMultiplier') return `${Math.round(value * 100)}% (replaces base 150%)`;
+  if (key === 'damageHpPercent') {
+    const hpPct = Math.round(value * 100);
+    const atkPct = Math.round(value * 300);
+    return `${atkPct}% ATK + ${hpPct}% of Max HP`;
+  }
+  if (key === 'hpPercent' || key === 'backfireHpPercent' || key === 'healPercent') {
+    return `${Math.round(value * 100)}% of Max HP`;
+  }
   return value;
 };
 
@@ -685,7 +697,7 @@ export default function SkillTreeScreen() {
                   {currentStarData && (
                     <View style={styles.modalStatBox}>
                       <Text style={styles.modalStatLabel}>★{selectedStars} CURRENT STATS</Text>
-                      {Object.entries(currentStarData).map(([k, v]) => (
+                      {Object.entries(currentStarData).filter(([k]) => k !== 'atkMultiplier').map(([k, v]) => (
                         <Text key={k} style={styles.modalStatLine}>
                           {SKILL_STAT_LABELS[k] || k}: <Text style={styles.modalStatStrong}>{formatSkillStatValue(k, v)}</Text>
                         </Text>
@@ -697,7 +709,7 @@ export default function SkillTreeScreen() {
                   {nextStarData && selectedStars < 5 && (
                     <View style={[styles.modalStatBox, { borderColor: `${elementColor}55` }]}>
                       <Text style={[styles.modalStatLabel, { color: elementColor }]}>★{selectedStars + 1} NEXT STAR</Text>
-                      {Object.entries(nextStarData).map(([k, v]) => (
+                      {Object.entries(nextStarData).filter(([k]) => k !== 'atkMultiplier').map(([k, v]) => (
                         <Text key={k} style={styles.modalStatLine}>
                           {SKILL_STAT_LABELS[k] || k}: <Text style={styles.modalStatStrong}>{formatSkillStatValue(k, v)}</Text>
                         </Text>

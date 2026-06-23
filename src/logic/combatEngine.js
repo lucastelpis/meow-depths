@@ -1238,25 +1238,56 @@ export function executeBoulderSlash(skillDef, stars, heroState, target) {
 }
 
 /**
- * Execute Fortify: instantly boosts hero DEF by a % for 1 turn.
- * Returns a def_buff effect to apply to heroState.effects.
- * The cooldown is star-dependent and returned so CombatScreen can set it.
+ * Execute Landslide: channels earthen force to deal AoE damage scaling with max HP,
+ * rolls a stun chance per target, and deals backfire damage to Mochi.
  *
- * @param {Object} skillDef  - full skill definition from SKILLS
- * @param {number} stars     - current star level
- * @param {Object} heroState - hero combat state (needs .defence)
+ * @param {Object}   skillDef  - full skill definition from SKILLS
+ * @param {number}   stars     - current star level
+ * @param {Object}   heroState - hero combat state (needs .maxHp, .critChance)
+ * @param {Object[]} enemies   - array of active combat enemies
  */
-export function executeFortify(skillDef, stars, heroState) {
+export function executeLandslide(skillDef, stars, heroState, enemies) {
   const starData = skillDef.stars[stars];
-  const defBoost = Math.floor(heroState.defence * starData.defBoostPercent);
+  const results = [];
+  const logParts = [];
+
+  for (let i = 0; i < enemies.length; i++) {
+    const target = enemies[i];
+    if (!target || target.hp <= 0) continue;
+
+    // Construct attacker model where base attack scales Mochi's attack plus HP-based scaling damage
+    const baseAtkDmg = Math.floor(heroState.attack * starData.atkMultiplier) + Math.floor(heroState.maxHp * starData.damageHpPercent);
+    const attackerForDamage = {
+      attack: baseAtkDmg,
+      critChance: heroState.critChance,
+      effects: heroState.effects,
+      passives: heroState.passives,
+      maxHp: heroState.maxHp
+    };
+
+    const { damage, isCrit } = calculateDamage(attackerForDamage, target);
+    const stunApplied = Math.random() < starData.stunChance;
+
+    results.push({
+      damage,
+      targetUid: target.uid || target.id,
+      stunApplied,
+    });
+
+    let targetLog = `${target.name} takes ${displayDamage(damage, target.hp)}${isCrit ? ' (CRIT!)' : ''}`;
+    if (stunApplied) {
+      targetLog += ' + Stun';
+    }
+    logParts.push(targetLog);
+  }
+
+  // Calculate direct backfire damage equal to only the HP-based portion of damage
+  const backfireDamage = Math.floor(heroState.maxHp * starData.damageHpPercent);
+
   return {
-    defBuff: {
-      type: 'def_buff',
-      value: defBoost,
-      duration: 1,
-    },
-    cooldown: starData.cooldown,
-    log: `${heroState.name || 'Mochi'} uses Fortify: DEF boosted by +${defBoost} (${Math.round(starData.defBoostPercent * 100)}%) for 1 turn!`,
+    results,
+    backfireDamage,
+    log: `${heroState.name || 'Mochi'} uses Landslide: ${logParts.join(', ')}!`,
   };
 }
 

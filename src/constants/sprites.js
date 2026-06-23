@@ -86,17 +86,17 @@ export const HERO_SPRITE = {
     frameSize: 128,
     frames: 8,
   },
-  fortitude: {
+  living_stone: {
     source: require('../../assets/sprites/units/hero/hero_earth_attack.png'),
     frameSize: 128,
     frames: 8,
   },
-  fortify: {
+  landslide: {
     source: require('../../assets/sprites/units/hero/hero_earth_attack.png'),
     frameSize: 128,
     frames: 8,
   },
-  stone_thorns: {
+  calcify: {
     source: require('../../assets/sprites/units/hero/hero_earth_attack.png'),
     frameSize: 128,
     frames: 8,

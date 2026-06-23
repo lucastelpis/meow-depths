@@ -694,6 +694,35 @@ export default function CampScreen({ navigation }) {
                   <Text style={styles.drCloseText}>✕</Text>
                 </TouchableOpacity>
 
+                <Text style={styles.settingsSectionLabel}>Character Progression</Text>
+
+                <TouchableOpacity
+                  activeOpacity={0.85}
+                  style={styles.settingsResetStatsBtn}
+                  onPress={() => {
+                    Alert.alert(
+                      'Reset Stats & Skills',
+                      'Are you sure you want to reset all attribute points and skills? You will be fully refunded all spent crystal materials.',
+                      [
+                        { text: 'Cancel', style: 'cancel' },
+                        {
+                          text: 'Reset Stats & Skills',
+                          style: 'destructive',
+                          onPress: () => {
+                            dispatch({ type: 'RESET_STATS_AND_SKILLS' });
+                            setSettingsModalVisible(false);
+                          },
+                        },
+                      ]
+                    );
+                  }}
+                >
+                  <View style={styles.settingsResetStatsBtnInner}>
+                    <Text style={styles.settingsResetStatsBtnText}>RESET STATS & SKILLS</Text>
+                  </View>
+                </TouchableOpacity>
+                <Text style={[styles.settingsHint, { marginBottom: 20 }]}>Reclaims all Strength, Agility, Vitality points, and crystal skill upgrades.</Text>
+
                 <Text style={styles.settingsSectionLabel}>Save Data</Text>
 
                 <TouchableOpacity
@@ -1306,6 +1335,40 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     alignSelf: 'flex-start',
     marginBottom: 8,
+  },
+  settingsResetStatsBtn: {
+    alignSelf: 'stretch',
+    backgroundColor: '#7A4A24',
+    borderColor: '#3A2210',
+    borderWidth: 2,
+    borderRadius: 12,
+    padding: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 3,
+    elevation: 4,
+  },
+  settingsResetStatsBtnInner: {
+    backgroundColor: '#9A632F',
+    borderRadius: 9,
+    paddingVertical: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderTopWidth: 1.5,
+    borderTopColor: '#C58E4E',
+    borderBottomWidth: 2,
+    borderBottomColor: '#5A3318',
+  },
+  settingsResetStatsBtnText: {
+    fontFamily: 'Silkscreen-Regular',
+    fontSize: 12,
+    color: '#FFF3DA',
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+    textShadowColor: '#4A2A10',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 1,
   },
   settingsResetBtn: {
     alignSelf: 'stretch',
