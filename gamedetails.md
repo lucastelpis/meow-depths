@@ -97,8 +97,8 @@ graph TD
     end
 
     subgraph Water Path
-        TS[Tidal Strike ★1-5 <br> T1 Active] --> TW[Tidal Wave ★1-5 <br> T2 Active A]
-        TS --> HC[Healing Current ★1-5 <br> T2 Active B]
+        TS[Tidal Strike ★1-5 <br> T1 Active] --> TW[Tidal Wave ★1-5 <br> T2 Passive]
+        TS --> HC[Healing Current ★1-5 <br> T2 Active]
         HY[Hydration ★1-5 <br> T1 Passive]
     end
 
@@ -171,24 +171,27 @@ Crystals and fusion recipes are locked by region progression to match the active
    - *★5*: 5 counter Burn DMG, 3 turns Burn duration, 1 turn guard duration.
 
 #### 💧 Water Skills
-*Focused on defensive mitigation, healing efficiency, and reducing enemy attack power.*
+*Focused on defensive mitigation, healing efficiency, and reducing enemy defense.*
 
 1. **Tidal Strike** (T1 Active - Cooldown: 3t)
-   - *Description*: Deals damage and applies an ATK reduction debuff on the target.
-   - *★1*: 1.20x DMG multiplier, -10% enemy ATK, 2 turns duration.
-   - *★5*: 1.80x DMG multiplier, -20% enemy ATK, 3 turns duration.
+   - *Description*: Deals damage and reduces enemy DEF for a duration.
+   - *★1*: 1.20x DMG multiplier, -10% enemy DEF, 2 turns duration.
+   - *★5*: 1.80x DMG multiplier, -20% enemy DEF, 3 turns duration.
 2. **Hydration** (T1 Passive)
    - *Description*: Increases all healing sources (potions, skills, rests) while equipped.
    - *★1*: +10% healing efficiency.
    - *★5*: +30% healing efficiency.
-3. **Tidal Wave** (T2 Active - Cooldown: 4t)
-   - *Description*: AoE wave. Deals damage and reduces ATK of primary target. Splashes adjacent enemies for a portion of the damage with a chance to apply the ATK reduction debuff.
-   - *★1*: 1.10x DMG, -10% ATK, 3t duration, 20% splash damage, 30% splash debuff chance.
-   - *★5*: 1.50x DMG, -30% ATK, 3t duration, 60% splash damage, 50% splash debuff chance.
-4. **Healing Current** (T2 Active - Cooldown: 6t)
+3. **Tidal Wave** (T2 Passive)
+   - *Description*: Passive. Adds Splash Damage to Tidal Strike to all other enemies that are not the main target. DEF reduction is only applied to the target.
+   - *★1*: +8% splash damage.
+   - *★2*: +16% splash damage.
+   - *★3*: +24% splash damage.
+   - *★4*: +32% splash damage.
+   - *★5*: +40% splash damage.
+4. **Healing Current** (T2 Active - Cooldown: 8t)
    - *Description*: No damage. Applies a HoT (Heal over Time) restoring a percentage of Max HP each turn for 3 turns.
-   - *★1*: Recovers 5% Max HP per turn for 3 turns.
-   - *★5*: Recovers 20% Max HP per turn for 3 turns.
+   - *★1*: Recovers 10% Max HP per turn for 3 turns.
+   - *★5*: Recovers 30% Max HP per turn for 3 turns.
 
 ---
 

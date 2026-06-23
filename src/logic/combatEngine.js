@@ -1133,10 +1133,12 @@ export function applyDefReduce(effects, value, duration) {
 }
 
 /**
- * Execute Tidal Strike: deals damage and applies DEF reduce to a single target.
+ * Execute Tidal Strike: deals damage and applies DEF reduce to a single target,
+ * and if Tidal Wave passive is unlocked, adds Splash Damage to all other enemies.
  */
-export function executeTidalStrike(skillDef, stars, heroState, target) {
+export function executeTidalStrike(skillDef, stars, heroState, enemies, targetIdx) {
   const starData = skillDef.stars[stars];
+  const target = enemies[targetIdx];
   const { damage, isCrit } = calculateDamage(
     heroState,
     target,
@@ -1145,59 +1147,44 @@ export function executeTidalStrike(skillDef, stars, heroState, target) {
 
   applyDefReduce(target.effects || (target.effects = []), starData.defReduce, starData.duration);
 
-  const critText = isCrit ? ' (CRIT!)' : '';
-  return {
-    damage,
-    targetUid: target.uid || target.id,
-    log: `${heroState.name || 'Mochi'} uses Tidal Strike: hits ${target.name} for ${displayDamage(damage, target.hp)}${critText} and reduces their DEF by ${Math.round(starData.defReduce * 100)}% for ${starData.duration} turns!`,
-  };
-}
-
-/**
- * Execute Tidal Wave: damage + DEF reduce on primary + spread to adjacent.
- */
-export function executeTidalWave(skillDef, stars, heroState, enemies, targetIdx) {
-  const starData = skillDef.stars[stars];
-  const results = [];
+  const results = [{ damage, targetUid: target.uid || target.id, isMainTarget: true }];
   const logParts = [];
+  const critText = isCrit ? ' (CRIT!)' : '';
+  let mainLog = `${heroState.name || 'Mochi'} uses Tidal Strike: hits ${target.name} for ${displayDamage(damage, target.hp)}${critText} and reduces their DEF by ${Math.round(starData.defReduce * 100)}% for ${starData.duration} turns!`;
 
-  // Primary target
-  const primary = enemies[targetIdx];
-  if (primary) {
-    const { damage, isCrit } = calculateDamage(
-      heroState,
-      primary,
-      { multiplier: starData.damageMultiplier }
-    );
-    applyDefReduce(primary.effects || (primary.effects = []), starData.defReduce, starData.duration);
-    results.push({ damage, targetUid: primary.uid || primary.id });
-    logParts.push(`${primary.name} takes ${displayDamage(damage, primary.hp)}${isCrit ? ' (CRIT!)' : ''} + DEF Reduce`);
+  const splashPercent = heroState.passives?.tidalWaveSplash || 0;
+  if (splashPercent > 0) {
+    enemies.forEach((e, idx) => {
+      if (idx === targetIdx) return;
+      if (!e || e.hp <= 0) return;
+
+      const critMult = isCrit ? (heroState.passives?.critMultiplier || CRIT_MULTIPLIER) : 1;
+      const rawDmg = Math.floor((heroState.attack || 10) * starData.damageMultiplier * splashPercent * critMult);
+      let defVal = e.defence || e.def || 0;
+      const defBuff = e.effects?.find(ef => ef.type === 'def_buff');
+      if (defBuff && defBuff.value) {
+        defVal += defBuff.value;
+      }
+      const defReduce = e.effects?.find(ef => ef.type === 'def_reduce');
+      if (defReduce && defReduce.value) {
+        defVal = defVal * (1 - defReduce.value);
+      }
+      const effectiveDef = Math.max(0, defVal - 1);
+      const reduction = effectiveDef / (effectiveDef + 15);
+      const spreadDmg = Math.max(1, Math.floor(rawDmg * (1 - reduction)));
+
+      results.push({ damage: spreadDmg, targetUid: e.uid || e.id });
+      logParts.push(`${e.name} splashed for ${displayDamage(spreadDmg, e.hp)}`);
+    });
   }
 
-  // Adjacent enemies (index ±1)
-  const rawMainDamage = primary ? Math.floor((heroState.attack || 10) * starData.damageMultiplier) : 0;
-  for (const adjIdx of [targetIdx - 1, targetIdx + 1]) {
-    if (adjIdx < 0 || adjIdx >= enemies.length) continue;
-    const adj = enemies[adjIdx];
-    if (!adj || adj.hp <= 0) continue;
-
-    const rawDmg = Math.floor(rawMainDamage * starData.spreadPercent);
-    const effectiveDef = Math.max(0, (adj.def || adj.defence || 0) - 1);
-    const reduction = effectiveDef / (effectiveDef + 15);
-    const spreadDmg = Math.max(1, Math.floor(rawDmg * (1 - reduction)));
-
-    results.push({ damage: spreadDmg, targetUid: adj.uid || adj.id });
-    logParts.push(`${adj.name} splashed for ${displayDamage(spreadDmg, adj.hp)}`);
-
-    if (Math.random() < starData.spreadDefReduceChance) {
-      applyDefReduce(adj.effects || (adj.effects = []), starData.defReduce, starData.duration);
-      logParts[logParts.length - 1] += ' + DEF Reduce';
-    }
+  if (logParts.length > 0) {
+    mainLog += ` Splash: ${logParts.join(', ')}!`;
   }
 
   return {
     results,
-    log: `${heroState.name || 'Mochi'} uses Tidal Wave: ${logParts.join(', ')}!`,
+    log: mainLog,
   };
 }
 

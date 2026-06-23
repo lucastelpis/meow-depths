@@ -69,7 +69,6 @@ import {
   executeFlameGuard,
   applyBurn,
   executeTidalStrike,
-  executeTidalWave,
   executeHealingCurrent,
   executeBoulderSlash,
   executeFortify,
@@ -1119,25 +1118,9 @@ export default function CombatScreen() {
       addLog(guard.log);
 
     } else if (skillId === 'tidal_strike') {
-      const target = updatedEnemies[selectedEnemyIndex];
-      if (!target) { setCombatPhase('playerTurn'); return; }
       const stars = (state.hero.unlockedSkills[skillId]?.stars) || 1;
-      const result = executeTidalStrike(skillDef, stars, updatedHero, target);
-      updatedEnemies = updatedEnemies.map(e =>
-        (e.uid || e.id) === result.targetUid
-          ? { ...e, hp: Math.max(0, e.hp - result.damage) }
-          : e
-      );
-      const effectUpdated = updatedEnemies.findIndex(e => (e.uid || e.id) === result.targetUid);
-      if (effectUpdated >= 0) {
-        updatedEnemies[effectUpdated].effects = [...target.effects];
-      }
-      addLog(result.log);
-
-    } else if (skillId === 'tidal_wave') {
-      const stars = (state.hero.unlockedSkills[skillId]?.stars) || 1;
-      const wave = executeTidalWave(skillDef, stars, updatedHero, updatedEnemies, selectedEnemyIndex);
-      for (const res of wave.results) {
+      const strike = executeTidalStrike(skillDef, stars, updatedHero, updatedEnemies, selectedEnemyIndex);
+      for (const res of strike.results) {
         updatedEnemies = updatedEnemies.map(e => {
           if ((e.uid || e.id) !== res.targetUid) return e;
           return {
@@ -1147,7 +1130,7 @@ export default function CombatScreen() {
           };
         });
       }
-      addLog(wave.log);
+      addLog(strike.log);
 
     } else if (skillId === 'healing_current') {
       const hcStars = (state.hero.unlockedSkills[skillId]?.stars) || 1;

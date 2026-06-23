@@ -329,6 +329,14 @@ export function calculateEffectiveStats(hero, skillDefinitions = SKILLS, runBuff
         passives.critMultiplier = skillDef.stars[stars].critMultiplier;
       }
     }
+
+    // Tidal Wave — adds Splash Damage to Tidal Strike
+    if (skillId === 'tidal_wave') {
+      const stars = unlockedSkills[skillId].stars || 1;
+      if (skillDef.stars[stars]) {
+        passives.tidalWaveSplash = skillDef.stars[stars].spreadPercent || 0;
+      }
+    }
   }
 
   // --- 3. Stance bonuses (Fire: +ATK%, Water: +maxHP%, Earth: +DEF flat) -------

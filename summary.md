@@ -11,7 +11,7 @@ Meow Depths is an RPG/region-crawler game built using React Native and Expo, fea
   - **Zone 3**: Starts at 6000 G and 6000 XP on Floor 1, increasing by +100 G and +100 XP per floor (reaching 6900 G and 6900 XP on Floor 10).
 - **Floor Grid Sizes & Enemies**: Dungeon grid sizes grow as the player descends. For **Dungeon 1 (Soggy Ruins)**, Floor 10 (Boss Floor) is specifically configured as **4x4 tiles** (instead of 4x5) and all combat tiles on this floor spawn exactly **4 enemies** at the same time.
 - **Skill Popups in Combat**: In battle, opening the detail modal for an equipped skill displays its current level's multipliers and specific effects (damage multiplier, defense reduction, cooldown, etc.) rather than just the generic description.
-- **Water Skill Mechanics**: Water active skills (**Tidal Strike** and **Tidal Wave**) reduce the target's Defense (DEF) instead of Attack (ATK).
+- **Water Skill Mechanics**: The Water active skill **Tidal Strike** reduces the target's Defense (DEF) instead of Attack (ATK). The passive **Tidal Wave** adds Splash Damage to **Tidal Strike** (DEF reduction only applies to the main target).
 
 ## Key Screens
 - **Onboarding Flow (First Launch)**: Shown when `hero.element` is null.
@@ -81,8 +81,8 @@ Crystals and shards use frames from the `crystals-1` spritesheet:
 - **Flame Guard** (Fire Passive Tier 2): Frame index 3
 - **Tidal Strike** (Water Active Tier 1): Frame index 4
 - **Hydration** (Water Passive Tier 1): Frame index 5
-- **Tidal Wave** (Water Active Tier 2): Frame index 6
-- **Healing Current** (Water Passive Tier 2): Frame index 7
+- **Tidal Wave** (Water Passive Tier 2): Frame index 6
+- **Healing Current** (Water Active Tier 2): Frame index 7
 - **Boulder Slash** (Earth Active Tier 1): Frame index 8
 - **Fortitude** (Earth Passive Tier 1): Frame index 9
 - **Fortify** (Earth Active Tier 2): Frame index 10
