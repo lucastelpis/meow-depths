@@ -85,8 +85,8 @@ Crystals and shards use frames from the `crystals-1` spritesheet:
 - **Healing Current** (Water Active Tier 2): Frame index 7
 - **Boulder Slash** (Earth Active Tier 1): Frame index 8
 - **Living Stone** (Earth Passive Tier 1): Frame index 9
-- **Landslide** (Earth Active Tier 2): Frame index 10
-- **Calcify** (Earth Passive Tier 2): Frame index 11
+- **Landslide** (Earth Active Tier 2): Frame index 16
+- **Calcify** (Earth Passive Tier 2): Frame index 17
 - **Dual Slash** (Wind Active Tier 1): Frame index 12
 - **Swiftness** (Wind Passive Tier 1): Frame index 13
 - **Whirlwind Strike** (Wind Active Tier 2): Frame index 14

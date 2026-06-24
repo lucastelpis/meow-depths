@@ -216,11 +216,11 @@ const living_stone = {
   icon: '🛡️',
   description: 'Your body has hardened through mutation, turning mass into might. Adds flat bonus damage to your ATK attribute equal to a percentage of your maximum HP.',
   stars: {
-    1: { hpPercent: 0.03 },
-    2: { hpPercent: 0.06 },
-    3: { hpPercent: 0.09 },
-    4: { hpPercent: 0.12 },
-    5: { hpPercent: 0.15 },
+    1: { hpPercent: 0.02 },
+    2: { hpPercent: 0.04 },
+    3: { hpPercent: 0.06 },
+    4: { hpPercent: 0.08 },
+    5: { hpPercent: 0.10 },
   },
 };
 
@@ -234,13 +234,13 @@ const landslide = {
   cooldown: 8,
   unlockedBy: 'boulder_slash',
   icon: '⛰️',
-  description: 'Channel your full earthen force into a devastating ground slam, sending shockwaves through all enemies. Deals heavy damage to all enemies equal to a percentage of base ATK plus a percentage of your maximum HP, with a chance to stun each target for 1 turn. The sheer force deals you backfire damage equal to the HP-based portion.',
+  description: 'Channel your full earthen force into a devastating ground slam, sending shockwaves through all enemies. Deals heavy damage to all enemies equal to a percentage of base ATK plus a percentage of your maximum HP, with a chance to stun each target for 1 turn. The sheer force also deals you backfire damage.',
   stars: {
-    1: { damageHpPercent: 0.05, stunChance: 0.20, backfireHpPercent: 0.10, atkMultiplier: 0.15 },
-    2: { damageHpPercent: 0.10, stunChance: 0.30, backfireHpPercent: 0.20, atkMultiplier: 0.30 },
-    3: { damageHpPercent: 0.15, stunChance: 0.40, backfireHpPercent: 0.30, atkMultiplier: 0.45 },
-    4: { damageHpPercent: 0.20, stunChance: 0.50, backfireHpPercent: 0.40, atkMultiplier: 0.60 },
-    5: { damageHpPercent: 0.25, stunChance: 0.60, backfireHpPercent: 0.50, atkMultiplier: 0.75 },
+    1: { damageHpPercent: 0.20, stunChance: 0.20, backfireHpPercent: 0.20, atkMultiplier: 0.15 },
+    2: { damageHpPercent: 0.25, stunChance: 0.30, backfireHpPercent: 0.25, atkMultiplier: 0.30 },
+    3: { damageHpPercent: 0.30, stunChance: 0.40, backfireHpPercent: 0.30, atkMultiplier: 0.45 },
+    4: { damageHpPercent: 0.35, stunChance: 0.50, backfireHpPercent: 0.35, atkMultiplier: 0.60 },
+    5: { damageHpPercent: 0.40, stunChance: 0.60, backfireHpPercent: 0.40, atkMultiplier: 0.75 },
   },
 };
 
@@ -377,7 +377,7 @@ export const SKILLS = {
   critical_wind,
 };
 
-// Skill icon sprite frames (horizontal sheet: assets/sprites/items/skill-icons-1.png, 16 frames)
+// Skill icon sprite frames (horizontal sheet: assets/sprites/items/skill-icons-1.png, 18 frames)
 export const SKILL_SPRITE_FRAMES = {
   fire_slash: 0,
   smoldering: 1,
@@ -389,8 +389,8 @@ export const SKILL_SPRITE_FRAMES = {
   healing_current: 7,
   boulder_slash: 8,
   living_stone: 9,
-  landslide: 10,
-  calcify: 11,
+  landslide: 16,
+  calcify: 17,
   fortify: 10, // kept for Cockroach Knight's def_buff status badge
   dual_slash: 12,
   swiftness: 13,

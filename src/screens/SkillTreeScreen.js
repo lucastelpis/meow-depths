@@ -178,7 +178,7 @@ export const formatSkillStatValue = (key, value) => {
   if (key === 'critMultiplier') return `${Math.round(value * 100)}% (replaces base 150%)`;
   if (key === 'damageHpPercent') {
     const hpPct = Math.round(value * 100);
-    const atkPct = Math.round(value * 300);
+    const atkPct = Math.round(value * 300) - 45;
     return `${atkPct}% ATK + ${hpPct}% of Max HP`;
   }
   if (key === 'hpPercent' || key === 'backfireHpPercent' || key === 'healPercent') {
