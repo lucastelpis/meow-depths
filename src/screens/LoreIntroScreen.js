@@ -172,6 +172,14 @@ export default function LoreIntroScreen({ route }) {
             </Animated.View>
           )}
         </Animated.View>
+
+        {/* Skip button — reveals all lore (and the Begin button) at once.
+            Rendered last so it stays on top and tappable. Hidden once done. */}
+        {!done && (
+          <TouchableOpacity style={styles.skipBtn} onPress={skip} activeOpacity={0.7}>
+            <Text style={styles.skipLabel}>SKIP</Text>
+          </TouchableOpacity>
+        )}
       </SafeAreaView>
     </View>
   );
@@ -192,6 +200,26 @@ const styles = StyleSheet.create({
   },
   safe: {
     flex: 1,
+  },
+
+  /* Skip button — pinned top-right while the typewriter runs */
+  skipBtn: {
+    position: 'absolute',
+    bottom: 24,
+    right: 16,
+    zIndex: 10,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    borderColor: 'rgba(255, 255, 255, 0.4)',
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  skipLabel: {
+    fontFamily: 'Silkscreen-Regular',
+    fontSize: 11,
+    letterSpacing: 1,
+    color: '#FFFFFF',
   },
   content: {
     flex: 1,

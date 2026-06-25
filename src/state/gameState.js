@@ -321,6 +321,21 @@ function gameReducer(state, action) {
         if (newMaterials[itemId] <= 0) delete newMaterials[itemId];
       }
 
+      // Auto-equip newly unlocked ACTIVE skills into the first free combat slot,
+      // so a player who just gained their first active skill isn't left with an
+      // empty loadout. Passive skills never occupy a slot. (See AUTO_EQUIP toast
+      // notification in SkillTreeScreen, which mirrors this same condition.)
+      const equipped = Array.isArray(state.hero.equippedSkills)
+        ? [...state.hero.equippedSkills]
+        : [null, null];
+      if (
+        skill.type !== 'passive' &&
+        !equipped.includes(action.payload.skillId)
+      ) {
+        const freeSlot = equipped.indexOf(null);
+        if (freeSlot !== -1) equipped[freeSlot] = action.payload.skillId;
+      }
+
       return {
         ...state,
         hero: {
@@ -329,6 +344,7 @@ function gameReducer(state, action) {
             ...unlocked,
             [action.payload.skillId]: { stars: 1 },
           },
+          equippedSkills: equipped,
           inventory: {
             ...state.hero.inventory,
             materials: newMaterials,
@@ -733,28 +749,24 @@ function gameReducer(state, action) {
           };
         }
       } else if (outcome === 'flee') {
-        updatedGold += Math.floor(state.currentRun.lootCollected.gold / 2);
+        // Fleeing keeps 100% of loot collected during the run (no floor-completion
+        // reward — that's a win-only bonus).
+        updatedGold += state.currentRun.lootCollected.gold;
         for (const [id, qty] of Object.entries(state.currentRun.lootCollected.materials)) {
-          const keptQty = Math.floor(qty / 2);
-          if (keptQty > 0) {
-            updatedMaterials[id] = (updatedMaterials[id] || 0) + keptQty;
-          }
+          updatedMaterials[id] = (updatedMaterials[id] || 0) + qty;
         }
 
-        // Add 50% of newly collected consumables (rounded down)
+        // Add 100% of newly collected consumables
         const lootConsumables = state.currentRun.lootCollected.consumables || {};
         for (const [id, qty] of Object.entries(lootConsumables)) {
-          const keptQty = Math.floor(qty / 2);
-          if (keptQty > 0) {
-            const existingIdx = updatedInventoryConsumables.findIndex(c => c.id === id);
-            if (existingIdx >= 0) {
-              updatedInventoryConsumables[existingIdx] = {
-                ...updatedInventoryConsumables[existingIdx],
-                quantity: updatedInventoryConsumables[existingIdx].quantity + keptQty,
-              };
-            } else {
-              updatedInventoryConsumables.push({ id, quantity: keptQty });
-            }
+          const existingIdx = updatedInventoryConsumables.findIndex(c => c.id === id);
+          if (existingIdx >= 0) {
+            updatedInventoryConsumables[existingIdx] = {
+              ...updatedInventoryConsumables[existingIdx],
+              quantity: updatedInventoryConsumables[existingIdx].quantity + qty,
+            };
+          } else {
+            updatedInventoryConsumables.push({ id, quantity: qty });
           }
         }
       } else if (outcome === 'lose') {

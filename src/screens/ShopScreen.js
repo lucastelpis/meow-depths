@@ -16,8 +16,9 @@ import {
   ScrollView,
   TouchableOpacity,
   StyleSheet,
-  Alert,
   Dimensions,
+  Modal,
+  Pressable,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -33,6 +34,33 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 // ─── Metadata & Icons ────────────────────────────────────────────────────────
 const GEAR_TYPE_ICONS = { weapon: '⚔️', armor: '🛡️', trinket: '💎' };
+
+// Stat fields used when comparing a freshly-bought piece against the currently
+// equipped one (mirrors ProfileScreen's equip comparison).
+const COMPARE_STAT_FIELDS = [
+  { key: 'attack', label: 'ATK', percent: false },
+  { key: 'defence', label: 'DEF', percent: false },
+  { key: 'maxHp', label: 'HP', percent: false },
+  { key: 'critChance', label: 'CRIT', percent: true },
+  { key: 'dodge', label: 'DODGE', percent: true },
+  { key: 'bleedChance', label: 'BLEED', percent: true },
+  { key: 'bagSlots', label: 'BAG SLOTS', percent: false },
+];
+
+// Stat-by-stat delta of a candidate gear def vs the currently equipped def.
+function getStatDeltas(candidateDef, currentDef) {
+  const deltas = [];
+  COMPARE_STAT_FIELDS.forEach(({ key, label, percent }) => {
+    const a = candidateDef?.stats?.[key] || 0;
+    const b = currentDef?.stats?.[key] || 0;
+    const diff = a - b;
+    if (Math.abs(diff) < 0.0001) return;
+    const sign = diff > 0 ? '+' : '';
+    const text = percent ? `${sign}${Math.round(diff * 100)}%` : `${sign}${diff}`;
+    deltas.push({ label, text, positive: diff > 0 });
+  });
+  return deltas;
+}
 
 // ─── Tab Configuration ───────────────────────────────────────────────────────
 const TABS = [
@@ -185,6 +213,8 @@ export default function ShopScreen() {
 
   const [activeTab, setActiveTab] = useState('supplies'); // 'supplies' | 'armory'
   const [quantities, setQuantities] = useState({});       // { [itemId]: number }
+  const [buyPrompt, setBuyPrompt] = useState(null);       // gear purchase-confirm modal
+  const [equipPrompt, setEquipPrompt] = useState(null);   // post-purchase equip modal
 
   const getQty = (itemId) => quantities[itemId] || 1;
 
@@ -272,27 +302,35 @@ export default function ShopScreen() {
     setQuantities(prev => ({ ...prev, [item.id]: 1 }));
   };
 
-  // ── Armory: buy handler ────────────────────────────────────────────
+  // ── Armory: buy handler — opens a themed purchase-confirm modal ──────
   const handleBuyGear = (item) => {
-    Alert.alert(
-      'Purchase Equipment',
-      `Buy "${item.name}" for 💰 ${item.goldCost} G?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Buy',
-          onPress: () => {
-            dispatch({
-              type: 'BUY_GEAR',
-              payload: {
-                gearId: item.id,
-                price: item.goldCost,
-              },
-            });
-          },
-        },
-      ]
-    );
+    setBuyPrompt(item);
+  };
+
+  const handleConfirmBuy = () => {
+    if (!buyPrompt) return;
+    const item = buyPrompt;
+    dispatch({
+      type: 'BUY_GEAR',
+      payload: { gearId: item.id, price: item.goldCost },
+    });
+    setBuyPrompt(null);
+    // Offer to equip the new piece right away, with a stat comparison against
+    // whatever is currently in that slot (slot === gear type).
+    const slot = item.type;
+    const currentId = hero.gear?.[slot] || null;
+    setEquipPrompt({
+      gearId: item.id,
+      slot,
+      currentId,
+      deltas: getStatDeltas(GEAR[item.id], currentId ? GEAR[currentId] : null),
+    });
+  };
+
+  const handleEquipNow = () => {
+    if (!equipPrompt) return;
+    dispatch({ type: 'EQUIP_GEAR', payload: { slot: equipPrompt.slot, gearId: equipPrompt.gearId } });
+    setEquipPrompt(null);
   };
 
   const isMaterialZoneOpened = (zoneIndex) => {
@@ -745,6 +783,94 @@ export default function ShopScreen() {
         )}
         {activeTab === 'forge' && renderForge()}
       </ScrollView>
+
+      {/* ── Gear purchase confirmation ──────────────────────────────────────── */}
+      <Modal visible={!!buyPrompt} transparent animationType="fade" onRequestClose={() => setBuyPrompt(null)}>
+        <Pressable style={styles.equipModalBackdrop} onPress={() => setBuyPrompt(null)}>
+          <Pressable style={styles.equipModalCard} onPress={(e) => e.stopPropagation()}>
+            {buyPrompt && (
+              <>
+                <Text style={styles.equipModalTitle}>Purchase Equipment</Text>
+
+                <View style={styles.buyItemRow}>
+                  <View style={styles.buyItemIcon}>
+                    <ItemSprite spritesheet={buyPrompt.spritesheet} frameIndex={buyPrompt.frameIndex} displaySize={36} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.buyItemName} numberOfLines={1}>{buyPrompt.name}</Text>
+                    <Text style={styles.buyItemStats} numberOfLines={1}>{formatStats(buyPrompt.stats)}</Text>
+                  </View>
+                </View>
+
+                <View style={styles.buyPriceRow}>
+                  <Text style={styles.buyPriceLabel}>Price</Text>
+                  <View style={styles.buyPriceValue}>
+                    <ItemSprite spritesheet="icons-1" frameIndex={11} displaySize={16} />
+                    <Text style={styles.buyPriceText}>{buyPrompt.goldCost} G</Text>
+                  </View>
+                </View>
+
+                <View style={styles.equipModalBtnRow}>
+                  <TouchableOpacity style={[styles.equipModalBtn, styles.equipModalBtnGhost]} onPress={() => setBuyPrompt(null)} activeOpacity={0.8}>
+                    <Text style={styles.equipModalBtnGhostText}>Cancel</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={[styles.equipModalBtn, styles.equipModalBtnPrimary]} onPress={handleConfirmBuy} activeOpacity={0.85}>
+                    <Text style={styles.equipModalBtnPrimaryText}>Buy</Text>
+                  </TouchableOpacity>
+                </View>
+              </>
+            )}
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      {/* ── Post-purchase: equip now? ───────────────────────────────────────── */}
+      <Modal visible={!!equipPrompt} transparent animationType="fade" onRequestClose={() => setEquipPrompt(null)}>
+        <Pressable style={styles.equipModalBackdrop} onPress={() => setEquipPrompt(null)}>
+          <Pressable style={styles.equipModalCard} onPress={(e) => e.stopPropagation()}>
+            {equipPrompt && (() => {
+              const newDef = GEAR[equipPrompt.gearId];
+              const curDef = equipPrompt.currentId ? GEAR[equipPrompt.currentId] : null;
+              return (
+                <>
+                  <Text style={styles.equipModalTitle}>Equip {newDef?.name}?</Text>
+                  <Text style={styles.equipModalSub}>
+                    {equipPrompt.slot.toUpperCase()} slot
+                    {curDef ? ` · currently: ${curDef.name}` : ' · currently empty'}
+                  </Text>
+
+                  {/* Stat comparison vs current piece */}
+                  <View style={styles.equipDeltaBox}>
+                    {!curDef ? (
+                      <Text style={styles.equipDeltaEmpty}>Nothing equipped here — pure upgrade.</Text>
+                    ) : equipPrompt.deltas.length === 0 ? (
+                      <Text style={styles.equipDeltaEmpty}>Same stats as your current piece.</Text>
+                    ) : (
+                      equipPrompt.deltas.map((d) => (
+                        <View key={d.label} style={styles.equipDeltaRow}>
+                          <Text style={styles.equipDeltaLabel}>{d.label}</Text>
+                          <Text style={[styles.equipDeltaValue, { color: d.positive ? '#7CFFB2' : '#FF8A8A' }]}>
+                            {d.text}
+                          </Text>
+                        </View>
+                      ))
+                    )}
+                  </View>
+
+                  <View style={styles.equipModalBtnRow}>
+                    <TouchableOpacity style={[styles.equipModalBtn, styles.equipModalBtnGhost]} onPress={() => setEquipPrompt(null)} activeOpacity={0.8}>
+                      <Text style={styles.equipModalBtnGhostText}>Not Now</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={[styles.equipModalBtn, styles.equipModalBtnPrimary]} onPress={handleEquipNow} activeOpacity={0.85}>
+                      <Text style={styles.equipModalBtnPrimaryText}>Equip Now</Text>
+                    </TouchableOpacity>
+                  </View>
+                </>
+              );
+            })()}
+          </Pressable>
+        </Pressable>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -1408,5 +1534,156 @@ const styles = StyleSheet.create({
   },
   forgeBtnTextDisabled: {
     color: '#F3E2BD',
+  },
+
+  /* ── Post-purchase equip modal ─────────────────────────────── */
+  equipModalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 28,
+  },
+  equipModalCard: {
+    width: '100%',
+    maxWidth: 360,
+    backgroundColor: '#1A2E22',
+    borderColor: '#4A3917',
+    borderWidth: 2,
+    borderRadius: 16,
+    padding: 20,
+  },
+  equipModalTitle: {
+    fontFamily: 'Jersey10-Regular',
+    fontSize: 24,
+    color: '#F3E2BD',
+    textAlign: 'center',
+  },
+  equipModalSub: {
+    fontFamily: 'Silkscreen-Regular',
+    fontSize: 9,
+    letterSpacing: 0.5,
+    color: 'rgba(243,226,189,0.55)',
+    textAlign: 'center',
+    marginTop: 6,
+  },
+  /* Purchase-confirm modal extras */
+  buyItemRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginTop: 16,
+    backgroundColor: 'rgba(0,0,0,0.25)',
+    borderRadius: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+  },
+  buyItemIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 8,
+    backgroundColor: 'rgba(255,255,255,0.04)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  buyItemName: {
+    fontFamily: 'Jersey10-Regular',
+    fontSize: 18,
+    color: '#F3E2BD',
+  },
+  buyItemStats: {
+    fontFamily: 'Jersey10-Regular',
+    fontSize: 14,
+    color: '#7CFFB2',
+    marginTop: 2,
+  },
+  buyPriceRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 12,
+    marginBottom: 18,
+    paddingHorizontal: 4,
+  },
+  buyPriceLabel: {
+    fontFamily: 'Silkscreen-Regular',
+    fontSize: 10,
+    letterSpacing: 0.5,
+    color: 'rgba(243,226,189,0.55)',
+  },
+  buyPriceValue: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  buyPriceText: {
+    fontFamily: 'Jersey10-Regular',
+    fontSize: 20,
+    color: '#E8A73A',
+  },
+
+  equipDeltaBox: {
+    marginTop: 16,
+    marginBottom: 18,
+    backgroundColor: 'rgba(0,0,0,0.25)',
+    borderRadius: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+  },
+  equipDeltaEmpty: {
+    fontFamily: 'Jersey10-Regular',
+    fontSize: 15,
+    color: 'rgba(243,226,189,0.7)',
+    textAlign: 'center',
+  },
+  equipDeltaRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 3,
+  },
+  equipDeltaLabel: {
+    fontFamily: 'Silkscreen-Regular',
+    fontSize: 10,
+    letterSpacing: 0.5,
+    color: 'rgba(243,226,189,0.7)',
+  },
+  equipDeltaValue: {
+    fontFamily: 'Jersey10-Regular',
+    fontSize: 18,
+  },
+  equipModalBtnRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  equipModalBtn: {
+    flex: 1,
+    borderRadius: 10,
+    paddingVertical: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+  },
+  equipModalBtnGhost: {
+    backgroundColor: 'transparent',
+    borderColor: 'rgba(243,226,189,0.3)',
+  },
+  equipModalBtnGhostText: {
+    fontFamily: 'Silkscreen-Regular',
+    fontSize: 11,
+    letterSpacing: 0.5,
+    color: 'rgba(243,226,189,0.75)',
+  },
+  equipModalBtnPrimary: {
+    backgroundColor: '#F3E2BD',
+    borderColor: '#4A3917',
+  },
+  equipModalBtnPrimaryText: {
+    fontFamily: 'Silkscreen-Regular',
+    fontSize: 11,
+    letterSpacing: 0.5,
+    color: '#2A1A0C',
   },
 });

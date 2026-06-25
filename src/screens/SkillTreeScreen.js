@@ -16,7 +16,7 @@
  *   - Tap card → detail modal (unlock, star-up, equip)
  */
 
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -26,6 +26,7 @@ import {
   Modal,
   Pressable,
   Dimensions,
+  Animated,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -132,6 +133,7 @@ function Stars({ count, max = 5, color = C.candleGold, size = 12 }) {
 
 export const SKILL_STAT_LABELS = {
   damageMultiplier: 'Base Damage',
+  agiScaling: 'Bonus Attack from Agility',
   burnDamage: 'Burn Damage / Turn',
   burnDuration: 'Burn Duration',
   burnTickBonus: 'Burn Damage Bonus',
@@ -140,6 +142,8 @@ export const SKILL_STAT_LABELS = {
   counterBurnDamage: 'Counter Damage / Turn',
   counterBurnDuration: 'Counter Duration',
   guardDuration: 'Guard Duration',
+  damageReduction: 'Damage Reduction',
+  burnAtkPercent: 'Burn Scale (% ATK)',
   atkReduce: 'Attack Reduction',
   defReduce: 'Defense Reduction',
   duration: 'Duration',
@@ -155,14 +159,21 @@ export const SKILL_STAT_LABELS = {
   dodgeBonus: 'Dodge Bonus',
   bonusCritChance: 'Bonus Crit Chance (per hit)',
   critMultiplier: 'Crit Damage Multiplier',
+  critRateBonus: 'Crit Rate Bonus',
+  critDamageBonus: 'Crit Damage Bonus',
   hpPercent: 'Max HP as Bonus ATK',
   damageHpPercent: 'Total AoE Damage',
   backfireHpPercent: 'Self Backfire (% Max HP)',
   healPercent: 'Regeneration per Turn',
+  extraStrikes: 'Extra Wind Blades Strikes',
 };
 
 export const formatSkillStatValue = (key, value) => {
   if (key === 'damageMultiplier') return `${Math.round(value * 100)}% ATK`;
+  if (key === 'agiScaling') return `+${value} Attack per Agility`;
+  if (key === 'damageReduction' || key === 'burnAtkPercent') {
+    return `${Math.round(value * 100)}%`;
+  }
   if (key === 'spreadPercent' || key === 'spreadBurnChance' || key === 'spreadAtkReduceChance' || key === 'atkReduce' || key === 'defReduce' || key === 'spreadDefReduceChance') {
     return `${Math.round(value * 100)}%`;
   }
@@ -176,14 +187,26 @@ export const formatSkillStatValue = (key, value) => {
   }
   if (key === 'dodgeBonus' || key === 'bonusCritChance') return `+${Math.round(value * 100)}%`;
   if (key === 'critMultiplier') return `${Math.round(value * 100)}% (replaces base 150%)`;
+  if (key === 'critRateBonus') return `+${Math.round(value * 100)}% Crit Rate (for 3 turns)`;
+  if (key === 'critDamageBonus') return `+${Math.round(value * 100)}% Crit Damage (additive, for 3 turns)`;
   if (key === 'damageHpPercent') {
     const hpPct = Math.round(value * 100);
-    const atkPct = Math.round(value * 300) - 45;
-    return `${atkPct}% ATK + ${hpPct}% of Max HP`;
+    let atkPct = 0;
+    if (hpPct === 30) atkPct = 50;
+    else if (hpPct === 37) atkPct = 75;
+    else if (hpPct === 45) atkPct = 100;
+    else if (hpPct === 52) atkPct = 125;
+    else if (hpPct === 60) atkPct = 150;
+    else atkPct = Math.round(value * 300) - 45; // fallback
+    return `${atkPct}% ATK + ${hpPct}% Max HP (Split)`;
   }
-  if (key === 'hpPercent' || key === 'backfireHpPercent' || key === 'healPercent') {
+  if (key === 'hpPercent' || key === 'healPercent') {
     return `${Math.round(value * 100)}% of Max HP`;
   }
+  if (key === 'backfireHpPercent') {
+    return `${Math.round(value * 100)}% of Max HP (reduced by DEF)`;
+  }
+  if (key === 'extraStrikes') return `+${value} strike${value !== 1 ? 's' : ''}`;
   return value;
 };
 
@@ -215,6 +238,26 @@ export default function SkillTreeScreen() {
 
   const [selectedSkill, setSelectedSkill] = useState(null);
   const [activeSkill, setActiveSkill] = useState(null);
+
+  // Auto-equip notification toast (shown when unlocking an active skill fills a
+  // free combat slot — mirrors the UNLOCK_SKILL reducer's auto-equip rule).
+  const [toast, setToast] = useState(null);
+  const toastAnim = useRef(new Animated.Value(0)).current;
+  const toastTimer = useRef(null);
+
+  const showToast = useCallback((message) => {
+    setToast(message);
+    if (toastTimer.current) clearTimeout(toastTimer.current);
+    toastAnim.setValue(0);
+    Animated.timing(toastAnim, { toValue: 1, duration: 220, useNativeDriver: true }).start();
+    toastTimer.current = setTimeout(() => {
+      Animated.timing(toastAnim, { toValue: 0, duration: 260, useNativeDriver: true }).start(
+        () => setToast(null),
+      );
+    }, 2600);
+  }, [toastAnim]);
+
+  useEffect(() => () => { if (toastTimer.current) clearTimeout(toastTimer.current); }, []);
 
   const handleOpenSkill = useCallback((skill) => {
     setSelectedSkill(skill);
@@ -287,9 +330,21 @@ export default function SkillTreeScreen() {
 
   const handleUnlock = useCallback(() => {
     if (!targetSkill) return;
+
+    // Detect the reducer's auto-equip BEFORE dispatch: an active skill not yet
+    // equipped will drop into the first free slot. Notify the player when it does.
+    const freeSlot = equippedSkills.indexOf(null);
+    const willAutoEquip =
+      targetSkill.type !== 'passive' &&
+      !equippedSkills.includes(targetSkill.id) &&
+      freeSlot !== -1;
+
     dispatch({ type: 'UNLOCK_SKILL', payload: { skillId: targetSkill.id } });
+    if (willAutoEquip) {
+      showToast(`${targetSkill.name} equipped to Slot ${freeSlot + 1}`);
+    }
     setSelectedSkill(null);
-  }, [targetSkill, dispatch]);
+  }, [targetSkill, dispatch, equippedSkills, showToast]);
 
   const handleStarUp = useCallback(() => {
     if (!targetSkill) return;
@@ -820,6 +875,26 @@ export default function SkillTreeScreen() {
           </Pressable>
         </Pressable>
       </Modal>
+
+      {/* ── Auto-equip toast ──────────────────────────────────────────────── */}
+      {toast && (
+        <Animated.View
+          pointerEvents="none"
+          style={[
+            styles.toast,
+            {
+              borderColor: elementColor,
+              opacity: toastAnim,
+              transform: [
+                { translateY: toastAnim.interpolate({ inputRange: [0, 1], outputRange: [24, 0] }) },
+              ],
+            },
+          ]}
+        >
+          <Text style={[styles.toastIcon, { color: elementColor }]}>✓</Text>
+          <Text style={styles.toastText}>{toast}</Text>
+        </Animated.View>
+      )}
     </SafeAreaView>
   );
 }
@@ -905,6 +980,29 @@ const styles = StyleSheet.create({
   /* Skill Tree Grid */
   treeContainer: { width: '100%', position: 'relative', marginVertical: 10 },
   treeRow: { flexDirection: 'row', justifyContent: 'space-between' },
+
+  /* Auto-equip toast */
+  toast: {
+    position: 'absolute',
+    left: 20,
+    right: 20,
+    bottom: 28,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: C.panelDeep,
+    borderWidth: 1.5,
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.5,
+    shadowRadius: 6,
+    elevation: 8,
+  },
+  toastIcon: { fontFamily: 'Jersey10-Regular', fontSize: 18 },
+  toastText: { flex: 1, fontFamily: 'Jersey10-Regular', fontSize: 15, color: C.text },
 
   /* Skill cards */
   skillCard: {

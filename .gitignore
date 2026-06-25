@@ -43,3 +43,7 @@ yarn-error.*
 # Claude Code / Antigravity IDE
 .claude/
 
+# Simulation outputs
+simulation_log.txt
+scripts/simulate.bundled.js
+

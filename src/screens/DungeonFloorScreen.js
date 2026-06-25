@@ -333,7 +333,7 @@ export default function DungeonFloorScreen() {
               Zone {floor}
             </Text>
             <View style={styles.floorDiff}>
-              {renderDifficultyStars(diff, 10)}
+              {renderDifficultyStars(diff, 7)}
             </View>
           </View>
 
@@ -354,24 +354,24 @@ export default function DungeonFloorScreen() {
             {/* Status badge */}
             {isCleared && (
               <View style={styles.badgeCleared}>
-                <Text style={styles.badgeClearedText}>Cleared</Text>
+                <Text style={styles.badgeClearedText} numberOfLines={1}>Cleared</Text>
               </View>
             )}
             {isAvail && !isBoss && (
               <View style={styles.badgeNext}>
-                <Text style={styles.badgeNextText}>Unlocked</Text>
+                <Text style={styles.badgeNextText} numberOfLines={1}>Unlocked</Text>
               </View>
             )}
             {isAvail && isBoss && (
               <View style={styles.badgeBoss}>
                 <ItemSprite spritesheet="status-icons-1" frameIndex={21} displaySize={9} />
-                <Text style={styles.badgeBossText}>Boss</Text>
+                <Text style={styles.badgeBossText} numberOfLines={1}>Boss</Text>
               </View>
             )}
             {isLocked && (
               <View style={styles.badgeLocked}>
                 <ItemSprite spritesheet="icons-map" frameIndex={49} displaySize={9} opacity={0.5} />
-                <Text style={styles.badgeLockedText}>Locked</Text>
+                <Text style={styles.badgeLockedText} numberOfLines={1}>Locked</Text>
               </View>
             )}
 
@@ -402,7 +402,7 @@ export default function DungeonFloorScreen() {
       {/* ── Header ─────────────────────────────────────────────────────── */}
       <View style={[styles.header, { paddingTop: insets.top }]}>
         <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()} activeOpacity={0.7}>
-          <Text style={styles.backText}>← Expeditions</Text>
+          <Text style={styles.backText} numberOfLines={1}>← Expeditions</Text>
         </TouchableOpacity>
         <View style={styles.titleContainer}>
           <ItemSprite
@@ -748,7 +748,7 @@ const styles = StyleSheet.create({
     borderBottomColor: 'rgba(255, 255, 255, 0.04)',
   },
   backButton: {
-    width: 70,
+    width: 110,
     paddingVertical: 6,
     justifyContent: 'center',
   },
@@ -772,7 +772,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   headerSpacer: {
-    width: 70,
+    width: 110,
   },
 
   /* ── Zone Banner ─────────────────────────────────────────── */
@@ -1389,7 +1389,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   floorCardRewards: {
-    flex: 2.5,
+    flex: 2.3,
     flexDirection: 'row',
     gap: 4,
     alignItems: 'center',
@@ -1414,7 +1414,7 @@ const styles = StyleSheet.create({
     lineHeight: 12,
   },
   floorCardStatusCol: {
-    flex: 1.5,
+    flex: 1.9,
     alignItems: 'flex-end',
     justifyContent: 'center',
     gap: 4,

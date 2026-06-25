@@ -73,7 +73,7 @@ import {
   executeBoulderSlash,
   executeLandslide,
   executeDualSlash,
-  executeWhirlwind,
+  executeCriticalWind,
   displayDamage,
 } from '../logic/combatEngine';
 import { calculateEncounterLoot } from '../logic/lootEngine';
@@ -159,14 +159,21 @@ function buildInitialCombatState(state, roomType, battleRating, enemyCount) {
     defence: eff.defence,
     critChance: eff.critChance,
     dodge: eff.dodge,
+    agility: eff.agility,
     effects: [],
     passives: eff.passives,
     gearSpecials: eff.gearSpecials,
     // Flame Guard state (Fire element T2B)
     flameGuardActive: false,
     flameGuardTurnsRemaining: 0,
+    flameGuardReduction: 0,
     flameGuardBurnDamage: 0,
     flameGuardBurnDuration: 0,
+    // Critical Wind state (Wind element T2B)
+    critWindActive: false,
+    critWindTurnsRemaining: 0,
+    critWindCritBonus: 0,
+    critWindDamageBonus: 0,
   };
 
   // 4. Generate the encounter based on the room type
@@ -1081,13 +1088,13 @@ export default function CombatScreen() {
     setCombatPhase('enemyTurn');
 
     // Only set standard animation if this isn't a sequential multi-hit skill (handled inside loop)
-    if (skillId !== 'dual_slash' && skillId !== 'whirlwind') {
+    if (skillId !== 'dual_slash') {
       setHeroAnim(skillId);
     }
 
-    // Set cooldown — landslide and whirlwind use per-star cooldowns defined in star data
+    // Set cooldown — landslide uses per-star cooldowns defined in star data
     const stars = (state.hero.unlockedSkills[skillId]?.stars) || 1;
-    const skillCooldown = (skillId === 'landslide' || skillId === 'whirlwind')
+    const skillCooldown = (skillId === 'landslide')
       ? (skillDef.stars[stars]?.cooldown ?? skillDef.cooldown)
       : skillDef.cooldown;
     const newCooldowns = { ...cooldowns, [skillId]: skillCooldown };
@@ -1127,15 +1134,28 @@ export default function CombatScreen() {
 
     } else if (skillId === 'flame_guard') {
       const stars = (state.hero.unlockedSkills[skillId]?.stars) || 1;
-      const guard = executeFlameGuard(skillDef, stars, burnBonus, updatedHero.name || 'Mochi');
+      const guard = executeFlameGuard(skillDef, stars, updatedHero, burnBonus);
       updatedHero = {
         ...updatedHero,
         flameGuardActive: guard.flameGuardActive,
         flameGuardTurnsRemaining: guard.flameGuardTurnsRemaining,
+        flameGuardReduction: guard.flameGuardReduction,
         flameGuardBurnDamage: guard.flameGuardBurnDamage,
         flameGuardBurnDuration: guard.flameGuardBurnDuration,
       };
       addLog(guard.log);
+
+    } else if (skillId === 'critical_wind') {
+      const cwStars = (state.hero.unlockedSkills[skillId]?.stars) || 1;
+      const cw = executeCriticalWind(skillDef, cwStars, updatedHero);
+      updatedHero = {
+        ...updatedHero,
+        critWindActive: cw.critWindActive,
+        critWindTurnsRemaining: cw.critWindTurnsRemaining,
+        critWindCritBonus: cw.critWindCritBonus,
+        critWindDamageBonus: cw.critWindDamageBonus,
+      };
+      addLog(cw.log);
 
     } else if (skillId === 'tidal_strike') {
       const stars = (state.hero.unlockedSkills[skillId]?.stars) || 1;
@@ -1194,17 +1214,11 @@ export default function CombatScreen() {
         addLog(`💥 Landslide backfire: ${updatedHero.name || 'Mochi'} takes ${result.backfireDamage} recoil damage!`);
       }
 
-    } else if (skillId === 'dual_slash' || skillId === 'whirlwind') {
-      let result;
-      if (skillId === 'dual_slash') {
-        const target = updatedEnemies[selectedEnemyIndex];
-        if (!target) { setCombatPhase('playerTurn'); return; }
-        const dsStars = (state.hero.unlockedSkills[skillId]?.stars) || 1;
-        result = executeDualSlash(skillDef, dsStars, updatedHero, target);
-      } else {
-        const wwStars = (state.hero.unlockedSkills[skillId]?.stars) || 1;
-        result = executeWhirlwind(skillDef, wwStars, updatedHero, updatedEnemies, selectedEnemyIndex);
-      }
+    } else if (skillId === 'dual_slash') {
+      const target = updatedEnemies[selectedEnemyIndex];
+      if (!target) { setCombatPhase('playerTurn'); return; }
+      const dsStars = (state.hero.unlockedSkills[skillId]?.stars) || 1;
+      const result = executeDualSlash(skillDef, dsStars, updatedHero, updatedEnemies, selectedEnemyIndex);
 
       isMultiHit = true;
       addLog(result.log);
@@ -1213,7 +1227,7 @@ export default function CombatScreen() {
         const hitDuration = 350; // Snappy speed for each hit
         setHeroAnimFps(16); // play animation faster
 
-        const hitFrames = HERO_SPRITE[skillId]?.frames || 8;
+        const hitFrames = HERO_SPRITE['dual_slash']?.frames || 8;
         const finalHitDuration = Math.round((hitFrames / 16) * 1000);
 
         for (let hitIdx = 0; hitIdx < result.hits.length; hitIdx++) {
@@ -1221,15 +1235,13 @@ export default function CombatScreen() {
 
           // Determine the key: intermediate hits get suffix, last hit gets base skillId
           const isLastHit = hitIdx === result.hits.length - 1;
-          const animKey = isLastHit ? skillId : `${skillId}_hit${hitIdx}`;
+          const animKey = isLastHit ? 'dual_slash' : `dual_slash_hit${hitIdx}`;
           const currentHitDuration = isLastHit ? finalHitDuration : hitDuration;
 
           setHeroAnim(animKey);
           triggerHeroAttackLunge(currentHitDuration);
 
           // Trigger recoils and popups for this hit's targets.
-          // updatedEnemies still holds pre-hit HP here, so clamp the popup
-          // amount to remaining HP to avoid over-reporting a killing blow.
           hit.targets.forEach(t => {
             const enemyNow = updatedEnemies.find(e => e.uid === t.uid);
             const shownDmg = displayDamage(t.damage, enemyNow ? enemyNow.hp : t.damage);
@@ -1312,6 +1324,7 @@ export default function CombatScreen() {
       }
     }
 
+
     setHeroState(updatedHero);
 
     // Remove dead enemies
@@ -1357,10 +1370,21 @@ export default function CombatScreen() {
     if (guardedHero.flameGuardActive) {
       const remaining = (guardedHero.flameGuardTurnsRemaining || 1) - 1;
       if (remaining <= 0) {
-        guardedHero = { ...guardedHero, flameGuardActive: false, flameGuardTurnsRemaining: 0 };
+        guardedHero = { ...guardedHero, flameGuardActive: false, flameGuardTurnsRemaining: 0, flameGuardReduction: 0 };
         addLog('🛡️ Flame Guard fades.');
       } else {
         guardedHero = { ...guardedHero, flameGuardTurnsRemaining: remaining };
+      }
+    }
+
+    // Decrement Critical Wind turns
+    if (guardedHero.critWindActive) {
+      const remaining = (guardedHero.critWindTurnsRemaining || 1) - 1;
+      if (remaining <= 0) {
+        guardedHero = { ...guardedHero, critWindActive: false, critWindTurnsRemaining: 0, critWindCritBonus: 0, critWindDamageBonus: 0 };
+        addLog('⚡ Critical Wind fades.');
+      } else {
+        guardedHero = { ...guardedHero, critWindTurnsRemaining: remaining };
       }
     }
 

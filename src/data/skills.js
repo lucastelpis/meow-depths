@@ -66,13 +66,13 @@ const fire_burst = {
   cooldown: 4,
   unlockedBy: 'fire_slash',
   icon: '💥',
-  description: 'Explosive AOE — full hit on target, 40% splash + 30% burn on adjacent.',
+  description: 'Explosive AOE — full hit on target, plus splash damage + burn on all other enemies.',
   stars: {
-    1: { damageMultiplier: 1.50, burnDamage: 4, burnDuration: 3, spreadPercent: 0.30, spreadBurnChance: 0.30 },
-    2: { damageMultiplier: 1.60, burnDamage: 4, burnDuration: 3, spreadPercent: 0.40, spreadBurnChance: 0.30 },
-    3: { damageMultiplier: 1.70, burnDamage: 5, burnDuration: 3, spreadPercent: 0.40, spreadBurnChance: 0.40 },
-    4: { damageMultiplier: 1.85, burnDamage: 5, burnDuration: 3, spreadPercent: 0.50, spreadBurnChance: 0.40 },
-    5: { damageMultiplier: 2.00, burnDamage: 6, burnDuration: 3, spreadPercent: 0.50, spreadBurnChance: 0.50 },
+    1: { damageMultiplier: 1.50, burnDamage: 4, burnDuration: 3, spreadPercent: 0.20, spreadBurnChance: 0.20 },
+    2: { damageMultiplier: 1.60, burnDamage: 4, burnDuration: 3, spreadPercent: 0.35, spreadBurnChance: 0.40 },
+    3: { damageMultiplier: 1.70, burnDamage: 5, burnDuration: 3, spreadPercent: 0.50, spreadBurnChance: 0.60 },
+    4: { damageMultiplier: 1.85, burnDamage: 5, burnDuration: 3, spreadPercent: 0.60, spreadBurnChance: 0.80 },
+    5: { damageMultiplier: 2.00, burnDamage: 6, burnDuration: 3, spreadPercent: 0.75, spreadBurnChance: 1.00 },
   },
 };
 
@@ -83,16 +83,16 @@ const flame_guard = {
   tier: 2,
   type: 'active',
   targetType: 'self',
-  cooldown: 4,
+  cooldown: 6,
   unlockedBy: 'fire_slash',
   icon: '🛡️',
-  description: 'For 1 turn, you light up a flame wall that causes enemies to burn when they hit.',
+  description: 'Envelops Mochi in a flame shield that reduces incoming damage and counter-burns attackers.',
   stars: {
-    1: { counterBurnDamage: 3, counterBurnDuration: 1, guardDuration: 1 },
-    2: { counterBurnDamage: 3, counterBurnDuration: 2, guardDuration: 1 },
-    3: { counterBurnDamage: 4, counterBurnDuration: 2, guardDuration: 1 },
-    4: { counterBurnDamage: 4, counterBurnDuration: 3, guardDuration: 1 },
-    5: { counterBurnDamage: 5, counterBurnDuration: 3, guardDuration: 1 },
+    1: { damageReduction: 0.10, burnAtkPercent: 0.05, guardDuration: 3, burnDuration: 3 },
+    2: { damageReduction: 0.15, burnAtkPercent: 0.10, guardDuration: 3, burnDuration: 3 },
+    3: { damageReduction: 0.20, burnAtkPercent: 0.15, guardDuration: 3, burnDuration: 3 },
+    4: { damageReduction: 0.25, burnAtkPercent: 0.20, guardDuration: 3, burnDuration: 3 },
+    5: { damageReduction: 0.30, burnAtkPercent: 0.25, guardDuration: 3, burnDuration: 3 },
   },
 };
 
@@ -132,11 +132,11 @@ const hydration = {
   icon: '🌊',
   description: 'Amplifies all healing sources while equipped. Always active.',
   stars: {
-    1: { healingEfficiency: 0.10 },
-    2: { healingEfficiency: 0.15 },
-    3: { healingEfficiency: 0.20 },
-    4: { healingEfficiency: 0.25 },
-    5: { healingEfficiency: 0.30 },
+    1: { healingEfficiency: 0.05 },
+    2: { healingEfficiency: 0.10 },
+    3: { healingEfficiency: 0.15 },
+    4: { healingEfficiency: 0.20 },
+    5: { healingEfficiency: 0.25 },
   },
 };
 
@@ -172,11 +172,11 @@ const healing_current = {
   icon: '🫧',
   description: 'Heals the user for a % of max HP each turn for 3 turns.',
   stars: {
-    1: { healPerTurn: 0.10, duration: 3 },
-    2: { healPerTurn: 0.15, duration: 3 },
-    3: { healPerTurn: 0.20, duration: 3 },
-    4: { healPerTurn: 0.25, duration: 3 },
-    5: { healPerTurn: 0.30, duration: 3 },
+    1: { healPerTurn: 0.05, duration: 3 },
+    2: { healPerTurn: 0.10, duration: 3 },
+    3: { healPerTurn: 0.15, duration: 3 },
+    4: { healPerTurn: 0.20, duration: 3 },
+    5: { healPerTurn: 0.25, duration: 3 },
   },
 };
 
@@ -234,13 +234,13 @@ const landslide = {
   cooldown: 8,
   unlockedBy: 'boulder_slash',
   icon: '⛰️',
-  description: 'Channel your full earthen force into a devastating ground slam, sending shockwaves through all enemies. Deals heavy damage to all enemies equal to a percentage of base ATK plus a percentage of your maximum HP, with a chance to stun each target for 1 turn. The sheer force also deals you backfire damage.',
+  description: 'Channel your full earthen force into a devastating ground slam. Deals heavy damage equal to a percentage of base ATK plus a percentage of your maximum HP, divided and spread evenly among all alive enemies, with a chance to stun each target for 1 turn. Also deals you backfire damage.',
   stars: {
-    1: { damageHpPercent: 0.20, stunChance: 0.20, backfireHpPercent: 0.20, atkMultiplier: 0.15 },
-    2: { damageHpPercent: 0.25, stunChance: 0.30, backfireHpPercent: 0.25, atkMultiplier: 0.30 },
-    3: { damageHpPercent: 0.30, stunChance: 0.40, backfireHpPercent: 0.30, atkMultiplier: 0.45 },
-    4: { damageHpPercent: 0.35, stunChance: 0.50, backfireHpPercent: 0.35, atkMultiplier: 0.60 },
-    5: { damageHpPercent: 0.40, stunChance: 0.60, backfireHpPercent: 0.40, atkMultiplier: 0.75 },
+    1: { damageHpPercent: 0.30, stunChance: 0.20, backfireHpPercent: 0.30, atkMultiplier: 0.50, cooldown: 8 },
+    2: { damageHpPercent: 0.37, stunChance: 0.30, backfireHpPercent: 0.37, atkMultiplier: 0.75, cooldown: 7 },
+    3: { damageHpPercent: 0.45, stunChance: 0.40, backfireHpPercent: 0.45, atkMultiplier: 1.00, cooldown: 7 },
+    4: { damageHpPercent: 0.52, stunChance: 0.50, backfireHpPercent: 0.52, atkMultiplier: 1.25, cooldown: 6 },
+    5: { damageHpPercent: 0.60, stunChance: 0.60, backfireHpPercent: 0.60, atkMultiplier: 1.50, cooldown: 6 },
   },
 };
 
@@ -270,7 +270,7 @@ const calcify = {
 
 const dual_slash = {
   id: 'dual_slash',
-  name: 'Dual Slash',
+  name: 'Wind Blades',
   element: 'wind',
   tier: 1,
   type: 'active',
@@ -278,13 +278,15 @@ const dual_slash = {
   cooldown: 3,
   unlockedBy: null,
   icon: '💨',
-  description: 'Two rapid strikes on the same target. Each hit rolls crit independently with +10% bonus crit per hit.',
+  description: 'Two wind blades strike — 1st hits the selected target, 2nd hits a random enemy on the field (may hit the same target). Gains bonus Attack from your Agility. Each hit rolls crit independently with +10% bonus crit per hit.',
+  // `agiScaling` adds flat Attack per point of Agility before the multiplier,
+  // growing with star level (★1 +0.5 → ★5 +2 Attack per AGI).
   stars: {
-    1: { damageMultiplier: 0.55, bonusCritChance: 0.10 },
-    2: { damageMultiplier: 0.60, bonusCritChance: 0.10 },
-    3: { damageMultiplier: 0.65, bonusCritChance: 0.10 },
-    4: { damageMultiplier: 0.70, bonusCritChance: 0.10 },
-    5: { damageMultiplier: 0.75, bonusCritChance: 0.10 },
+    1: { damageMultiplier: 0.50, bonusCritChance: 0.10, agiScaling: 0.5 },
+    2: { damageMultiplier: 0.55, bonusCritChance: 0.10, agiScaling: 0.8 },
+    3: { damageMultiplier: 0.60, bonusCritChance: 0.10, agiScaling: 1.2 },
+    4: { damageMultiplier: 0.65, bonusCritChance: 0.10, agiScaling: 1.5 },
+    5: { damageMultiplier: 0.70, bonusCritChance: 0.10, agiScaling: 2.0 },
   },
 };
 
@@ -310,22 +312,22 @@ const swiftness = {
 
 const whirlwind = {
   id: 'whirlwind',
-  name: 'Whirlwind Strike',
+  name: 'Backwind',
   element: 'wind',
   tier: 2,
-  type: 'active',
-  targetType: 'single_with_spread',
-  cooldown: 4, // base; ★5 reduces to 3 (stored in star data)
+  type: 'passive',
+  targetType: 'passive',
+  cooldown: 0,
   unlockLevel: 15,
   unlockedBy: 'dual_slash',
   icon: '🌪️',
-  description: '3 rapid strikes on the primary target, each spreading 40% to adjacent enemies. Every hit rolls crit independently with +15% bonus crit.',
+  description: 'Passive — adds extra strikes to Wind Blades. Each additional strike follows the same rules: first hit is on the selected target, remaining hits are random.',
   stars: {
-    1: { damageMultiplier: 0.45, spreadPercent: 0.40, bonusCritChance: 0.15, cooldown: 4 },
-    2: { damageMultiplier: 0.50, spreadPercent: 0.40, bonusCritChance: 0.15, cooldown: 4 },
-    3: { damageMultiplier: 0.55, spreadPercent: 0.40, bonusCritChance: 0.15, cooldown: 4 },
-    4: { damageMultiplier: 0.60, spreadPercent: 0.40, bonusCritChance: 0.15, cooldown: 4 },
-    5: { damageMultiplier: 0.65, spreadPercent: 0.40, bonusCritChance: 0.15, cooldown: 3 },
+    1: { extraStrikes: 1 },
+    2: { extraStrikes: 2 },
+    3: { extraStrikes: 3 },
+    4: { extraStrikes: 4 },
+    5: { extraStrikes: 5 },
   },
 };
 
@@ -334,21 +336,22 @@ const critical_wind = {
   name: 'Critical Wind',
   element: 'wind',
   tier: 2,
-  type: 'passive',
-  targetType: 'passive',
-  cooldown: 0,
+  type: 'active',
+  targetType: 'self',
+  cooldown: 8,
   unlockLevel: 15,
   unlockedBy: 'dual_slash',
   icon: '⚡',
-  description: 'Passive — replaces the base crit multiplier (150%) with a higher value. Not additive — it fully overrides it.',
+  description: 'Channel the wind\'s fury — for the next 3 turns, substantially increases crit rate and crit damage. Not additive with base crit multiplier for damage; uses the highest available multiplier.',
   stars: {
-    1: { critMultiplier: 1.60 },
-    2: { critMultiplier: 1.70 },
-    3: { critMultiplier: 1.80 },
-    4: { critMultiplier: 1.90 },
-    5: { critMultiplier: 2.00 },
+    1: { critRateBonus: 0.07, critDamageBonus: 0.05, duration: 3 },
+    2: { critRateBonus: 0.14, critDamageBonus: 0.10, duration: 3 },
+    3: { critRateBonus: 0.21, critDamageBonus: 0.15, duration: 3 },
+    4: { critRateBonus: 0.28, critDamageBonus: 0.20, duration: 3 },
+    5: { critRateBonus: 0.35, critDamageBonus: 0.25, duration: 3 },
   },
 };
+
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Aggregated maps

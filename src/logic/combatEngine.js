@@ -109,16 +109,25 @@ export function calculateDamage(attacker, target, options = {}) {
     critChance = Math.max(0, critChance - critReduce.value);
   }
 
-  // Per-hit bonus crit (Dual Slash, Whirlwind)
+  // Per-hit bonus crit (Wind Blades)
   if (options.critBonus) {
     critChance = Math.min(1, critChance + options.critBonus);
+  }
+
+  // Critical Wind active buff: adds crit rate bonus for its duration
+  if (attacker.critWindActive && attacker.critWindCritBonus) {
+    critChance = Math.min(1, critChance + attacker.critWindCritBonus);
   }
 
   const isCrit = options.forceCrit || critRoll < critChance;
 
   if (isCrit) {
-    // Critical Wind passive overrides CRIT_MULTIPLIER; options.critMultiplier takes highest priority
-    const critMult = options.critMultiplier || attacker.passives?.critMultiplier || CRIT_MULTIPLIER;
+    // Critical Wind active buff adds a crit damage multiplier on top of base
+    // options.critMultiplier takes highest priority for any other override
+    let critMult = options.critMultiplier || CRIT_MULTIPLIER;
+    if (attacker.critWindActive && attacker.critWindDamageBonus) {
+      critMult = critMult + attacker.critWindDamageBonus;
+    }
     baseDamage = Math.floor(baseDamage * critMult);
   }
 
@@ -271,6 +280,8 @@ export function executeAttack(attacker, target, attackerState) {
   const targetGuard = target.effects?.find(e => e.type === 'guard');
   if (targetGuard) {
     damageOptions.guardAmount = targetGuard.reduction || 0;
+  } else if (target.flameGuardActive) {
+    damageOptions.guardAmount = target.flameGuardReduction || 0;
   }
 
   const targetDeathMark = target.effects?.find(e => e.type === 'deathMark');
@@ -730,6 +741,8 @@ export function executeEnemyTurn(enemy, enemyState, target, targetState) {
   const damageOptions = { critMultiplier: 1.5 };
   if (heroGuard) {
     damageOptions.guardAmount = heroGuard.reduction || 0;
+  } else if (targetState.flameGuardActive) {
+    damageOptions.guardAmount = targetState.flameGuardReduction || 0;
   }
 
   const dmgResult = calculateDamage(enemyAsAttacker, target, damageOptions);
@@ -1061,9 +1074,9 @@ export function executeFireBurst(skillDef, stars, heroState, enemies, targetIdx,
     logParts.push(`${primary.name} takes ${displayDamage(damage, primary.hp)}${isCrit ? ' (CRIT!)' : ''} + burn`);
   }
 
-  // Adjacent enemies (index ±1)
-  for (const adjIdx of [targetIdx - 1, targetIdx + 1]) {
-    if (adjIdx < 0 || adjIdx >= enemies.length) continue;
+  // Splash to all other enemies (any index except the primary target)
+  for (let adjIdx = 0; adjIdx < enemies.length; adjIdx++) {
+    if (adjIdx === targetIdx) continue;
     const adj = enemies[adjIdx];
     if (!adj || adj.hp <= 0) continue;
 
@@ -1092,15 +1105,39 @@ export function executeFireBurst(skillDef, stars, heroState, enemies, targetIdx,
  * Execute Flame Guard: applies counter-burn aura to the hero for N turns.
  * Returns the flame guard state to merge into heroState.
  */
-export function executeFlameGuard(skillDef, stars, burnBonus, heroName = 'Mochi') {
+export function executeFlameGuard(skillDef, stars, heroState, burnBonus) {
   const starData = skillDef.stars[stars];
-  const burnDmg = calculateBurnDamage(starData.counterBurnDamage, burnBonus);
+  const baseBurnDmg = Math.floor((heroState.attack || 10) * starData.burnAtkPercent);
+  const burnDmg = calculateBurnDamage(baseBurnDmg, burnBonus);
+  const duration = starData.guardDuration || 3;
   return {
     flameGuardActive: true,
-    flameGuardTurnsRemaining: starData.guardDuration,
+    flameGuardTurnsRemaining: duration,
+    flameGuardReduction: starData.damageReduction,
     flameGuardBurnDamage: burnDmg,
-    flameGuardBurnDuration: starData.counterBurnDuration,
-    log: `${heroName} uses Flame Guard: active for ${starData.guardDuration} turns! Attackers burn for ${burnDmg}/turn!`,
+    flameGuardBurnDuration: starData.burnDuration || 3,
+    log: `${heroState.name || 'Mochi'} uses Flame Guard: active for ${duration} turns! Reduces incoming damage by ${Math.round(starData.damageReduction * 100)}% and counter-burns attackers for ${burnDmg}/turn!`,
+  };
+}
+
+/**
+ * Execute Critical Wind: applies a 3-turn crit rate + crit damage buff to Mochi.
+ *
+ * @param {Object} skillDef  - full skill definition from SKILLS
+ * @param {number} stars     - current star level
+ * @param {Object} heroState - hero combat state
+ */
+export function executeCriticalWind(skillDef, stars, heroState) {
+  const starData = skillDef.stars[stars];
+  const duration = starData.duration || 3;
+  const critRateBonus = starData.critRateBonus || 0;
+  const critDamageBonus = starData.critDamageBonus || 0;
+  return {
+    critWindActive: true,
+    critWindTurnsRemaining: duration,
+    critWindCritBonus: critRateBonus,
+    critWindDamageBonus: critDamageBonus,
+    log: `${heroState.name || 'Mochi'} uses Critical Wind: +${Math.round(critRateBonus * 100)}% crit rate and +${Math.round(critDamageBonus * 100)}% crit damage for ${duration} turns!`,
   };
 }
 
@@ -1251,12 +1288,17 @@ export function executeLandslide(skillDef, stars, heroState, enemies) {
   const results = [];
   const logParts = [];
 
+  const aliveEnemies = enemies.filter(e => e && e.hp > 0);
+  const aliveCount = Math.max(1, aliveEnemies.length);
+
+  // Calculate total damage pool and divide it among all alive enemies
+  const totalBaseDmg = Math.floor(heroState.attack * starData.atkMultiplier) + Math.floor(heroState.maxHp * starData.damageHpPercent);
+  const baseAtkDmg = Math.max(1, Math.floor(totalBaseDmg / aliveCount));
+
   for (let i = 0; i < enemies.length; i++) {
     const target = enemies[i];
     if (!target || target.hp <= 0) continue;
 
-    // Construct attacker model where base attack scales Mochi's attack plus HP-based scaling damage
-    const baseAtkDmg = Math.floor(heroState.attack * starData.atkMultiplier) + Math.floor(heroState.maxHp * starData.damageHpPercent);
     const attackerForDamage = {
       attack: baseAtkDmg,
       critChance: heroState.critChance,
@@ -1281,8 +1323,21 @@ export function executeLandslide(skillDef, stars, heroState, enemies) {
     logParts.push(targetLog);
   }
 
-  // Calculate direct backfire damage equal to only the HP-based portion of damage
-  const backfireDamage = Math.floor(heroState.maxHp * starData.damageHpPercent);
+  // Calculate self backfire damage equal to the HP-based portion of damage, reduced by Mochi's Defense
+  const rawBackfire = Math.floor(heroState.maxHp * starData.backfireHpPercent);
+  
+  let defVal = heroState.defence || heroState.def || 0;
+  const defBuff = heroState.effects?.find(ef => ef.type === 'def_buff');
+  if (defBuff && defBuff.value) {
+    defVal += defBuff.value;
+  }
+  const defReduce = heroState.effects?.find(ef => ef.type === 'def_reduce');
+  if (defReduce && defReduce.value) {
+    defVal = defVal * (1 - defReduce.value);
+  }
+  const effectiveDef = Math.max(0, defVal - 1);
+  const reduction = effectiveDef / (effectiveDef + 15);
+  const backfireDamage = Math.max(1, Math.floor(rawBackfire * (1 - reduction)));
 
   return {
     results,
@@ -1292,50 +1347,79 @@ export function executeLandslide(skillDef, stars, heroState, enemies) {
 }
 
 /**
- * Execute Dual Slash: 2 rapid hits on the same target.
- * Each hit rolls crit independently with a per-hit bonus crit chance.
+ * Execute Wind Blades (formerly Dual Slash):
+ * - Hit 1 always strikes the selected target.
+ * - Remaining hits (1 base + extraWindStrikes from Backwind) each strike a
+ *   random alive enemy (may repeat the selected target).
+ * - Every hit rolls crit independently with a per-hit bonus crit chance.
  *
- * @param {Object} skillDef  - full skill definition from SKILLS
- * @param {number} stars     - current star level
- * @param {Object} heroState - hero combat state
- * @param {Object} target    - single enemy object
+ * @param {Object}   skillDef    - full skill definition from SKILLS
+ * @param {number}   stars       - current star level
+ * @param {Object}   heroState   - hero combat state
+ * @param {Object[]} enemies     - full living enemies array
+ * @param {number}   targetIdx   - index of primary target in enemies
  */
-export function executeDualSlash(skillDef, stars, heroState, target) {
+export function executeDualSlash(skillDef, stars, heroState, enemies, targetIdx) {
   const starData = skillDef.stars[stars];
   const hits = [];
   const logParts = [];
 
-  // Track remaining HP across hits so the log never shows more than was dealt.
-  let remainingHp = (typeof target.hp === 'number') ? target.hp : Infinity;
-  let totalShown = 0;
+  // Base 2 hits + any extra strikes granted by Backwind passive
+  const extraStrikes = heroState.passives?.extraWindStrikes || 0;
+  const totalHits = 2 + extraStrikes;
 
-  for (let i = 0; i < 2; i++) {
-    const { damage, isCrit, isDodged } = calculateDamage(heroState, target, {
+  // Wind Blades gains flat Attack from Agility: each AGI point adds `agiScaling`
+  // Attack (scales with star level) to the effective ATK used for every strike.
+  const agiBonus = Math.floor((heroState.agility || 0) * (starData.agiScaling || 0));
+  const attackerForHit = agiBonus > 0
+    ? { ...heroState, attack: heroState.attack + agiBonus }
+    : heroState;
+
+  // All alive enemies for random targeting
+  const aliveEnemies = enemies.filter(e => e && e.hp > 0);
+  const primary = enemies[targetIdx];
+
+  // Track HP per enemy for accurate log clamping (uid → remaining hp)
+  const remainingHp = {};
+  for (const e of aliveEnemies) {
+    remainingHp[e.uid || e.id] = e.hp;
+  }
+
+  for (let i = 0; i < totalHits; i++) {
+    // First hit always hits the selected target; subsequent hits are random
+    let hitTarget;
+    if (i === 0) {
+      hitTarget = primary;
+    } else {
+      const stillAlive = aliveEnemies.filter(e => (remainingHp[e.uid || e.id] ?? 0) > 0);
+      if (stillAlive.length === 0) break; // no valid targets left
+      hitTarget = stillAlive[Math.floor(Math.random() * stillAlive.length)];
+    }
+
+    const uid = hitTarget.uid || hitTarget.id;
+    const { damage, isCrit, isDodged } = calculateDamage(attackerForHit, hitTarget, {
       multiplier: starData.damageMultiplier,
       critBonus: starData.bonusCritChance,
     });
+
     hits.push({
-      targets: [
-        {
-          uid: target.uid || target.id,
-          damage,
-          isCrit,
-          isDodged,
-        }
-      ]
+      targets: [{ uid, damage, isCrit, isDodged }],
     });
-    const shown = displayDamage(damage, remainingHp);
-    remainingHp -= damage;
-    totalShown += shown;
-    logParts.push(`${shown}${isCrit ? '(CRIT!)' : ''}`);
+
+    const shown = displayDamage(damage, remainingHp[uid] ?? damage);
+    remainingHp[uid] = Math.max(0, (remainingHp[uid] ?? 0) - damage);
+
+    const label = i === 0 ? hitTarget.name : `${hitTarget.name} (random)`;
+    logParts.push(`${label}: ${shown}${isCrit ? '(CRIT!)' : ''}`);
   }
 
   return {
     hits,
-    targetUid: target.uid || target.id,
-    log: `${heroState.name || 'Mochi'} uses Dual Slash: hits ${target.name} — ${logParts.join(' + ')} = ${totalShown} total!`,
+    targetUid: primary?.uid || primary?.id,
+    log: `${heroState.name || 'Mochi'} uses Wind Blades: ${logParts.join(' → ')}!`,
   };
 }
+
 
 /**
  * Execute Whirlwind: 3 rapid strikes on the primary target, each spreading

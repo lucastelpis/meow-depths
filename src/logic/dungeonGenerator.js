@@ -18,7 +18,7 @@
 
 export const ZONE_FLOOR_CONFIGS = {
   zone1: {
-    1: { gridWidth: 3, gridHeight: 3, numCombat: 4, numRest: 2, numGamble: 1, numTreasure: 1, hasBoss: false },
+    1: { gridWidth: 3, gridHeight: 3, numCombat: 5, numRest: 1, numGamble: 1, numTreasure: 1, hasBoss: false },
     2: { gridWidth: 3, gridHeight: 3, numCombat: 5, numRest: 1, numGamble: 1, numTreasure: 1, hasBoss: false },
     3: { gridWidth: 3, gridHeight: 3, numCombat: 5, numRest: 1, numGamble: 1, numTreasure: 1, hasBoss: false },
     4: { gridWidth: 3, gridHeight: 4, numCombat: 7, numRest: 2, numGamble: 1, numTreasure: 1, hasBoss: false },
@@ -57,7 +57,7 @@ export const ZONE_FLOOR_CONFIGS = {
 
 export const ZONE_COMBAT_POOLS = {
   zone1: {
-    1: { ratings: [1, 1, 1, 1], enemyCounts: [1, 1, 1, 1] },
+    1: { ratings: [1, 1, 1, 1, 1], enemyCounts: [1, 1, 1, 1, 2] },
     2: { ratings: [1, 1, 2, 2, 2], enemyCounts: [1, 1, 2, 2, 2] },
     3: { ratings: [2, 2, 2, 2, 2], enemyCounts: [2, 2, 2, 3, 3] },
     4: { ratings: [2, 2, 2, 3, 3, 3, 3], enemyCounts: [2, 2, 2, 3, 3, 3, 3] },

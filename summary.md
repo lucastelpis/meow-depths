@@ -6,12 +6,16 @@ Meow Depths is an RPG/region-crawler game built using React Native and Expo, fea
 ## Dungeon Floor Rules & Loot
 - **Dungeon Loot**: Potions (health potions, super potions, mega potions, ultra potions) do not drop from treasure chests, gamble rooms, or combat in the dungeons. They must be purchased from the Market (Shop) or obtained via daily rewards at the Camp hub.
 - **Floor Completion Rewards**: Each floor has pre-disclosed Gold and EXP rewards visible on its selection card and entry modal. These are awarded upon clearing all tiles on the floor grid and displayed in the floor complete modal.
-  - **Zone 1**: Starts at 100 G and 100 XP on Floor 1, increasing by +100 G and +100 XP per floor (reaching 1000 G and 1000 XP on Floor 10).
-  - **Zone 2**: Starts at 1000 G and 1000 XP on Floor 1, increasing by +500 G and +500 XP per floor (reaching 5500 G and 5500 XP on Floor 10).
-  - **Zone 3**: Starts at 6000 G and 6000 XP on Floor 1, increasing by +100 G and +100 XP per floor (reaching 6900 G and 6900 XP on Floor 10).
+  - **Zone 1**: Starts at 100 G and 50 XP on Floor 1, increasing by +100 G and +50 XP per floor (reaching 1000 G and 500 XP on Floor 10).
+  - **Zone 2**: Starts at 1000 G and 500 XP on Floor 1, increasing by +500 G and +250 XP per floor (reaching 5500 G and 2750 XP on Floor 10).
+  - **Zone 3**: Starts at 6000 G and 3000 XP on Floor 1, increasing by +100 G and +50 XP per floor (reaching 6900 G and 3450 XP on Floor 10).
 - **Floor Grid Sizes & Enemies**: Dungeon grid sizes grow as the player descends. For **Dungeon 1 (Soggy Ruins)**, Floor 10 (Boss Floor) is specifically configured as **4x4 tiles** (instead of 4x5) and all combat tiles on this floor spawn exactly **4 enemies** at the same time.
 - **Skill Popups in Combat**: In battle, opening the detail modal for an equipped skill displays its current level's multipliers and specific effects (damage multiplier, defense reduction, cooldown, etc.) rather than just the generic description.
-- **Water Skill Mechanics**: The Water active skill **Tidal Strike** reduces the target's Defense (DEF) instead of Attack (ATK). The passive **Tidal Wave** adds Splash Damage to **Tidal Strike** (DEF reduction only applies to the main target).
+- **Water Skill Mechanics**: The Water active skill **Tidal Strike** reduces the target's Defense (DEF) instead of Attack (ATK). The passive **Tidal Wave** adds Splash Damage to **Tidal Strike** (DEF reduction only applies to the main target). The passive **Hydration** increases healing efficiency by `5% / 10% / 15% / 20% / 25%` (★1 to ★5), and the active **Healing Current** heals for `5% / 10% / 15% / 20% / 25%` (★1 to ★5) Max HP per turn for 3 turns.
+- **Earth Skill Mechanics**: The Earth active skill **Landslide** deals a total damage pool (ATK and Max HP scaling) divided and split evenly among all alive enemies, and stuns them. Mochi takes backfire damage equal to the HP-damage percent of Max HP, which is reduced by Mochi's DEF like any other attack.
+- **Fire Skill Mechanics**: The Fire active skill **Flame Guard** creates a flame shield lasting for 3 turns (with a 6-turn cooldown). It reduces incoming damage by `10% / 15% / 20% / 25% / 30%` (★1 to ★5) and counter-burns attackers for a scaling percentage of Mochi's current ATK (`5% / 10% / 15% / 20% / 25%` from ★1 to ★5) on every attack received.
+- **Wind Skill Mechanics**: The Wind active skill **Wind Blades** fires 2 blade hits by default: the 1st always strikes the selected target, and the 2nd hits a random alive enemy (may hit the same target). Each hit rolls crit independently with +10% bonus crit chance. The passive **Backwind** adds +1/2/3/4/5 extra random-targeting strikes to Wind Blades per star level, for a maximum of 7 total hits at ★5. The passive **Swiftness** increases dodge chance (2%–10%). The active skill **Critical Wind** (8-turn cooldown) channels the wind's fury for 3 turns: increases crit rate by +7/14/21/28/35% and crit damage by +5/10/15/20/25% (additive on top of base 1.5× multiplier) per star level.
+
 
 ## Key Screens
 - **Onboarding Flow (First Launch)**: Shown when `hero.element` is null.
@@ -87,16 +91,16 @@ Crystals and shards use frames from the `crystals-1` spritesheet:
 - **Living Stone** (Earth Passive Tier 1): Frame index 9
 - **Landslide** (Earth Active Tier 2): Frame index 16
 - **Calcify** (Earth Passive Tier 2): Frame index 17
-- **Dual Slash** (Wind Active Tier 1): Frame index 12
+- **Wind Blades** (Wind Active Tier 1): Frame index 12
 - **Swiftness** (Wind Passive Tier 1): Frame index 13
-- **Whirlwind Strike** (Wind Active Tier 2): Frame index 14
+- **Backwind** (Wind Passive Tier 2): Frame index 14
 - **Critical Wind** (Wind Passive Tier 2): Frame index 15
 
 ## Combat Movement Animations
 - **Attack/Skill Lunge**: Attacking characters lunge forward snappily (24px right for hero, 24px left for enemies) on their turn. The timing split is 30% lunge forward and 70% return.
 - **Damage Recoil**: Characters move backward subtly (12px left for hero, 12px right for enemies) when taking damage. The timing split matches the attack's: 30% recoil backward and 70% return recovery.
 - **Red Damage Overlay Tint**: When taking damage, a red color flash overlay (using `#ff3333` tint) is rendered over the unit, fading in to `0.75` opacity during the recoil phase and fading back to `0` opacity during the recovery phase.
-- **Synchronized Duration**: Both animations dynamically synchronize their durations to match the visual frame length of the active sprite sheet. Single attacks/skills play at 10 FPS, while multi-hit skills/moves (like Dual Slash and Whirlwind Strike) play at a sped-up rate of 16 FPS.
+- **Synchronized Duration**: Both animations dynamically synchronize their durations to match the visual frame length of the active sprite sheet. Single attacks/skills play at 10 FPS, while multi-hit skills/moves (like Wind Blades) play at a sped-up rate of 16 FPS.
 - **Sequential Multi-Hits**: Multi-hit skills/moves are executed as a sequence of rapid individual hits (each taking 350ms). Each hit resets the sprite animation sheet, triggers its own attack lunge, target recoil, damage popup, and step-by-step HP bar depletion, making them feel like actual successive attacks.
 
 ## Combat & Battle Log Formatting
@@ -158,3 +162,13 @@ This is a 15-column layout matrix of various game icons (480x320 px, 32x32 px pe
 - **Row 8**: 106: Locked padlock, 107: Gold bars, 108: Blue potion round, 109: Red apple, 110: Gray star, 111: Brown book, 112: Wooden chest small, 113: Bread loaf alt, 114: Hand/cross, 115: Green slime, 116: Wrench/hammer, 117: Running cat, 118: Torch alt, 119: Crown, 120: Open book
 - **Row 9**: 121: Beer alt, 122: Green potion round, 123: Bread angle, 124: Heart/plus, 125: Cave entrance, 126: Red chest gold locks, 127: Compass alt, 128: Gold key crown, 129: Gold crown, 130: Flame/fire, 131: Warning sign, 132: Blue potion light, 133: Wood stack, 134: Green arrow, 135: EXP Scroll
 - **Row 10**: 136: Grey mountain, 137: Blue fish, 138-150: Additional cells.
+
+## Simulation Script
+A standalone Node-based simulation script is available at [simulate.js](file:///Users/lucastelpisferrante/Documents/Vibe_Coding_Projects/meow-depths/scripts/simulate.js) to model player progression from Floor 1 to 10.
+- **Purpose**: Simulate full dungeon crawling, combat encounters (including the King Rat boss fight on Floor 10), camp hub shop management, skill upgrades/pricing, attribute allocations, daily ration claims, and crystal fusions.
+- **How to Run**:
+  1. Bundle the script for Node:
+     `npx esbuild scripts/simulate.js --bundle --platform=node --outfile=scripts/simulate.bundled.js`
+  2. Run the bundled script:
+     `node scripts/simulate.bundled.js`
+- **Output**: Logs the floor-by-floor level-ups, crystal fusions, gear/potion purchases, combat encounters, potion consumption, and prints a final metrics report showing clear/death status, levels reached, damage dealt, and skill upgrade levels.

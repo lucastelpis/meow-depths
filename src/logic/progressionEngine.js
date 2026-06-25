@@ -119,12 +119,12 @@ export function applyHealingEfficiency(baseHeal, heroOrStats) {
  */
 export function getXpForLevel(level) {
   if (level <= 1) return 0;      // Level 1 is free
-  if (level === 2) return 100;   // First level-up
-  if (level === 3) return 250;   // Second level-up
+  if (level === 2) return 100;   // Level 2 requires 100 XP (guarantees level-up on Floor 1)
+  if (level === 3) return 300;   // Level 3 requires 300 XP
 
   // 35% compounded exponential curve from Level 4 onwards
-  let totalXp = 250;
-  let currentInc = 150;
+  let totalXp = 300;
+  let currentInc = 200;
   for (let l = 4; l <= level; l++) {
     currentInc = currentInc * 1.35;
     totalXp += currentInc;
@@ -313,11 +313,12 @@ export function calculateEffectiveStats(hero, skillDefinitions = SKILLS, runBuff
       }
     }
 
-    // Critical Wind — overrides crit multiplier (replaces base 150%, not additive)
-    if (skillId === 'critical_wind') {
+
+    // Backwind — adds extra strikes to Wind Blades
+    if (skillId === 'whirlwind') {
       const stars = unlockedSkills[skillId].stars || 1;
       if (skillDef.stars[stars]) {
-        passives.critMultiplier = skillDef.stars[stars].critMultiplier;
+        passives.extraWindStrikes = skillDef.stars[stars].extraStrikes || 0;
       }
     }
 
@@ -392,6 +393,7 @@ export function calculateEffectiveStats(hero, skillDefinitions = SKILLS, runBuff
     defence,
     critChance,
     dodge,
+    agility,            // raw AGI exposed for skills that scale off it (e.g. Wind Blades)
     gearSpecials,
     passives,
     bagSlots,

@@ -17,7 +17,6 @@ import {
   ScrollView,
   Dimensions,
   Animated,
-  Alert,
 } from 'react-native';
 import { Image as ExpoImage } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -301,6 +300,8 @@ export default function DungeonMapScreen({ navigation }) {
   // Local modal states
   const [activeModal, setActiveModal] = useState(null); // 'rest' | 'treasure' | 'gamble' | 'death' | 'flee' | 'bag'
   const [modalData, setModalData] = useState(null);
+  // Themed replacement for native Alert popups: { title, message, spritesheet?, frameIndex?, highlight? }
+  const [notice, setNotice] = useState(null);
 
   // Animation for adjacent pulsing border
   const pulseAnim = useRef(new Animated.Value(0.4)).current;
@@ -339,23 +340,44 @@ export default function DungeonMapScreen({ navigation }) {
   }, [currentRun.consumables]);
 
   const handleUseItemOnMap = (item) => {
+    const consumableDef = CONSUMABLES.find(c => c.id === item.id);
     if (['potion', 'super_potion', 'mega_potion', 'ultra_potion'].includes(item.id)) {
       if (hero.hp >= effectiveStats.maxHp) {
-        Alert.alert('Full Health', `${hero.name || 'Mochi'} is already at full health!`);
+        setNotice({
+          title: 'FULL HEALTH',
+          spritesheet: consumableDef?.spritesheet,
+          frameIndex: consumableDef?.frameIndex,
+          message: `${hero.name || 'Mochi'} is already at full health.`,
+        });
         return;
       }
 
-      const consumableDef = CONSUMABLES.find(c => c.id === item.id);
       const baseHeal = consumableDef?.effect?.amount || 0;
       const finalHeal = applyHealingEfficiency(baseHeal, hero);
       const actualHealed = Math.min(finalHeal, effectiveStats.maxHp - hero.hp);
 
       dispatch({ type: 'USE_RUN_CONSUMABLE', payload: { consumableId: item.id } });
-      Alert.alert('Item Used', `${hero.name || 'Mochi'} consumed ${item.name} and recovered ${actualHealed} HP!`);
+      setNotice({
+        title: 'ITEM USED',
+        spritesheet: consumableDef?.spritesheet,
+        frameIndex: consumableDef?.frameIndex,
+        message: `${hero.name || 'Mochi'} drank a ${item.name}.`,
+        highlight: `+${actualHealed} HP`,
+      });
     } else if (item.id === 'mystery_chest') {
-      Alert.alert('Mystery Chest', 'You can open this chest from your inventory bag back at camp.');
+      setNotice({
+        title: 'MYSTERY CHEST',
+        spritesheet: consumableDef?.spritesheet,
+        frameIndex: consumableDef?.frameIndex,
+        message: 'You can open this chest from your inventory bag back at camp.',
+      });
     } else {
-      Alert.alert('Combat Item', 'This item can only be used during battle encounters.');
+      setNotice({
+        title: 'COMBAT ITEM',
+        spritesheet: consumableDef?.spritesheet,
+        frameIndex: consumableDef?.frameIndex,
+        message: 'This item can only be used during battle encounters.',
+      });
     }
   };
 
@@ -422,7 +444,10 @@ export default function DungeonMapScreen({ navigation }) {
     if (!isAdjacent(tile.x, tile.y)) return;
 
     if (isBossLocked(tile)) {
-      Alert.alert('Boss Sealed', 'Clear all other rooms in this zone before facing the boss!');
+      setNotice({
+        title: 'BOSS SEALED',
+        message: 'Clear all other rooms in this zone before facing the boss!',
+      });
       return;
     }
 
@@ -1259,35 +1284,29 @@ export default function DungeonMapScreen({ navigation }) {
               <View style={styles.cozyBevel} pointerEvents="none" />
 
               <Text style={styles.cozySubtitle}>
-                Are you sure you want to escape? Fleeing preserves your life, but at a cost:
+                Are you sure you want to escape? Fleeing ends the run early, but you keep everything you've gathered:
               </Text>
 
-              <Text style={[styles.fleeCostWarning, { color: '#B91C1C', textAlign: 'center', marginBottom: 12, fontSize: 10, fontFamily: 'Silkscreen-Regular' }]}>
-                You will lose HALF of all gold, materials, and consumables collected during this run!
-              </Text>
-              
-              <Text style={[styles.fleeLootPreviewTitle, { color: '#6A4A2A', fontWeight: 'bold', marginBottom: 8, textAlign: 'center' }]}>Estimated Retained Loot:</Text>
-              {Math.floor(currentRun.lootCollected.gold / 2) === 0 &&
+              <Text style={[styles.fleeLootPreviewTitle, { color: '#6A4A2A', fontWeight: 'bold', marginBottom: 8, textAlign: 'center' }]}>Loot You'll Keep:</Text>
+              {currentRun.lootCollected.gold === 0 &&
               Object.keys(currentRun.lootCollected.materials).length === 0 &&
               Object.keys(currentRun.lootCollected.consumables || {}).length === 0 ? (
-                <Text style={[styles.noLostLootText, { textAlign: 'center', marginBottom: 12 }]}>No loot will be kept.</Text>
+                <Text style={[styles.noLostLootText, { textAlign: 'center', marginBottom: 12 }]}>No loot collected yet.</Text>
               ) : (
                 <View style={[styles.bagChipsContainer, { marginBottom: 12 }]}>
-                  {Math.floor(currentRun.lootCollected.gold / 2) > 0 && (
+                  {currentRun.lootCollected.gold > 0 && (
                     <View style={styles.bagItemChip}>
                       <ItemSprite spritesheet="icons-1" frameIndex={11} displaySize={32} />
-                      <Text style={styles.bagChipQty}>{Math.floor(currentRun.lootCollected.gold / 2)} G</Text>
+                      <Text style={styles.bagChipQty}>{currentRun.lootCollected.gold} G</Text>
                     </View>
                   )}
                   {(() => {
                     const items = [];
                     for (const [id, qty] of Object.entries(currentRun.lootCollected.materials || {})) {
-                      const keptQty = Math.floor(qty / 2);
-                      if (keptQty > 0) items.push({ id, keptQty, isConsumable: false });
+                      if (qty > 0) items.push({ id, keptQty: qty, isConsumable: false });
                     }
                     for (const [id, qty] of Object.entries(currentRun.lootCollected.consumables || {})) {
-                      const keptQty = Math.floor(qty / 2);
-                      if (keptQty > 0) items.push({ id, keptQty, isConsumable: true });
+                      if (qty > 0) items.push({ id, keptQty: qty, isConsumable: true });
                     }
                     if (items.length === 0) return null;
                     return items.map(({ id, keptQty, isConsumable }) => {
@@ -1328,6 +1347,45 @@ export default function DungeonMapScreen({ navigation }) {
               <View style={styles.cozyTopOuter}>
                 <View style={styles.cozyTopInner}>
                   <Text style={styles.cozyTopText}>FLEE REGION</Text>
+                </View>
+              </View>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* ════════════════════════════════════════════════════════════════
+          5b. NOTICE MODAL (themed replacement for native Alerts)
+      ════════════════════════════════════════════════════════════════ */}
+      <Modal visible={!!notice} transparent animationType="fade" onRequestClose={() => setNotice(null)}>
+        <View style={styles.cozyOverlay}>
+          <View style={[styles.cozyFrame, theme.SHADOWS.cardShadow]}>
+            <View style={styles.cozyParchment}>
+              <View style={styles.cozyBevel} pointerEvents="none" />
+
+              {notice?.spritesheet != null && notice?.frameIndex != null && (
+                <View style={styles.noticeIconWrap}>
+                  <ItemSprite spritesheet={notice.spritesheet} frameIndex={notice.frameIndex} displaySize={44} />
+                </View>
+              )}
+
+              {!!notice?.highlight && (
+                <Text style={styles.noticeHighlight}>{notice.highlight}</Text>
+              )}
+
+              <Text style={styles.cozySubtitle}>{notice?.message}</Text>
+
+              <TouchableOpacity activeOpacity={0.85} onPress={() => setNotice(null)} style={styles.cozyButtonSecondary}>
+                <View style={styles.cozyButtonSecondaryInner}>
+                  <Text style={styles.cozyButtonText}>OK</Text>
+                </View>
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.cozyTopWrap} pointerEvents="none">
+              <View style={styles.cozyTopOuter}>
+                <View style={styles.cozyTopInner}>
+                  <Text style={styles.cozyTopText}>{notice?.title}</Text>
                 </View>
               </View>
             </View>
@@ -2701,6 +2759,27 @@ const styles = StyleSheet.create({
     marginTop: 8,
     marginBottom: 16,
     paddingHorizontal: 6,
+  },
+  noticeIconWrap: {
+    alignSelf: 'center',
+    width: 64,
+    height: 64,
+    borderRadius: 12,
+    backgroundColor: '#F4E6C0',
+    borderColor: '#C9A86A',
+    borderWidth: 1.5,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 10,
+    marginBottom: 4,
+  },
+  noticeHighlight: {
+    fontFamily: 'Silkscreen-Regular',
+    fontSize: 20,
+    color: '#2E7D32',
+    textAlign: 'center',
+    letterSpacing: 0.5,
+    marginTop: 8,
   },
   cozyWell: {
     backgroundColor: '#F4E6C0',

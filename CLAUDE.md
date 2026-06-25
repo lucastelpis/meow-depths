@@ -37,7 +37,7 @@ This is the most important pattern to understand:
 
 1. **`START_RUN`** — Generates a region/zone grid via `dungeonGenerator.js`, deducts packed consumables from `hero.inventory`, restores hero HP to full, and stores everything in `currentRun`.
 2. **During a run** — Combat results are buffered; gold and materials go to `currentRun.lootCollected`, HP changes are synced back via `UPDATE_RUN_AFTER_COMBAT`. Run-only stat buffs (from Rest rooms) live in `currentRun.runBuffs`.
-3. **`END_RUN`** — `outcome: 'win'` applies collected loot to permanent inventory; `outcome: 'flee'` keeps half; `outcome: 'lose'` discards it all. Remaining consumables from the run bag are returned to permanent inventory regardless.
+3. **`END_RUN`** — `outcome: 'win'` applies collected loot to permanent inventory plus the floor-completion reward; `outcome: 'flee'` keeps all collected loot (no completion reward); `outcome: 'lose'` discards it all. Remaining consumables from the run bag are returned to permanent inventory regardless.
 
 ### CombatScreen local state
 
