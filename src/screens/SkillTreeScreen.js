@@ -498,18 +498,21 @@ export default function SkillTreeScreen() {
             </View>
           );
         })() : (
-          <Text style={styles.cardLockText} numberOfLines={1}>
-            {(() => {
-              const check = canUnlockElementSkill(skillId, hero);
-              if (check.cost && hero.level < check.cost.requiredLevel) return `🔒 LV ${check.cost.requiredLevel}`;
-              return '🔒 LOCKED';
-            })()}
-          </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
+            <ItemSprite spritesheet="icons-map" frameIndex={115} displaySize={9} opacity={0.4} />
+            <Text style={styles.cardLockText} numberOfLines={1}>
+              {(() => {
+                const check = canUnlockElementSkill(skillId, hero);
+                if (check.cost && hero.level < check.cost.requiredLevel) return `LV ${check.cost.requiredLevel}`;
+                return 'LOCKED';
+              })()}
+            </Text>
+          </View>
         )}
 
         {isActive && skill.cooldown > 0 && (
           <View style={styles.cardCooldownRow}>
-            <ItemSprite spritesheet="icons-map" frameIndex={26} displaySize={11} />
+            <ItemSprite spritesheet="icons-map" frameIndex={86} displaySize={11} />
             <Text style={styles.cardCooldown}>{skill.cooldown}-TURN CD</Text>
           </View>
         )}
@@ -739,7 +742,10 @@ export default function SkillTreeScreen() {
                         </View>
                         <Text style={styles.modalTier}>TIER {targetSkill.tier}</Text>
                         {targetSkill.cooldown > 0 && (
-                          <Text style={styles.modalCD}>⏳ {targetSkill.cooldown}-TURN CD</Text>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                            <ItemSprite spritesheet="icons-map" frameIndex={86} displaySize={11} />
+                            <Text style={styles.modalCD}>{targetSkill.cooldown}-TURN CD</Text>
+                          </View>
                         )}
                       </View>
                       {selectedStars > 0 && <Stars count={selectedStars} color={elementColor} size={13} />}
@@ -807,8 +813,9 @@ export default function SkillTreeScreen() {
 
                   {/* Unlock requirement info */}
                   {selectedCardState === 'locked' && unlockCheck && (
-                    <View style={styles.modalInfoBox}>
-                      <Text style={styles.modalInfoText}>🔒 {unlockCheck.reason}</Text>
+                    <View style={[styles.modalInfoBox, { flexDirection: 'row', alignItems: 'center', gap: 6 }]}>
+                      <ItemSprite spritesheet="icons-map" frameIndex={115} displaySize={14} />
+                      <Text style={[styles.modalInfoText, { flex: 1 }]}>{unlockCheck.reason}</Text>
                     </View>
                   )}
 

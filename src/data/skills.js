@@ -318,7 +318,7 @@ const whirlwind = {
   type: 'passive',
   targetType: 'passive',
   cooldown: 0,
-  unlockLevel: 15,
+  unlockLevel: 10,
   unlockedBy: 'dual_slash',
   icon: '🌪️',
   description: 'Passive — adds extra strikes to Wind Blades. Each additional strike follows the same rules: first hit is on the selected target, remaining hits are random.',
@@ -339,7 +339,7 @@ const critical_wind = {
   type: 'active',
   targetType: 'self',
   cooldown: 8,
-  unlockLevel: 15,
+  unlockLevel: 10,
   unlockedBy: 'dual_slash',
   icon: '⚡',
   description: 'Channel the wind\'s fury — for the next 3 turns, substantially increases crit rate and crit damage. Not additive with base crit multiplier for damage; uses the highest available multiplier.',
@@ -422,7 +422,7 @@ export const ELEMENT_T1_ACTIVE = {
  * level required to do so. Costs are keyed by skill tier, then target star.
  *
  * Currently only Black Crystal materials (Zone 1) are used for both
- * Tier 1 (★1-5, level 1-5) and Tier 2 (★1-5, level 11-15) skills.
+ * Tier 1 (★1-5, level 1-5) and Tier 2 (★1-5, level 10-14) skills.
  */
 export const SKILL_UPGRADE_COSTS = {
   1: {
@@ -433,11 +433,11 @@ export const SKILL_UPGRADE_COSTS = {
     5: { requiredLevel: 5, materials: { black_crystal_small: 30 } },
   },
   2: {
-    1: { requiredLevel: 11, materials: { black_crystal_small: 50 } },
-    2: { requiredLevel: 12, materials: { black_crystal_big: 15 } },
-    3: { requiredLevel: 13, materials: { black_crystal_big: 30 } },
-    4: { requiredLevel: 14, materials: { black_crystal_big: 45 } },
-    5: { requiredLevel: 15, materials: { black_crystal_big: 60, black_crystal_core: 1 } },
+    1: { requiredLevel: 10, materials: { black_crystal_small: 50 } },
+    2: { requiredLevel: 11, materials: { black_crystal_big: 15 } },
+    3: { requiredLevel: 12, materials: { black_crystal_big: 30 } },
+    4: { requiredLevel: 13, materials: { black_crystal_big: 45 } },
+    5: { requiredLevel: 14, materials: { black_crystal_big: 60, black_crystal_core: 1 } },
   },
 };
 

@@ -70,7 +70,7 @@ export default function ScreenLoader({ assets = [], children }) {
       {/* Loading overlay — fades out once assets are decoded */}
       <Animated.View
         style={[styles.overlay, { opacity: overlayOpacity }]}
-        pointerEvents={ready ? 'none' : 'auto'}
+        pointerEvents={(ready || !overlayVisible.current) ? 'none' : 'auto'}
       >
         {/* Subtle vignette radial feel */}
         <View style={styles.overlayInner}>

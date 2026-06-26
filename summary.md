@@ -21,11 +21,15 @@ Meow Depths is an RPG/region-crawler game built using React Native and Expo, fea
 - **Onboarding Flow (First Launch)**: Shown when `hero.element` is null.
   - **Name Input Screen**: The player enters their character's name (defaults to "Mochi").
   - **Element Selection Screen**: A horizontal snap-carousel where players choose their starting element path (Fire, Water, Earth, Wind). Confirming dispatches the `SELECT_ELEMENT` action, locking in their choice and transitioning to the main game.
-- **Camp Hub (Main Screen)**: The player can navigate to the Region Map, Loadout (Inventory), Skills, Market (Shop), and Profile. Features a Settings modal accessible via the gear icon, which contains options to reset game data or reset character progression (reclaiming spent attribute points and refunding all crystal materials spent on skill tree unlocks and upgrades).
-- **Profile Screen**: Accessible from the hub. Features a scaled-up avatar, a modern font style (`Jersey10-Regular`), and is split into two tabs:
+- **Camp Hub (Main Screen)**: The player can navigate to the Region Map, Quests Board, Skills, Market (Shop), and Profile. Features a Settings modal accessible via the gear icon, which contains options to reset game data or reset character progression (reclaiming spent attribute points and refunding all crystal materials spent on skill tree unlocks and upgrades).
+- **Quest Screen & Daily Quests Accordion**:
+  - **Daily Quests Accordion (Camp Modal)**: An interactive list inside the Camp Hub where daily quests default to a collapsed header. Completed-unclaimed quests can be claimed directly from the header.
+  - **Quest Screen**: A full screen with tabs for Daily Quests (with countdown timers) and Campaign progression milestones.
+  - **Reward Celebration Modal**: Triggered when claiming any quest reward. Opens a cozy parchment celebration popup with large retro item sprites (displaySize 32) and quantities. Pressing 'AWESOME!' dispatches the state action to claim rewards and closes the modal.
+- **Profile Screen**: Accessible from the hub. Features a scaled-up avatar, a modern font style (`Jersey10-Regular`), and is split into three tabs:
   - **Stats tab**: Displays base attributes (STR, AGI, VIT) where players allocate points earned from leveling up, previews and displays effective combat stats (ATK, DEF, MAX HP, etc.), describes their current elemental stance, and includes interactive `?` info tags next to attributes and stats which open a custom explanation popup modal.
-  - **Gear tab**: Displays equipped gear across 8 slots (Head, Chest, Gloves, Legs, Boots, Weapon, Trinket, Storage) and displays active set bonuses.
-- **Inventory/Loadout Screen**: Accessible from the hub. Contains three tabs (Supplies, Gear, Materials) styled as cozy parchment/wood tabs.
+  - **Gear tab**: Displays equipped gear across 8 slots (Head, Chest, Gloves, Legs, Boots, Weapon, Trinket, Storage), active set bonuses, and a grid of crafted gear in inventory with side-by-side comparison overlays.
+  - **Bag tab**: Displays Supplies (consumables) and Materials (crystal shards, crystals, and cores).
 - **Market (Shop) Screen**: Accessible from the hub. Contains three tabs (Supplies shop, Gear armory, Forge fusion) styled as cozy parchment/wood tabs.
 - **Region Map Screen**: Allows entering zones to fight enemies.
 - **Expeditions Screen**: Displays available regions (Soggy Ruins, Twisted Gardens, Sunken Docks) with custom level ranges, run completion statistics, and zone completion status. Each region card features a full-bleed premium background banner image scaled to a perfect 2:1 aspect ratio matching the dimensions of the assets.
@@ -150,6 +154,7 @@ This is a 15-column layout matrix of various game icons (480x320 px, 32x32 px pe
 16. **DODGE Buff Icon (HUD)**: Row 7, Col 5 ➔ `frameIndex: 94` (Winged boot)
 17. **DEF Buff Icon (HUD)**: Row 5, Col 3 ➔ `frameIndex: 62` (Wooden shield)
 18. **HP Buff Icon (HUD)**: Row 10, Col 1 ➔ `frameIndex: 135` (Heart/plus)
+19. **Ambush Icon (Battle & Map Popup)**: Row 7, Col 3 ➔ `frameIndex: 92` (Crossed swords alt)
 
 ### Rows & Columns Layout Matrix:
 - **Row 1**: 1: Striped tent, 2: Brown tent, 3: Red potion, 4: Chicken leg, 5: Bear trap/Spikes, 6: Iron sword, 7: Bowl of soup, 8: Stone room/bed, 9: Iron gate, 10: Closed wooden chest, 11: Bow, 12: Sack of grain, 13: Treasure chest, 14: Campfire/pot, 15: Campfire

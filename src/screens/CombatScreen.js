@@ -1902,6 +1902,28 @@ export default function CombatScreen() {
       setLevelUpMessages(lvlResult.messages);
     }
 
+    // Dispatch quest progress for defeated enemies
+    if (defeatedEnemiesRef.current && defeatedEnemiesRef.current.length > 0) {
+      for (const enemy of defeatedEnemiesRef.current) {
+        dispatch({
+          type: 'UPDATE_QUEST_PROGRESS',
+          payload: {
+            type: 'hunt_creature',
+            enemyId: enemy.id,
+            amount: 1,
+          },
+        });
+        dispatch({
+          type: 'UPDATE_QUEST_PROGRESS',
+          payload: {
+            type: 'hunt_stars',
+            stars: enemy.stars || 1,
+            amount: 1,
+          },
+        });
+      }
+    }
+
     setCombatPhase('loot');
   };
 
@@ -2055,11 +2077,17 @@ export default function CombatScreen() {
         <View style={styles.infoBar}>
           <View style={styles.infoBarLeft}>
             <View style={styles.encounterTypeRow}>
+              {roomType === 'boss' && (
+                <ItemSprite spritesheet="icons-map" frameIndex={34} displaySize={16} />
+              )}
+              {roomType === 'ambush' && (
+                <ItemSprite spritesheet="icons-map" frameIndex={92} displaySize={16} />
+              )}
               {roomType !== 'boss' && roomType !== 'ambush' && (
                 <ItemSprite spritesheet="icons-1" frameIndex={10} displaySize={16} />
               )}
               <Text style={styles.encounterTypeLabel}>
-                {roomType === 'boss' ? '☠️  BOSS BATTLE' : roomType === 'ambush' ? '👺  AMBUSH!' : 'COMBAT'}
+                {roomType === 'boss' ? 'BOSS BATTLE' : roomType === 'ambush' ? 'AMBUSH!' : 'COMBAT'}
               </Text>
             </View>
             <Text style={styles.infoBarSub} numberOfLines={1}>
@@ -3175,7 +3203,10 @@ export default function CombatScreen() {
                       </View>
                       <Text style={styles.infoTierText}>TIER {infoSkill.tier}</Text>
                       {infoSkill.cooldown > 0 && (
-                        <Text style={styles.infoCdText}>⏳ {infoSkill.cooldown}-TURN CD</Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                          <ItemSprite spritesheet="icons-map" frameIndex={86} displaySize={11} />
+                          <Text style={styles.infoCdText}>{infoSkill.cooldown}-TURN CD</Text>
+                        </View>
                       )}
                     </View>
                     {stars > 0 && (

@@ -44,6 +44,7 @@ import { ZONES, getGridSizeForFloor, getFloorCompletionReward } from '../data/zo
 import { calculateEffectiveStats, applyHealingEfficiency, checkLevelUp } from '../logic/progressionEngine';
 import { GEAR, CONSUMABLES } from '../data/gear';
 import { SKILLS, getSkillUpgradeCost } from '../data/skills';
+import { getInitialCampaignQuests, generateDailyQuests, syncPersistentQuests } from '../data/quests';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -121,6 +122,11 @@ const initialState = {
     encounteredCreatures: {}, // { enemyId: true } — unlocks bestiary cards
     notesCollected: {},       // { noteId: true } — e.g. 'zone1_floor3'
     readNotes: {},            // { noteId: true } — tracks read bestiary/lore notes
+    questsState: {
+      lastGeneratedDate: '',
+      dailies: [],
+      campaign: getInitialCampaignQuests(),
+    },
   },
 
   // -- Current Run (temporary, reset after each dungeon run) ----------------
@@ -178,7 +184,19 @@ const initialState = {
  *   UPDATE_HERO      – generic partial update to hero fields
  *   USE_CONSUMABLE   – use a consumable from inventory
  */
+const ELEMENT_TO_STARTING_SKILL = {
+  fire: 'fire_slash',
+  water: 'tidal_strike',
+  earth: 'boulder_slash',
+  wind: 'dual_slash',
+};
+
 function gameReducer(state, action) {
+  const nextState = baseGameReducer(state, action);
+  return syncPersistentQuests(nextState);
+}
+
+function baseGameReducer(state, action) {
   switch (action.type) {
 
     // -----------------------------------------------------------------------
@@ -292,15 +310,34 @@ function gameReducer(state, action) {
     // SELECT_ELEMENT — set the hero's element and name on first launch
     // Payload: { element: string, name: string }
     // -----------------------------------------------------------------------
-    case 'SELECT_ELEMENT':
+    case 'SELECT_ELEMENT': {
+      const element = action.payload.element;
+      const name = action.payload.name || state.hero.name;
+      const startingSkill = ELEMENT_TO_STARTING_SKILL[element];
+      
+      const unlockedSkills = {
+        ...(state.hero.unlockedSkills || {}),
+      };
+      if (startingSkill) {
+        unlockedSkills[startingSkill] = { stars: 1 };
+      }
+      
+      const equippedSkills = [...state.hero.equippedSkills];
+      if (startingSkill) {
+        equippedSkills[0] = startingSkill;
+      }
+      
       return {
         ...state,
         hero: {
           ...state.hero,
-          name: action.payload.name || state.hero.name,
-          element: action.payload.element,
+          name,
+          element,
+          unlockedSkills,
+          equippedSkills,
         },
       };
+    }
 
     // -----------------------------------------------------------------------
     // UNLOCK_SKILL — learn a new element skill at ★1, spending crystals
@@ -1247,11 +1284,15 @@ function gameReducer(state, action) {
     case 'RESET_STATS_AND_SKILLS': {
       // 1. Calculate crystals/materials to refund
       const refundMaterials = {};
+      const startingSkill = ELEMENT_TO_STARTING_SKILL[state.hero.element];
+      
       for (const [skillId, entry] of Object.entries(state.hero.unlockedSkills || {})) {
         const skill = SKILLS[skillId];
         if (!skill) continue;
         const stars = entry.stars || 1;
-        for (let star = 1; star <= stars; star++) {
+        // Start refund at star 2 for starting skill (so baseline unlock at star 1 is not refunded)
+        const startStar = (skillId === startingSkill) ? 2 : 1;
+        for (let star = startStar; star <= stars; star++) {
           const cost = getSkillUpgradeCost(skill, star);
           if (cost && cost.materials) {
             for (const [itemId, qty] of Object.entries(cost.materials)) {
@@ -1280,6 +1321,12 @@ function gameReducer(state, action) {
 
       const newStatPoints = (state.hero.level - 1) * 3;
 
+      const newUnlockedSkills = {};
+      if (startingSkill) {
+        newUnlockedSkills[startingSkill] = { stars: 1 };
+      }
+      const newEquippedSkills = [startingSkill || null, null];
+
       const tempHero = {
         ...state.hero,
         strength: newStr,
@@ -1291,8 +1338,8 @@ function gameReducer(state, action) {
         critChance: newCritChance,
         dodge: newDodge,
         statPoints: newStatPoints,
-        unlockedSkills: {},
-        equippedSkills: [null, null],
+        unlockedSkills: newUnlockedSkills,
+        equippedSkills: newEquippedSkills,
       };
 
       const effectiveMaxHp = calculateEffectiveStats(tempHero).maxHp;
@@ -1311,8 +1358,8 @@ function gameReducer(state, action) {
           critChance: newCritChance,
           dodge: newDodge,
           statPoints: newStatPoints,
-          unlockedSkills: {},
-          equippedSkills: [null, null],
+          unlockedSkills: newUnlockedSkills,
+          equippedSkills: newEquippedSkills,
           hp: newHp,
           inventory: {
             ...state.hero.inventory,
@@ -1323,10 +1370,188 @@ function gameReducer(state, action) {
     }
 
     // -----------------------------------------------------------------------
+    // GENERATE_DAILY_QUESTS — generate or retrieve daily quests
+    // -----------------------------------------------------------------------
+    case 'GENERATE_DAILY_QUESTS': {
+      const { dateStr } = action.payload;
+      const questsState = state.progress.questsState || { lastGeneratedDate: '', dailies: [], campaign: getInitialCampaignQuests() };
+      if (questsState.lastGeneratedDate === dateStr && questsState.dailies && questsState.dailies.length > 0) {
+        return state;
+      }
+      const newDailies = generateDailyQuests(state.hero, state.progress, dateStr);
+      return {
+        ...state,
+        progress: {
+          ...state.progress,
+          questsState: {
+            ...questsState,
+            lastGeneratedDate: dateStr,
+            dailies: newDailies,
+          }
+        }
+      };
+    }
+
+    // -----------------------------------------------------------------------
+    // UPDATE_QUEST_PROGRESS — increment progress on matching active quests
+    // -----------------------------------------------------------------------
+    case 'UPDATE_QUEST_PROGRESS': {
+      const { type, amount = 1, ...params } = action.payload;
+      const questsState = state.progress.questsState;
+      if (!questsState) return state;
+
+      let changed = false;
+      const dailies = (questsState.dailies || []).map(q => {
+        if (q.completed) return q;
+        let matched = false;
+        if (q.type === type) {
+          if (type === 'clear_cleared_floor') {
+            if (q.targetFloor === params.floorNumber && q.targetZone === params.zoneId) {
+              matched = true;
+            }
+          } else if (type === 'hunt_creature') {
+            if (q.enemyId === params.enemyId) {
+              matched = true;
+            }
+          } else if (type === 'hunt_stars') {
+            if (params.stars >= q.stars) {
+              matched = true;
+            }
+          }
+        }
+        if (matched) {
+          const nextProgress = Math.min(q.target, q.progress + amount);
+          if (nextProgress !== q.progress) {
+            changed = true;
+            return { ...q, progress: nextProgress, completed: nextProgress >= q.target };
+          }
+        }
+        return q;
+      });
+
+      const campaign = (questsState.campaign || []).map(q => {
+        if (q.completed) return q;
+        let matched = false;
+        if (q.type === type) {
+          if (type === 'forge_crystal') {
+            matched = true;
+          }
+        }
+        if (matched) {
+          const nextProgress = Math.min(q.target, q.progress + amount);
+          if (nextProgress !== q.progress) {
+            changed = true;
+            return { ...q, progress: nextProgress, completed: nextProgress >= q.target };
+          }
+        }
+        return q;
+      });
+
+      if (!changed) return state;
+      return {
+        ...state,
+        progress: {
+          ...state.progress,
+          questsState: {
+            ...questsState,
+            dailies,
+            campaign,
+          }
+        }
+      };
+    }
+
+    // -----------------------------------------------------------------------
+    // CLAIM_QUEST_REWARD — claim completed quest rewards
+    // -----------------------------------------------------------------------
+    case 'CLAIM_QUEST_REWARD': {
+      const { questId } = action.payload;
+      const questsState = state.progress.questsState;
+      if (!questsState) return state;
+
+      let quest = null;
+      let isDaily = false;
+
+      if (questsState.dailies) {
+        quest = questsState.dailies.find(q => q.id === questId);
+        if (quest) isDaily = true;
+      }
+      if (!quest && questsState.campaign) {
+        quest = questsState.campaign.find(q => q.id === questId);
+      }
+
+      if (!quest || !quest.completed || quest.claimed) {
+        return state;
+      }
+
+      let newDailies = questsState.dailies;
+      let newCampaign = questsState.campaign;
+
+      if (isDaily) {
+        newDailies = questsState.dailies.map(q => q.id === questId ? { ...q, claimed: true } : q);
+      } else {
+        newCampaign = questsState.campaign.map(q => q.id === questId ? { ...q, claimed: true } : q);
+      }
+
+      let newGold = state.hero.gold + (quest.rewards.gold || 0);
+      const newMaterials = { ...state.hero.inventory.materials };
+      const newConsumables = [...(state.hero.inventory.consumables || [])];
+
+      if (quest.rewards.materials) {
+        for (const [itemId, qty] of Object.entries(quest.rewards.materials)) {
+          newMaterials[itemId] = (newMaterials[itemId] || 0) + qty;
+        }
+      }
+
+      if (quest.rewards.consumables) {
+        for (const [itemId, qty] of Object.entries(quest.rewards.consumables)) {
+          const lowerId = itemId.toLowerCase();
+          const existing = newConsumables.find(c => c.id === lowerId);
+          if (existing) {
+            existing.quantity += qty;
+          } else {
+            newConsumables.push({ id: lowerId, quantity: qty });
+          }
+        }
+      }
+
+      return {
+        ...state,
+        hero: {
+          ...state.hero,
+          gold: newGold,
+          inventory: {
+            ...state.hero.inventory,
+            materials: newMaterials,
+            consumables: newConsumables,
+          }
+        },
+        progress: {
+          ...state.progress,
+          questsState: {
+            ...questsState,
+            dailies: newDailies,
+            campaign: newCampaign,
+          }
+        }
+      };
+    }
+
+    // -----------------------------------------------------------------------
     // RESET_GAME — nuke everything and start fresh
     // -----------------------------------------------------------------------
     case 'RESET_GAME':
-      return { ...initialState };
+      return {
+        ...initialState,
+        progress: {
+          ...initialState.progress,
+          questsState: {
+            lastGeneratedDate: '',
+            dailies: [],
+            campaign: getInitialCampaignQuests(),
+          },
+        },
+      };
 
     // -----------------------------------------------------------------------
     // DEFAULT — unknown action, return state unchanged

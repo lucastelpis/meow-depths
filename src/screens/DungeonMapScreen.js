@@ -46,6 +46,7 @@ import { generateTreasureDrops } from '../logic/lootEngine';
 import Button from '../components/ui/Button';
 import ResourceBar from '../components/ui/ResourceBar';
 import ItemSprite from '../components/ItemSprite';
+import { isQuestUnlocked } from '../data/quests';
 import ScreenLoader from '../components/ScreenLoader';
 import { DUNGEON_RUN_ASSETS } from '../constants/sprites';
 
@@ -285,6 +286,33 @@ export default function DungeonMapScreen({ navigation }) {
   const { state, dispatch } = useGame();
   const { currentRun, hero } = state;
 
+  const zoneId = state.currentRun?.zoneId || 'zone1';
+  const runAssets = useMemo(() => [
+    require('../../assets/sprites/units/hero/hero_head.png'),
+    ...(DUNGEON_RUN_ASSETS[zoneId] || []),
+  ], [zoneId]);
+
+  const renderTrackerQuestCard = (q) => {
+    const isCompleted = q.completed;
+    return (
+      <View key={q.id} style={[styles.trackerQuestCard, isCompleted && styles.trackerQuestCompleted]}>
+        <View style={styles.trackerQuestHeader}>
+          <Text style={styles.trackerQuestTitle}>{q.title}</Text>
+          <Text style={[styles.trackerQuestTag, { color: q.tag === 'Story' ? '#A33535' : q.tag === 'Daily' ? '#3B7A57' : '#B8860B' }]}>{q.tag}</Text>
+        </View>
+        <Text style={styles.trackerQuestDesc}>{q.desc}</Text>
+        <View style={styles.trackerQuestProgressRow}>
+          <Text style={styles.trackerQuestProgressText}>
+            Progress: {q.progress} / {q.target}
+          </Text>
+          {isCompleted && (
+            <Text style={styles.trackerQuestStatus}>Ready to Claim!</Text>
+          )}
+        </View>
+      </View>
+    );
+  };
+
   // Compute responsive cell size to prevent vertical extrapolation/overflow
   const cellWidth = useMemo(() => {
     const cols = currentRun?.gridWidth || 3;
@@ -339,7 +367,17 @@ export default function DungeonMapScreen({ navigation }) {
     });
   }, [currentRun.consumables]);
 
+  const hasClaimableQuestReward = useMemo(() => {
+    const questsState = state.progress.questsState || { dailies: [], campaign: [] };
+    const dailies = questsState.dailies || [];
+    const campaign = questsState.campaign || [];
+    const dailiesClaimable = dailies.some(q => q.completed && !q.claimed);
+    const campaignClaimable = campaign.some(q => q.completed && !q.claimed && isQuestUnlocked(q, campaign, state.progress));
+    return dailiesClaimable || campaignClaimable;
+  }, [state.progress]);
+
   const handleUseItemOnMap = (item) => {
+    setActiveModal(null); // Close the bag modal so the notice popup can render cleanly
     const consumableDef = CONSUMABLES.find(c => c.id === item.id);
     if (['potion', 'super_potion', 'mega_potion', 'ultra_potion'].includes(item.id)) {
       if (hero.hp >= effectiveStats.maxHp) {
@@ -409,6 +447,15 @@ export default function DungeonMapScreen({ navigation }) {
 
   const handleFloorComplete = () => {
     setActiveModal(null);
+    dispatch({
+      type: 'UPDATE_QUEST_PROGRESS',
+      payload: {
+        type: 'clear_cleared_floor',
+        zoneId: currentRun.zoneId,
+        floorNumber: currentRun.floorNumber,
+        amount: 1,
+      },
+    });
     dispatch({ type: 'END_RUN', payload: { outcome: 'win' } });
     navigation.navigate('Camp');
   };
@@ -880,12 +927,6 @@ export default function DungeonMapScreen({ navigation }) {
     );
   };
 
-  const zoneId = state.currentRun?.zoneId || 'zone1';
-  const runAssets = [
-    require('../../assets/sprites/units/hero/hero_head.png'),
-    ...(DUNGEON_RUN_ASSETS[zoneId] || []),
-  ];
-
   return (
     <ScreenLoader assets={runAssets}>
       <SafeAreaView style={[styles.root, { backgroundColor: '#133131' }]}>
@@ -1041,6 +1082,20 @@ export default function DungeonMapScreen({ navigation }) {
           onPress={() => setActiveModal('bag')}
           style={{ flex: 1 }}
         />
+        <View style={{ flex: 1, marginHorizontal: 8, position: 'relative', overflow: 'visible' }}>
+          <Button
+            title="Quests"
+            icon={<ItemSprite spritesheet="icons-map" frameIndex={140} displaySize={24} />}
+            variant="secondary"
+            onPress={() => setActiveModal('quests')}
+            style={{ width: '100%' }}
+          />
+          {hasClaimableQuestReward && (
+            <View style={styles.questBadge}>
+              <Text style={styles.questBadgeText}>!</Text>
+            </View>
+          )}
+        </View>
         <Button
           title="Flee Region"
           icon={<ItemSprite spritesheet="icons-map" frameIndex={127} displaySize={24} />}
@@ -1183,7 +1238,10 @@ export default function DungeonMapScreen({ navigation }) {
 
               {modalData?.outcome === 'ambush' && (
                 <View style={styles.outcomeContent}>
-                  <Text style={[styles.outcomeTitle, { color: '#831843' }]}>Ambush!</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginBottom: 8 }}>
+                    <ItemSprite spritesheet="icons-map" frameIndex={92} displaySize={18} />
+                    <Text style={[styles.outcomeTitle, { color: '#831843', marginBottom: 0 }]}>Ambush!</Text>
+                  </View>
                   <Text style={[styles.outcomeSubText, { color: '#3E2723', marginBottom: 6 }]}>
                     A shadow leaps from the dark. You are ambushed by monsters!
                   </Text>
@@ -1470,6 +1528,69 @@ export default function DungeonMapScreen({ navigation }) {
                   <Text style={styles.cozyTopText}>
                     {currentRun.floorNumber === 10 ? 'REGION CLEARED' : `ZONE ${currentRun.floorNumber} CLEARED`}
                   </Text>
+                </View>
+              </View>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* ════════════════════════════════════════════════════════════════
+          6b. QUEST TRACKER MODAL (READ-ONLY)
+      ════════════════════════════════════════════════════════════════ */}
+      <Modal visible={activeModal === 'quests'} transparent animationType="fade">
+        <View style={styles.cozyOverlay}>
+          <View style={[styles.cozyFrame, theme.SHADOWS.cardShadow, { maxHeight: '80%' }]}>
+            <View style={styles.cozyParchment}>
+              <View style={styles.cozyBevel} pointerEvents="none" />
+
+              <ScrollView style={{ width: '100%', paddingHorizontal: 12, marginTop: 32 }} showsVerticalScrollIndicator={false}>
+                <Text style={[{ color: '#6A4A2A', fontFamily: 'Jersey10-Regular', fontSize: 24, marginBottom: 8 }]}>Daily Quests</Text>
+                {(!state.progress.questsState?.dailies || state.progress.questsState.dailies.length === 0) ? (
+                  <Text style={[{ color: '#6A4A2A', fontStyle: 'italic', marginBottom: 16, fontSize: 14 }]}>No daily quests active.</Text>
+                ) : (
+                  [...state.progress.questsState.dailies]
+                    .sort((a, b) => {
+                      const aCompleted = a.completed;
+                      const bCompleted = b.completed;
+                      if (aCompleted && !bCompleted) return -1;
+                      if (!aCompleted && bCompleted) return 1;
+                      return 0;
+                    })
+                    .map(q => renderTrackerQuestCard(q))
+                )}
+
+                <View style={{ height: 16 }} />
+
+                <Text style={[{ color: '#6A4A2A', fontFamily: 'Jersey10-Regular', fontSize: 24, marginBottom: 8 }]}>Campaign Quests</Text>
+                {(() => {
+                  const campaign = state.progress.questsState?.campaign || [];
+                  const activeVisible = campaign.filter(q => !q.claimed && isQuestUnlocked(q, campaign, state.progress));
+                  if (activeVisible.length === 0) {
+                    return <Text style={[{ color: '#6A4A2A', fontStyle: 'italic', marginBottom: 16, fontSize: 14 }]}>No active campaign quests.</Text>;
+                  }
+                  const sortedCampaign = [...activeVisible].sort((a, b) => {
+                    const aCompleted = a.completed;
+                    const bCompleted = b.completed;
+                    if (aCompleted && !bCompleted) return -1;
+                    if (!aCompleted && bCompleted) return 1;
+                    return 0;
+                  });
+                  return sortedCampaign.map(q => renderTrackerQuestCard(q));
+                })()}
+              </ScrollView>
+
+              <TouchableOpacity activeOpacity={0.85} onPress={() => setActiveModal(null)} style={[styles.cozyButtonSecondary, { marginTop: 16 }]}>
+                <View style={styles.cozyButtonSecondaryInner}>
+                  <Text style={styles.cozyButtonText}>CLOSE</Text>
+                </View>
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.cozyTopWrap} pointerEvents="none">
+              <View style={styles.cozyTopOuter}>
+                <View style={styles.cozyTopInner}>
+                  <Text style={styles.cozyTopText}>QUEST TRACKER</Text>
                 </View>
               </View>
             </View>
@@ -2513,14 +2634,6 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
 
-  // Floor number label in HUD
-  floorLabel: {
-    ...theme.FONTS.label,
-    fontSize: 9,
-    marginTop: 2,
-    opacity: 0.75,
-  },
-
   // Star badge on combat tiles
   starBadge: {
     fontFamily: 'Silkscreen-Regular',
@@ -2932,5 +3045,76 @@ const styles = StyleSheet.create({
     borderTopColor: '#C5544C',
     borderBottomWidth: 2,
     borderBottomColor: '#5A1713',
+  },
+  trackerQuestCard: {
+    backgroundColor: '#F4E6C0',
+    borderColor: '#C9A86A',
+    borderWidth: 1.5,
+    borderRadius: 8,
+    padding: 10,
+    marginBottom: 8,
+    width: '100%',
+  },
+  trackerQuestCompleted: {
+    borderColor: '#5CC489',
+    backgroundColor: '#E4F4EC',
+  },
+  trackerQuestHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  trackerQuestTitle: {
+    fontFamily: 'Jersey10-Regular',
+    fontSize: 20,
+    color: '#4B3621',
+  },
+  trackerQuestTag: {
+    fontFamily: 'Jersey10-Regular',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  trackerQuestDesc: {
+    fontSize: 13,
+    color: '#6A4A2A',
+    marginBottom: 6,
+  },
+  trackerQuestProgressRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  trackerQuestProgressText: {
+    fontSize: 12,
+    color: '#8B5A2B',
+  },
+  trackerQuestStatus: {
+    fontSize: 12,
+    color: '#5CC489',
+    fontWeight: 'bold',
+  },
+  questBadge: {
+    position: 'absolute',
+    top: -6,
+    right: -6,
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    backgroundColor: '#D8483F',
+    borderColor: '#4A3917',
+    borderWidth: 1.5,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10,
+  },
+  questBadgeText: {
+    fontFamily: 'PressStart2P-Regular',
+    fontSize: 8,
+    color: '#FFF3DA',
+    fontWeight: 'bold',
+    textAlign: 'center',
+    lineHeight: 8,
+    marginTop: -1,
   },
 });

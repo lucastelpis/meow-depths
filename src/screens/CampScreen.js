@@ -33,6 +33,7 @@ import { calculateEffectiveStats } from '../logic/progressionEngine';
 import { SKILLS } from '../data/skills';
 import ItemSprite from '../components/ItemSprite';
 import { pickRandomThought } from '../data/mochiThoughts';
+import { isQuestUnlocked } from '../data/quests';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const BANNER_WIDTH = SCREEN_WIDTH - 40;
@@ -188,31 +189,34 @@ export default function CampScreen({ navigation }) {
   const { hero } = state;
 
   const [dungeonCardLayout, setDungeonCardLayout] = React.useState({ width: 0, height: 0 });
-  const [dailyModalVisible, setDailyModalVisible] = React.useState(false);
-  const [dailyClaimedView, setDailyClaimedView] = React.useState(false);
+  const [questBoardModalVisible, setQuestBoardModalVisible] = React.useState(false);
   const [settingsModalVisible, setSettingsModalVisible] = React.useState(false);
-  const [dailyJustClaimed, setDailyJustClaimed] = React.useState(false);
-  const [claimedRows, setClaimedRows] = React.useState(null); // frozen rewards snapshot at claim time
   const [nowTs, setNowTs] = React.useState(Date.now());
+  const [expandedQuestId, setExpandedQuestId] = React.useState(null);
+  const [celebrationQuest, setCelebrationQuest] = React.useState(null);
 
   // Mochi's banner thought — re-rolled from the unlocked pool each time the hub
   // gains focus, so the hero "says" something new on every visit.
   const [mochiThought, setMochiThought] = React.useState(() =>
     pickRandomThought(state.progress.notesCollected)
   );
+
   useFocusEffect(
     React.useCallback(() => {
       setMochiThought(pickRandomThought(state.progress.notesCollected));
-    }, [state.progress.notesCollected])
+      // Dispatch daily quests generation on focus
+      const dateStr = new Date().toDateString();
+      dispatch({ type: 'GENERATE_DAILY_QUESTS', payload: { dateStr } });
+    }, [state.progress.notesCollected, dispatch])
   );
 
   // Tick every second while the modal is open so the reset countdown stays live
   React.useEffect(() => {
-    if (!dailyModalVisible) return;
+    if (!questBoardModalVisible) return;
     setNowTs(Date.now());
     const id = setInterval(() => setNowTs(Date.now()), 1000);
     return () => clearInterval(id);
-  }, [dailyModalVisible]);
+  }, [questBoardModalVisible]);
 
   const effectiveStats = calculateEffectiveStats(hero);
 
@@ -222,26 +226,62 @@ export default function CampScreen({ navigation }) {
     (noteId) => notesCollected[noteId] && !readNotes[noteId]
   );
 
+  const questsState = state.progress.questsState || { dailies: [], campaign: [] };
+  const dailies = questsState.dailies || [];
+  const campaign = questsState.campaign || [];
 
+  const sortedDailies = React.useMemo(() => {
+    return [...dailies].sort((a, b) => {
+      const getScore = (q) => {
+        if (q.completed && !q.claimed) return 1;
+        if (!q.completed) return 2;
+        return 3;
+      };
+      return getScore(a) - getScore(b);
+    });
+  }, [dailies]);
 
-  // ── Daily Reward Claiming Logic ───────────────────────────────────────────
-  const hasClaimedToday = React.useCallback(() => {
-    if (!state.progress.lastDailyClaim) return false;
-    const lastClaimDate = new Date(state.progress.lastDailyClaim);
-    const nowDate = new Date();
-    return (
-      lastClaimDate.getDate() === nowDate.getDate() &&
-      lastClaimDate.getMonth() === nowDate.getMonth() &&
-      lastClaimDate.getFullYear() === nowDate.getFullYear()
-    );
-  }, [state.progress.lastDailyClaim]);
+  React.useEffect(() => {
+    if (questBoardModalVisible && sortedDailies.length > 0) {
+      const claimable = sortedDailies.find(q => q.completed && !q.claimed);
+      if (claimable) {
+        setExpandedQuestId(claimable.id);
+      } else {
+        const active = sortedDailies.find(q => !q.completed);
+        if (active) {
+          setExpandedQuestId(active.id);
+        } else {
+          setExpandedQuestId(sortedDailies[0].id);
+        }
+      }
+    }
+  }, [questBoardModalVisible, sortedDailies]);
+
+  const completedCount = React.useMemo(() => {
+    return dailies.filter(q => q.completed).length;
+  }, [dailies]);
+
+  const allDailiesClaimed = React.useCallback(() => {
+    if (dailies.length === 0) return false;
+    return dailies.every(q => q.claimed);
+  }, [dailies]);
+
+  const hasClaimableQuestReward = React.useMemo(() => {
+    const dailiesClaimable = dailies.some(q => q.completed && !q.claimed);
+    const campaignClaimable = campaign.some(q => q.completed && !q.claimed && isQuestUnlocked(q, campaign, state.progress));
+    return dailiesClaimable || campaignClaimable;
+  }, [dailies, campaign, state.progress]);
+
+  const hasClaimableDailyQuestReward = React.useMemo(() => {
+    return dailies.some(q => q.completed && !q.claimed);
+  }, [dailies]);
 
   // ── Animation for Daily Reward Button Pulse ───────────────────────────────
   const pulseAnim = React.useRef(new Animated.Value(0.3)).current;
 
   React.useEffect(() => {
     let anim;
-    if (!hasClaimedToday()) {
+    if (!allDailiesClaimed()) {
       anim = Animated.loop(
         Animated.sequence([
           Animated.timing(pulseAnim, {
@@ -263,7 +303,7 @@ export default function CampScreen({ navigation }) {
     return () => {
       if (anim) anim.stop();
     };
-  }, [state.progress.lastDailyClaim, hasClaimedToday]);
+  }, [allDailiesClaimed]);
 
   const borderPulseColor = pulseAnim.interpolate({
     inputRange: [0.3, 1],
@@ -280,60 +320,6 @@ export default function CampScreen({ navigation }) {
     outputRange: [2, 12],
   });
 
-  // ── Reward calculation (shared by the preview & the dispatch) ──────────────
-  const dailyRewards = React.useMemo(() => {
-    const isFirstClaim = !state.progress.lastDailyClaim;
-    const lvl = hero.level || 1;
-    const goldReward = isFirstClaim ? 50 : 100 + lvl * 50;
-    // Potions: health potions scaled, super potions starting at lvl 3
-    const healthPotionQty = isFirstClaim ? 3 : 1 + Math.floor(lvl / 5);
-    const superPotionQty = isFirstClaim ? 0 : (lvl >= 3 ? 1 : 0);
-    return { isFirstClaim, lvl, goldReward, healthPotionQty, superPotionQty };
-  }, [state.progress.lastDailyClaim, hero.level]);
-
-  const openDailyModal = () => {
-    setDailyClaimedView(hasClaimedToday());
-    setDailyJustClaimed(false);
-    setDailyModalVisible(true);
-  };
-
-  const closeDailyModal = () => setDailyModalVisible(false);
-
-  // Reward rows to render in the modal (filters out empty quantities)
-  const dailyRewardRows = [
-    { key: 'gold', spritesheet: 'icons-1', frameIndex: 11, label: 'Gold', qty: dailyRewards.goldReward },
-    { key: 'potion', spritesheet: 'consumables-1', frameIndex: 0, label: 'Potion', qty: dailyRewards.healthPotionQty },
-    { key: 'super_potion', spritesheet: 'consumables-1', frameIndex: 1, label: 'Super Potion', qty: dailyRewards.superPotionQty },
-  ].filter((r) => r.qty > 0);
-
-  const confirmDailyClaim = () => {
-    const { goldReward, healthPotionQty, superPotionQty } = dailyRewards;
-
-    const consumablesReward = {};
-    if (healthPotionQty > 0) consumablesReward['potion'] = healthPotionQty;
-    if (superPotionQty > 0) consumablesReward['super_potion'] = superPotionQty;
-
-    // Snapshot the rows BEFORE dispatching — claiming sets lastDailyClaim,
-    // which recomputes dailyRewards (isFirstClaim flips), so without this the
-    // post-claim view would show different items than were actually granted.
-    setClaimedRows(dailyRewardRows);
-
-    dispatch({
-      type: 'CLAIM_DAILY_REWARD',
-      payload: {
-        gold: goldReward,
-        consumables: consumablesReward,
-      },
-    });
-
-    setDailyJustClaimed(true);
-    setDailyClaimedView(true);
-  };
-
-  // Items to display in the modal: the frozen snapshot right after claiming,
-  // otherwise the live preview of what's claimable.
-  const displayedRewardRows = (dailyJustClaimed && claimedRows) ? claimedRows : dailyRewardRows;
-
   // Time until the daily reward resets (next local midnight), formatted HH:MM
   const resetCountdown = React.useMemo(() => {
     const next = new Date(nowTs);
@@ -343,6 +329,91 @@ export default function CampScreen({ navigation }) {
     const minutes = Math.floor((diffMs % 3600000) / 60000);
     return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
   }, [nowTs]);
+
+  const getCrystalFrame = (itemId) => {
+    let base = 0;
+    if (itemId.includes('green')) base = 4;
+    else if (itemId.includes('yellow')) base = 8;
+    
+    if (itemId.includes('shard')) return base + 0;
+    if (itemId.includes('small')) return base + 1;
+    if (itemId.includes('big')) return base + 2;
+    if (itemId.includes('core')) return base + 3;
+    return base;
+  };
+
+  const renderRewardChip = (type, key, qty) => {
+    const lowerKey = key.toLowerCase();
+    if (lowerKey === 'gold') {
+      return (
+        <View key={key} style={styles.rewardMiniChip}>
+          <ItemSprite spritesheet="icons-1" frameIndex={11} displaySize={14} />
+          <Text style={styles.rewardMiniText}>{qty}G</Text>
+        </View>
+      );
+    } else if (type === 'consumables') {
+      let frame = 0;
+      if (lowerKey === 'super_potion') frame = 1;
+      else if (lowerKey === 'mega_potion') frame = 2;
+      else if (lowerKey === 'ultra_potion') frame = 3;
+      return (
+        <View key={key} style={styles.rewardMiniChip}>
+          <ItemSprite spritesheet="consumables-1" frameIndex={frame} displaySize={14} />
+          <Text style={styles.rewardMiniText}>x{qty}</Text>
+        </View>
+      );
+    } else if (type === 'materials') {
+      const frame = getCrystalFrame(lowerKey);
+      return (
+        <View key={key} style={styles.rewardMiniChip}>
+          <ItemSprite spritesheet="crystals-1" frameIndex={frame} displaySize={14} />
+          <Text style={styles.rewardMiniText}>x{qty}</Text>
+        </View>
+      );
+    }
+    return null;
+  };
+
+  const getItemName = (itemId) => {
+    const normalized = itemId.toLowerCase();
+    if (normalized === 'gold') return 'Gold';
+    if (normalized === 'potion') return 'Health Potion';
+    if (normalized === 'super_potion') return 'Super Potion';
+    if (normalized === 'mega_potion') return 'Mega Potion';
+    if (normalized === 'ultra_potion') return 'Ultra Potion';
+    
+    return normalized
+      .split('_')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
+  };
+
+  const renderCelebrationRewardChip = (type, key, qty) => {
+    const lowerKey = key.toLowerCase();
+    let sprite = null;
+    const displayName = getItemName(key);
+    
+    if (lowerKey === 'gold') {
+      sprite = <ItemSprite spritesheet="icons-1" frameIndex={11} displaySize={32} />;
+    } else if (type === 'consumables') {
+      let frame = 0;
+      if (lowerKey === 'super_potion') frame = 1;
+      else if (lowerKey === 'mega_potion') frame = 2;
+      else if (lowerKey === 'ultra_potion') frame = 3;
+      sprite = <ItemSprite spritesheet="consumables-1" frameIndex={frame} displaySize={32} />;
+    } else if (type === 'materials') {
+      const frame = getCrystalFrame(lowerKey);
+      sprite = <ItemSprite spritesheet="crystals-1" frameIndex={frame} displaySize={32} />;
+    }
+
+    return (
+      <View key={key} style={styles.drChip}>
+        {sprite}
+        <Text style={styles.drChipQty}>{lowerKey === 'gold' ? `${qty}G` : `x${qty}`}</Text>
+        <Text style={styles.drChipLabel}>{displayName}</Text>
+      </View>
+    );
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -422,15 +493,16 @@ export default function CampScreen({ navigation }) {
 
 
 
-          {/* Daily Reward Button */}
+          {/* Daily Quests Card */}
           <TouchableOpacity
             activeOpacity={0.8}
-            onPress={openDailyModal}
+            onPress={() => setQuestBoardModalVisible(true)}
+            style={{ position: 'relative', overflow: 'visible' }}
           >
             <Animated.View
               style={[
                 styles.dailyRewardBtn,
-                hasClaimedToday()
+                allDailiesClaimed()
                   ? styles.dailyRewardBtnClaimed
                   : {
                     backgroundColor: bgPulseColor,
@@ -444,23 +516,29 @@ export default function CampScreen({ navigation }) {
               ]}
             >
               <View style={styles.dailyRewardSpriteContainer}>
-                <ItemSprite spritesheet="icons-1" frameIndex={5} displaySize={56} />
+                <IconGlowBackground size={64} />
+                <ItemSprite spritesheet="icons-map" frameIndex={26} displaySize={56} />
               </View>
               <View style={styles.dailyRewardTextContainer}>
                 <Text style={[
                   styles.dailyRewardTitle,
-                  hasClaimedToday() ? styles.dailyRewardTitleClaimed : styles.dailyRewardTitleActive
+                  allDailiesClaimed() ? styles.dailyRewardTitleClaimed : styles.dailyRewardTitleActive
                 ]}>
-                  {hasClaimedToday() ? "DAILY RATIONS CLAIMED" : "CLAIM DAILY RATIONS"}
+                  DAILY QUESTS
                 </Text>
                 <Text style={[
                   styles.dailyRewardSub,
-                  hasClaimedToday() ? styles.dailyRewardSubClaimed : styles.dailyRewardSubActive
+                  allDailiesClaimed() ? styles.dailyRewardSubClaimed : styles.dailyRewardSubActive
                 ]}>
-                  {hasClaimedToday() ? "COME BACK TOMORROW" : "COLLECT SUPPLIES"}
+                  {`Quests: ${completedCount}/3 Complete`}
                 </Text>
               </View>
             </Animated.View>
+            {hasClaimableDailyQuestReward && (
+              <View style={[styles.questBadge, { top: -2, right: -2 }]}>
+                <Text style={styles.questBadgeText}>!</Text>
+              </View>
+            )}
           </TouchableOpacity>
 
           {/* ═══════════════════════════════════════════════════════════════════
@@ -519,17 +597,22 @@ export default function CampScreen({ navigation }) {
                 <Text style={styles.subCardLabel}>SKILLS</Text>
               </TouchableOpacity>
 
-              {/* Loadout */}
+              {/* Quests */}
               <TouchableOpacity
-                style={styles.subCard}
+                style={[styles.subCard, { overflow: 'visible' }]}
                 activeOpacity={0.8}
-                onPress={() => navigation.navigate('Loadout')}
+                onPress={() => navigation.navigate('Quests')}
               >
                 <View style={styles.subSpriteContainer}>
                   <IconGlowBackground size={44} />
-                  <ItemSprite spritesheet="icons-1" frameIndex={12} displaySize={38} />
+                  <ItemSprite spritesheet="icons-map" frameIndex={140} displaySize={38} />
                 </View>
-                <Text style={styles.subCardLabel}>LOADOUT</Text>
+                <Text style={styles.subCardLabel}>QUESTS</Text>
+                {hasClaimableQuestReward && (
+                  <View style={styles.questBadge}>
+                    <Text style={styles.questBadgeText}>!</Text>
+                  </View>
+                )}
               </TouchableOpacity>
             </View>
 
@@ -584,90 +667,225 @@ export default function CampScreen({ navigation }) {
         {/* ═══════════════════════════════════════════════════════════════════
           DAILY REWARD MODAL — themed to match the hub redesign
           ═══════════════════════════════════════════════════════════════════ */}
+        {/* ═══════════════════════════════════════════════════════════════════
+          QUEST BOARD MODAL — scrollable parchment layout containing active
+          daily and campaign quests, progress, rewards, and claim buttons.
+          ═══════════════════════════════════════════════════════════════════ */}
         <Modal
-          visible={dailyModalVisible}
+          visible={questBoardModalVisible}
           transparent
           animationType="fade"
-          onRequestClose={closeDailyModal}
+          onRequestClose={() => setQuestBoardModalVisible(false)}
           statusBarTranslucent
         >
-          {(() => {
-            // Three states: already claimed earlier today, just claimed now, or claimable
-            const alreadyClaimed = dailyClaimedView && !dailyJustClaimed;
-            return (
-              <Pressable style={styles.drOverlay} onPress={closeDailyModal}>
-                <Pressable style={[styles.drFrame, theme.SHADOWS.cardShadow]} onPress={() => { }}>
+          <View style={styles.drOverlay}>
+            <Pressable
+              style={StyleSheet.absoluteFillObject}
+              onPress={() => setQuestBoardModalVisible(false)}
+            />
+            <View style={[styles.qbFrame, theme.SHADOWS.cardShadow]}>
+              <View style={styles.qbParchment}>
+                <View style={styles.drBevel} pointerEvents="none" />
+
+                {/* Close button — inside the panel */}
+                <TouchableOpacity
+                  style={styles.drClose}
+                  onPress={() => setQuestBoardModalVisible(false)}
+                  activeOpacity={0.8}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                >
+                  <Text style={styles.drCloseText}>✕</Text>
+                </TouchableOpacity>
+
+                {/* Scrollable quests list */}
+                <ScrollView
+                  style={styles.qbScrollView}
+                  contentContainerStyle={styles.qbScrollContent}
+                  showsVerticalScrollIndicator={false}
+                >
+                  {/* Daily Quests Header Divider (Progress + Countdown) */}
+                  <View style={styles.qbSectionHeader}>
+                    <Text style={styles.qbProgressSummaryText}>PROGRESS: {completedCount} / 3</Text>
+                    <Text style={styles.qbCountdownText}>RESET IN: {resetCountdown}</Text>
+                  </View>
+
+                  {/* Daily Quests List */}
+                  {sortedDailies.length === 0 ? (
+                    <Text style={styles.qbEmptyText}>No daily quests active.</Text>
+                  ) : (
+                    sortedDailies.map((quest) => {
+                      const isExpanded = expandedQuestId === quest.id;
+                      return (
+                        <View
+                          key={quest.id}
+                          style={[
+                            styles.questAccordionCard,
+                            isExpanded && styles.questAccordionCardExpanded,
+                            quest.claimed && styles.questAccordionCardClaimed,
+                          ]}
+                        >
+                          {/* Header Row */}
+                          <TouchableOpacity
+                            style={[
+                              styles.questHeaderRow,
+                              isExpanded && styles.questHeaderRowExpanded,
+                              quest.completed && !quest.claimed && styles.questHeaderRowClaimable,
+                            ]}
+                            onPress={() => setExpandedQuestId(isExpanded ? null : quest.id)}
+                            activeOpacity={0.85}
+                          >
+                            <View style={styles.questHeaderLeft}>
+                              {quest.claimed ? (
+                                <ItemSprite spritesheet="icons-map" frameIndex={95} displaySize={13} />
+                              ) : quest.completed ? (
+                                <ItemSprite spritesheet="icons-map" frameIndex={140} displaySize={13} />
+                              ) : (
+                                <View style={styles.statusBulletActive} />
+                              )}
+                              <Text
+                                style={[
+                                  styles.questHeaderTitle,
+                                  quest.claimed && styles.questHeaderTitleClaimed,
+                                ]}
+                              >
+                                {quest.title}
+                              </Text>
+                            </View>
+
+                            <View style={styles.questHeaderRight}>
+                              {quest.claimed ? (
+                                <Text style={styles.questStatusTextClaimed}>CLAIMED</Text>
+                              ) : quest.completed ? (
+                                <TouchableOpacity
+                                  style={styles.headerClaimBtn}
+                                  activeOpacity={0.7}
+                                  onPress={(e) => {
+                                    e.stopPropagation();
+                                    setCelebrationQuest(quest);
+                                  }}
+                                >
+                                  <Text style={styles.headerClaimBtnText}>CLAIM</Text>
+                                </TouchableOpacity>
+                              ) : (
+                                <Text style={styles.questHeaderProgressText}>
+                                  {quest.progress}/{quest.target}
+                                </Text>
+                              )}
+                              <Text style={styles.chevronIcon}>{isExpanded ? '▲' : '▼'}</Text>
+                            </View>
+                          </TouchableOpacity>
+
+                          {/* Expanded Body */}
+                          {isExpanded && (
+                            <View style={styles.questBody}>
+                              <Text style={styles.questDesc}>{quest.desc}</Text>
+
+                              {!quest.claimed && (
+                                <View style={styles.progressBarBg}>
+                                  <View
+                                    style={[
+                                      styles.progressBarFill,
+                                      { width: `${Math.min(100, (quest.progress / quest.target) * 100)}%` },
+                                    ]}
+                                  />
+                                  <View style={styles.progressBarTextWrapper}>
+                                    <Text style={styles.progressBarText}>
+                                      PROGRESS: {quest.progress} / {quest.target}
+                                    </Text>
+                                  </View>
+                                </View>
+                              )}
+
+                              <View style={styles.questRewardsRow}>
+                                <Text style={styles.rewardsLabel}>Rewards:</Text>
+                                <View style={styles.rewardsList}>
+                                  {quest.rewards.gold > 0 && renderRewardChip('gold', 'gold', quest.rewards.gold)}
+                                  {quest.rewards.consumables &&
+                                    Object.entries(quest.rewards.consumables).map(([id, qty]) =>
+                                      renderRewardChip('consumables', id, qty)
+                                    )}
+                                  {quest.rewards.materials &&
+                                    Object.entries(quest.rewards.materials).map(([id, qty]) =>
+                                      renderRewardChip('materials', id, qty)
+                                    )}
+                                </View>
+                              </View>
+
+                              {!quest.claimed && quest.completed && (
+                                <TouchableOpacity
+                                  style={[styles.claimBtn, { marginTop: 4 }]}
+                                  activeOpacity={0.8}
+                                  onPress={() => setCelebrationQuest(quest)}
+                                >
+                                  <Text style={styles.claimBtnText}>CLAIM REWARD</Text>
+                                </TouchableOpacity>
+                              )}
+                            </View>
+                          )}
+                        </View>
+                      );
+                    })
+                  )}
+                </ScrollView>
+              </View>
+
+              {/* Title sign mounted on top */}
+              <View style={styles.drTopWrap} pointerEvents="none">
+                <View style={styles.drTopOuter}>
+                  <View style={styles.drTopInner}>
+                    <Text style={styles.drTopText}>DAILY QUESTS</Text>
+                  </View>
+                </View>
+              </View>
+            </View>
+
+            {/* Quest Reward Celebration Overlay */}
+            {celebrationQuest && (
+              <View style={[StyleSheet.absoluteFillObject, styles.drOverlay, { zIndex: 100 }]}>
+                <View style={[styles.drFrame, theme.SHADOWS.cardShadow]}>
                   <View style={styles.drParchment}>
-                    {/* Inner paper bevel highlight */}
                     <View style={styles.drBevel} pointerEvents="none" />
+                    
+                    {/* Header Banner */}
+                    <View style={styles.drTopWrap} pointerEvents="none">
+                      <View style={styles.drTopOuter}>
+                        <View style={styles.drTopInner}>
+                          <Text style={styles.drTopText}>QUEST COMPLETED</Text>
+                        </View>
+                      </View>
+                    </View>
 
-                    {/* Close button — inside the panel */}
-                    <TouchableOpacity
-                      style={styles.drClose}
-                      onPress={closeDailyModal}
-                      activeOpacity={0.8}
-                      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                    >
-                      <Text style={styles.drCloseText}>✕</Text>
-                    </TouchableOpacity>
-
-                    {/* Subtitle */}
-                    <Text style={styles.drSubtitle}>
-                      {alreadyClaimed
-                        ? "You've claimed today's rations."
-                        : dailyJustClaimed
-                          ? 'Added to your bag!'
-                          : 'Claim your rations for today.'}
-                    </Text>
-
-                    {/* Ration items — always show which supplies are/were given */}
+                    <Text style={styles.drSubtitle}>{celebrationQuest.title}</Text>
+                    
+                    {/* Grid of rewards */}
                     <View style={styles.drRewards}>
-                      {displayedRewardRows.map((row) => (
-                        <View key={row.key} style={styles.drChip}>
-                          <ItemSprite spritesheet={row.spritesheet} frameIndex={row.frameIndex} displaySize={40} />
-                          <Text style={styles.drChipQty}>+{row.qty}{row.key === 'gold' ? ' G' : ''}</Text>
-                          <Text style={styles.drChipLabel}>{row.label}</Text>
-                        </View>
-                      ))}
+                      {celebrationQuest.rewards.gold > 0 && renderCelebrationRewardChip('gold', 'gold', celebrationQuest.rewards.gold)}
+                      {celebrationQuest.rewards.consumables && Object.entries(celebrationQuest.rewards.consumables).map(([id, qty]) => 
+                        renderCelebrationRewardChip('consumables', id, qty)
+                      )}
+                      {celebrationQuest.rewards.materials && Object.entries(celebrationQuest.rewards.materials).map(([id, qty]) => 
+                        renderCelebrationRewardChip('materials', id, qty)
+                      )}
                     </View>
 
-                    {alreadyClaimed && (
-                      /* Countdown — centered, no box, no clock */
-                      <View style={styles.drCountdown}>
-                        <Text style={styles.drWatchLabel}>NEXT RATIONS IN</Text>
-                        <Text style={styles.drWatchValue}>{resetCountdown}</Text>
+                    {/* AWESOME! button */}
+                    <TouchableOpacity
+                      style={styles.drButton}
+                      activeOpacity={0.8}
+                      onPress={() => {
+                        dispatch({ type: 'CLAIM_QUEST_REWARD', payload: { questId: celebrationQuest.id } });
+                        setCelebrationQuest(null);
+                      }}
+                    >
+                      <View style={styles.drButtonInner}>
+                        <Text style={styles.drButtonText}>AWESOME!</Text>
                       </View>
-                    )}
-
-                    {/* Wooden action button */}
-                    {dailyClaimedView ? (
-                      <TouchableOpacity activeOpacity={0.85} onPress={closeDailyModal} style={styles.drButton}>
-                        <View style={styles.drButtonInner}>
-                          <Text style={styles.drButtonText}>{dailyJustClaimed ? 'CONTINUE' : 'GREAT, THANKS!'}</Text>
-                        </View>
-                      </TouchableOpacity>
-                    ) : (
-                      <TouchableOpacity activeOpacity={0.85} onPress={confirmDailyClaim} style={styles.drButton}>
-                        <View style={styles.drButtonInner}>
-                          <Text style={styles.drButtonText}>CLAIM RATIONS</Text>
-                        </View>
-                      </TouchableOpacity>
-                    )}
-
+                    </TouchableOpacity>
                   </View>
-
-                  {/* Title sign — mounted on the top border (MEOW DUNGEONS style) */}
-                  <View style={styles.drTopWrap} pointerEvents="none">
-                    <View style={styles.drTopOuter}>
-                      <View style={styles.drTopInner}>
-                        <Text style={styles.drTopText}>DAILY RATIONS</Text>
-                      </View>
-                    </View>
-                  </View>
-                </Pressable>
-              </Pressable>
-            );
-          })()}
+                </View>
+              </View>
+            )}
+          </View>
         </Modal>
 
         {/* ═══════════════════════════════════════════════════════════════════
@@ -945,6 +1163,7 @@ const styles = StyleSheet.create({
     opacity: 0.65,
   },
   dailyRewardSpriteContainer: {
+    position: 'relative',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 4,
@@ -1410,5 +1629,281 @@ const styles = StyleSheet.create({
     color: '#8A6E44',
     textAlign: 'center',
     marginTop: 10,
+  },
+  qbFrame: {
+    width: '90%',
+    maxWidth: 380,
+    maxHeight: '85%',
+    backgroundColor: '#6E4524',
+    borderColor: '#3A2210',
+    borderWidth: 3,
+    borderRadius: 12,
+    padding: 10,
+    position: 'relative',
+    display: 'flex',
+    flexDirection: 'column',
+  },
+  qbParchment: {
+    backgroundColor: '#ECD8A6',
+    borderRadius: 14,
+    borderColor: '#C9A86A',
+    borderWidth: 2,
+    paddingTop: 26,
+    paddingBottom: 14,
+    paddingHorizontal: 14,
+    position: 'relative',
+    maxHeight: '100%',
+    flexShrink: 1,
+    display: 'flex',
+    flexDirection: 'column',
+  },
+  qbScrollView: {
+    width: '100%',
+    maxHeight: 420,
+    flexShrink: 1,
+    marginTop: 10,
+  },
+  qbScrollContent: {
+    flexGrow: 1,
+    paddingBottom: 20,
+  },
+  qbSectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingTop: 10,
+    marginBottom: 10,
+    borderBottomWidth: 1.5,
+    borderBottomColor: '#C9A86A',
+    paddingBottom: 4,
+  },
+  qbProgressSummaryText: {
+    fontFamily: 'Silkscreen-Regular',
+    fontSize: 8,
+    color: '#3A2210',
+    fontWeight: 'bold',
+  },
+  qbCountdownText: {
+    fontFamily: 'Silkscreen-Regular',
+    fontSize: 8,
+    color: '#9A7A4A',
+  },
+  qbEmptyText: {
+    fontFamily: 'Jersey10-Regular',
+    fontSize: 16,
+    color: '#9A7A4A',
+    textAlign: 'center',
+    marginVertical: 20,
+  },
+  questAccordionCard: {
+    backgroundColor: '#F4E6C0',
+    borderColor: '#C9A86A',
+    borderWidth: 1.5,
+    borderRadius: 10,
+    marginBottom: 8,
+    overflow: 'hidden',
+  },
+  questAccordionCardExpanded: {
+    borderColor: '#D4A754',
+  },
+  questAccordionCardClaimed: {
+    opacity: 0.65,
+  },
+  questHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    backgroundColor: 'rgba(58, 34, 16, 0.04)',
+  },
+  questHeaderRowExpanded: {
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(201, 168, 106, 0.4)',
+    backgroundColor: 'rgba(58, 34, 16, 0.08)',
+  },
+  questHeaderRowClaimable: {
+    backgroundColor: 'rgba(212, 167, 84, 0.12)',
+  },
+  questHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flex: 1,
+    paddingRight: 8,
+  },
+  questHeaderRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    gap: 10,
+    width: 80,
+  },
+  statusBulletActive: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#9A7A4A',
+  },
+  questHeaderTitle: {
+    fontFamily: 'Silkscreen-Regular',
+    fontSize: 11,
+    color: '#3A2210',
+    fontWeight: 'bold',
+    flex: 1,
+  },
+  questHeaderTitleClaimed: {
+    textDecorationLine: 'line-through',
+    color: '#6E4524',
+  },
+  questStatusTextClaimed: {
+    fontFamily: 'Silkscreen-Regular',
+    fontSize: 9,
+    color: '#8A9384',
+  },
+  questHeaderProgressText: {
+    fontFamily: 'Silkscreen-Regular',
+    fontSize: 9,
+    color: '#3A2210',
+  },
+  chevronIcon: {
+    fontSize: 10,
+    color: '#3A2210',
+    width: 12,
+    textAlign: 'center',
+  },
+  headerClaimBtn: {
+    backgroundColor: '#142C1C',
+    borderColor: '#D4A754',
+    borderWidth: 1.5,
+    borderRadius: 6,
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  headerClaimBtnText: {
+    fontFamily: 'Silkscreen-Regular',
+    fontSize: 8,
+    color: '#FFF3DA',
+    fontWeight: 'bold',
+  },
+  questBody: {
+    padding: 12,
+  },
+  questDesc: {
+    fontFamily: 'Jersey10-Regular',
+    fontSize: 14,
+    color: '#6E4524',
+    marginTop: 2,
+    marginBottom: 6,
+  },
+  progressBarBg: {
+    height: 14,
+    backgroundColor: '#3A2210',
+    borderRadius: 7,
+    overflow: 'hidden',
+    marginTop: 6,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: '#C9A86A',
+    position: 'relative',
+  },
+  progressBarFill: {
+    height: '100%',
+    backgroundColor: '#D4A754',
+    borderRadius: 6,
+  },
+  progressBarTextWrapper: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  progressBarText: {
+    fontFamily: 'Silkscreen-Regular',
+    fontSize: 8,
+    color: '#FFF3DA',
+    textShadowColor: '#3A2210',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 1,
+  },
+  questRewardsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 10,
+  },
+  rewardsLabel: {
+    fontFamily: 'Silkscreen-Regular',
+    fontSize: 9,
+    color: '#9A7A4A',
+  },
+  rewardsList: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+  },
+  rewardMiniChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#ECD8A6',
+    borderColor: '#C9A86A',
+    borderWidth: 1,
+    borderRadius: 4,
+    paddingHorizontal: 4,
+    paddingVertical: 2,
+    gap: 2,
+  },
+  rewardMiniText: {
+    fontFamily: 'Silkscreen-Regular',
+    fontSize: 8,
+    color: '#3A2210',
+  },
+  claimBtn: {
+    backgroundColor: '#142C1C',
+    borderColor: '#D4A754',
+    borderWidth: 2,
+    borderRadius: 8,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  claimBtnText: {
+    fontFamily: 'Silkscreen-Regular',
+    fontSize: 10,
+    color: '#FFF3DA',
+    textTransform: 'uppercase',
+  },
+  claimBtnDisabled: {
+    backgroundColor: '#1E1E20',
+    borderColor: '#3A3A3C',
+    opacity: 0.6,
+  },
+  claimBtnDisabledText: {
+    color: '#8A9384',
+  },
+  questBadge: {
+    position: 'absolute',
+    top: -6,
+    right: -6,
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    backgroundColor: '#D8483F',
+    borderColor: '#4A3917',
+    borderWidth: 1.5,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10,
+  },
+  questBadgeText: {
+    fontFamily: 'PressStart2P-Regular',
+    fontSize: 8,
+    color: '#FFF3DA',
+    fontWeight: 'bold',
+    textAlign: 'center',
+    lineHeight: 8,
+    marginTop: -1,
   },
 });

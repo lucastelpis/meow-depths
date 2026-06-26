@@ -13,6 +13,8 @@ import {
   StyleSheet,
   Modal,
   Pressable,
+  Alert,
+  Dimensions,
 } from 'react-native';
 import { Image as ExpoImage } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -25,7 +27,7 @@ import { calculateEffectiveStats, getXpForLevel, getActiveSetBonuses, STANCES, g
 import AnimatedSprite from '../components/AnimatedSprite';
 import ResourceBar from '../components/ui/ResourceBar';
 import { HERO_SPRITE } from '../constants/sprites';
-import { GEAR, getGearForSlot } from '../data/gear';
+import { GEAR, CONSUMABLES, MATERIALS, getGearForSlot } from '../data/gear';
 import ItemSprite from '../components/ItemSprite';
 
 const HERO_AVATAR_DISPLAY_SIZE = 80;
@@ -55,7 +57,87 @@ const WEAPONS_FRAMES = 7;
 const TABS = [
   { key: 'stats', frameIndex: 28, label: 'Stats' },
   { key: 'equipment', frameIndex: 10, label: 'Gear' },
+  { key: 'bag', frameIndex: 26, label: 'Bag' },
 ];
+
+const MATERIAL_ZONES = [
+  {
+    label: 'Soggy Ruins',
+    zoneColor: '#3FB56E',
+    ids: ['black_shard', 'black_crystal_small', 'black_crystal_big', 'black_crystal_core'],
+  },
+  {
+    label: 'Twisted Garden',
+    zoneColor: '#A855F7',
+    ids: ['green_shard', 'green_crystal_small', 'green_crystal_big', 'green_crystal_core'],
+  },
+  {
+    label: 'Sunken Docks',
+    zoneColor: '#06B6D4',
+    ids: ['yellow_shard', 'yellow_crystal_small', 'yellow_crystal_big', 'yellow_crystal_core'],
+  },
+];
+
+const STANCE_SPRITES = {
+  fire: { spritesheet: 'icons-1', frameIndex: 33 },
+  water: { spritesheet: 'icons-1', frameIndex: 35 },
+  earth: { spritesheet: 'icons-1', frameIndex: 36 },
+  wind: { spritesheet: 'icons-1', frameIndex: 34 },
+};
+
+const LORE_DESCRIPTIONS = {
+  potion: "A standard brew made from healing herbs. Tastes slightly of peppermint.",
+  super_potion: "A stronger concentrate of healing herbs, glowing with a soft blue light.",
+  mega_potion: "A potent elixir infused with ancient life essence. Tastes like sweet honey.",
+  ultra_potion: "The pinnacle of alchemy. A single drop can stitch deep wounds instantly.",
+  antidote: "Made from crushed wild herbs. Neutralizes toxic substances in the veins.",
+  smoke_vial: "A fragile glass flask filled with compressed, blinding fog. Great for escape.",
+  mystery_chest: "A locked treasure chest salvaged from the deep. Who knows what crystals lie within?",
+  black_shard: "A sharp fragment of obsidian-like crystal, cold to the touch. Found in dark sewer corners.",
+  black_crystal_small: "A small crystal pulsing with a faint, dark resonance. Emits a low hum.",
+  black_crystal_big: "A large chunk of dark crystal, heavy and dense. Vibrates when close to metal.",
+  black_crystal_core: "The pristine, concentrated center of a black crystal. Radiant with dark energy.",
+  green_shard: "A glowing emerald shard harvested from overgrown roots. Warm and lively.",
+  green_crystal_small: "A minor forest gem that seems to breathe in sync with the garden.",
+  green_crystal_big: "A heavy green gemstone, overgrown with tiny moss. Rich in natural magic.",
+  green_crystal_core: "A pulsating heart of pure garden energy, warm and humming with growth.",
+  yellow_shard: "A bright amber shard washed up from the depths, smelling of sea salt.",
+  yellow_crystal_small: "A small luminescent gemstone that glows like a firefly underwater.",
+  yellow_crystal_big: "A large, heavy golden crystal. It seems to resist the pressure of the ocean.",
+  yellow_crystal_core: "An ancient marine crystal core. It glows with the intense light of the deep sea.",
+  toy_sword: "A wooden training sword. Mostly harmless, but good for building confidence.",
+  cardboard_armor: "A taped-together box. Smells like old wet paper, but offers basic protection.",
+  leather_bag: "A small pouch for carrying basic items. Increases bag capacity by +3 slots.",
+  simple_backpack: "A simple, reliable backpack. Increases bag capacity by +5 slots.",
+  fine_backpack: "A well-crafted, sturdy backpack with extra pockets. Increases bag capacity by +7 slots.",
+  luxury_backpack: "An exquisite, high-capacity backpack made of fine leather. Increases bag capacity by +10 slots.",
+  sewer_shiv: "A jagged piece of metal wrapped in dirty rags. Crude, but dangerous.",
+  rat_hide_vest: "Tough leather made from sewer rats. Surprisingly flexible and waterproof.",
+  slimecrawler_shell: "A hardened shell coated in slick mucus. Repels toxic liquids.",
+  plague_cloak: "A tattered cowl that has survived the worst of the soggyness.",
+  gnarlcrown: "A crown woven from thorny roots. Increases precision in combat.",
+  cockroach_carapace: "A shield-like plate made of thick insect shell. Highly durable.",
+  thorn_dagger: "A weapon crafted from giant garden thorns. Coated in natural toxins.",
+  beetle_shell_vest: "A heavy vest reinforced with iridescent beetle plates.",
+  spore_cloak: "A lightweight cloak that releases silent spores when moving.",
+  vine_wrap: "Woven vines that tighten around the wearer, boosting vitality.",
+  rootmother_eye: "A glowing amber bead that increases magic and skill potency.",
+  glowspore_vial: "A glass pendant containing bioluminescent spores.",
+  ghost_cutlass: "A spectral saber that cuts through the air with an eerie whistle.",
+  barnacle_plate: "Heavy plate armor covered in stubborn barnacles. Extremely tough.",
+  ghost_silk_coat: "A coat woven from ethereal threads, allowing the wearer to slip past attacks.",
+  saltcaptain_coat: "The weathered coat of a lost sea captain, resistant to wind and wave.",
+  morays_compass: "An old brass compass whose needle points towards weaknesses.",
+  toxin_vial: "A vial filled with concentrated sea viper venom.",
+};
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const minItemWidth = 100;
+const gap = 10;
+const padding = 16;
+const availableWidth = SCREEN_WIDTH - (padding * 2);
+const numColumns = Math.max(1, Math.floor((availableWidth + gap) / (minItemWidth + gap)));
+const itemWidth = (availableWidth - (gap * (numColumns - 1))) / numColumns;
 
 // ─── Stat & attribute explanations (shown in the (i) info popup) ──────────────
 const STAT_INFO = {
@@ -167,6 +249,10 @@ export default function ProfileScreen() {
     candidates: [],
   });
 
+  const [selectedItem, setSelectedItem] = useState(null);
+  const [itemType, setItemType] = useState(null);
+  const [modalVisible, setModalVisible] = useState(false);
+
   // ── Stat Allocation Local State ──
   const [tempStrAlloc, setTempStrAlloc] = useState(0);
   const [tempAgiAlloc, setTempAgiAlloc] = useState(0);
@@ -220,6 +306,16 @@ export default function ProfileScreen() {
     setTempVitAlloc(0);
   };
 
+  const handleCancelAlloc = () => {
+    setTempStrAlloc(0);
+    setTempAgiAlloc(0);
+    setTempVitAlloc(0);
+  };
+
+  const handleSaveAlloc = () => {
+    handleConfirmAllocation();
+  };
+
   const effectiveStats = useMemo(() => calculateEffectiveStats(hero), [hero]);
 
   // Preview hero with allocated points
@@ -271,6 +367,15 @@ export default function ProfileScreen() {
 
   const stance = useMemo(() => {
     return hero.element ? STANCES[hero.element.toLowerCase()] : null;
+  }, [hero.element]);
+
+  const stanceSprite = useMemo(() => {
+    return hero.element ? STANCE_SPRITES[hero.element.toLowerCase()] : null;
+  }, [hero.element]);
+
+  const elementDisplayName = useMemo(() => {
+    if (!hero.element) return '';
+    return hero.element.charAt(0).toUpperCase() + hero.element.slice(1).toLowerCase();
   }, [hero.element]);
 
   const stanceBonusText = useMemo(() => {
@@ -367,6 +472,55 @@ export default function ProfileScreen() {
   const handleGoToShop = () => {
     setSelectedSlot(null);
     navigation.navigate('Shop');
+  };
+
+  const handleOpenDetails = (item, type) => {
+    setSelectedItem(item);
+    setItemType(type);
+    setModalVisible(true);
+  };
+
+  const isMaterialZoneOpened = (zoneIndex) => {
+    if (zoneIndex === 0) return true;
+    if (zoneIndex === 1) return !!state.progress.zone1Cleared;
+    if (zoneIndex === 2) return !!state.progress.zone2Cleared;
+    return false;
+  };
+
+  const handleOpenChest = () => {
+    const rolledGold = Math.floor(Math.random() * 31) + 15;
+    const rolledMaterials = {};
+    const families = ['black', 'green', 'yellow'];
+    const rollTier = () => {
+      const r = Math.random() * 100;
+      if (r < 60) return 'shard';
+      if (r < 85) return 'crystal_small';
+      if (r < 97) return 'crystal_big';
+      return 'core';
+    };
+    for (let i = 0; i < 3; i++) {
+      const fam = families[Math.floor(Math.random() * families.length)];
+      const tier = rollTier();
+      const key = tier === 'shard' ? `${fam}_shard`
+        : tier === 'core' ? `${fam}_crystal_core`
+          : `${fam}_${tier}`;
+      rolledMaterials[key] = (rolledMaterials[key] || 0) + 1;
+    }
+    const lines = [`💰 ${rolledGold} gold`];
+    Object.entries(rolledMaterials).forEach(([id, qty]) => {
+      let e = '💎';
+      if (id.startsWith('black')) e = '🖤';
+      if (id.startsWith('green')) e = '💚';
+      if (id.startsWith('yellow')) e = '💛';
+      lines.push(`${e} ${MATERIALS[id]?.name || id} ×${qty}`);
+    });
+    Alert.alert('🎁 Chest Opened!', `You obtained:\n\n${lines.join('\n')}`, [{
+      text: 'Awesome!',
+      onPress: () => {
+        dispatch({ type: 'OPEN_LOOTBOX', payload: { gold: rolledGold, materials: rolledMaterials } });
+        setModalVisible(false);
+      },
+    }]);
   };
 
   return (
@@ -496,7 +650,7 @@ export default function ProfileScreen() {
         </View>
 
         {/* ── Tab Contents ── */}
-        {activeTab === 'stats' ? (
+        {activeTab === 'stats' && (
           <View style={styles.tabContent}>
             {/* Stat Points Available Banner */}
             {(hero.statPoints || 0) > 0 && (
@@ -520,31 +674,29 @@ export default function ProfileScreen() {
                 >
                   <Text style={styles.infoTagText}>?</Text>
                 </TouchableOpacity>
-                <View style={styles.attributeHeader}>
-                  <ItemSprite spritesheet="icons-1" frameIndex={21} displaySize={20} />
-                  <Text style={[styles.attributeLabel, { color: '#F9D99A' }]}>STR</Text>
+                <View style={styles.attrHeader}>
+                  <ItemSprite spritesheet="icons-map" frameIndex={109} displaySize={18} />
+                  <Text style={styles.attrLabel} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75}>STRENGTH</Text>
                 </View>
-                <Text style={styles.attributeValue}>
-                  {hero.strength || 10}
-                  {tempStrAlloc > 0 && <Text style={styles.attributeValueHighlight}> ➔ {previewStr}</Text>}
-                </Text>
-
+                <Text style={styles.attrValue}>{previewStr}</Text>
                 {showControls && (
-                  <View style={styles.attributeControls}>
+                  <View style={styles.allocRow}>
                     <TouchableOpacity
-                      style={[styles.attrControlBtn, tempStrAlloc === 0 && styles.attrControlBtnDisabled]}
-                      disabled={tempStrAlloc === 0}
+                      style={[styles.allocBtn, tempStrAlloc === 0 && styles.allocBtnDisabled]}
                       onPress={() => adjustStat('str', -1)}
+                      disabled={tempStrAlloc === 0}
+                      activeOpacity={0.7}
                     >
-                      <Text style={styles.attrControlBtnText}>-</Text>
+                      <Text style={styles.allocBtnText}>-</Text>
                     </TouchableOpacity>
-                    <Text style={styles.attrAllocatedText}>{tempStrAlloc}</Text>
+                    <Text style={styles.allocNumber}>{tempStrAlloc}</Text>
                     <TouchableOpacity
-                      style={[styles.attrControlBtn, remainingPoints === 0 && styles.attrControlBtnDisabled]}
-                      disabled={remainingPoints === 0}
+                      style={[styles.allocBtn, remainingPoints === 0 && styles.allocBtnDisabled]}
                       onPress={() => adjustStat('str', 1)}
+                      disabled={remainingPoints === 0}
+                      activeOpacity={0.7}
                     >
-                      <Text style={styles.attrControlBtnText}>+</Text>
+                      <Text style={styles.allocBtnText}>+</Text>
                     </TouchableOpacity>
                   </View>
                 )}
@@ -560,31 +712,29 @@ export default function ProfileScreen() {
                 >
                   <Text style={styles.infoTagText}>?</Text>
                 </TouchableOpacity>
-                <View style={styles.attributeHeader}>
-                  <ItemSprite spritesheet="icons-1" frameIndex={20} displaySize={20} />
-                  <Text style={[styles.attributeLabel, { color: '#06B6D4' }]}>AGI</Text>
+                <View style={styles.attrHeader}>
+                  <ItemSprite spritesheet="icons-map" frameIndex={94} displaySize={18} />
+                  <Text style={styles.attrLabel} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75}>AGILITY</Text>
                 </View>
-                <Text style={styles.attributeValue}>
-                  {hero.agility || 10}
-                  {tempAgiAlloc > 0 && <Text style={styles.attributeValueHighlight}> ➔ {previewAgi}</Text>}
-                </Text>
-
+                <Text style={styles.attrValue}>{previewAgi}</Text>
                 {showControls && (
-                  <View style={styles.attributeControls}>
+                  <View style={styles.allocRow}>
                     <TouchableOpacity
-                      style={[styles.attrControlBtn, tempAgiAlloc === 0 && styles.attrControlBtnDisabled]}
-                      disabled={tempAgiAlloc === 0}
+                      style={[styles.allocBtn, tempAgiAlloc === 0 && styles.allocBtnDisabled]}
                       onPress={() => adjustStat('agi', -1)}
+                      disabled={tempAgiAlloc === 0}
+                      activeOpacity={0.7}
                     >
-                      <Text style={styles.attrControlBtnText}>-</Text>
+                      <Text style={styles.allocBtnText}>-</Text>
                     </TouchableOpacity>
-                    <Text style={styles.attrAllocatedText}>{tempAgiAlloc}</Text>
+                    <Text style={styles.allocNumber}>{tempAgiAlloc}</Text>
                     <TouchableOpacity
-                      style={[styles.attrControlBtn, remainingPoints === 0 && styles.attrControlBtnDisabled]}
-                      disabled={remainingPoints === 0}
+                      style={[styles.allocBtn, remainingPoints === 0 && styles.allocBtnDisabled]}
                       onPress={() => adjustStat('agi', 1)}
+                      disabled={remainingPoints === 0}
+                      activeOpacity={0.7}
                     >
-                      <Text style={styles.attrControlBtnText}>+</Text>
+                      <Text style={styles.allocBtnText}>+</Text>
                     </TouchableOpacity>
                   </View>
                 )}
@@ -600,75 +750,67 @@ export default function ProfileScreen() {
                 >
                   <Text style={styles.infoTagText}>?</Text>
                 </TouchableOpacity>
-                <View style={styles.attributeHeader}>
-                  <ItemSprite spritesheet="icons-1" frameIndex={22} displaySize={20} />
-                  <Text style={[styles.attributeLabel, { color: '#5CC489' }]}>VIT</Text>
+                <View style={styles.attrHeader}>
+                  <ItemSprite spritesheet="icons-map" frameIndex={135} displaySize={18} />
+                  <Text style={styles.attrLabel} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75}>VITALITY</Text>
                 </View>
-                <Text style={styles.attributeValue}>
-                  {hero.vitality || 10}
-                  {tempVitAlloc > 0 && <Text style={styles.attributeValueHighlight}> ➔ {previewVit}</Text>}
-                </Text>
-
+                <Text style={styles.attrValue}>{previewVit}</Text>
                 {showControls && (
-                  <View style={styles.attributeControls}>
+                  <View style={styles.allocRow}>
                     <TouchableOpacity
-                      style={[styles.attrControlBtn, tempVitAlloc === 0 && styles.attrControlBtnDisabled]}
-                      disabled={tempVitAlloc === 0}
+                      style={[styles.allocBtn, tempVitAlloc === 0 && styles.allocBtnDisabled]}
                       onPress={() => adjustStat('vit', -1)}
+                      disabled={tempVitAlloc === 0}
+                      activeOpacity={0.7}
                     >
-                      <Text style={styles.attrControlBtnText}>-</Text>
+                      <Text style={styles.allocBtnText}>-</Text>
                     </TouchableOpacity>
-                    <Text style={styles.attrAllocatedText}>{tempVitAlloc}</Text>
+                    <Text style={styles.allocNumber}>{tempVitAlloc}</Text>
                     <TouchableOpacity
-                      style={[styles.attrControlBtn, remainingPoints === 0 && styles.attrControlBtnDisabled]}
-                      disabled={remainingPoints === 0}
+                      style={[styles.allocBtn, remainingPoints === 0 && styles.allocBtnDisabled]}
                       onPress={() => adjustStat('vit', 1)}
+                      disabled={remainingPoints === 0}
+                      activeOpacity={0.7}
                     >
-                      <Text style={styles.attrControlBtnText}>+</Text>
+                      <Text style={styles.allocBtnText}>+</Text>
                     </TouchableOpacity>
                   </View>
                 )}
               </View>
             </View>
 
-            {/* Confirm Allocation Button */}
-            {totalAllocated > 0 && (
-              <TouchableOpacity
-                style={styles.confirmBtn}
-                onPress={handleConfirmAllocation}
-                activeOpacity={0.8}
-              >
-                <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
-                  <Defs>
-                    <LinearGradient id="confirmBtnGrad" x1="0" y1="0" x2="1" y2="0">
-                      <Stop offset="0%" stopColor="#F9D99A" />
-                      <Stop offset="100%" stopColor="#D4A754" />
-                    </LinearGradient>
-                  </Defs>
-                  <Rect width="100%" height="100%" fill="url(#confirmBtnGrad)" rx={12} />
-                </Svg>
-                <Text style={styles.confirmBtnText}>Confirm Allocation</Text>
-              </TouchableOpacity>
+            {/* Allocation Save/Cancel Row */}
+            {showControls && totalAllocated > 0 && (
+              <View style={styles.saveRow}>
+                <TouchableOpacity style={styles.cancelBtn} onPress={handleCancelAlloc} activeOpacity={0.7}>
+                  <Text style={styles.cancelBtnText}>Reset Points</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.saveBtn} onPress={handleSaveAlloc} activeOpacity={0.7}>
+                  <Text style={styles.saveBtnText}>Apply Stats</Text>
+                </TouchableOpacity>
+              </View>
             )}
 
-            {/* Combat Stats Grid */}
-            <Text style={[styles.sectionTitle, { marginTop: 14 }]}>Combat Stats</Text>
+            {/* Effective Combat Stats */}
+            <Text style={styles.sectionTitle}>Combat Statistics</Text>
             <View style={styles.statsRow}>
               <StatBox
-                label="ATK"
+                label="ATTACK"
                 infoKey="atk"
                 onInfo={setInfoStat}
                 value={previewEffectiveStats.attack}
                 bonus={previewEffectiveStats.attack - previewBaseStats.attack}
                 highlighted={previewEffectiveStats.attack !== effectiveStats.attack}
+                pendingDelta={previewEffectiveStats.attack - effectiveStats.attack}
               />
               <StatBox
-                label="DEF"
+                label="DEFENCE"
                 infoKey="def"
                 onInfo={setInfoStat}
                 value={previewEffectiveStats.defence}
                 bonus={previewEffectiveStats.defence - previewBaseStats.defence}
                 highlighted={previewEffectiveStats.defence !== effectiveStats.defence}
+                pendingDelta={previewEffectiveStats.defence - effectiveStats.defence}
               />
               <StatBox
                 label="MAX HP"
@@ -677,6 +819,7 @@ export default function ProfileScreen() {
                 value={previewEffectiveStats.maxHp}
                 bonus={previewEffectiveStats.maxHp - previewBaseStats.maxHp}
                 highlighted={previewEffectiveStats.maxHp !== effectiveStats.maxHp}
+                pendingDelta={previewEffectiveStats.maxHp - effectiveStats.maxHp}
               />
               <StatBox
                 label="BAG SLOTS"
@@ -685,9 +828,11 @@ export default function ProfileScreen() {
                 value={previewEffectiveStats.bagSlots}
                 bonus={previewEffectiveStats.bagSlots - previewBaseStats.bagSlots}
                 highlighted={previewEffectiveStats.bagSlots !== effectiveStats.bagSlots}
+                pendingDelta={previewEffectiveStats.bagSlots - effectiveStats.bagSlots}
               />
             </View>
-            <View style={[styles.statsRow, { marginBottom: 16 }]}>
+
+            <View style={styles.statsRow}>
               <StatBox
                 label="CRIT RATE"
                 infoKey="critRate"
@@ -696,15 +841,15 @@ export default function ProfileScreen() {
                 bonus={previewEffectiveStats.critChance - previewBaseStats.critChance}
                 isPercent
                 highlighted={previewEffectiveStats.critChance !== effectiveStats.critChance}
+                pendingDelta={previewEffectiveStats.critChance - effectiveStats.critChance}
               />
               <StatBox
                 label="CRIT DMG"
                 infoKey="critDmg"
                 onInfo={setInfoStat}
-                value={pct(previewEffectiveStats.passives?.critMultiplier || 1.5)}
-                bonus={(previewEffectiveStats.passives?.critMultiplier || 1.5) - 1.5}
-                isPercent
-                highlighted={(previewEffectiveStats.passives?.critMultiplier || 1.5) !== (effectiveStats.passives?.critMultiplier || 1.5)}
+                value="150%"
+                highlighted={false}
+                pendingDelta={0}
               />
               <StatBox
                 label="DODGE RATE"
@@ -714,72 +859,69 @@ export default function ProfileScreen() {
                 bonus={previewEffectiveStats.dodge - previewBaseStats.dodge}
                 isPercent
                 highlighted={previewEffectiveStats.dodge !== effectiveStats.dodge}
+                pendingDelta={previewEffectiveStats.dodge - effectiveStats.dodge}
               />
               <StatBox
                 label="STATUS RES"
                 infoKey="statusRes"
                 onInfo={setInfoStat}
-                value={pct(previewEffectiveStats.passives?.statusResistChance || 0)}
-                bonus={(previewEffectiveStats.passives?.statusResistChance || 0) - previewVit * 0.005}
+                value={pct(previewEffectiveStats.passives.statusResistChance)}
+                bonus={previewEffectiveStats.passives.statusResistChance - (previewVit * 0.005)}
                 isPercent
-                highlighted={(previewEffectiveStats.passives?.statusResistChance || 0) !== (effectiveStats.passives?.statusResistChance || 0)}
+                highlighted={previewEffectiveStats.passives.statusResistChance !== effectiveStats.passives.statusResistChance}
+                pendingDelta={previewEffectiveStats.passives.statusResistChance - effectiveStats.passives.statusResistChance}
               />
             </View>
 
-            {/* Stance details */}
+            {/* Stance Card */}
             {stance && (
               <View style={styles.stanceSection}>
-                <Text style={styles.sectionTitle}>Innate Ability</Text>
                 <View style={styles.stanceCard}>
-                  <View style={StyleSheet.absoluteFill}>
-                    <Svg width="100%" height="100%">
-                      <Defs>
-                        <LinearGradient id="stanceGrad" x1="0" y1="0" x2="0" y2="1">
-                          <Stop offset="0%" stopColor="#102719" stopOpacity="1" />
-                          <Stop offset="100%" stopColor="#0A160F" stopOpacity="1" />
-                        </LinearGradient>
-                      </Defs>
-                      <Rect width="100%" height="100%" fill="url(#stanceGrad)" rx={14} />
-                      <Rect x="1" y="1" width="98%" height="98%" rx={13} fill="none" stroke="rgba(212, 167, 84, 0.15)" strokeWidth={1} />
-                    </Svg>
-                  </View>
+                  <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
+                    <Defs>
+                      <LinearGradient id="stanceGrad" x1="0" y1="0" x2="0" y2="1">
+                        <Stop offset="0%" stopColor="#102719" stopOpacity="1" />
+                        <Stop offset="100%" stopColor="#0A160F" stopOpacity="1" />
+                      </LinearGradient>
+                    </Defs>
+                    <Rect width="100%" height="100%" fill="url(#stanceGrad)" />
+                  </Svg>
                   <View style={styles.stanceCardInner}>
-                    <View style={styles.stanceHeaderRow}>
-                      <View style={styles.stanceEmojiWrapper}>
-                        <ItemSprite
-                          spritesheet="icons-1"
-                          frameIndex={
-                            (hero.element || '').toLowerCase() === 'fire' ? 33 :
-                              (hero.element || '').toLowerCase() === 'wind' ? 34 :
-                                (hero.element || '').toLowerCase() === 'water' ? 35 :
-                                  36 // earth fallback
-                          }
-                          displaySize={24}
-                        />
+                    <View style={styles.stanceRow}>
+                      <View style={styles.stanceLeft}>
+                        <View style={styles.stanceEmojiWrapper}>
+                          {stanceSprite ? (
+                            <ItemSprite
+                              spritesheet={stanceSprite.spritesheet}
+                              frameIndex={stanceSprite.frameIndex}
+                              displaySize={22}
+                            />
+                          ) : (
+                            <ItemSprite spritesheet="icons-map" frameIndex={52} displaySize={22} />
+                          )}
+                        </View>
+                        <Text style={styles.stanceName}>{elementDisplayName} Stance</Text>
                       </View>
-                      <View>
-                        <Text style={styles.stanceName}>{stance.name}</Text>
-                        <Text style={styles.stanceElement}>Path of {hero.element.toUpperCase()}</Text>
-                      </View>
-                    </View>
-                    <Text style={styles.stanceDesc}>{stance.description}</Text>
-                    {stanceBonusText ? (
-                      <View style={styles.stanceBonusBox}>
-                        <Text style={styles.stanceBonusLabel}>Current Level Bonus:</Text>
+                      <View style={styles.stanceRight}>
                         <Text style={styles.stanceBonusVal}>{stanceBonusText}</Text>
                       </View>
-                    ) : null}
+                    </View>
                   </View>
                 </View>
               </View>
             )}
           </View>
-        ) : (
+        )}
+
+        {activeTab === 'equipment' && (
           <View style={styles.tabContent}>
             {/* Active Set Bonuses */}
             {activeSets.length > 0 && (
               <View style={styles.statsSection}>
-                <Text style={styles.subSectionTitle}>✨ Active Set Bonuses</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+                  <ItemSprite spritesheet="icons-map" frameIndex={140} displaySize={16} />
+                  <Text style={[styles.subSectionTitle, { marginBottom: 0 }]}>Active Set Bonuses</Text>
+                </View>
                 {activeSets.map((set) => (
                   <View key={set.name} style={styles.setBonusCard}>
                     <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
@@ -794,7 +936,10 @@ export default function ProfileScreen() {
                         stroke="rgba(212,167,84,0.25)" strokeWidth={1} />
                     </Svg>
                     <View style={styles.setBonusInner}>
-                      <Text style={styles.setBonusName}>🔗 {set.name}</Text>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 2 }}>
+                        <ItemSprite spritesheet="icons-map" frameIndex={95} displaySize={14} />
+                        <Text style={[styles.setBonusName, { marginBottom: 0 }]}>{set.name}</Text>
+                      </View>
                       <Text style={styles.setBonusDesc}>{set.bonus}</Text>
                     </View>
                   </View>
@@ -882,6 +1027,216 @@ export default function ProfileScreen() {
                 </View>
               ))}
             </View>
+
+            {/* Crafted Gear Section (My Armory) */}
+            <Text style={[styles.sectionTitle, { marginTop: 24 }]}>Crafted Gear</Text>
+            {(hero.inventory?.craftedGear || []).length === 0 ? (
+              <View style={styles.emptyBox}>
+                <View style={{ marginBottom: 8 }}>
+                  <ItemSprite spritesheet="icons-map" frameIndex={69} displaySize={36} />
+                </View>
+                <Text style={styles.emptyTitle}>No Gear Crafted</Text>
+                <Text style={styles.emptyDesc}>Visit the Shop to forge equipment from your materials.</Text>
+              </View>
+            ) : (
+              <View style={styles.gridContainer}>
+                {[...(hero.inventory?.craftedGear || [])]
+                  .map(gearId => ({ id: gearId, ...GEAR[gearId] }))
+                  .filter(item => !!item.name)
+                  .sort((a, b) => {
+                    if (a.zone !== b.zone) {
+                      return a.zone - b.zone;
+                    }
+                    return (a.goldCost || 0) - (b.goldCost || 0);
+                  })
+                  .map((gearDef) => {
+                    const gearId = gearDef.id;
+                    const isEquipped = Object.values(hero.gear).includes(gearId);
+                    return (
+                      <TouchableOpacity
+                        key={gearId}
+                        style={[
+                          styles.gridCard,
+                          { width: itemWidth, height: itemWidth },
+                          isEquipped && styles.gridCardGearEquipped,
+                        ]}
+                        onPress={() => handleOpenSlot(gearDef.type)}
+                        activeOpacity={0.8}
+                      >
+                        <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
+                          <Rect width="100%" height="100%" fill="rgba(255,255,255,0.015)" rx={14} />
+                          <Rect x="1" y="1" width="98%" height="98%" rx={13} fill="none"
+                            stroke={isEquipped ? 'rgba(212,167,84,0.4)' : 'rgba(255,255,255,0.04)'} strokeWidth={isEquipped ? 1.5 : 1} />
+                        </Svg>
+                        <View style={styles.gridCardInner}>
+                          <Text style={styles.gridName} numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.8}>{gearDef.name}</Text>
+                          <View style={styles.gridIconWrap}>
+                            {gearDef.spritesheet ? (
+                              <ItemSprite
+                                spritesheet={gearDef.spritesheet}
+                                frameIndex={gearDef.frameIndex}
+                                displaySize={42}
+                              />
+                            ) : (
+                              <ItemSprite spritesheet="icons-map" frameIndex={17} displaySize={42} />
+                            )}
+                          </View>
+                          <View style={styles.gridTagSlot}>
+                            {isEquipped ? (
+                              <View style={[styles.gridTagBadge, styles.gridEquippedBadge]}>
+                                <Text style={[styles.gridTagText, styles.gridEquippedText]}>EQUIPPED</Text>
+                              </View>
+                            ) : (
+                              <View style={[styles.gridTagBadge, styles.gridSlotBadge]}>
+                                <Text style={styles.gridTagText}>{gearDef.type.toUpperCase()}</Text>
+                              </View>
+                            )}
+                          </View>
+                        </View>
+                      </TouchableOpacity>
+                    );
+                  })}
+              </View>
+            )}
+          </View>
+        )}
+
+        {activeTab === 'bag' && (
+          <View style={styles.tabContent}>
+            {/* Supplies Section */}
+            <Text style={styles.sectionTitle}>Supplies</Text>
+            {(() => {
+              const items = (hero.inventory?.consumables || []).filter(c => c.quantity > 0);
+              if (items.length === 0) {
+                return (
+                  <View style={styles.emptyBox}>
+                    <View style={{ marginBottom: 8 }}>
+                      <ItemSprite spritesheet="consumables-1" frameIndex={0} displaySize={36} />
+                    </View>
+                    <Text style={styles.emptyTitle}>Bag Empty</Text>
+                    <Text style={styles.emptyDesc}>Visit the Shop to stock up on potions and supplies.</Text>
+                  </View>
+                );
+              }
+              return (
+                <View style={styles.gridContainer}>
+                  {items.map((entry) => {
+                    const def = CONSUMABLES.find(c => c.id === entry.id);
+                    const iconSize = def?.spritesheet === 'icons-1' ? 48 : 42;
+                    return (
+                      <TouchableOpacity
+                        key={entry.id}
+                        style={[styles.gridCard, { width: itemWidth, height: itemWidth }]}
+                        onPress={() => handleOpenDetails(entry, 'consumable')}
+                        activeOpacity={0.8}
+                      >
+                        <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
+                          <Rect width="100%" height="100%" fill="rgba(255,255,255,0.015)" rx={14} />
+                          <Rect x="1" y="1" width="98%" height="98%" rx={13} fill="none"
+                            stroke="rgba(255,255,255,0.04)" strokeWidth={1} />
+                        </Svg>
+                        <View style={styles.gridCardInner}>
+                          <Text style={styles.gridName} numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.8}>{def?.name || entry.id}</Text>
+                          <View style={styles.gridIconWrap}>
+                            {def?.spritesheet ? (
+                              <ItemSprite spritesheet={def.spritesheet} frameIndex={def.frameIndex} displaySize={iconSize} />
+                            ) : (
+                              <ItemSprite spritesheet="consumables-1" frameIndex={0} displaySize={iconSize} />
+                            )}
+                          </View>
+                          <View style={styles.gridTagSlot}>
+                            <View style={[styles.gridTagBadge, styles.gridQtyBadge]}>
+                              <Text style={[styles.gridTagText, styles.gridQtyText]}>×{entry.quantity}</Text>
+                            </View>
+                          </View>
+                        </View>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              );
+            })()}
+
+            {/* Materials Section */}
+            <Text style={[styles.sectionTitle, { marginTop: 24 }]}>Materials</Text>
+            {(() => {
+              const materials = hero.inventory?.materials || {};
+              const allMaterials = [];
+              MATERIAL_ZONES.forEach((zone, zIdx) => {
+                if (!isMaterialZoneOpened(zIdx)) return;
+
+                zone.ids.forEach((id) => {
+                  const qty = materials[id] || 0;
+                  if (qty > 0) {
+                    allMaterials.push({
+                      id,
+                      qty,
+                      name: MATERIALS[id]?.name || id,
+                      zone,
+                    });
+                  }
+                });
+              });
+
+              if (allMaterials.length === 0) {
+                return (
+                  <View style={styles.emptyBox}>
+                    <View style={{ marginBottom: 8 }}>
+                      <ItemSprite spritesheet="crystals-1" frameIndex={2} displaySize={36} />
+                    </View>
+                    <Text style={styles.emptyTitle}>No Materials</Text>
+                    <Text style={styles.emptyDesc}>Explore regions and defeat enemies to collect crystals and shards.</Text>
+                  </View>
+                );
+              }
+
+              return (
+                <View style={styles.gridContainer}>
+                  {allMaterials.map((mat) => {
+                    return (
+                      <TouchableOpacity
+                        key={mat.id}
+                        style={[styles.gridCard, { width: itemWidth, height: itemWidth }]}
+                        onPress={() => handleOpenDetails(mat, 'material')}
+                        activeOpacity={0.8}
+                      >
+                        <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
+                          <Defs>
+                            <RadialGradient id={`matGlow_${mat.id}`} cx="0%" cy="50%" rx="50%" ry="80%">
+                              <Stop offset="0%" stopColor={mat.zone.zoneColor} stopOpacity="0.04" />
+                              <Stop offset="100%" stopColor="transparent" stopOpacity="0" />
+                            </RadialGradient>
+                          </Defs>
+                          <Rect width="100%" height="100%" fill="rgba(255,255,255,0.015)" rx={14} />
+                          <Rect width="100%" height="100%" fill={`url(#matGlow_${mat.id})`} rx={14} />
+                          <Rect x="1" y="1" width="98%" height="98%" rx={13} fill="none"
+                            stroke="rgba(255,255,255,0.04)" strokeWidth={1} />
+                        </Svg>
+                        <View style={styles.gridCardInner}>
+                          <Text style={styles.gridName} numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.8}>{mat.name}</Text>
+                          <View style={styles.gridIconWrap}>
+                            {MATERIALS[mat.id]?.spritesheet ? (
+                              <ItemSprite
+                                spritesheet={MATERIALS[mat.id].spritesheet}
+                                frameIndex={MATERIALS[mat.id].frameIndex}
+                                displaySize={42}
+                              />
+                            ) : (
+                              <ItemSprite spritesheet="crystals-1" frameIndex={0} displaySize={42} />
+                            )}
+                          </View>
+                          <View style={styles.gridTagSlot}>
+                            <View style={[styles.gridTagBadge, styles.gridQtyBadge]}>
+                              <Text style={[styles.gridTagText, styles.gridQtyText]}>×{mat.qty}</Text>
+                            </View>
+                          </View>
+                        </View>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              );
+            })()}
           </View>
         )}
       </ScrollView>
@@ -967,7 +1322,9 @@ export default function ProfileScreen() {
                 </ScrollView>
               ) : (
                 <View style={styles.emptyStateBody}>
-                  <Text style={styles.emptyStateEmoji}>🏛️</Text>
+                  <View style={{ marginBottom: 4 }}>
+                    <ItemSprite spritesheet="icons-map" frameIndex={49} displaySize={40} />
+                  </View>
                   <Text style={styles.emptyStateText}>
                     No {modalData.slotConfig?.label} gear owned yet. Visit the Shop to find gear for this slot!
                   </Text>
@@ -981,6 +1338,144 @@ export default function ProfileScreen() {
                 <TouchableOpacity style={styles.unequipBtn} onPress={handleUnequip} activeOpacity={0.8}>
                   <Text style={styles.unequipBtnText}>Unequip {modalData.slotConfig?.label}</Text>
                 </TouchableOpacity>
+              )}
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      {/* ── Details Popup Modal (Consumables/Materials) ── */}
+      <Modal
+        visible={modalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setModalVisible(false)}
+      >
+        <Pressable style={styles.modalBackdrop} onPress={() => setModalVisible(false)}>
+          <Pressable style={styles.modalCardOuter} onPress={(e) => e.stopPropagation()}>
+            <View style={styles.modalCardInner}>
+              {selectedItem && (
+                (() => {
+                  let title = '';
+                  let icon = '';
+                  let spritesheet = null;
+                  let frameIndex = 0;
+                  let category = '';
+                  let categoryColor = '#D4A754';
+                  let lore = LORE_DESCRIPTIONS[selectedItem.id] || '';
+                  let statusText = '';
+                  let showOpenChestBtn = false;
+
+                  if (itemType === 'consumable') {
+                    const def = CONSUMABLES.find(c => c.id === selectedItem.id);
+                    title = def?.name || selectedItem.id;
+                    spritesheet = def?.spritesheet || null;
+                    frameIndex = def?.frameIndex || 0;
+                    category = 'Consumable';
+                    categoryColor = '#3FB56E';
+                    statusText = `Owned: ${selectedItem.quantity}`;
+                    if (selectedItem.id === 'mystery_chest') {
+                      showOpenChestBtn = true;
+                    }
+                  } else if (itemType === 'material') {
+                    title = selectedItem.name;
+                    spritesheet = MATERIALS[selectedItem.id]?.spritesheet || null;
+                    frameIndex = MATERIALS[selectedItem.id]?.frameIndex || 0;
+                    category = 'Crafting Material';
+                    categoryColor = selectedItem.zone.zoneColor;
+                    statusText = `Owned: ${selectedItem.qty}`;
+                  }
+
+                  const getRarityDetails = (itemId) => {
+                    let label = 'COMMON';
+                    let color = '#94A3B8';
+                    let bg = 'rgba(148, 163, 184, 0.12)';
+
+                    const rares = [
+                      'mega_potion', 'mystery_chest',
+                      'green_shard', 'green_crystal_small', 'green_crystal_big', 'green_crystal_core'
+                    ];
+                    const epics = [
+                      'ultra_potion',
+                      'yellow_shard', 'yellow_crystal_small', 'yellow_crystal_big', 'yellow_crystal_core'
+                    ];
+                    const uncommons = [
+                      'super_potion', 'antidote', 'smoke_vial',
+                      'black_shard', 'black_crystal_small', 'black_crystal_big', 'black_crystal_core'
+                    ];
+
+                    if (epics.includes(itemId)) {
+                      label = 'EPIC';
+                      color = '#A855F7';
+                      bg = 'rgba(168, 85, 247, 0.12)';
+                    } else if (rares.includes(itemId)) {
+                      label = 'RARE';
+                      color = '#06B6D4';
+                      bg = 'rgba(6, 182, 212, 0.12)';
+                    } else if (uncommons.includes(itemId)) {
+                      label = 'UNCOMMON';
+                      color = '#3FB56E';
+                      bg = 'rgba(63, 181, 110, 0.12)';
+                    }
+                    return { label, color, bg };
+                  };
+
+                  const rarity = getRarityDetails(selectedItem.id);
+
+                  return (
+                    <View style={{ width: '100%' }}>
+                      {/* Header */}
+                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
+                        <View style={{ flex: 1, gap: 2 }}>
+                          <Text style={{ fontFamily: 'Jersey10-Regular', fontSize: 24, color: '#4B3621' }}>{title}</Text>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                            <View style={{ backgroundColor: rarity.bg, paddingHorizontal: 6, paddingVertical: 1, borderRadius: 4, borderWidth: 1, borderColor: rarity.color + '40' }}>
+                              <Text style={{ fontFamily: 'Silkscreen-Regular', fontSize: 8, color: rarity.color }}>{rarity.label}</Text>
+                            </View>
+                            <Text style={{ fontSize: 12, color: categoryColor, fontWeight: 'bold' }}>{category.toUpperCase()}</Text>
+                          </View>
+                        </View>
+                        <TouchableOpacity onPress={() => setModalVisible(false)} activeOpacity={0.7} style={{ width: 24, height: 24, alignItems: 'center', justifyContent: 'center' }}>
+                          <Text style={{ fontFamily: 'Jersey10-Regular', fontSize: 20, color: '#6A4A2A' }}>✕</Text>
+                        </TouchableOpacity>
+                      </View>
+
+                      {/* Icon Wrap */}
+                      <View style={{ alignItems: 'center', marginVertical: 16 }}>
+                        <View style={{ width: 80, height: 80, borderRadius: 40, backgroundColor: '#F4E6C0', borderWidth: 2, borderColor: '#C9A86A', alignItems: 'center', justifyContent: 'center', marginBottom: 8 }}>
+                          {spritesheet ? (
+                            <ItemSprite spritesheet={spritesheet} frameIndex={frameIndex} displaySize={48} />
+                          ) : (
+                            <ItemSprite spritesheet="icons-map" frameIndex={17} displaySize={48} />
+                          )}
+                        </View>
+                        <Text style={{ fontFamily: 'Jersey10-Regular', fontSize: 14, color: '#6A4A2A' }}>{statusText}</Text>
+                      </View>
+
+                      {/* Description / Lore */}
+                      {!!lore && (
+                        <View style={{ backgroundColor: '#F4E6C0', borderColor: '#C9A86A', borderWidth: 1, borderRadius: 8, padding: 10, marginBottom: 16 }}>
+                          <Text style={{ fontSize: 13, color: '#6A4A2A', fontStyle: 'italic', lineHeight: 17, textAlign: 'center' }}>"{lore}"</Text>
+                        </View>
+                      )}
+
+                      {/* Actions */}
+                      <View style={{ gap: 8 }}>
+                        {showOpenChestBtn && (
+                          <TouchableOpacity style={styles.primaryActionBtn} onPress={handleOpenChest} activeOpacity={0.85}>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, justifyContent: 'center' }}>
+                              <ItemSprite spritesheet="icons-map" frameIndex={53} displaySize={18} />
+                              <Text style={styles.primaryActionText}>Open Mystery Chest</Text>
+                            </View>
+                          </TouchableOpacity>
+                        )}
+                        <TouchableOpacity style={styles.secondaryActionBtn} onPress={() => setModalVisible(false)} activeOpacity={0.85}>
+                          <Text style={styles.secondaryActionText}>Close</Text>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  );
+                })()
               )}
             </View>
           </Pressable>
@@ -1058,10 +1553,16 @@ function SpriteFrame({ source, frameIndex, frameSize, totalFrames, displaySize =
 }
 
 // ─── StatBox ─────────────────────────────────────────────────────────────────
-function StatBox({ label, value, bonus, isPercent, variant, flex = 1, highlighted, infoKey, onInfo }) {
+function StatBox({ label, value, bonus, isPercent, variant, flex = 1, highlighted, infoKey, onInfo, pendingDelta }) {
   const showBonus = bonus !== undefined && Math.abs(bonus) > 0.0001;
   const bonusText = isPercent ? `+${Math.round(bonus * 100)}%` : `+${bonus}`;
   const isAttribute = variant === 'attribute';
+
+  const showPending = pendingDelta !== undefined && Math.abs(pendingDelta) > 0.0001;
+  const pendingText = isPercent
+    ? `+${(pendingDelta * 100).toFixed(1).replace(/\.0$/, '')}%`
+    : `+${pendingDelta}`;
+
   return (
     <View style={[styles.statBox, { flex }, isAttribute && styles.statBoxAttribute]}>
       {infoKey && onInfo && (
@@ -1075,11 +1576,18 @@ function StatBox({ label, value, bonus, isPercent, variant, flex = 1, highlighte
         </TouchableOpacity>
       )}
       <Text style={styles.statLabel} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>{label}</Text>
-      <Text style={[
-        styles.statValue,
-        isAttribute && styles.statValueAttribute,
-        highlighted && { color: '#5CC489' }
-      ]}>{value}</Text>
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-start', gap: 2 }}>
+        <Text style={[
+          styles.statValue,
+          isAttribute && styles.statValueAttribute,
+          highlighted && { color: '#5CC489' }
+        ]}>{value}</Text>
+        {showPending && (
+          <Text style={{ fontFamily: 'Jersey10-Regular', fontSize: 12, color: '#5CC489' }}>
+            ({pendingText})
+          </Text>
+        )}
+      </View>
       <Text style={styles.statBonus}>{showBonus ? bonusText : ' '}</Text>
     </View>
   );
@@ -1162,78 +1670,128 @@ const styles = StyleSheet.create({
   },
   attributeCard: {
     flex: 1,
-    backgroundColor: 'rgba(16, 44, 28, 0.35)',
+    backgroundColor: 'rgba(16, 44, 28, 0.45)',
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: 'rgba(92, 196, 137, 0.18)',
+    borderColor: 'rgba(92, 196, 137, 0.25)',
     paddingVertical: 12,
-    paddingHorizontal: 4,
-    alignItems: 'center',
+    paddingLeft: 10,
+    paddingRight: 4,
+    alignItems: 'flex-start',
     justifyContent: 'center',
     gap: 6,
     minHeight: 78,
   },
-  attributeHeader: {
+  attrHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
+    justifyContent: 'flex-start',
+    gap: 4,
   },
-  attributeLabel: {
+  attrEmoji: {
+    fontFamily: 'System',
+    fontSize: 16,
+  },
+  attrLabel: {
     fontFamily: 'Silkscreen-Regular',
-    fontSize: 13,
+    fontSize: 8,
     fontWeight: 'normal',
-    letterSpacing: 0.5,
+    letterSpacing: 0.2,
     textTransform: 'uppercase',
+    color: '#F3E2BD', // parchment
   },
-  attributeValue: {
+  attrValue: {
     fontFamily: 'Jersey10-Regular',
     fontSize: 26,
     fontWeight: 'normal',
-    color: '#F8FAFC',
+    color: '#FFF3DA', // bright gold/yellow-white
     marginVertical: 0,
     letterSpacing: 1,
   },
-  attributeValueHighlight: {
-    color: '#D4A754',
-    fontWeight: 'bold',
+  attrSubtext: {
+    fontFamily: 'Jersey10-Regular',
+    fontSize: 13,
+    fontWeight: 'normal',
+    color: '#CFE0EE', // ghostWhite calculations text
+    textAlign: 'left',
   },
-  attributeControls: {
+  allocRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
+    justifyContent: 'flex-start',
+    gap: 12,
     marginVertical: 4,
   },
-  attrControlBtn: {
-    width: 22,
-    height: 22,
+  allocBtn: {
+    width: 24,
+    height: 24,
     borderRadius: 6,
-    backgroundColor: 'rgba(212, 167, 84, 0.15)',
-    borderWidth: 1,
-    borderColor: 'rgba(212, 167, 84, 0.3)',
+    backgroundColor: 'rgba(212, 167, 84, 0.25)',
+    borderWidth: 1.5,
+    borderColor: 'rgba(212, 167, 84, 0.5)',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  attrControlBtnDisabled: {
+  allocBtnDisabled: {
     opacity: 0.2,
     backgroundColor: 'rgba(255, 255, 255, 0.02)',
     borderColor: 'rgba(255, 255, 255, 0.08)',
   },
-  attrControlBtnText: {
+  allocBtnText: {
     fontFamily: 'Jersey10-Regular',
-    color: '#D4A754',
-    fontSize: 14,
+    color: '#F5CF7A',
+    fontSize: 18,
     fontWeight: 'normal',
     marginTop: -2,
   },
-  attrAllocatedText: {
+  allocNumber: {
     fontFamily: 'Jersey10-Regular',
-    color: '#F8FAFC',
-    fontSize: 16,
+    color: '#FFF3DA',
+    fontSize: 18,
     fontWeight: 'normal',
-    minWidth: 14,
+    minWidth: 16,
     textAlign: 'center',
+  },
+  saveRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 8,
+    marginTop: 10,
+    marginBottom: 16,
+  },
+  cancelBtn: {
+    flex: 1,
+    height: 38,
+    borderRadius: 8,
+    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+    borderWidth: 1.5,
+    borderColor: 'rgba(239, 68, 68, 0.35)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cancelBtnText: {
+    fontFamily: 'Jersey10-Regular',
+    fontSize: 14,
+    color: '#EF4444',
+  },
+  saveBtn: {
+    flex: 1,
+    height: 38,
+    borderRadius: 8,
+    backgroundColor: 'rgba(92, 196, 137, 0.15)',
+    borderWidth: 1.5,
+    borderColor: 'rgba(92, 196, 137, 0.45)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  saveBtnText: {
+    fontFamily: 'Jersey10-Regular',
+    fontSize: 14,
+    color: '#5CC489',
+  },
+  attributeValueHighlight: {
+    color: '#D4A754',
+    fontWeight: 'bold',
   },
   confirmBtn: {
     height: 44,
@@ -1252,72 +1810,57 @@ const styles = StyleSheet.create({
     zIndex: 2,
   },
   stanceSection: {
-    marginTop: 6,
-    marginBottom: 16,
+    marginTop: 12,
+    marginBottom: 6,
   },
   stanceCard: {
-    borderRadius: 14,
+    borderRadius: 10,
     overflow: 'hidden',
     backgroundColor: '#0A160F',
+    borderWidth: 1,
+    borderColor: 'rgba(212, 167, 84, 0.25)',
   },
   stanceCardInner: {
-    padding: 16,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
     zIndex: 2,
   },
-  stanceHeaderRow: {
+  stanceRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    marginBottom: 8,
+    justifyContent: 'space-between',
+    width: '100%',
+  },
+  stanceLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  stanceRight: {
+    flex: 1,
+    alignItems: 'flex-end',
   },
   stanceEmojiWrapper: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     backgroundColor: 'rgba(212, 167, 84, 0.12)',
     borderWidth: 1,
     borderColor: 'rgba(212, 167, 84, 0.3)',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  stanceEmoji: {
-    fontSize: 18,
-  },
   stanceName: {
     fontFamily: 'Jersey10-Regular',
-    fontSize: 15,
+    fontSize: 18,
     fontWeight: 'normal',
     color: '#F8FAFC',
   },
-  stanceElement: {
-    fontFamily: 'Silkscreen-Regular',
-    fontSize: 8,
-    color: '#D4A754',
-    letterSpacing: 0.5,
-    marginTop: 1,
-  },
-  stanceDesc: {
-    fontFamily: 'Silkscreen-Regular',
-    fontSize: 11,
-    color: '#94A3B8',
-    lineHeight: 16,
-  },
-  stanceBonusBox: {
-    marginTop: 10,
-    paddingTop: 8,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.05)',
-  },
-  stanceBonusLabel: {
-    fontFamily: 'Silkscreen-Regular',
-    fontSize: 9,
-    color: '#64748B',
-  },
   stanceBonusVal: {
     fontFamily: 'Jersey10-Regular',
-    fontSize: 13,
+    fontSize: 16,
     color: '#5CC489',
-    marginTop: 2,
+    textAlign: 'right',
   },
   statsSection: {
     marginBottom: 14,
@@ -1488,42 +2031,42 @@ const styles = StyleSheet.create({
   statBox: {
     flex: 1,
     borderRadius: 10,
-    minHeight: 56,
-    paddingVertical: 8,
-    paddingHorizontal: 2,
-    alignItems: 'center',
+    minHeight: 46,
+    paddingVertical: 5,
+    paddingLeft: 10,
+    paddingRight: 4,
+    alignItems: 'flex-start',
     justifyContent: 'center',
-    gap: 2,
-    backgroundColor: 'rgba(16, 44, 28, 0.35)',
-    borderWidth: 1,
-    borderColor: 'rgba(92, 196, 137, 0.18)',
+    backgroundColor: 'rgba(16, 44, 28, 0.55)', // slightly darker green panel bg
+    borderWidth: 1.5,
+    borderColor: 'rgba(92, 196, 137, 0.3)', // more visible border
   },
   statBoxAttribute: {
-    backgroundColor: 'rgba(92,196,137,0.08)',
-    borderColor: 'rgba(92,196,137,0.3)',
+    backgroundColor: 'rgba(92,196,137,0.12)',
+    borderColor: 'rgba(92,196,137,0.45)',
   },
   statLabel: {
     fontFamily: 'Silkscreen-Regular',
-    fontSize: 7,
+    fontSize: 8,
     fontWeight: 'normal',
-    color: '#707F94',
+    color: '#CFE0EE', // ghostWhite for high readability
     letterSpacing: 0.3,
     maxWidth: '100%',
   },
   statValue: {
     fontFamily: 'Jersey10-Regular',
-    fontSize: 17,
+    fontSize: 16,
     fontWeight: 'normal',
-    color: theme.COLORS.candleGold,
-    letterSpacing: 0.5,
+    color: '#FBBF24', // bright gold value
+    letterSpacing: 0.2,
   },
   statValueAttribute: {
-    color: theme.COLORS.buffMint,
+    color: '#5CC489', // bright mint green
   },
   statBonus: {
     fontFamily: 'Jersey10-Regular',
-    fontSize: 12,
-    lineHeight: 12,
+    fontSize: 11,
+    lineHeight: 11,
     fontWeight: 'normal',
     letterSpacing: 0.5,
     color: '#5CC489',
@@ -1660,8 +2203,9 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255,255,255,0.12)',
   },
   slotCardEquipped: {
-    backgroundColor: 'rgba(181, 112, 26, 0.16)',
-    borderColor: 'rgba(232, 167, 58, 0.5)',
+    backgroundColor: 'rgba(232, 167, 58, 0.08)',
+    borderColor: '#E8A73A',
+    borderWidth: 1.5,
   },
   slotCardInfo: {
     flex: 1,
@@ -1672,30 +2216,30 @@ const styles = StyleSheet.create({
     fontFamily: 'Silkscreen-Regular',
     fontSize: 9,
     fontWeight: 'normal',
-    color: '#707F94',
+    color: '#94A3B8', // brighter slate grey for slot names
     letterSpacing: 0.5,
     textAlign: 'left',
   },
   slotItemName: {
     fontFamily: 'Silkscreen-Regular',
     fontSize: 10,
-    lineHeight: 13,
-    fontWeight: 'normal',
-    color: theme.COLORS.parchment,
+    lineHeight: 14,
+    fontWeight: 'bold',
+    color: '#FFFFFF', // high-contrast white
     textAlign: 'left',
   },
   slotItemStats: {
     fontFamily: 'Silkscreen-Regular',
     fontSize: 9,
     fontWeight: 'normal',
-    color: '#5CC489',
+    color: '#6EE7B7', // brighter mint for stats readability
     textAlign: 'left',
   },
   slotEmptyText: {
     fontFamily: 'Silkscreen-Regular',
     fontSize: 10,
     fontStyle: 'italic',
-    color: '#707F94',
+    color: '#64748B', // readable slate grey for empty text
     textAlign: 'left',
   },
   slotIconBox: {
@@ -1799,7 +2343,7 @@ const styles = StyleSheet.create({
   compareItemDesc: {
     fontFamily: 'Silkscreen-Regular',
     fontSize: 11,
-    color: 'rgba(255, 243, 218, 0.45)',
+    color: '#94A3B8', // readable blue-grey
     marginTop: 2,
   },
   equippedBadge: {
@@ -1834,6 +2378,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   emptyStateEmoji: {
+    fontFamily: 'System',
     fontSize: 40,
   },
   emptyStateText: {
@@ -1873,5 +2418,156 @@ const styles = StyleSheet.create({
     fontWeight: 'normal',
     fontSize: 13,
     color: '#EF4444',
+  },
+
+  /* ── Grid Layouts ── */
+  gridContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+    paddingVertical: 4,
+    width: '100%',
+  },
+  gridCard: {
+    borderRadius: 12,
+    overflow: 'hidden',
+    borderWidth: 1.5,
+    borderColor: 'rgba(212, 167, 84, 0.25)',
+    backgroundColor: 'rgba(16, 44, 28, 0.45)',
+  },
+  gridCardGearEquipped: {
+    borderColor: '#D4A754',
+    backgroundColor: 'rgba(212, 167, 84, 0.1)',
+  },
+  gridCardInner: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 8,
+  },
+  gridIconWrap: {
+    flex: 1,
+    width: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  gridIcon: {
+    fontFamily: 'System',
+    fontSize: 28,
+  },
+  gridName: {
+    fontFamily: 'Jersey10-Regular',
+    fontSize: 14,
+    color: '#F3E2BD',
+    textAlign: 'center',
+    lineHeight: 14,
+    height: 28,
+    width: '100%',
+  },
+  gridTagSlot: {
+    minHeight: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  gridTagBadge: {
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+    borderRadius: 5,
+    borderWidth: 1,
+  },
+  gridTagText: {
+    fontFamily: 'Jersey10-Regular',
+    fontSize: 11,
+    letterSpacing: 0.3,
+    color: '#F3E2BD',
+  },
+  gridQtyBadge: {
+    borderColor: 'rgba(212, 167, 84, 0.3)',
+    backgroundColor: 'rgba(212, 167, 84, 0.1)',
+    borderWidth: 1,
+  },
+  gridQtyText: {
+    fontFamily: 'Jersey10-Regular',
+    fontSize: 12,
+    color: '#D4A754',
+    fontWeight: 'bold',
+  },
+  gridEquippedBadge: {
+    borderColor: 'rgba(212,167,84,0.4)',
+    backgroundColor: 'rgba(212,167,84,0.12)',
+  },
+  gridEquippedText: {
+    color: '#D4A754',
+  },
+  gridSlotBadge: {
+    borderColor: 'rgba(212, 167, 84, 0.25)',
+    backgroundColor: 'rgba(212, 167, 84, 0.06)',
+  },
+  emptyBox: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(16, 44, 28, 0.45)',
+    borderColor: 'rgba(92, 196, 137, 0.25)',
+    borderWidth: 1.5,
+    borderRadius: 12,
+    padding: 24,
+    width: '100%',
+    marginVertical: 8,
+  },
+  emptyEmoji: {
+    fontFamily: 'System',
+    fontSize: 32,
+    marginBottom: 8,
+  },
+  emptyTitle: {
+    fontFamily: 'Jersey10-Regular',
+    fontSize: 20,
+    color: '#FFF3DA',
+    marginBottom: 4,
+  },
+  emptyDesc: {
+    fontSize: 12,
+    color: '#F3E2BD',
+    textAlign: 'center',
+  },
+  primaryActionBtn: {
+    backgroundColor: '#D88A2F',
+    borderColor: '#8E5A1C',
+    borderWidth: 2,
+    borderRadius: 12,
+    paddingVertical: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  primaryActionText: {
+    fontFamily: 'Jersey10-Regular',
+    fontSize: 16,
+    color: '#FFF',
+  },
+  secondaryActionBtn: {
+    backgroundColor: 'rgba(106, 74, 42, 0.1)',
+    borderColor: 'rgba(106, 74, 42, 0.3)',
+    borderWidth: 1.5,
+    borderRadius: 12,
+    paddingVertical: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  secondaryActionText: {
+    fontFamily: 'Jersey10-Regular',
+    fontSize: 16,
+    color: '#6A4A2A',
+  },
+  rarityBadge: {
+    borderRadius: 30,
+    paddingHorizontal: 8,
+    paddingVertical: 1,
+    borderWidth: 1,
+  },
+  rarityText: {
+    fontFamily: 'Silkscreen-Regular',
+    fontSize: 8,
+    fontWeight: 'normal',
+    letterSpacing: 0.8,
   },
 });
