@@ -99,11 +99,11 @@ export function generateDailyQuests(hero, progress, dateStr) {
       { id: 'cockroach_knight', name: 'Cockroach Knight' }
     ],
     zone2: [
-      { id: 'thorn_sprite', name: 'Thorn Sprite' },
-      { id: 'giant_beetle', name: 'Giant Beetle' }
+      { id: 'mutated_plant', name: 'Mutated Plant' },
+      { id: 'ironclad_beetle', name: 'Ironclad Beetle' }
     ],
     zone3: [
-      { id: 'barnacle_crab', name: 'Barnacle Crab' }
+      { id: 'mineral_pincher', name: 'Mineral Pincher' }
     ]
   };
 

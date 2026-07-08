@@ -45,8 +45,8 @@ export const ZONES = {
     maxLevel: 30,
     floorCount: 10,
     backgroundColor: '#0A1A0A',
-    enemies: ['thorn_sprite', 'giant_beetle', 'mushroom_puffer', 'vine_lurker'],
-    bossId: 'rootmother',
+    enemies: ['mutated_plant', 'ironclad_beetle', 'spore_shroom', 'savage_worm', 'caustic_slug'],
+    bossId: 'granite_crawler',
     unlockCondition: 'zone1Cleared', // Requires Zone 1 boss defeated
   },
 
@@ -59,8 +59,8 @@ export const ZONES = {
     maxLevel: 45,
     floorCount: 10,
     backgroundColor: '#0A0F1A',
-    enemies: ['barnacle_crab', 'sea_witch_eel', 'drowned_sailor', 'pufferfish_bomb'],
-    bossId: 'captain_moray',
+    enemies: ['mineral_pincher', 'neon_jelly', 'toxic_puff'],
+    bossId: 'sea_abomination',
     unlockCondition: 'zone2Cleared', // Requires Zone 2 boss defeated
   },
 };

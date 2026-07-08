@@ -35,7 +35,7 @@ import ItemSprite from '../components/ItemSprite';
 import { pickRandomThought } from '../data/mochiThoughts';
 import { isQuestUnlocked } from '../data/quests';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const BANNER_WIDTH = SCREEN_WIDTH - 40;
 
 const ELEMENT_SPRITES = {
@@ -678,7 +678,7 @@ export default function CampScreen({ navigation }) {
           onRequestClose={() => setQuestBoardModalVisible(false)}
           statusBarTranslucent
         >
-          <View style={styles.drOverlay}>
+          <View style={styles.qbOverlay}>
             <Pressable
               style={StyleSheet.absoluteFillObject}
               onPress={() => setQuestBoardModalVisible(false)}
@@ -1358,6 +1358,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 26,
   },
+  qbOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(24, 14, 6, 0.78)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 20,
+  },
   drFrame: {
     width: '100%',
     maxWidth: 340,
@@ -1631,9 +1639,9 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   qbFrame: {
-    width: '90%',
-    maxWidth: 380,
-    maxHeight: '85%',
+    width: '100%',
+    maxWidth: SCREEN_WIDTH - 16,
+    maxHeight: '95%',
     backgroundColor: '#6E4524',
     borderColor: '#3A2210',
     borderWidth: 3,
@@ -1659,7 +1667,7 @@ const styles = StyleSheet.create({
   },
   qbScrollView: {
     width: '100%',
-    maxHeight: 420,
+    maxHeight: SCREEN_HEIGHT * 0.72,
     flexShrink: 1,
     marginTop: 10,
   },
@@ -1713,7 +1721,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 10,
+    paddingVertical: 8,
     paddingHorizontal: 12,
     backgroundColor: 'rgba(58, 34, 16, 0.04)',
   },
@@ -1736,8 +1744,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'flex-end',
-    gap: 10,
-    width: 80,
+    gap: 8,
   },
   statusBulletActive: {
     width: 6,
@@ -1789,7 +1796,8 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   questBody: {
-    padding: 12,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
   },
   questDesc: {
     fontFamily: 'Jersey10-Regular',
@@ -1803,8 +1811,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#3A2210',
     borderRadius: 7,
     overflow: 'hidden',
-    marginTop: 6,
-    marginBottom: 8,
+    marginTop: 4,
+    marginBottom: 6,
     borderWidth: 1,
     borderColor: '#C9A86A',
     position: 'relative',
@@ -1831,7 +1839,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    marginBottom: 10,
+    marginBottom: 8,
   },
   rewardsLabel: {
     fontFamily: 'Silkscreen-Regular',

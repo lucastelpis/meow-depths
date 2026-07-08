@@ -21,6 +21,7 @@ import {
   StyleSheet,
   Modal,
   Pressable,
+  Dimensions,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -33,6 +34,8 @@ import { NOTES, NOTE_SPRITE } from '../data/notes';
 import { ENEMY_SPRITES, FALLBACK_ENEMY_SPRITE } from '../constants/sprites';
 import SpriteFrame from '../components/SpriteFrame';
 import ItemSprite from '../components/ItemSprite';
+
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 const ZONE_IDS = ['zone1', 'zone2', 'zone3'];
 
@@ -88,7 +91,7 @@ function CreatureCard({ enemy, zoneId }) {
             source={sprite.idle.source}
             frameSize={sprite.idle.frameSize}
             totalFrames={sprite.idle.frames}
-            frameIndex={0}
+            frameIndex={sprite.idle.startFrame !== undefined ? sprite.idle.startFrame : 0}
             displaySize={120}
           />
         </View>
@@ -442,17 +445,20 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(24,14,6,0.78)',
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 24,
+    paddingHorizontal: 8,
+    paddingVertical: 20,
   },
   readerFrame: {
     width: '100%',
-    maxWidth: 380,
-    maxHeight: '82%',
+    maxWidth: SCREEN_WIDTH - 16,
+    maxHeight: '90%',
     backgroundColor: '#6E4524',
     borderColor: '#3A2210',
     borderWidth: 3,
     borderRadius: 12,
     padding: 10,
+    display: 'flex',
+    flexDirection: 'column',
   },
   readerParchment: {
     backgroundColor: '#ECD8A6',
@@ -462,12 +468,16 @@ const styles = StyleSheet.create({
     paddingTop: 22,
     paddingBottom: 18,
     paddingHorizontal: 18,
+    maxHeight: '100%',
+    display: 'flex',
+    flexDirection: 'column',
+    flexShrink: 1,
   },
   readerClose: { position: 'absolute', top: 8, right: 10, zIndex: 5 },
   readerCloseText: { fontSize: 18, color: '#6E4524', fontWeight: 'bold' },
   readerTitle: { fontFamily: 'Jersey10-Regular', fontSize: 18, color: '#4A3417', marginBottom: 6, paddingRight: 20 },
   readerContext: { ...theme.FONTS.body, fontSize: 11, color: '#7A5C30', fontStyle: 'italic' },
   readerDivider: { height: 1, backgroundColor: '#C9A86A', marginVertical: 12 },
-  readerScroll: { maxHeight: 420 },
+  readerScroll: { maxHeight: SCREEN_HEIGHT * 0.65, flexShrink: 1 },
   readerBody: { ...theme.FONTS.body, fontSize: 13, lineHeight: 21, color: '#3A2C16' },
 });

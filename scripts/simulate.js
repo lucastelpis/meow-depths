@@ -121,8 +121,8 @@ async function runSimulation() {
 
     // Drops count by profile
     let qty = starRating;
-    const profile = ['sewer_rat', 'thorn_sprite', 'barnacle_crab'].includes(enemyKey) ? 'rat' :
-                    ['cockroach_knight', 'giant_beetle'].includes(enemyKey) ? 'cockroach' : 'frog';
+    const profile = ['sewer_rat', 'mutated_plant', 'mineral_pincher'].includes(enemyKey) ? 'rat' :
+                    ['cockroach_knight', 'ironclad_beetle'].includes(enemyKey) ? 'cockroach' : 'frog';
     
     if (profile === 'frog') {
       qty = starRating + (Math.random() < 0.50 ? 1 : 0);

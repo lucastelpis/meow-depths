@@ -43,14 +43,14 @@ export const SET_BONUSES = {
   },
   garden_set: {
     name: 'Garden Set',
-    pieces: ['thorn_dagger', 'rootmother_eye'],
+    pieces: ['thorn_dagger', 'granite_crawler_eye'],
     armorZone: 2,
     bonus: 'Skill cooldowns reduced by 1 turn',
     effect: { type: 'cooldown_reduction', value: 1 },
   },
   docks_set: {
     name: 'Docks Set',
-    pieces: ['ghost_cutlass', 'morays_compass'],
+    pieces: ['ghost_cutlass', 'abomination_compass'],
     armorZone: 3,
     bonus: 'After dodging, next attack automatically stuns',
     effect: { type: 'dodge_stun' },
@@ -238,9 +238,9 @@ const vine_wrap = {
   specialEffect: null,
 };
 
-const rootmother_eye = {
-  id: 'rootmother_eye',
-  name: 'Rootmother Eye',
+const granite_crawler_eye = {
+  id: 'granite_crawler_eye',
+  name: 'Granite Crawler Eye',
   type: 'trinket',
   zone: 2,
   goldCost: 200,
@@ -333,9 +333,9 @@ const saltcaptain_coat = {
   specialEffect: null,
 };
 
-const morays_compass = {
-  id: 'morays_compass',
-  name: "Moray's Compass",
+const abomination_compass = {
+  id: 'abomination_compass',
+  name: 'Abomination Compass',
   type: 'trinket',
   zone: 3,
   goldCost: 300,
@@ -856,14 +856,14 @@ export const GEAR = {
   beetle_shell_vest,
   spore_cloak,
   vine_wrap,
-  rootmother_eye,
+  granite_crawler_eye,
   glowspore_vial,
   // Zone 3
   ghost_cutlass,
   barnacle_plate,
   ghost_silk_coat,
   saltcaptain_coat,
-  morays_compass,
+  abomination_compass,
   toxin_vial,
 };
 

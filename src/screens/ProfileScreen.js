@@ -55,9 +55,9 @@ const WEAPONS_FRAME_SIZE = 32;
 const WEAPONS_FRAMES = 7;
 
 const TABS = [
-  { key: 'stats', frameIndex: 28, label: 'Stats' },
-  { key: 'equipment', frameIndex: 10, label: 'Gear' },
-  { key: 'bag', frameIndex: 26, label: 'Bag' },
+  { key: 'stats', spritesheet: 'icons-map', frameIndex: 105, label: 'Stats' },
+  { key: 'equipment', spritesheet: 'icons-1', frameIndex: 10, label: 'Gear' },
+  { key: 'bag', spritesheet: 'icons-1', frameIndex: 26, label: 'Bag' },
 ];
 
 const MATERIAL_ZONES = [
@@ -121,13 +121,13 @@ const LORE_DESCRIPTIONS = {
   beetle_shell_vest: "A heavy vest reinforced with iridescent beetle plates.",
   spore_cloak: "A lightweight cloak that releases silent spores when moving.",
   vine_wrap: "Woven vines that tighten around the wearer, boosting vitality.",
-  rootmother_eye: "A glowing amber bead that increases magic and skill potency.",
+  granite_crawler_eye: "A glowing amber bead that increases magic and skill potency.",
   glowspore_vial: "A glass pendant containing bioluminescent spores.",
   ghost_cutlass: "A spectral saber that cuts through the air with an eerie whistle.",
   barnacle_plate: "Heavy plate armor covered in stubborn barnacles. Extremely tough.",
   ghost_silk_coat: "A coat woven from ethereal threads, allowing the wearer to slip past attacks.",
   saltcaptain_coat: "The weathered coat of a lost sea captain, resistant to wind and wave.",
-  morays_compass: "An old brass compass whose needle points towards weaknesses.",
+  abomination_compass: "An old brass compass whose needle points towards weaknesses.",
   toxin_vial: "A vial filled with concentrated sea viper venom.",
 };
 
@@ -621,7 +621,7 @@ export default function ProfileScreen() {
 
         {/* ── Section 2: Tab Bar Switcher ── */}
         <View style={styles.tabContainer}>
-          {TABS.map(({ key, frameIndex, label }) => {
+          {TABS.map(({ key, spritesheet, frameIndex, label }) => {
             const isActive = activeTab === key;
             return (
               <TouchableOpacity
@@ -636,7 +636,7 @@ export default function ProfileScreen() {
                 }}
               >
                 <ItemSprite
-                  spritesheet="icons-1"
+                  spritesheet={spritesheet || "icons-1"}
                   frameIndex={frameIndex}
                   displaySize={18}
                   opacity={isActive ? 1.0 : 0.6}
@@ -948,7 +948,7 @@ export default function ProfileScreen() {
             )}
 
             {/* Equipment Grid */}
-            <Text style={styles.sectionTitle}>Equipped Gear</Text>
+            <Text style={styles.sectionTitle}>Equipped</Text>
             <View style={styles.equipmentGrid}>
               {SLOT_ROWS.map((row, rowIdx) => (
                 <View key={rowIdx} style={styles.slotRow}>
@@ -1029,7 +1029,7 @@ export default function ProfileScreen() {
             </View>
 
             {/* Crafted Gear Section (My Armory) */}
-            <Text style={[styles.sectionTitle, { marginTop: 24 }]}>Crafted Gear</Text>
+            <Text style={[styles.sectionTitle, { marginTop: 24 }]}>Owned</Text>
             {(hero.inventory?.craftedGear || []).length === 0 ? (
               <View style={styles.emptyBox}>
                 <View style={{ marginBottom: 8 }}>
@@ -1427,35 +1427,62 @@ export default function ProfileScreen() {
                       {/* Header */}
                       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
                         <View style={{ flex: 1, gap: 2 }}>
-                          <Text style={{ fontFamily: 'Jersey10-Regular', fontSize: 24, color: '#4B3621' }}>{title}</Text>
+                          <Text style={{ fontFamily: 'Jersey10-Regular', fontSize: 24, color: '#FFF3DA' }}>{title}</Text>
                           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                            <View style={{ backgroundColor: rarity.bg, paddingHorizontal: 6, paddingVertical: 1, borderRadius: 4, borderWidth: 1, borderColor: rarity.color + '40' }}>
-                              <Text style={{ fontFamily: 'Silkscreen-Regular', fontSize: 8, color: rarity.color }}>{rarity.label}</Text>
-                            </View>
+                            {itemType !== 'consumable' && (
+                              <View style={{ backgroundColor: rarity.bg, paddingHorizontal: 6, paddingVertical: 1, borderRadius: 4, borderWidth: 1, borderColor: rarity.color + '40' }}>
+                                <Text style={{ fontFamily: 'Silkscreen-Regular', fontSize: 8, color: rarity.color }}>{rarity.label}</Text>
+                              </View>
+                            )}
                             <Text style={{ fontSize: 12, color: categoryColor, fontWeight: 'bold' }}>{category.toUpperCase()}</Text>
                           </View>
                         </View>
                         <TouchableOpacity onPress={() => setModalVisible(false)} activeOpacity={0.7} style={{ width: 24, height: 24, alignItems: 'center', justifyContent: 'center' }}>
-                          <Text style={{ fontFamily: 'Jersey10-Regular', fontSize: 20, color: '#6A4A2A' }}>✕</Text>
+                          <Text style={{ fontFamily: 'Jersey10-Regular', fontSize: 20, color: 'rgba(255, 243, 218, 0.6)' }}>✕</Text>
                         </TouchableOpacity>
                       </View>
 
                       {/* Icon Wrap */}
                       <View style={{ alignItems: 'center', marginVertical: 16 }}>
-                        <View style={{ width: 80, height: 80, borderRadius: 40, backgroundColor: '#F4E6C0', borderWidth: 2, borderColor: '#C9A86A', alignItems: 'center', justifyContent: 'center', marginBottom: 8 }}>
+                        <View style={{
+                          width: 80,
+                          height: 80,
+                          borderRadius: 40,
+                          backgroundColor: 'rgba(212, 167, 84, 0.05)',
+                          borderWidth: 2,
+                          borderColor: 'rgba(212, 167, 84, 0.25)',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          marginBottom: 8,
+                          shadowColor: '#D4A754',
+                          shadowOffset: { width: 0, height: 0 },
+                          shadowOpacity: 0.3,
+                          shadowRadius: 6,
+                        }}>
                           {spritesheet ? (
                             <ItemSprite spritesheet={spritesheet} frameIndex={frameIndex} displaySize={48} />
                           ) : (
                             <ItemSprite spritesheet="icons-map" frameIndex={17} displaySize={48} />
                           )}
                         </View>
-                        <Text style={{ fontFamily: 'Jersey10-Regular', fontSize: 14, color: '#6A4A2A' }}>{statusText}</Text>
+                        <Text style={{ fontFamily: 'Silkscreen-Regular', fontSize: 9, color: '#94A3B8', marginTop: 4 }}>
+                          {statusText.toUpperCase()}
+                        </Text>
                       </View>
 
                       {/* Description / Lore */}
                       {!!lore && (
-                        <View style={{ backgroundColor: '#F4E6C0', borderColor: '#C9A86A', borderWidth: 1, borderRadius: 8, padding: 10, marginBottom: 16 }}>
-                          <Text style={{ fontSize: 13, color: '#6A4A2A', fontStyle: 'italic', lineHeight: 17, textAlign: 'center' }}>"{lore}"</Text>
+                        <View style={{
+                          backgroundColor: 'rgba(26, 18, 0, 0.35)',
+                          borderColor: 'rgba(212, 167, 84, 0.15)',
+                          borderWidth: 1.2,
+                          borderRadius: 8,
+                          padding: 12,
+                          marginBottom: 18,
+                        }}>
+                          <Text style={{ fontSize: 13, color: '#F3E2BD', fontStyle: 'italic', lineHeight: 18, textAlign: 'center' }}>
+                            "{lore}"
+                          </Text>
                         </View>
                       )}
 
@@ -2531,22 +2558,28 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   primaryActionBtn: {
-    backgroundColor: '#D88A2F',
-    borderColor: '#8E5A1C',
+    backgroundColor: '#B5701A',
+    borderColor: '#E8A73A',
     borderWidth: 2,
     borderRadius: 12,
     paddingVertical: 10,
     alignItems: 'center',
     justifyContent: 'center',
+    shadowColor: '#E8A73A',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 3,
   },
   primaryActionText: {
     fontFamily: 'Jersey10-Regular',
     fontSize: 16,
-    color: '#FFF',
+    color: '#FFF3DA',
+    fontWeight: 'bold',
   },
   secondaryActionBtn: {
-    backgroundColor: 'rgba(106, 74, 42, 0.1)',
-    borderColor: 'rgba(106, 74, 42, 0.3)',
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    borderColor: 'rgba(255, 255, 255, 0.12)',
     borderWidth: 1.5,
     borderRadius: 12,
     paddingVertical: 10,
@@ -2556,7 +2589,7 @@ const styles = StyleSheet.create({
   secondaryActionText: {
     fontFamily: 'Jersey10-Regular',
     fontSize: 16,
-    color: '#6A4A2A',
+    color: '#CFE0EE',
   },
   rarityBadge: {
     borderRadius: 30,

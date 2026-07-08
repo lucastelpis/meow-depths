@@ -1525,9 +1525,11 @@ export default function CombatScreen() {
       if (isEnemyMultiHit) {
         const hitDuration = 350;
         setEnemyAnimFps(16);
-        const spriteDef = getEnemySprite(enemy);
-        const hitFrames = spriteDef.attack?.frames || 6;
-        const finalHitDuration = Math.round((hitFrames / 16) * 1000);
+        const hitFrames = (spriteDef.attack?.endFrame !== undefined && spriteDef.attack?.startFrame !== undefined)
+          ? (spriteDef.attack.endFrame - spriteDef.attack.startFrame + 1)
+          : (spriteDef.attack?.frames || 6);
+        const hitFps = spriteDef.attack?.fps || 16;
+        const finalHitDuration = Math.round((hitFrames / hitFps) * 1000);
 
         for (let hitIdx = 0; hitIdx < turnResult.hits.length; hitIdx++) {
           const hit = turnResult.hits[hitIdx];
@@ -1581,8 +1583,11 @@ export default function CombatScreen() {
         if (!turnResult.isStunned && !turnResult.isSkipped) {
           setEnemyAnims(prev => ({ ...prev, [enemyUid]: 'attack' }));
           const spriteDef = getEnemySprite(enemy);
-          const attackFrames = spriteDef.attack?.frames || 4;
-          animDuration = Math.round((attackFrames / 10) * 1000);
+          const attackFrames = (spriteDef.attack?.endFrame !== undefined && spriteDef.attack?.startFrame !== undefined)
+            ? (spriteDef.attack.endFrame - spriteDef.attack.startFrame + 1)
+            : (spriteDef.attack?.frames || 4);
+          const attackFps = spriteDef.attack?.fps || 10;
+          animDuration = Math.round((attackFrames / attackFps) * 1000);
           triggerEnemyAttackLunge(enemyUid, animDuration);
         }
 
@@ -2855,11 +2860,13 @@ export default function CombatScreen() {
                 source={spriteDef.idle.source}
                 frameSize={spriteDef.idle.frameSize}
                 totalFrames={spriteDef.idle.frames}
+                startFrame={spriteDef.idle.startFrame}
+                endFrame={spriteDef.idle.endFrame}
                 fps={8}
                 loop={true}
                 active={animKey === 'idle'}
                 displaySize={displaySize}
-                flipX
+                flipX={!spriteDef.faceLeft}
                 pointerEvents={animKey === 'idle' ? 'auto' : 'none'}
                 style={[styles.enemySprite, { position: 'absolute', opacity: animKey === 'idle' ? 1 : 0 }]}
                 tintColor="#ff3333"
@@ -2870,14 +2877,16 @@ export default function CombatScreen() {
                 source={spriteDef.attack.source}
                 frameSize={spriteDef.attack.frameSize}
                 totalFrames={spriteDef.attack.frames}
-                fps={enemy.uid === activeEnemyUid ? enemyAnimFps : 10}
+                startFrame={spriteDef.attack.startFrame}
+                endFrame={spriteDef.attack.endFrame}
+                fps={enemy.uid === activeEnemyUid ? (spriteDef.attack?.fps || enemyAnimFps) : (spriteDef.attack?.fps || 10)}
                 loop={false}
                 active={animKey === 'attack' || animKey.startsWith('attack_hit')}
                 onComplete={(animKey === 'attack' || animKey.startsWith('attack_hit')) && !animKey.includes('_hit')
                   ? () => setEnemyAnims(prev => ({ ...prev, [enemy.uid]: 'idle' }))
                   : undefined}
                 displaySize={displaySize}
-                flipX
+                flipX={!spriteDef.faceLeft}
                 pointerEvents={(animKey === 'attack' || animKey.startsWith('attack_hit')) ? 'auto' : 'none'}
                 style={[styles.enemySprite, { position: 'absolute', opacity: (animKey === 'attack' || animKey.startsWith('attack_hit')) ? 1 : 0 }]}
                 tintColor="#ff3333"
@@ -3318,10 +3327,12 @@ function DyingEnemyCard({ enemy, slotStyle, popups = [], removePopup }) {
             source={animData.source}
             frameSize={animData.frameSize}
             totalFrames={animData.frames}
+            startFrame={animData.startFrame}
+            endFrame={animData.endFrame}
             fps={8}
             loop={false}
             displaySize={displaySize}
-            flipX
+            flipX={!spriteDef.faceLeft}
           />
           {popups
             .filter((p) => p.targetUid === enemy.uid)

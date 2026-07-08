@@ -49,8 +49,8 @@ export default function ResourceBar({
     barConfig = {
       fillColor: theme.COLORS.damageRed,
       trackColor: '#241016',
-      height: 13,
-      radius: 5,
+      height: 9,
+      radius: 4,
       showText: true,
     };
   } else if (variant === 'xp') {
@@ -163,7 +163,7 @@ const styles = StyleSheet.create({
     textShadowRadius: 1,
   },
   valueTextSmallOverlay: {
-    fontSize: 12,
-    lineHeight: 13,
+    fontSize: 9,
+    lineHeight: 9,
   },
 });

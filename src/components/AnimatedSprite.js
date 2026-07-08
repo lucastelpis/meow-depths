@@ -42,20 +42,33 @@ export default function AnimatedSprite({
   style,
   tintColor,
   tintOpacity = 0,
+  startFrame  = 0,
+  endFrame,
 }) {
   const finalTotalFrames = totalFrames || frames || 1;
+  const actualEndFrame = endFrame !== undefined ? endFrame : finalTotalFrames - 1;
+  const animationFramesCount = Math.max(1, actualEndFrame - startFrame + 1);
 
   const [frame, setFrame]   = useState(0);
   const frameRef            = useRef(0);
   const intervalRef         = useRef(null);
 
-  // Synchronously reset frame state to 0 if source or finalTotalFrames changes to prevent out-of-bounds flashes
+  // Synchronously reset frame state to 0 if source, finalTotalFrames, startFrame, or actualEndFrame changes to prevent out-of-bounds flashes
   const [prevSource, setPrevSource] = useState(source);
   const [prevTotalFrames, setPrevTotalFrames] = useState(finalTotalFrames);
+  const [prevStartFrame, setPrevStartFrame] = useState(startFrame);
+  const [prevEndFrame, setPrevEndFrame] = useState(actualEndFrame);
 
-  if (source !== prevSource || finalTotalFrames !== prevTotalFrames) {
+  if (
+    source !== prevSource ||
+    finalTotalFrames !== prevTotalFrames ||
+    startFrame !== prevStartFrame ||
+    actualEndFrame !== prevEndFrame
+  ) {
     setPrevSource(source);
     setPrevTotalFrames(finalTotalFrames);
+    setPrevStartFrame(startFrame);
+    setPrevEndFrame(actualEndFrame);
     setFrame(0);
     frameRef.current = 0;
   }
@@ -75,14 +88,14 @@ export default function AnimatedSprite({
     }
 
     // Static sprite or inactive — nothing to animate
-    if (finalTotalFrames <= 1 || !active) return;
+    if (animationFramesCount <= 1 || !active) return;
 
     const ms = Math.round(1000 / fps);
 
     intervalRef.current = setInterval(() => {
       const next = frameRef.current + 1;
 
-      if (next >= finalTotalFrames) {
+      if (next >= animationFramesCount) {
         if (loop) {
           // Loop back to the beginning
           frameRef.current = 0;
@@ -105,11 +118,16 @@ export default function AnimatedSprite({
         intervalRef.current = null;
       }
     };
-  }, [source, frameSize, finalTotalFrames, fps, loop, active]);
+  }, [source, frameSize, finalTotalFrames, startFrame, actualEndFrame, animationFramesCount, fps, loop, active]);
 
   const scale = displaySize / frameSize;
-  const isSourceChanged = source !== prevSource || finalTotalFrames !== prevTotalFrames;
-  const currentFrame = isSourceChanged ? 0 : (finalTotalFrames > 0 ? Math.min(frame, finalTotalFrames - 1) : 0);
+  const isRangeChanged =
+    source !== prevSource ||
+    finalTotalFrames !== prevTotalFrames ||
+    startFrame !== prevStartFrame ||
+    actualEndFrame !== prevEndFrame;
+  const currentFrameOffset = isRangeChanged ? 0 : (animationFramesCount > 0 ? Math.min(frame, animationFramesCount - 1) : 0);
+  const currentFrame = startFrame + currentFrameOffset;
 
   return (
     <View

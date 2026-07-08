@@ -104,7 +104,8 @@ Crystals and shards use frames from the `crystals-1` spritesheet:
 - **Attack/Skill Lunge**: Attacking characters lunge forward snappily (24px right for hero, 24px left for enemies) on their turn. The timing split is 30% lunge forward and 70% return.
 - **Damage Recoil**: Characters move backward subtly (12px left for hero, 12px right for enemies) when taking damage. The timing split matches the attack's: 30% recoil backward and 70% return recovery.
 - **Red Damage Overlay Tint**: When taking damage, a red color flash overlay (using `#ff3333` tint) is rendered over the unit, fading in to `0.75` opacity during the recoil phase and fading back to `0` opacity during the recovery phase.
-- **Synchronized Duration**: Both animations dynamically synchronize their durations to match the visual frame length of the active sprite sheet. Single attacks/skills play at 10 FPS, while multi-hit skills/moves (like Wind Blades) play at a sped-up rate of 16 FPS.
+- **Synchronized Duration**: Both animations dynamically synchronize their durations to match the visual frame length of the active sprite sheet or the active frame subset range. Single attacks/skills play at 10 FPS, while multi-hit skills/moves (like Wind Blades) play at a sped-up rate of 16 FPS.
+- **Unified Spritesheets**: Zone 1 enemies (rat, rat king, toad, slime, cockroach), Zone 2 enemies (mutated plant, ironclad beetle, spore shroom, savage worm, caustic slug, granite crawler), and Zone 3 enemies (mineral pincher, neon jelly, toxic puff, sea abomination) use a single 8-frame spritesheet (128x128 per frame) for both idle and attack animations. The idle animation uses the first 4 frames (0 to 3), and the attack animation uses the next 4 frames (4 to 7) at a customized rate of 6 FPS for smoother playback. They are left-facing by default, so mirroring (flipX) is disabled for these units.
 - **Sequential Multi-Hits**: Multi-hit skills/moves are executed as a sequence of rapid individual hits (each taking 350ms). Each hit resets the sprite animation sheet, triggers its own attack lunge, target recoil, damage popup, and step-by-step HP bar depletion, making them feel like actual successive attacks.
 
 ## Combat & Battle Log Formatting
@@ -170,7 +171,7 @@ This is a 15-column layout matrix of various game icons (480x320 px, 32x32 px pe
 
 ## Simulation Script
 A standalone Node-based simulation script is available at [simulate.js](file:///Users/lucastelpisferrante/Documents/Vibe_Coding_Projects/meow-depths/scripts/simulate.js) to model player progression from Floor 1 to 10.
-- **Purpose**: Simulate full dungeon crawling, combat encounters (including the King Rat boss fight on Floor 10), camp hub shop management, skill upgrades/pricing, attribute allocations, daily ration claims, and crystal fusions.
+- **Purpose**: Simulate full dungeon crawling, combat encounters (including the Tyrant Rat boss fight on Floor 10), camp hub shop management, skill upgrades/pricing, attribute allocations, daily ration claims, and crystal fusions.
 - **How to Run**:
   1. Bundle the script for Node:
      `npx esbuild scripts/simulate.js --bundle --platform=node --outfile=scripts/simulate.bundled.js`

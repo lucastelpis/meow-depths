@@ -333,6 +333,8 @@ export default function DungeonMapScreen({ navigation }) {
 
   // Animation for adjacent pulsing border
   const pulseAnim = useRef(new Animated.Value(0.4)).current;
+  // Animation for character floating/bobbing idle animation
+  const floatAnim = useRef(new Animated.Value(0)).current;
 
   // Calculate effective stats including current run buffs
   const effectiveStats = calculateEffectiveStats(hero, undefined, currentRun.runBuffs);
@@ -435,6 +437,23 @@ export default function DungeonMapScreen({ navigation }) {
       ])
     ).start();
   }, [pulseAnim]);
+
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(floatAnim, {
+          toValue: -3,
+          duration: 1200,
+          useNativeDriver: true,
+        }),
+        Animated.timing(floatAnim, {
+          toValue: 0,
+          duration: 1200,
+          useNativeDriver: true,
+        }),
+      ])
+    ).start();
+  }, [floatAnim]);
 
   // Show floor-complete modal whenever the screen is focused and all tiles are cleared
   useFocusEffect(
@@ -667,23 +686,34 @@ export default function DungeonMapScreen({ navigation }) {
 
       if (dx === 1 && dy === 0) {
         arrowChar = '▶';
-        arrowStyle = { left: -14, top: '50%', transform: [{ translateY: -10 }] };
+        arrowStyle = { left: -15, top: '50%', transform: [{ translateY: -12 }] };
       } else if (dx === -1 && dy === 0) {
         arrowChar = '◀';
-        arrowStyle = { right: -14, top: '50%', transform: [{ translateY: -10 }] };
+        arrowStyle = { right: -15, top: '50%', transform: [{ translateY: -12 }] };
       } else if (dx === 0 && dy === 1) {
         arrowChar = '▼';
-        arrowStyle = { top: -14, left: '50%', transform: [{ translateX: -10 }] };
+        arrowStyle = { top: -15, left: '50%', transform: [{ translateX: -12 }] };
       } else if (dx === 0 && dy === -1) {
         arrowChar = '▲';
-        arrowStyle = { bottom: -14, left: '50%', transform: [{ translateX: -10 }] };
+        arrowStyle = { bottom: -15, left: '50%', transform: [{ translateX: -12 }] };
       }
 
       if (arrowChar) {
         arrowIndicator = (
-          <View pointerEvents="none" style={[styles.arrowContainer, arrowStyle]}>
-            <Text style={styles.arrowText}>{arrowChar}</Text>
-          </View>
+          <Animated.View
+            pointerEvents="none"
+            style={[
+              styles.arrowContainer,
+              arrowStyle,
+              {
+                borderColor: zTheme.accent,
+                opacity: pulseAnim,
+                shadowColor: zTheme.accent,
+              },
+            ]}
+          >
+            <Text style={[styles.arrowText, { color: zTheme.accent }]}>{arrowChar}</Text>
+          </Animated.View>
         );
       }
     }
@@ -741,13 +771,13 @@ export default function DungeonMapScreen({ navigation }) {
     const renderCellSprite = () => {
       if (isPlayerHere) {
         return (
-          <View style={styles.playerAvatarWrapper}>
+          <Animated.View style={[styles.playerAvatarWrapper, { transform: [{ translateY: floatAnim }] }]}>
             <ExpoImage
               source={require('../../assets/sprites/units/hero/hero_head.png')}
               style={{ width: 28, height: 28 }}
               contentFit="contain"
             />
-          </View>
+          </Animated.View>
         );
       }
 
@@ -853,6 +883,7 @@ export default function DungeonMapScreen({ navigation }) {
                 styles.pulseBorder,
                 {
                   borderColor: tile.cleared ? 'rgba(255, 255, 255, 0.4)' : zTheme.accent,
+                  shadowColor: tile.cleared ? 'rgba(255, 255, 255, 0.5)' : zTheme.accent,
                   opacity: pulseAnim,
                 },
               ]}
@@ -929,16 +960,16 @@ export default function DungeonMapScreen({ navigation }) {
 
   return (
     <ScreenLoader assets={runAssets}>
-      <SafeAreaView style={[styles.root, { backgroundColor: '#133131' }]}>
+      <SafeAreaView style={[styles.root, { backgroundColor: zTheme.bg }]}>
       {/* Dynamic Zone-Colored Ambient Glow */}
       <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
         <Defs>
           <RadialGradient id="zoneGlow" cx="50%" cy="50%" r="50%">
-            <Stop offset="0%" stopColor={zTheme.accent} stopOpacity="0.06" />
-            <Stop offset="100%" stopColor="#133131" stopOpacity="0" />
+            <Stop offset="0%" stopColor={zTheme.accent} stopOpacity="0.15" />
+            <Stop offset="100%" stopColor={zTheme.bg} stopOpacity="0" />
           </RadialGradient>
         </Defs>
-        <Rect width="100%" height="100%" fill="#133131" />
+        <Rect width="100%" height="100%" fill={zTheme.bg} />
         <Rect width="100%" height="100%" fill="url(#zoneGlow)" />
       </Svg>
 
@@ -1075,14 +1106,16 @@ export default function DungeonMapScreen({ navigation }) {
 
       {/* ── Action Buttons Row ────────────────────────────────────────── */}
       <View style={styles.actionButtonsRow}>
-        <Button
-          title="Run Bag"
-          icon={<ItemSprite spritesheet="icons-map" frameIndex={99} displaySize={24} />}
-          variant="secondary"
-          onPress={() => setActiveModal('bag')}
-          style={{ flex: 1 }}
-        />
-        <View style={{ flex: 1, marginHorizontal: 8, position: 'relative', overflow: 'visible' }}>
+        <View style={{ flex: 1 }}>
+          <Button
+            title="Bag"
+            icon={<ItemSprite spritesheet="icons-map" frameIndex={99} displaySize={24} />}
+            variant="secondary"
+            onPress={() => setActiveModal('bag')}
+            style={{ width: '100%' }}
+          />
+        </View>
+        <View style={{ flex: 1, position: 'relative', overflow: 'visible' }}>
           <Button
             title="Quests"
             icon={<ItemSprite spritesheet="icons-map" frameIndex={140} displaySize={24} />}
@@ -1096,13 +1129,15 @@ export default function DungeonMapScreen({ navigation }) {
             </View>
           )}
         </View>
-        <Button
-          title="Flee Region"
-          icon={<ItemSprite spritesheet="icons-map" frameIndex={127} displaySize={24} />}
-          variant="danger"
-          onPress={() => setActiveModal('flee')}
-          style={{ flex: 1 }}
-        />
+        <View style={{ flex: 1 }}>
+          <Button
+            title="Flee"
+            icon={<ItemSprite spritesheet="icons-map" frameIndex={127} displaySize={24} />}
+            variant="danger"
+            onPress={() => setActiveModal('flee')}
+            style={{ width: '100%' }}
+          />
+        </View>
       </View>
 
       {/* ── Footer Info ────────────────────────────────────────────── */}
@@ -1986,31 +2021,31 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     borderWidth: 2,
     borderRadius: 14,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.7,
+    shadowRadius: 5,
+    elevation: 4,
   },
   arrowContainer: {
     position: 'absolute',
     justifyContent: 'center',
     alignItems: 'center',
-    zIndex: 10,
-    width: 20,
-    height: 20,
-    borderRadius: 5,
-    backgroundColor: '#1E2330',
-    borderWidth: 1.0,
-    borderColor: '#D4A754',
+    zIndex: 20,
+    width: 24,
+    height: 24,
+    borderRadius: 6,
+    backgroundColor: 'rgba(30, 35, 48, 0.9)',
+    borderWidth: 1.5,
     // Shadow / Glow
-    shadowColor: '#D4A754',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.25,
-    shadowRadius: 1.2,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.6,
+    shadowRadius: 3,
+    elevation: 4,
   },
   arrowText: {
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: 'bold',
-    color: '#D4A754',
     textAlign: 'center',
-    lineHeight: 14,
   },
   cellEmoji: {
     fontSize: 22,
@@ -2060,6 +2095,10 @@ const styles = StyleSheet.create({
     borderColor: '#F5CF4A', // treasureGold — matches design system "current tile" spec
     borderWidth: 2,
     backgroundColor: 'rgba(245, 207, 74, 0.06)',
+    shadowColor: '#F5CF4A',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.85,
+    shadowRadius: 8,
   },
   clearedCell: {
     opacity: 0.55,
@@ -2076,11 +2115,13 @@ const styles = StyleSheet.create({
     padding: theme.SPACING.md,
     alignItems: 'center',
     backgroundColor: 'rgba(0,0,0,0.3)',
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255, 255, 255, 0.06)',
   },
   footerText: {
     ...theme.FONTS.body,
-    fontSize: 11,
-    color: '#707F94',
+    fontSize: 13,
+    color: '#94A3B8',
     textAlign: 'center',
   },
 
@@ -2291,7 +2332,7 @@ const styles = StyleSheet.create({
   actionButtonsRow: {
     flexDirection: 'row',
     justifyContent: 'center',
-    gap: 12,
+    gap: 8,
     marginHorizontal: 16,
     marginBottom: 16,
   },

@@ -1580,6 +1580,19 @@ export function selectEnemyMove(enemyState, allEnemies = []) {
     enemyState.cooldowns = {};
   }
 
+  // ── Special AI: Toxic Puff ────────────────────────────────────────────────
+  if (enemyState.id === 'toxic_puff') {
+    const moves = enemyState.moves || [];
+    const explodeMove = moves.find(m => m.name === 'Explode');
+    const tackleMove = moves.find(m => m.name === 'Tackle');
+    const hpPercent = enemyState.hp / enemyState.maxHp;
+
+    if (hpPercent < 0.30 && explodeMove) {
+      return explodeMove;
+    }
+    return tackleMove || explodeMove;
+  }
+
   // ── Special Boss AI: King Rat ──────────────────────────────────────────────
   if (enemyState.id === 'king_rat') {
     const moves = enemyState.moves || [];

@@ -88,10 +88,10 @@ export function calculateDrops(enemy, zoneId, floorNumber) {
     const starLevel = enemy.stars || 1;
     let qty = 0;
 
-    if (['sewer_rat', 'thorn_sprite', 'barnacle_crab'].includes(enemy.id)) {
+    if (['sewer_rat', 'mutated_plant', 'mineral_pincher'].includes(enemy.id)) {
       // Rat Profile: quantity = level
       qty = starLevel;
-    } else if (['cockroach_knight', 'giant_beetle'].includes(enemy.id)) {
+    } else if (['cockroach_knight', 'ironclad_beetle'].includes(enemy.id)) {
       // Cockroach Profile: quantity = level + 1
       qty = starLevel + 1;
     } else {
