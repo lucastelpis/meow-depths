@@ -1,13 +1,10 @@
 /**
- * DungeonFloorScreen.js — Dungeon Floor Selection
+ * DungeonFloorScreen.js — Redesigned Dungeon Floor Selection Screen (Winding Grid Layout)
  *
- * A scrollable list of all 10 floors for the selected zone.
- * Each floor is a full-width horizontal card with a left accent rail.
- *
- * Floor states:
- *   cleared   — completed before (green, replayable)
- *   available — the frontier floor (gold glow, call-to-action visible)
- *   locked    — not yet reachable (very dim)
+ * Divided into 3 parts:
+ *   1st part: Header (consistent design: back button, name of the dungeon)
+ *   2nd part: Map (winding snake path, background image per dungeon with overlay, retro 3D buttons)
+ *   3rd part: Details (integrated details card showing stats, rewards, seen/unseen monsters, and pack modal trigger/start row)
  */
 
 import React, { useState, useMemo } from 'react';
@@ -17,35 +14,28 @@ import {
   ScrollView,
   TouchableOpacity,
   StyleSheet,
+  Dimensions,
   Modal,
   Pressable,
-  Dimensions,
+  Animated,
 } from 'react-native';
+
+const AnimatedTouchableOpacity = Animated.createAnimatedComponent(TouchableOpacity);
 import { Image as ExpoImage } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import Svg, {
-  Defs,
-  LinearGradient,
-  RadialGradient,
-  Stop,
-  Rect,
-  Line,
-  Circle,
-  Path,
-  G,
-} from 'react-native-svg';
+import Svg, { Defs, RadialGradient, LinearGradient, Stop, Rect, Line, Path } from 'react-native-svg';
 
 import { useGame } from '../state/gameState';
 import { ZONES, getFloorCompletionReward } from '../data/zones';
-import { CONSUMABLES } from '../data/gear';
+import { CONSUMABLES, MATERIALS } from '../data/gear';
 import { calculateEffectiveStats } from '../logic/progressionEngine';
 import ItemSprite from '../components/ItemSprite';
-import { DUNGEON_BANNERS } from '../constants/sprites';
 
-const { height: SCREEN_HEIGHT } = Dimensions.get('window');
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+const PAGE_WIDTH = SCREEN_WIDTH - 32;
 
-// ─── Zone config ──────────────────────────────────────────────────────────────
+// ─── Zone Config ──────────────────────────────────────────────────────────────
 const ZONE_CONFIG = {
   zone1: {
     accent: '#3FB56E',
@@ -53,9 +43,6 @@ const ZONE_CONFIG = {
     accentGlow: 'rgba(63,181,110,0.18)',
     border: 'rgba(63,181,110,0.25)',
     bg: '#0A120C',
-    bgGrad1: '#0F1A0F',
-    bgGrad2: '#07090A',
-    iconSprite: { spritesheet: 'crystals-1', frameIndex: 1 },
     bannerDesc: 'Damp tunnels. Rats, slime, and worse lurk in every shadow.',
   },
   zone2: {
@@ -64,9 +51,6 @@ const ZONE_CONFIG = {
     accentGlow: 'rgba(168,85,247,0.18)',
     border: 'rgba(168,85,247,0.25)',
     bg: '#0C0A12',
-    bgGrad1: '#150F1A',
-    bgGrad2: '#09060B',
-    iconSprite: { spritesheet: 'crystals-1', frameIndex: 5 },
     bannerDesc: 'Overgrown ruins where roots move and fungi glow with malice.',
   },
   zone3: {
@@ -75,14 +59,17 @@ const ZONE_CONFIG = {
     accentGlow: 'rgba(6,182,212,0.18)',
     border: 'rgba(6,182,212,0.25)',
     bg: '#0A0F1A',
-    bgGrad1: '#0F151F',
-    bgGrad2: '#06090B',
-    iconSprite: { spritesheet: 'crystals-1', frameIndex: 9 },
     bannerDesc: 'Salt-crusted wharves haunted by drowned things.',
   },
 };
 
-// ─── Floor metadata ───────────────────────────────────────────────────────────
+// Background banners mapping
+const ZONE_BACKGROUNDS = {
+  zone1: require('../../assets/sprites/banners/soggy-ruins-zones.png'),
+  zone2: require('../../assets/sprites/banners/wicked-garden-zones.png'),
+  zone3: require('../../assets/sprites/banners/sunken-docks-zones.png'),
+};
+
 const GRID_SIZES = {
   1: '3×3', 2: '3×3', 3: '3×3',
   4: '3×4', 5: '3×4', 6: '3×4',
@@ -90,8 +77,6 @@ const GRID_SIZES = {
   10: '4×5',
 };
 
-// Difficulty on a 5-star scale: floor 1 starts at half a star, +0.5 per floor,
-// floor 10 ends at a full 5 stars.
 const DIFF_DATA = {
   1: { rating: 0.5, color: '#5A9FE0' },
   2: { rating: 1.0, color: '#5A9FE0' },
@@ -105,32 +90,18 @@ const DIFF_DATA = {
   10: { rating: 5.0, color: '#DD7A86', skull: true },
 };
 
-// Dynamic bag slots computed from player equipment
-const CONSUMABLE_ICONS = {
-  potion: '🧪',
-  super_potion: '🧪',
-  mega_potion: '🧪',
-  ultra_potion: '🧪',
-  antidote: '🌿',
-  smoke_vial: '💨',
-  mystery_chest: '🎁',
-};
-
 function getFloorStatus(floor, cleared) {
   if (floor <= cleared) return 'cleared';
   if (floor === cleared + 1) return 'available';
   return 'locked';
 }
 
-
-
 function renderDifficultyStars(diffData, size = 10) {
   const fontSize = size + 3;
 
-  // Boss floor shows 5 skull icons instead of stars.
   if (diffData.skull) {
     return (
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 1 }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2 }}>
         {Array.from({ length: 5 }).map((_, i) => (
           <ItemSprite key={`skull-${i}`} spritesheet="icons-map" frameIndex={34} displaySize={size + 4} />
         ))}
@@ -138,17 +109,13 @@ function renderDifficultyStars(diffData, size = 10) {
     );
   }
 
-  // 5-star scale. Supports fractional ratings (e.g. 1.5) by clipping a filled ★
-  // to a fraction of its width over an empty ☆ — there's no reliable half-star glyph.
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center' }}>
       {Array.from({ length: 5 }).map((_, i) => {
-        const fill = Math.max(0, Math.min(1, diffData.rating - i)); // 0, 0.5, 1, …
+        const fill = Math.max(0, Math.min(1, diffData.rating - i));
         return (
           <View key={`star-${i}`} style={{ marginHorizontal: 0.5 }}>
-            {/* Empty base */}
             <Text style={{ fontSize, color: diffData.color, opacity: 0.25 }}>☆</Text>
-            {/* Filled overlay, clipped to the fill fraction */}
             {fill > 0 && (
               <View style={[StyleSheet.absoluteFill, { width: `${fill * 100}%`, overflow: 'hidden' }]}>
                 <Text style={{ fontSize, color: diffData.color }}>★</Text>
@@ -161,7 +128,7 @@ function renderDifficultyStars(diffData, size = 10) {
   );
 }
 
-// ─── Component ────────────────────────────────────────────────────────────────
+
 export default function DungeonFloorScreen() {
   const navigation = useNavigation();
   const route = useRoute();
@@ -176,17 +143,33 @@ export default function DungeonFloorScreen() {
   const isZoneCleared = !!state.progress[`${zoneId}Cleared`];
   const effectiveCleared = isZoneCleared ? 10 : floorsCleared;
 
-  // Constants for the circular progress ring
-  const radius = 24;
-  const strokeWidth = 4;
-  const circumference = 2 * Math.PI * radius;
-  const strokeDashoffset = circumference * (1 - effectiveCleared / 10);
+  // Initialize selectedFloor to the highest unlocked/frontier floor
+  const defaultFloor = Math.min(effectiveCleared + 1, 10);
+  const [selectedFloor, setSelectedFloor] = useState(defaultFloor);
+  const [loadout, setLoadout] = useState({});
+  const detailsScrollRef = React.useRef(null);
+
+  // Pulsing animation for selected button border
+  const pulseAnim = React.useRef(new Animated.Value(0)).current;
+  React.useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, {
+          toValue: 1,
+          duration: 900,
+          useNativeDriver: false,
+        }),
+        Animated.timing(pulseAnim, {
+          toValue: 0,
+          duration: 900,
+          useNativeDriver: false,
+        })
+      ])
+    ).start();
+  }, []);
 
   const effectiveStats = useMemo(() => calculateEffectiveStats(state.hero), [state.hero]);
   const maxSlots = effectiveStats.bagSlots || 0;
-
-  const [selectedFloor, setSelectedFloor] = useState(null);
-  const [loadout, setLoadout] = useState({});
 
   const totalPacked = useMemo(
     () => Object.values(loadout).reduce((s, v) => s + v, 0),
@@ -210,183 +193,63 @@ export default function DungeonFloorScreen() {
   };
 
   const openFloor = (floor) => {
-    if (getFloorStatus(floor, effectiveCleared) === 'locked') return;
     setLoadout({});
     setSelectedFloor(floor);
+    detailsScrollRef.current?.scrollTo({ x: 0, animated: false });
   };
 
   const handleEnter = () => {
-    if (!selectedFloor) return;
+    const status = getFloorStatus(selectedFloor, effectiveCleared);
+    if (status === 'locked') return;
+
     const carried = [];
     for (const [id, count] of Object.entries(loadout)) {
       for (let i = 0; i < count; i++) carried.push(id);
     }
-    const floorNumber = selectedFloor;
-    setSelectedFloor(null);
-    dispatch({ type: 'START_RUN', payload: { zoneId, floorNumber, consumables: carried } });
+    dispatch({ type: 'START_RUN', payload: { zoneId, floorNumber: selectedFloor, consumables: carried } });
     navigation.navigate('DungeonMap');
   };
 
-  if (!zone) return null;
+  // Get coordinates for 3-column snake path (Expanded vertical height)
+  const mapPadding = 20;
+  const mapWidth = SCREEN_WIDTH - mapPadding * 2;
+  const headerHeight = insets.top + 56;
+  const detailsHeight = 245 + 10 + Math.max(insets.bottom, 16);
+  const mapHeight = SCREEN_HEIGHT - headerHeight - detailsHeight;
 
-  const selectedStatus = selectedFloor ? getFloorStatus(selectedFloor, effectiveCleared) : null;
-  const selectedDiff = selectedFloor ? DIFF_DATA[selectedFloor] : null;
-  const selectedReward = selectedFloor ? getFloorCompletionReward(zoneId, selectedFloor) : { gold: 0, xp: 0 };
+  const getButtonPosition = (floor) => {
+    const colWidth = mapWidth / 3;
+    const rowHeight = mapHeight / 4.1;
+    const yOffset = 18;
 
-  // ── Render one floor row ────────────────────────────────────────────────────
-  const renderFloorRow = (floor) => {
-    const status = getFloorStatus(floor, effectiveCleared);
-    const reward = getFloorCompletionReward(zoneId, floor);
-    const diff = DIFF_DATA[floor];
-    const isLocked = status === 'locked';
-    const isAvail = status === 'available';
-    const isCleared = status === 'cleared';
-    const isBoss = floor === 10;
-    const isLast = floor === 10;
-    const isFirst = floor === 1;
-
-    // Rail dot + line colors
-    const dotColor = isCleared ? '#3FB56E'
-      : isAvail ? (isBoss ? '#DD7A86' : '#F5CF4A')
-        : 'rgba(255,255,255,0.12)';
-    const lineColor = (floor - 1 < effectiveCleared + 1)
-      ? zc.accent + '55'
-      : 'rgba(255,255,255,0.06)';
-
-    // Card colors — zone-tinted backgrounds for all states
-    const cardBorder = isCleared ? `${zc.accent}35`
-      : isAvail ? (isBoss ? 'rgba(221,122,134,0.5)' : `${zc.accent}70`)
-        : 'rgba(255,255,255,0.06)';
-    const cardBg = isCleared ? `${zc.accent}0A`
-      : isAvail ? (isBoss ? 'rgba(221,122,134,0.08)' : `${zc.accent}12`)
-        : `${zc.accent}05`;
-    const cardBorderWidth = isAvail ? 2 : 1;
-
-    const rowOpacity = isLocked ? 0.45 : 1;
-
-    return (
-      <View key={floor} style={[styles.floorRow, { opacity: rowOpacity }]}>
-        {/* ── Left Rail ── */}
-        <View style={styles.rail}>
-          {/* line above dot */}
-          <View style={[styles.railLine, { backgroundColor: isFirst ? 'transparent' : lineColor }]} />
-          {/* dot */}
-          <View style={[
-            styles.railDot,
-            { borderColor: dotColor, backgroundColor: isCleared ? dotColor : 'transparent' },
-            isAvail && !isBoss && styles.railDotAvail,
-            isBoss && isAvail && styles.railDotBoss,
-          ]}>
-            {isCleared && <Text style={styles.railDotCheck}>✓</Text>}
-            {isBoss && !isCleared && <ItemSprite spritesheet="status-icons-1" frameIndex={21} displaySize={10} />}
-          </View>
-          {/* line below dot */}
-          <View style={[styles.railLine, { backgroundColor: isLast ? 'transparent' : lineColor }]} />
-        </View>
-
-        {/* ── Floor Card ── */}
-        <TouchableOpacity
-          style={[styles.floorCard, { borderColor: cardBorder, backgroundColor: cardBg, borderWidth: cardBorderWidth }]}
-          onPress={() => openFloor(floor)}
-          activeOpacity={isLocked ? 1 : 0.78}
-          disabled={isLocked}
-        >
-          {/* Card SVG Background — zone-tinted glow for available floors */}
-          {(isAvail || isBoss) && (
-            <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
-              <Defs>
-                <RadialGradient id={`cardGlow_${floor}`} cx="0%" cy="50%" rx="60%" ry="80%">
-                  <Stop offset="0%" stopColor={isBoss ? '#DD7A86' : zc.accent} stopOpacity={isBoss ? '0.10' : '0.10'} />
-                  <Stop offset="100%" stopColor="transparent" stopOpacity="0" />
-                </RadialGradient>
-              </Defs>
-              <Rect width="100%" height="100%" fill={`url(#cardGlow_${floor})`} rx={12} />
-            </Svg>
-          )}
-
-          {/* Floor number pill */}
-          <View style={[
-            styles.floorNumPill,
-            isCleared && styles.floorNumPillCleared,
-            isAvail && !isBoss && styles.floorNumPillAvail,
-            isBoss && styles.floorNumPillBoss,
-          ]}>
-            <Text style={[
-              styles.floorNum,
-              isCleared && { color: '#3FB56E' },
-              isAvail && !isBoss && { color: '#F5CF4A' },
-              isBoss && { color: '#DD7A86' },
-            ]}>
-              {floor < 10 ? `0${floor}` : floor}
-            </Text>
-          </View>
-
-          {/* Name & Stars Column (Left-Center) */}
-          <View style={styles.floorCardNameCol}>
-            <Text style={[
-              styles.floorName,
-              isCleared && { color: 'rgba(207,224,238,0.6)' },
-              isAvail && { color: '#F8FAFC' },
-              isLocked && { color: 'rgba(207,224,238,0.45)' },
-              isBoss && { color: '#DD7A86' },
-            ]} numberOfLines={1}>
-              Zone {floor}
-            </Text>
-            <View style={styles.floorDiff}>
-              {renderDifficultyStars(diff, 7)}
-            </View>
-          </View>
-
-          {/* Pre-disclosed floor completion rewards (Center) */}
-          <View style={styles.floorCardRewards}>
-            <View style={styles.floorRewardCardMini}>
-              <ItemSprite spritesheet="icons-1" frameIndex={11} displaySize={14} />
-              <Text style={styles.floorRewardCardQty}>{reward.gold} G</Text>
-            </View>
-            <View style={styles.floorRewardCardMini}>
-              <ItemSprite spritesheet="icons-map" frameIndex={146} displaySize={14} />
-              <Text style={styles.floorRewardCardQty}>{reward.xp} XP</Text>
-            </View>
-          </View>
-
-          {/* Status & Meta Column (Right) */}
-          <View style={styles.floorCardStatusCol}>
-            {/* Status badge */}
-            {isCleared && (
-              <View style={styles.badgeCleared}>
-                <Text style={styles.badgeClearedText} numberOfLines={1}>Cleared</Text>
-              </View>
-            )}
-            {isAvail && !isBoss && (
-              <View style={styles.badgeNext}>
-                <Text style={styles.badgeNextText} numberOfLines={1}>Unlocked</Text>
-              </View>
-            )}
-            {isAvail && isBoss && (
-              <View style={styles.badgeBoss}>
-                <ItemSprite spritesheet="status-icons-1" frameIndex={21} displaySize={9} />
-                <Text style={styles.badgeBossText} numberOfLines={1}>Boss</Text>
-              </View>
-            )}
-            {isLocked && (
-              <View style={styles.badgeLocked}>
-                <ItemSprite spritesheet="icons-map" frameIndex={49} displaySize={9} opacity={0.5} />
-                <Text style={styles.badgeLockedText} numberOfLines={1}>Locked</Text>
-              </View>
-            )}
-
-            {/* Grid size */}
-            <View style={styles.floorMetaMini}>
-              <Text style={styles.gridSizeMini}>{floor === 10 && zoneId === 'zone1' ? '4×4' : GRID_SIZES[floor]}</Text>
-            </View>
-          </View>
-        </TouchableOpacity>
-      </View>
-    );
+    switch (floor) {
+      case 1: return { x: colWidth * 0.5, y: rowHeight * 0.5 + yOffset };
+      case 2: return { x: colWidth * 1.5, y: rowHeight * 0.5 + yOffset };
+      case 3: return { x: colWidth * 2.5, y: rowHeight * 0.5 + yOffset };
+      case 4: return { x: colWidth * 2.5, y: rowHeight * 1.5 + yOffset };
+      case 5: return { x: colWidth * 1.5, y: rowHeight * 1.5 + yOffset };
+      case 6: return { x: colWidth * 0.5, y: rowHeight * 1.5 + yOffset };
+      case 7: return { x: colWidth * 0.5, y: rowHeight * 2.5 + yOffset };
+      case 8: return { x: colWidth * 1.5, y: rowHeight * 2.5 + yOffset };
+      case 9: return { x: colWidth * 2.5, y: rowHeight * 2.5 + yOffset };
+      case 10: return { x: colWidth * 1.5, y: rowHeight * 3.4 + yOffset }; // Centered Boss
+      default: return { x: 0, y: 0 };
+    }
   };
 
+  const lines = [
+    [1, 2], [2, 3], [3, 4], [4, 5], [5, 6], [6, 7], [7, 8], [8, 9], [9, 10]
+  ];
+
+  if (!zone) return null;
+
+  const bgImage = ZONE_BACKGROUNDS[zoneId] || ZONE_BACKGROUNDS.zone1;
+  const selectedStatus = getFloorStatus(selectedFloor, effectiveCleared);
+  const selectedDiff = DIFF_DATA[selectedFloor];
+  const selectedReward = getFloorCompletionReward(zoneId, selectedFloor);
+
   return (
-      <View style={[styles.container, { backgroundColor: '#133131' }]}>
+    <View style={[styles.container, { backgroundColor: '#133131' }]}>
       {/* Full-screen ambient gradient */}
       <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
         <Defs>
@@ -399,1071 +262,831 @@ export default function DungeonFloorScreen() {
         <Rect width="100%" height="100%" fill="url(#screenGlow)" />
       </Svg>
 
-      {/* ── Header ─────────────────────────────────────────────────────── */}
+      {/* ── 1st Part: Header ── */}
       <View style={[styles.header, { paddingTop: insets.top }]}>
-        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()} activeOpacity={0.7}>
-          <Text style={styles.backText} numberOfLines={1}>← Expeditions</Text>
-        </TouchableOpacity>
-        <View style={styles.titleContainer}>
-          <ItemSprite
-            spritesheet="icons-map"
-            frameIndex={136}
-            displaySize={22}
-          />
-          <Text style={styles.title}>Region</Text>
+        <View style={styles.headerBackButtonWrapper}>
+          {/* 1. Bevel Shadow Base */}
+          <View style={styles.headerBackButtonBevelShadow} />
+
+          {/* 2. Main Outer Button */}
+          <TouchableOpacity
+            activeOpacity={0.8}
+            onPress={() => navigation.goBack()}
+            style={styles.headerBackButtonOuter}
+          >
+            {/* 3. Inner Highlight & Fill */}
+            <View style={styles.headerBackButtonInner}>
+              <ItemSprite
+                spritesheet="icons-map"
+                frameIndex={43}
+                displaySize={26}
+              />
+            </View>
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.headerTitleOuterBorder}>
+          <View style={styles.headerTitleInnerBorder}>
+            <Text style={styles.headerTitleText}>{zone.name}</Text>
+          </View>
         </View>
         <View style={styles.headerSpacer} />
       </View>
 
-      {/* ── Main Scroll View ────────────────────────────────────────── */}
-      <ScrollView
-        style={styles.scroll}
-        contentContainerStyle={[
-          styles.scrollContent,
-          {
-            paddingTop: 16,
-            paddingBottom: insets.bottom + 24,
-          }
-        ]}
-        showsVerticalScrollIndicator={false}
-      >
+      {/* ── Body Area (Shared Background Artwork) ── */}
+      <View style={styles.bodyContainer}>
+        {/* Background Artwork */}
+        <ExpoImage
+          source={bgImage}
+          style={StyleSheet.absoluteFillObject}
+          contentFit="cover"
+        />
+        {/* Dark overlay for transparency & readability */}
+        <View style={[styles.mapOverlay, StyleSheet.absoluteFillObject]} />
 
-        {/* ── Zone Banner ────────────────────────────────────────────── */}
-        <View style={[styles.banner, { borderColor: zc.accent, width: '100%', marginHorizontal: 0, marginTop: 4, marginBottom: 20 }]}>
-          {/* Dungeon artwork as banner background */}
-          <ExpoImage
-            source={DUNGEON_BANNERS[zoneId]}
-            style={styles.bannerBgImage}
-            contentFit="cover"
-          />
-          {/* Dark overlay for readability */}
-          <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
-            <Defs>
-              <LinearGradient id="bannerOverlay" x1="0" y1="0" x2="1" y2="0">
-                <Stop offset="0%" stopColor="#000000" stopOpacity="0.92" />
-                <Stop offset="60%" stopColor="#000000" stopOpacity="0.75" />
-                <Stop offset="100%" stopColor="#000000" stopOpacity="0.5" />
-              </LinearGradient>
-              <RadialGradient id="bannerAccent" cx="85%" cy="50%" rx="55%" ry="75%">
-                <Stop offset="0%" stopColor={zc.accent} stopOpacity="0.18" />
-                <Stop offset="100%" stopColor="transparent" stopOpacity="0" />
-              </RadialGradient>
-            </Defs>
-            <Rect width="100%" height="100%" fill="url(#bannerOverlay)" rx={18} />
-            <Rect width="100%" height="100%" fill="url(#bannerAccent)" rx={18} />
+        {/* ── 2nd Part: Map ── */}
+        <View style={[styles.mapContainer, { height: mapHeight }]}>
+
+          {/* Dashed lines connector path */}
+          <Svg style={StyleSheet.absoluteFill} width={SCREEN_WIDTH} height={mapHeight}>
+            {lines.map(([from, to], idx) => {
+              const p1 = getButtonPosition(from);
+              const p2 = getButtonPosition(to);
+              return (
+                <Line
+                  key={idx}
+                  x1={p1.x + mapPadding}
+                  y1={p1.y}
+                  x2={p2.x + mapPadding}
+                  y2={p2.y}
+                  stroke="rgba(255, 255, 255, 0.35)"
+                  strokeWidth={3}
+                  strokeDasharray="6,6"
+                />
+              );
+            })}
           </Svg>
 
-          <View style={styles.bannerInner}>
-            {/* Left Column: Title, Level Badge, and Description */}
-            <View style={styles.bannerLeft}>
-              <View style={styles.eyebrowRow}>
-                <Text style={styles.bannerEyebrow}>REGION</Text>
-                <View style={[styles.levelTag, { borderColor: zc.border, backgroundColor: zc.accentDim }]}>
-                  <Text style={[styles.levelTagText, { color: zc.accent }]}>
-                    Lv. {zone.minLevel}–{zone.maxLevel}
-                  </Text>
-                </View>
-              </View>
-              <Text style={[styles.bannerTitle, { color: zc.accent }]}>{zone.name}</Text>
-              <Text style={styles.bannerDesc}>{zc.bannerDesc}</Text>
-            </View>
+          {/* 10 Zone Buttons */}
+          {Array.from({ length: 10 }).map((_, idx) => {
+            const floor = idx + 1;
+            const coords = getButtonPosition(floor);
+            const status = getFloorStatus(floor, effectiveCleared);
+            const isSelected = selectedFloor === floor;
 
-            {/* Right Column: Premium Circular Progress Ring */}
-            <View style={styles.bannerRight}>
-              <View style={styles.progressRingWrapper}>
-                <Svg width="64" height="64" viewBox="0 0 60 60">
-                  {/* Background Track Circle */}
-                  <Circle
-                    cx="30"
-                    cy="30"
-                    r={radius}
-                    stroke="rgba(255, 255, 255, 0.05)"
-                    strokeWidth={strokeWidth}
-                    fill="none"
-                  />
-                  {/* Glow Circle behind the active stroke for premium depth */}
-                  <Circle
-                    cx="30"
-                    cy="30"
-                    r={radius}
-                    stroke={zc.accent}
-                    strokeWidth={strokeWidth}
-                    fill="none"
-                    strokeDasharray={circumference}
-                    strokeDashoffset={strokeDashoffset}
-                    strokeLinecap="round"
-                    transform="rotate(-90 30 30)"
-                    opacity={0.3}
-                  />
-                  {/* Active Progress Circle */}
-                  <Circle
-                    cx="30"
-                    cy="30"
-                    r={radius}
-                    stroke={zc.accent}
-                    strokeWidth={strokeWidth}
-                    fill="none"
-                    strokeDasharray={circumference}
-                    strokeDashoffset={strokeDashoffset}
-                    strokeLinecap="round"
-                    transform="rotate(-90 30 30)"
-                  />
-                </Svg>
-                {/* Centered text display inside the progress ring */}
-                <View style={styles.progressRingTextContainer}>
-                  <Text style={[styles.progressRingCount, { color: zc.accent }]}>
-                    {effectiveCleared}
-                  </Text>
-                  <Text style={styles.progressRingDivider}>/</Text>
-                  <Text style={styles.progressRingTotal}>10</Text>
-                </View>
+            const isCleared = status === 'cleared';
+            const isAvail = status === 'available';
+
+            let bgColor = '#4E4256'; // Locked purple-grey fill
+            let innerBorderColor = '#776A81'; // Locked inset outline
+            let innerShadowColor = '#2E2536'; // Locked inset bottom shadow
+            let outerBorderColor = '#6C5E77'; // Locked main frame
+            let bevelColor = '#2C2534'; // Locked 3D shadow base
+
+            if (isCleared) {
+              bgColor = '#488134ff'; // Darker forest green fill
+              innerBorderColor = '#8EB648'; // Light-green inset outline
+              innerShadowColor = '#364E2C'; // Dark-green inset bottom shadow
+              outerBorderColor = '#9A7E56'; // Golden-bronze frame
+              bevelColor = '#4F3C1E'; // Dark-brown 3D shadow base
+            } else if (isAvail) {
+              bgColor = '#4E4256'; // Greyish-purple fill (matches active stairs sprite bg)
+              innerBorderColor = '#E5C25F'; // Gold inset outline highlight
+              innerShadowColor = '#2E2536'; // Dark inset bottom shadow
+              outerBorderColor = '#E5C25F'; // Bright gold frame outline
+              bevelColor = '#6E5528'; // Gold 3D shadow base
+            }
+
+            // Interpolate border color if selected to create the pulsating outline
+            let animatedBorderColor = outerBorderColor;
+            if (isSelected) {
+              let pulseTarget = '#FFFFFF';
+              if (isCleared) {
+                pulseTarget = '#FFE59B'; // Pulses to bright warm gold
+              } else if (isAvail) {
+                pulseTarget = '#FFFFFF'; // Pulses to glowing white
+              } else {
+                pulseTarget = '#AE9ABF'; // Pulses to light lavender
+              }
+              animatedBorderColor = pulseAnim.interpolate({
+                inputRange: [0, 1],
+                outputRange: [outerBorderColor, pulseTarget],
+              });
+            }
+
+
+
+            return (
+              <View
+                key={floor}
+                style={[
+                  styles.buttonWrapper,
+                  {
+                    left: coords.x + mapPadding - 28,
+                    top: coords.y - 28,
+                  }
+                ]}
+              >
+                {/* 1. Bevel Shadow Base */}
+                <View style={[
+                  styles.buttonBevelShadow,
+                  {
+                    backgroundColor: bevelColor,
+                    transform: isSelected ? [{ scale: 1.15 }] : [{ scale: 1.0 }],
+                  }
+                ]} />
+
+                {/* 2. Main Outer Button */}
+                <AnimatedTouchableOpacity
+                  activeOpacity={0.8}
+                  onPress={() => openFloor(floor)}
+                  disabled={status === 'locked'}
+                  style={[
+                    styles.mapButtonOuter,
+                    {
+                      backgroundColor: bevelColor, // gap fill
+                      borderColor: animatedBorderColor,
+                      transform: isSelected ? [{ scale: 1.15 }] : [{ scale: 1.0 }],
+                    }
+                  ]}
+                >
+                  {/* 3. Inner Highlight & Fill */}
+                  <View style={[
+                    styles.mapButtonInner,
+                    {
+                      backgroundColor: bgColor,
+                      borderTopColor: innerBorderColor,
+                      borderLeftColor: innerBorderColor,
+                      borderRightColor: innerBorderColor,
+                      borderBottomColor: innerShadowColor,
+                      borderBottomWidth: 4,
+                    }
+                  ]}>
+                    {isCleared ? (
+                      <ItemSprite spritesheet="icons-map" frameIndex={28} displaySize={38} />
+                    ) : isAvail ? (
+                      <ItemSprite spritesheet="icons-map" frameIndex={4} displaySize={38} />
+                    ) : (
+                      <ItemSprite spritesheet="icons-map" frameIndex={49} displaySize={38} opacity={0.65} />
+                    )}
+                  </View>
+                </AnimatedTouchableOpacity>
+
+                {/* Label Text */}
+                <Text style={[
+                  styles.buttonLabel,
+                  { color: isSelected ? '#F5CF4A' : '#CFE0EE' },
+                ]}>
+                  {`Zone ${floor}`}
+                </Text>
               </View>
-              <Text style={styles.progressRingLabel}>ZONES CLEARED</Text>
-            </View>
-          </View>
+            );
+          })}
         </View>
 
-        <View style={{ height: 8 }} />
-        {Array.from({ length: 10 }, (_, i) => renderFloorRow(i + 1))}
-        <View style={{ height: 32 }} />
-      </ScrollView>
-
-      {/* ── Floor Detail / Loadout Modal ──────────────────────────────── */}
-      <Modal
-        visible={selectedFloor !== null}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setSelectedFloor(null)}
-      >
-        <Pressable
-          style={styles.modalBackdrop}
-          onPress={() => setSelectedFloor(null)}
-        >
-          <Pressable style={styles.modalSheet} onPress={() => { }}>
-            {/* Sheet SVG background */}
-            <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
-              <Defs>
-                <LinearGradient id="sheetBg" x1="0" y1="0" x2="0" y2="1">
-                  <Stop offset="0%" stopColor="#191C24" />
-                  <Stop offset="100%" stopColor="#101218" />
-                </LinearGradient>
-                <RadialGradient id="sheetGlow" cx="50%" cy="0%" rx="70%" ry="40%">
-                  <Stop offset="0%" stopColor={selectedFloor === 10 ? '#DD7A86' : '#D4A754'} stopOpacity="0.08" />
-                  <Stop offset="100%" stopColor="transparent" stopOpacity="0" />
-                </RadialGradient>
-              </Defs>
-              <Rect width="100%" height="100%" fill="url(#sheetBg)" rx={24} />
-              <Rect width="100%" height="100%" fill="url(#sheetGlow)" rx={24} />
-              <Rect x="1" y="1" width="99%" height="99%" rx={23} fill="none"
-                stroke={selectedFloor === 10 ? 'rgba(221,122,134,0.2)' : 'rgba(212,167,84,0.15)'}
-                strokeWidth="1" />
-            </Svg>
-
+        {/* ── 3rd Part: Details Panel (Paging horizontal scroll: Details ⇄ Pack Supplies) ── */}
+        <View style={[styles.detailsContainer, { paddingBottom: Math.max(insets.bottom, 16) }]}>
+          <View style={styles.detailsCard}>
             <ScrollView
-              style={{ maxHeight: SCREEN_HEIGHT * 0.86 }}
-              contentContainerStyle={[styles.modalInner, { paddingBottom: insets.bottom + 32 }]}
-              showsVerticalScrollIndicator={false}
+              ref={detailsScrollRef}
+              horizontal
+              pagingEnabled
+              scrollEnabled={false}
+              showsHorizontalScrollIndicator={false}
+              style={styles.detailsScroll}
+              contentContainerStyle={{ width: PAGE_WIDTH * 2 }}
             >
-              {/* Grabber */}
-              <View style={styles.grabber} />
-
-              {/* Floor label + close */}
-              <View style={styles.modalHeaderRow}>
-                <Text style={styles.modalEyebrow}>
-                  {zone?.name?.toUpperCase()} · ZONE {selectedFloor}
-                </Text>
-                <TouchableOpacity onPress={() => setSelectedFloor(null)} style={styles.closeBtn}>
-                  <Text style={styles.closeBtnText}>✕</Text>
-                </TouchableOpacity>
-              </View>
-
-              {/* Floor hero row */}
-              <View style={styles.modalHeroRow}>
-                <View style={[
-                  styles.modalFloorPill,
-                  selectedFloor === 10 && { borderColor: 'rgba(221,122,134,0.35)', backgroundColor: 'rgba(221,122,134,0.08)' },
-                  selectedStatus === 'available' && selectedFloor !== 10 && { borderColor: 'rgba(245,207,74,0.35)', backgroundColor: 'rgba(245,207,74,0.06)' },
-                  selectedStatus === 'cleared' && { borderColor: 'rgba(63,181,110,0.35)', backgroundColor: 'rgba(63,181,110,0.06)' },
-                ]}>
-                  <Text style={[
-                    styles.modalFloorNum,
-                    selectedFloor === 10 && { color: '#DD7A86' },
-                    selectedStatus === 'available' && selectedFloor !== 10 && { color: '#F5CF4A' },
-                    selectedStatus === 'cleared' && { color: '#3FB56E' },
-                  ]}>
-                    {selectedFloor < 10 ? `0${selectedFloor}` : selectedFloor}
+              {/* Page 1: Floor Details */}
+              <View style={{ width: PAGE_WIDTH, padding: 12 }}>
+                {/* Row 1: Simple Header info line (NAME - STARS - GRID SIZE) */}
+                <View style={styles.detailHeaderLine}>
+                  <Text style={styles.detailTitleCompact}>
+                    {`Zone ${selectedFloor}`}
                   </Text>
+
+                  {selectedDiff && (
+                    <View style={styles.detailHeaderStars}>
+                      {renderDifficultyStars(selectedDiff, 14)}
+                    </View>
+                  )}
+
+                  <View style={styles.gridBadgeCompact}>
+                    <Text style={styles.gridBadgeTextCompact}>
+                      {(selectedFloor === 10 && zoneId === 'zone1') ? '4×4' : GRID_SIZES[selectedFloor]}
+                    </Text>
+                  </View>
                 </View>
 
-                <View style={styles.modalHeroText}>
-                  <Text style={[
-                    styles.modalFloorName,
-                    selectedFloor === 10 && { color: '#DD7A86' },
-                  ]}>
-                    Zone {selectedFloor || 1}
-                  </Text>
-                  <View style={styles.modalBadgeRow}>
-                    {selectedDiff && renderDifficultyStars(selectedDiff, 10)}
-                    <View style={styles.gridSizeBadge}>
-                      <Text style={styles.gridSizeBadgeText}>{(selectedFloor === 10 && zoneId === 'zone1') ? '4×4' : GRID_SIZES[selectedFloor || 1]}</Text>
-                    </View>
-                    {selectedStatus === 'cleared' && (
-                      <View style={styles.clearedBadge}>
-                        <Text style={styles.clearedBadgeText}>Cleared</Text>
+                {/* Row 2a: Rewards List */}
+                <Text style={styles.subHeaderCompact}>REWARDS</Text>
+                <View style={styles.innerSectionBox}>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.rewardsRowCompact}>
+                    {/* Gold Reward Box */}
+                    <View style={styles.rewardCard}>
+                      <View style={styles.rewardItemBox}>
+                        <ItemSprite
+                          spritesheet="icons-1"
+                          frameIndex={11}
+                          displaySize={36}
+                        />
                       </View>
-                    )}
+                      <Text style={styles.rewardName} numberOfLines={1}>
+                        {selectedReward.gold} G
+                      </Text>
+                    </View>
+
+                    {/* XP Reward Box */}
+                    <View style={styles.rewardCard}>
+                      <View style={styles.rewardItemBox}>
+                        <ItemSprite
+                          spritesheet="icons-map"
+                          frameIndex={146}
+                          displaySize={36}
+                        />
+                      </View>
+                      <Text style={styles.rewardName} numberOfLines={1}>
+                        {selectedReward.xp} XP
+                      </Text>
+                    </View>
+                  </ScrollView>
+                </View>
+
+                {/* Row 3: Action Button (Start Expedition slides to Page 2) */}
+                <View style={styles.actionRow}>
+                  {(() => {
+                    const isStartDisabled = selectedStatus === 'locked';
+                    const btnBgColor = isStartDisabled ? '#4E4256' : '#A84C27';
+                    const btnInnerBorder = isStartDisabled ? '#776A81' : '#D67545';
+                    const btnInnerShadow = isStartDisabled ? '#2E2536' : '#5C2814';
+                    const btnOuterBorder = isStartDisabled ? '#6C5E77' : '#E5C25F';
+                    const btnBevel = isStartDisabled ? '#2C2534' : '#6E5528';
+
+                    return (
+                      <View style={styles.wideButtonWrapper}>
+                        {/* 1. Bevel Shadow Base */}
+                        <View style={[styles.wideButtonBevelShadow, { backgroundColor: btnBevel }]} />
+
+                        {/* 2. Main Outer Button */}
+                        <TouchableOpacity
+                          activeOpacity={0.8}
+                          onPress={() => {
+                            if (!isStartDisabled) {
+                              setLoadout({}); // Clear previous selection
+                              detailsScrollRef.current?.scrollTo({ x: PAGE_WIDTH, animated: true });
+                            }
+                          }}
+                          disabled={isStartDisabled}
+                          style={[
+                            styles.wideButtonOuter,
+                            {
+                              backgroundColor: btnBevel, // gap fill
+                              borderColor: btnOuterBorder,
+                            }
+                          ]}
+                        >
+                          {/* 3. Inner Highlight & Fill */}
+                          <View style={[
+                            styles.wideButtonInner,
+                            {
+                              backgroundColor: btnBgColor,
+                              borderTopColor: btnInnerBorder,
+                              borderLeftColor: btnInnerBorder,
+                              borderRightColor: btnInnerBorder,
+                              borderBottomColor: btnInnerShadow,
+                            }
+                          ]}>
+                            <Text style={styles.wideButtonText}>
+                              {isStartDisabled ? 'LOCKED' : 'PACK FOR EXPEDITION'}
+                            </Text>
+                          </View>
+                        </TouchableOpacity>
+                      </View>
+                    );
+                  })()}
+                </View>
+              </View>
+
+              {/* Page 2: Pack Supplies */}
+              <View style={{ width: PAGE_WIDTH, padding: 12 }}>
+                {/* Row 1: Header row with Back Button */}
+                <View style={styles.detailHeaderLine}>
+                  <TouchableOpacity
+                    style={styles.backBtnHeader}
+                    onPress={() => detailsScrollRef.current?.scrollTo({ x: 0, animated: true })}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={styles.backBtnText}>← BACK</Text>
+                  </TouchableOpacity>
+
+                  <Text style={styles.detailTitleCompact}>PACK SUPPLIES</Text>
+
+                  {/* Slot Pips Indicator */}
+                  <View style={styles.slotIndicatorModal}>
+                    {Array.from({ length: maxSlots }).map((_, i) => (
+                      <View key={i} style={[styles.slotPip, i < totalPacked && styles.slotPipFilled]} />
+                    ))}
+                    <Text style={styles.slotText}>{totalPacked}/{maxSlots}</Text>
+                  </View>
+                </View>
+
+                {/* Supplies Items List */}
+                <ScrollView style={styles.inlineScroll} showsVerticalScrollIndicator={true}>
+                  {maxSlots === 0 ? (
+                    <Text style={styles.emptySuppliesText}>No bag slots. Equip a belt/bag in Profile loadout!</Text>
+                  ) : state.hero.inventory.consumables.filter(c => c.quantity > 0).length === 0 ? (
+                    <Text style={styles.emptySuppliesText}>No supplies owned. Purchase potions at the Shop!</Text>
+                  ) : (
+                    state.hero.inventory.consumables
+                      .filter(e => e.quantity > 0)
+                      .map(entry => {
+                        const def = CONSUMABLES.find(c => c.id === entry.id);
+                        const packed = loadout[entry.id] || 0;
+                        const canAdd = totalPacked < maxSlots && packed < entry.quantity;
+
+                        return (
+                          <View key={entry.id} style={styles.supplyRow}>
+                            <View style={styles.supplyIconContainer}>
+                              {def?.spritesheet ? (
+                                <ItemSprite
+                                  spritesheet={def.spritesheet}
+                                  frameIndex={def.frameIndex}
+                                  displaySize={20}
+                                />
+                              ) : (
+                                <Text style={{ fontSize: 16 }}>🧪</Text>
+                              )}
+                            </View>
+                            <View style={{ flex: 1 }}>
+                              <Text style={styles.supplyName}>{def?.name || entry.id}</Text>
+                              <Text style={styles.supplyOwned}>Owned: {entry.quantity}</Text>
+                            </View>
+                            <View style={styles.supplyControls}>
+                              <TouchableOpacity
+                                style={[styles.cntBtn, packed === 0 && styles.cntBtnDim]}
+                                onPress={() => removeItem(entry.id)}
+                                disabled={packed === 0}
+                              >
+                                <Text style={[styles.cntBtnText, packed === 0 && { color: 'rgba(255,255,255,0.2)' }]}>−</Text>
+                              </TouchableOpacity>
+                              <Text style={styles.cntText}>{packed}</Text>
+                              <TouchableOpacity
+                                style={[styles.cntBtn, !canAdd && styles.cntBtnDim]}
+                                onPress={() => addItem(entry.id)}
+                                disabled={!canAdd}
+                              >
+                                <Text style={[styles.cntBtnText, !canAdd && { color: 'rgba(255,255,255,0.2)' }]}>+</Text>
+                              </TouchableOpacity>
+                            </View>
+                          </View>
+                        );
+                      })
+                  )}
+                </ScrollView>
+
+                {/* Confirm & Start Button */}
+                <View style={styles.actionRow}>
+                  <View style={styles.wideButtonWrapper}>
+                    {/* 1. Bevel Shadow Base */}
+                    <View style={[styles.wideButtonBevelShadow, { backgroundColor: '#6E5528' }]} />
+
+                    {/* 2. Main Outer Button */}
+                    <TouchableOpacity
+                      activeOpacity={0.8}
+                      onPress={handleEnter}
+                      style={[
+                        styles.wideButtonOuter,
+                        {
+                          backgroundColor: '#6E5528', // gap fill
+                          borderColor: '#E5C25F',
+                        }
+                      ]}
+                    >
+                      {/* 3. Inner Highlight & Fill */}
+                      <View style={[
+                        styles.wideButtonInner,
+                        {
+                          backgroundColor: '#A84C27',
+                          borderTopColor: '#D67545',
+                          borderLeftColor: '#D67545',
+                          borderRightColor: '#D67545',
+                          borderBottomColor: '#5C2814',
+                        }
+                      ]}>
+                        <Text style={styles.wideButtonText}>START EXPEDITION</Text>
+                      </View>
+                    </TouchableOpacity>
                   </View>
                 </View>
               </View>
-
-              {/* Pre-disclosed completion rewards */}
-              <View style={styles.rewardsHeader}>
-                <ItemSprite spritesheet="icons-1" frameIndex={12} displaySize={16} />
-                <Text style={styles.rewardsTitle}>Clear Rewards</Text>
-              </View>
-              <View style={styles.modalRewardsContainer}>
-                <View style={styles.modalRewardChip}>
-                  <ItemSprite spritesheet="icons-1" frameIndex={11} displaySize={32} />
-                  <Text style={styles.modalRewardQty}>{selectedReward.gold} G</Text>
-                </View>
-                <View style={styles.modalRewardChip}>
-                  <ItemSprite spritesheet="icons-map" frameIndex={146} displaySize={32} />
-                  <Text style={styles.modalRewardQty}>{selectedReward.xp} XP</Text>
-                </View>
-              </View>
-
-              {/* Separator */}
-              <View style={styles.separator} />
-
-              {/* Pack supplies */}
-              <View style={styles.loadoutHeader}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                  <ItemSprite spritesheet="icons-1" frameIndex={26} displaySize={16} />
-                  <Text style={styles.loadoutTitle}>Pack Supplies</Text>
-                </View>
-                <View style={styles.slotPips}>
-                  {Array.from({ length: maxSlots }).map((_, i) => (
-                    <View key={i} style={[styles.pip, i < totalPacked && styles.pipFilled]} />
-                  ))}
-                </View>
-              </View>
-              <Text style={styles.loadoutSub}>{totalPacked}/{maxSlots} items packed</Text>
-
-              {/* Items */}
-              <View style={styles.itemList}>
-                {maxSlots === 0 ? (
-                  <Text style={styles.emptyText}>No bag slots. Buy & equip a belt/bag in your loadout to bring items!</Text>
-                ) : state.hero.inventory.consumables.filter(c => c.quantity > 0).length === 0 ? (
-                  <Text style={styles.emptyText}>No items — visit the Shop!</Text>
-                ) : (
-                  state.hero.inventory.consumables
-                    .filter(e => e.quantity > 0)
-                    .map(entry => {
-                      const def = CONSUMABLES.find(c => c.id === entry.id);
-                      const packed = loadout[entry.id] || 0;
-                      const canAdd = totalPacked < maxSlots && packed < entry.quantity;
-
-                      return (
-                        <View key={entry.id} style={styles.itemRow}>
-                          <View style={styles.itemIconBox}>
-                            {def?.spritesheet ? (
-                              <ItemSprite
-                                spritesheet={def.spritesheet}
-                                frameIndex={def.frameIndex}
-                                displaySize={24}
-                              />
-                            ) : (
-                              <Text style={styles.itemIcon}>🧪</Text>
-                            )}
-                          </View>
-                          <View style={styles.itemInfo}>
-                            <Text style={styles.itemName}>{def?.name || entry.id}</Text>
-                            <Text style={styles.itemOwned}>Owned: {entry.quantity}</Text>
-                          </View>
-                          <View style={styles.itemControls}>
-                            <TouchableOpacity
-                              style={[styles.counterBtn, packed === 0 && styles.counterBtnDim]}
-                              onPress={() => removeItem(entry.id)}
-                              disabled={packed === 0}
-                            >
-                              <Text style={[styles.counterBtnText, packed === 0 && { color: 'rgba(255,255,255,0.2)' }]}>−</Text>
-                            </TouchableOpacity>
-                            <Text style={styles.packedCount}>{packed}</Text>
-                            <TouchableOpacity
-                              style={[styles.counterBtn, !canAdd && styles.counterBtnDim]}
-                              onPress={() => addItem(entry.id)}
-                              disabled={!canAdd}
-                            >
-                              <Text style={[styles.counterBtnText, !canAdd && { color: 'rgba(255,255,255,0.2)' }]}>+</Text>
-                            </TouchableOpacity>
-                          </View>
-                        </View>
-                      );
-                    })
-                )}
-              </View>
-
-              {/* Enter button */}
-              <TouchableOpacity style={styles.enterBtn} onPress={handleEnter} activeOpacity={0.82}>
-                <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
-                  <Defs>
-                    <LinearGradient id="enterGrad" x1="0" y1="0" x2="1" y2="0">
-                      <Stop offset="0%" stopColor={selectedFloor === 10 ? '#C95C6A' : '#F9D99A'} />
-                      <Stop offset="100%" stopColor={selectedFloor === 10 ? '#DD7A86' : '#D4A754'} />
-                    </LinearGradient>
-                  </Defs>
-                  <Rect width="100%" height="100%" fill="url(#enterGrad)" rx={14} />
-                </Svg>
-                <ItemSprite spritesheet="icons-1" frameIndex={10} displaySize={16} />
-                <Text style={[styles.enterBtnText, selectedFloor === 10 && { color: '#FFF' }]}>
-                  Enter Zone {selectedFloor}{totalPacked > 0 ? `  ·  ${totalPacked} items` : ''}
-                </Text>
-              </TouchableOpacity>
             </ScrollView>
-          </Pressable>
-        </Pressable>
-      </Modal>
+          </View>
+        </View>
+      </View>
     </View>
   );
 }
-
-// ─── Styles ───────────────────────────────────────────────────────────────────
-const RAIL_WIDTH = 48;
-const RAIL_DOT_SIZE = 18;
-const CARD_MARGIN = 10;
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  bodyContainer: {
+    flex: 1,
+    position: 'relative',
+  },
 
-  /* ── Header Bar ─────────────────────────────────────────── */
+  /* ── 1st Part: Header ── */
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingVertical: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.04)',
-  },
-  backButton: {
-    width: 110,
     paddingVertical: 6,
+    borderBottomWidth: 2,
+    borderBottomColor: '#84735B',
+    backgroundColor: 'rgba(0,0,0,0.15)',
+  },
+  headerBackButtonWrapper: {
+    width: 44,
+    height: 44,
+    position: 'relative',
+  },
+  headerBackButtonBevelShadow: {
+    position: 'absolute',
+    left: 0,
+    top: 3,
+    width: 44,
+    height: 44,
+    borderRadius: 8,
+    zIndex: 1,
+    backgroundColor: '#4F3C1E',
+  },
+  headerBackButtonOuter: {
+    width: 44,
+    height: 44,
+    borderRadius: 8,
+    borderWidth: 2.5,
+    borderColor: '#84735B',
+    backgroundColor: '#4F3C1E',
+    zIndex: 2,
+  },
+  headerBackButtonInner: {
+    flex: 1,
+    margin: 2,
+    borderRadius: 5,
+    borderWidth: 2.5,
+    borderTopColor: '#D8483F',
+    borderLeftColor: '#D8483F',
+    borderRightColor: '#D8483F',
+    borderBottomColor: '#590D0E',
+    borderBottomWidth: 4,
+    backgroundColor: '#A61C1C',
     justifyContent: 'center',
-  },
-  backText: {
-    fontFamily: 'Jersey10-Regular',
-    color: '#D4A754',
-    fontSize: 16,
-    letterSpacing: 0.5,
-  },
-  titleContainer: {
-    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
   },
-  title: {
+  headerTitleOuterBorder: {
+    borderWidth: 2.5,
+    borderColor: '#4A3917',
+    borderRadius: 8,
+    backgroundColor: 'transparent',
+    padding: 2,
+  },
+  headerTitleInnerBorder: {
+    borderWidth: 2,
+    borderColor: '#D4A754',
+    borderRadius: 5,
+    backgroundColor: '#1E1E20',
+    paddingVertical: 6,
+    paddingHorizontal: 20,
+  },
+  headerTitleText: {
     fontFamily: 'Jersey10-Regular',
-    fontSize: 20,
-    color: '#F8FAFC',
-    letterSpacing: 0.8,
+    fontSize: 28,
+    color: '#FFF3DA',
     textAlign: 'center',
+    textShadowColor: '#000',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 1,
   },
   headerSpacer: {
-    width: 110,
+    width: 44,
   },
 
-  /* ── Zone Banner ─────────────────────────────────────────── */
-  banner: {
-    marginHorizontal: 14,
-    marginTop: 12,
-    marginBottom: 10,
-    aspectRatio: 600 / 296,
-    borderRadius: 18,
+  /* ── 2nd Part: Map (Expanded height) ── */
+  mapContainer: {
+    position: 'relative',
     overflow: 'hidden',
-    borderWidth: 2,
-    backgroundColor: '#000',
   },
-  bannerBgImage: {
+  mapBgImage: {
     ...StyleSheet.absoluteFillObject,
     width: '100%',
     height: '100%',
   },
-  bannerInner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 18,
-    zIndex: 2,
+  mapOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
-  bannerLeft: {
-    flex: 1,
-    marginRight: 18,
-    justifyContent: 'center',
-  },
-  eyebrowRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 6,
-  },
-  bannerEyebrow: {
-    fontFamily: 'Silkscreen-Regular',
-    fontSize: 9,
-    fontWeight: 'normal',
-    color: 'rgba(207,224,238,0.35)',
-    letterSpacing: 1.5,
-    textTransform: 'uppercase',
-  },
-  levelTag: {
-    borderRadius: 6,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderWidth: 1,
-  },
-  levelTagText: {
-    fontFamily: 'Silkscreen-Regular',
-    fontSize: 9,
-    fontWeight: 'normal',
-  },
-  bannerTitle: {
-    fontFamily: 'PressStart2P-Regular',
-    fontWeight: 'normal',
-    fontSize: 22,
-    marginBottom: 6,
-    letterSpacing: 0.5,
-  },
-  bannerDesc: {
-    fontFamily: 'Jersey10-Regular',
-    fontSize: 12,
-    color: 'rgba(207,224,238,0.55)',
-    lineHeight: 17,
-  },
-  bannerRight: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: 80,
-  },
-  progressRingWrapper: {
-    position: 'relative',
-    width: 64,
-    height: 64,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 4,
-  },
-  progressRingTextContainer: {
+  buttonWrapper: {
     position: 'absolute',
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    justifyContent: 'center',
-  },
-  progressRingCount: {
-    fontFamily: 'Jersey10-Regular',
-    fontWeight: 'normal',
-    fontSize: 16,
-  },
-  progressRingDivider: {
-    fontFamily: 'Silkscreen-Regular',
-    fontSize: 11,
-    color: 'rgba(207,224,238,0.3)',
-    marginHorizontal: 1,
-  },
-  progressRingTotal: {
-    fontFamily: 'Silkscreen-Regular',
-    fontWeight: 'normal',
-    fontSize: 11,
-    color: 'rgba(207,224,238,0.45)',
-  },
-  progressRingLabel: {
-    fontFamily: 'Silkscreen-Regular',
-    fontSize: 8,
-    color: 'rgba(207,224,238,0.4)',
-    fontWeight: 'normal',
-    letterSpacing: 1,
-    textAlign: 'center',
-  },
-
-  /* ── Section label ───────────────────────────────────────── */
-  sectionLabel: {
-    fontFamily: 'Silkscreen-Regular',
-    fontSize: 9,
-    fontWeight: 'normal',
-    letterSpacing: 2,
-    textAlign: 'center',
-    marginBottom: 6,
-    marginTop: 6,
-    opacity: 0.6,
-  },
-
-  /* ── Scroll ──────────────────────────────────────────────── */
-  scroll: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingHorizontal: 14,
-  },
-
-  /* ── Floor row (rail + card) ─────────────────────────────── */
-  floorRow: {
-    flexDirection: 'row',
-    alignItems: 'stretch',
-    marginBottom: 0,
-  },
-
-  /* Rail */
-  rail: {
-    width: 36,
     alignItems: 'center',
-    paddingHorizontal: 0,
+    width: 56,
+    zIndex: 10,
   },
-  railLine: {
-    flex: 1,
-    width: 2,
-    minHeight: 16,
-    borderRadius: 1,
+  buttonBevelShadow: {
+    position: 'absolute',
+    left: 0,
+    top: 4,
+    width: 56,
+    height: 56,
+    borderRadius: 8,
+    zIndex: 1,
   },
-  railDot: {
-    width: RAIL_DOT_SIZE,
-    height: RAIL_DOT_SIZE,
-    borderRadius: RAIL_DOT_SIZE / 2,
-    borderWidth: 2,
-    alignItems: 'center',
-    justifyContent: 'center',
+  mapButtonOuter: {
+    width: 56,
+    height: 56,
+    borderRadius: 8,
+    borderWidth: 2.5,
     zIndex: 2,
   },
-  railDotAvail: {
-    shadowColor: '#F5CF4A',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.6,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  railDotBoss: {
-    shadowColor: '#DD7A86',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.7,
-    shadowRadius: 10,
-    elevation: 6,
-  },
-  railDotCheck: {
-    fontSize: 8,
-    color: '#07070A',
-    fontWeight: '900',
-  },
-  railDotBossIcon: {
-    fontSize: 9,
-    color: '#DD7A86',
-  },
-
-  /* Floor card */
-  floorCard: {
+  mapButtonInner: {
     flex: 1,
-    borderWidth: 1,
-    borderRadius: 12,
-    marginVertical: 5,
-    padding: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    overflow: 'hidden',
-    minHeight: 62,
-  },
-  floorNumPill: {
-    width: 40,
-    height: 40,
-    borderRadius: 10,
-    backgroundColor: 'rgba(255,255,255,0.03)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.07)',
-    alignItems: 'center',
+    margin: 2,
+    borderRadius: 5,
+    borderWidth: 2.5,
     justifyContent: 'center',
-    flexShrink: 0,
-  },
-  floorNumPillCleared: {
-    borderColor: 'rgba(63,181,110,0.3)',
-    backgroundColor: 'rgba(63,181,110,0.06)',
-  },
-  floorNumPillAvail: {
-    borderColor: 'rgba(245,207,74,0.4)',
-    backgroundColor: 'rgba(245,207,74,0.07)',
-  },
-  floorNumPillBoss: {
-    borderColor: 'rgba(221,122,134,0.4)',
-    backgroundColor: 'rgba(221,122,134,0.08)',
-  },
-  floorNum: {
-    fontFamily: 'PressStart2P-Regular',
-    fontWeight: 'normal',
-    fontSize: 15,
-    color: 'rgba(207,224,238,0.45)',
-  },
-  floorCardContent: {
-    flex: 1,
-    gap: 4,
-  },
-  floorCardTop: {
-    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 8,
   },
-  floorName: {
+  bossArchwayContainer: {
+    position: 'absolute',
+    left: -12,
+    top: -12,
+    width: 80,
+    height: 80,
+    zIndex: 3,
+  },
+  buttonLabel: {
     fontFamily: 'Jersey10-Regular',
-    fontWeight: 'normal',
-    fontSize: 14,
+    fontSize: 20,
     color: '#CFE0EE',
-    flex: 1,
-  },
-  floorCardBottom: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  floorDiff: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    flex: 1,
-    marginRight: 8,
-  },
-  floorMeta: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  gridSize: {
-    fontFamily: 'Silkscreen-Regular',
-    fontSize: 9,
-    color: 'rgba(207,224,238,0.3)',
-    fontWeight: 'normal',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.06)',
-    borderRadius: 4,
-    paddingHorizontal: 4,
-    paddingVertical: 1,
+    marginTop: 12,
+    textAlign: 'center',
+    textShadowColor: '#000',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 1,
   },
 
-  /* Status badges inside card */
-  badgeCleared: {
-    backgroundColor: 'rgba(63,181,110,0.12)',
-    borderRadius: 6,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderWidth: 1,
-    borderColor: 'rgba(63,181,110,0.25)',
+  /* ── 3rd Part: Details Panel (Decreased height) ── */
+  detailsContainer: {
+    paddingHorizontal: 16,
+    paddingTop: 10,
+  },
+  detailsCard: {
+    height: 245,
+    borderRadius: 16,
+    borderWidth: 2,
+    borderColor: '#84735B',
+    backgroundColor: 'rgba(0, 0, 0, 0.75)',
+    overflow: 'hidden',
+  },
+  detailsScroll: {
+    flex: 1,
+  },
+  detailsScrollContent: {
+    padding: 12,
+  },
+  detailHeaderLine: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+    gap: 12,
+    marginBottom: 12,
+  },
+  detailTitleCompact: {
+    fontFamily: 'Jersey10-Regular',
+    fontSize: 26,
+    color: '#FFE39B',
+  },
+  detailHeaderStars: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 3,
   },
-  badgeClearedText: {
-    fontFamily: 'Silkscreen-Regular',
-    fontSize: 8,
-    fontWeight: 'normal',
-    color: '#3FB56E',
-    letterSpacing: 0.3,
-  },
-  badgeNext: {
-    backgroundColor: 'rgba(245,207,74,0.1)',
-    borderRadius: 6,
+  gridBadgeCompact: {
+    borderWidth: 1,
+    borderColor: '#84735B',
+    borderRadius: 5,
     paddingHorizontal: 6,
     paddingVertical: 2,
-    borderWidth: 1,
-    borderColor: 'rgba(245,207,74,0.3)',
+    backgroundColor: '#231F2B',
+  },
+  gridBadgeTextCompact: {
+    fontFamily: 'Silkscreen-Regular',
+    fontSize: 14,
+    color: '#FFE39B',
+  },
+
+  innerSectionBox: {
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    borderColor: '#4D4455',
+    borderWidth: 1.5,
+    borderRadius: 12,
+    marginBottom: 10,
+    overflow: 'hidden',
+  },
+  rewardsRowCompact: {
+    flexDirection: 'row',
+    gap: 10,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+  },
+  rewardCard: {
+    alignItems: 'center',
+    width: 64,
+  },
+  rewardItemBox: {
+    width: 52,
+    height: 52,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: '#5C5065',
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    overflow: 'hidden',
+  },
+  rewardName: {
+    fontFamily: 'Jersey10-Regular',
+    fontSize: 15,
+    color: '#EAD9BA',
+    marginTop: 4,
+    textAlign: 'center',
+    width: '100%',
+  },
+
+  subHeaderCompact: {
+    fontFamily: 'Silkscreen-Regular',
+    fontSize: 16,
+    color: '#FFE39B',
+    letterSpacing: 0.5,
+    marginBottom: 6,
+  },
+  actionRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 3,
+    marginTop: 6,
   },
-  badgeNextText: {
-    fontFamily: 'Silkscreen-Regular',
-    fontSize: 8,
-    fontWeight: 'normal',
-    color: '#F5CF4A',
-    letterSpacing: 0.3,
+  wideButtonWrapper: {
+    flex: 1,
+    height: 48,
+    position: 'relative',
   },
-  badgeLocked: {
-    backgroundColor: 'rgba(255,255,255,0.04)',
-    borderRadius: 6,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
-    flexDirection: 'row',
+  wideButtonBevelShadow: {
+    position: 'absolute',
+    left: 0,
+    top: 4,
+    right: 0,
+    height: 44,
+    borderRadius: 8,
+    zIndex: 1,
+  },
+  wideButtonOuter: {
+    flex: 1,
+    height: 44,
+    borderRadius: 8,
+    borderWidth: 2.5,
+    zIndex: 2,
+  },
+  wideButtonInner: {
+    flex: 1,
+    margin: 2,
+    borderRadius: 5,
+    borderWidth: 2.5,
+    borderBottomWidth: 4,
+    justifyContent: 'center',
     alignItems: 'center',
-    gap: 3,
   },
-  badgeLockedText: {
-    fontFamily: 'Silkscreen-Regular',
-    fontSize: 8,
-    fontWeight: 'normal',
-    color: 'rgba(207,224,238,0.35)',
+  wideButtonText: {
+    fontFamily: 'Jersey10-Regular',
+    color: '#FFF',
+    fontSize: 24,
     letterSpacing: 0.3,
   },
-  badgeBoss: {
-    backgroundColor: 'rgba(221,122,134,0.1)',
+
+  /* ── Pack Supplies Card styles ── */
+  backBtnHeader: {
+    borderWidth: 1.5,
+    borderColor: '#D8483F',
     borderRadius: 6,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderWidth: 1,
-    borderColor: 'rgba(221,122,134,0.3)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    backgroundColor: '#A61C1C',
+  },
+  backBtnText: {
+    fontFamily: 'Silkscreen-Regular',
+    fontSize: 10,
+    color: '#EAD9BA',
+  },
+  loadoutIndicatorRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  loadoutSubTitle: {
+    fontFamily: 'Silkscreen-Regular',
+    fontSize: 8.5,
+    color: '#FFE39B',
+  },
+  slotIndicatorModal: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
   },
-  badgeBossText: {
-    fontFamily: 'Silkscreen-Regular',
-    fontSize: 8,
-    fontWeight: 'normal',
-    color: '#DD7A86',
-    letterSpacing: 0.3,
-  },
-  lockIcon: {
-    fontSize: 12,
-    opacity: 0.4,
-  },
-
-  /* ── Modal (slide-up sheet) ──────────────────────────────── */
-  modalBackdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.72)',
-    justifyContent: 'flex-end',
-  },
-  modalSheet: {
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    overflow: 'hidden',
-    elevation: 12,
-  },
-  modalInner: {
-    paddingHorizontal: 20,
-    paddingBottom: 32,
-    zIndex: 2,
-  },
-  grabber: {
-    width: 40,
+  slotPip: {
+    width: 14,
     height: 4,
     borderRadius: 2,
-    backgroundColor: 'rgba(255,255,255,0.12)',
-    alignSelf: 'center',
-    marginTop: 12,
-    marginBottom: 16,
-  },
-  modalHeaderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 16,
-  },
-  modalEyebrow: {
-    fontFamily: 'Silkscreen-Regular',
-    fontSize: 9,
-    fontWeight: 'normal',
-    color: 'rgba(207,224,238,0.4)',
-    letterSpacing: 1.5,
-  },
-  closeBtn: {
-    padding: 6,
-  },
-  closeBtnText: {
-    fontSize: 15,
-    color: 'rgba(207,224,238,0.4)',
-    fontWeight: 'bold',
-  },
-  modalHeroRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 14,
-    marginBottom: 12,
-  },
-  modalFloorPill: {
-    width: 58,
-    height: 58,
-    borderRadius: 14,
-    backgroundColor: 'rgba(255,255,255,0.03)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.07)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
-  },
-  modalFloorNum: {
-    fontFamily: 'PressStart2P-Regular',
-    fontWeight: 'normal',
-    fontSize: 22,
-    color: 'rgba(207,224,238,0.5)',
-  },
-  modalHeroText: {
-    flex: 1,
-  },
-  modalFloorName: {
-    fontFamily: 'Jersey10-Regular',
-    fontWeight: 'normal',
-    fontSize: 20,
-    color: '#F8FAFC',
-    marginBottom: 6,
-  },
-  modalBadgeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  modalStars: {
-    fontFamily: 'Silkscreen-Regular',
-    fontSize: 11,
-    fontWeight: 'normal',
-    letterSpacing: 1.5,
-  },
-  gridSizeBadge: {
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
-    borderRadius: 5,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-  },
-  gridSizeBadgeText: {
-    fontFamily: 'Silkscreen-Regular',
-    fontSize: 9,
-    fontWeight: 'normal',
-    color: 'rgba(207,224,238,0.45)',
-  },
-  clearedBadge: {
-    backgroundColor: 'rgba(63,181,110,0.12)',
-    borderRadius: 5,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderWidth: 1,
-    borderColor: 'rgba(63,181,110,0.25)',
-  },
-  clearedBadgeText: {
-    fontFamily: 'Silkscreen-Regular',
-    fontSize: 9,
-    fontWeight: 'normal',
-    color: '#3FB56E',
-  },
-  separator: {
-    height: 1,
-    backgroundColor: 'rgba(255,255,255,0.05)',
-    marginBottom: 16,
-  },
-  loadoutHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 4,
-  },
-  loadoutTitle: {
-    fontFamily: 'Jersey10-Regular',
-    fontSize: 14,
-    fontWeight: 'normal',
-    color: '#F8FAFC',
-  },
-  slotPips: {
-    flexDirection: 'row',
-    gap: 5,
-  },
-  pip: {
-    width: 20,
-    height: 5,
-    borderRadius: 3,
     backgroundColor: 'rgba(255,255,255,0.07)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.04)',
   },
-  pipFilled: {
-    backgroundColor: '#D4A754',
-    borderColor: '#F9D99A',
+  slotPipFilled: {
+    backgroundColor: '#FFE39B',
   },
-  loadoutSub: {
+  slotText: {
     fontFamily: 'Silkscreen-Regular',
-    fontSize: 10,
-    color: 'rgba(207,224,238,0.35)',
-    marginBottom: 12,
+    fontSize: 8,
+    color: '#EAD9BA',
+    marginLeft: 4,
   },
-  itemList: {
-    gap: 8,
-    marginBottom: 18,
-  },
-  emptyText: {
-    fontFamily: 'Jersey10-Regular',
-    fontSize: 12,
-    color: 'rgba(207,224,238,0.4)',
-    textAlign: 'center',
-    fontStyle: 'italic',
-    paddingVertical: 16,
-  },
-  itemRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.025)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
-    borderRadius: 12,
-    padding: 10,
-    gap: 10,
-  },
-  itemIconBox: {
-    width: 38,
-    height: 38,
-    borderRadius: 9,
-    backgroundColor: 'rgba(255,255,255,0.03)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.04)',
-  },
-  itemIcon: { fontSize: 19 },
-  itemInfo: { flex: 1 },
-  itemName: {
-    fontFamily: 'Jersey10-Regular',
-    fontSize: 13,
-    fontWeight: 'normal',
-    color: '#F0E8D8',
-  },
-  itemOwned: {
-    fontFamily: 'Silkscreen-Regular',
-    fontSize: 10,
-    color: '#D4A754',
-    marginTop: 2,
-  },
-  itemControls: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  counterBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 8,
-    backgroundColor: 'rgba(212,167,84,0.1)',
-    borderWidth: 1,
-    borderColor: 'rgba(212,167,84,0.28)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  counterBtnDim: {
-    backgroundColor: 'rgba(255,255,255,0.02)',
-    borderColor: 'rgba(255,255,255,0.05)',
-  },
-  counterBtnText: {
-    fontFamily: 'Jersey10-Regular',
-    fontSize: 18,
-    color: '#D4A754',
-    fontWeight: 'normal',
-    lineHeight: 22,
-  },
-  packedCount: {
-    fontFamily: 'Jersey10-Regular',
-    fontSize: 15,
-    fontWeight: 'normal',
-    color: '#F8FAFC',
-    minWidth: 18,
-    textAlign: 'center',
-  },
-
-  /* Enter button */
-  enterBtn: {
-    height: 52,
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
-    position: 'relative',
-    flexDirection: 'row',
-    gap: 6,
-  },
-  enterBtnText: {
-    fontFamily: 'Jersey10-Regular',
-    color: '#1A1200',
-    fontWeight: 'normal',
-    fontSize: 15,
-    zIndex: 2,
-    letterSpacing: 0.3,
-  },
-
-  /* Pre-disclosed rewards for floor cards */
-  floorCardNameCol: {
-    flex: 2,
-    gap: 4,
-    justifyContent: 'center',
-  },
-  floorCardRewards: {
-    flex: 2.3,
-    flexDirection: 'row',
-    gap: 4,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  floorRewardCardMini: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.03)',
-    borderColor: 'rgba(255, 255, 255, 0.08)',
-    borderWidth: 1,
-    borderRadius: 8,
-    paddingVertical: 4,
-    paddingHorizontal: 6,
-    minWidth: 46,
-  },
-  floorRewardCardQty: {
-    fontFamily: 'Jersey10-Regular',
-    fontSize: 12,
-    color: '#CFE0EE',
-    textAlign: 'center',
-    lineHeight: 12,
-  },
-  floorCardStatusCol: {
-    flex: 1.9,
-    alignItems: 'flex-end',
-    justifyContent: 'center',
-    gap: 4,
-  },
-  floorMetaMini: {
-    marginTop: 2,
-  },
-  gridSizeMini: {
-    fontFamily: 'Silkscreen-Regular',
-    fontSize: 9,
-    color: 'rgba(207,224,238,0.45)',
-  },
-
-  /* Pre-disclosed rewards for entry details modal */
-  rewardsHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
+  inlineScroll: {
+    maxHeight: 134,
     marginBottom: 8,
   },
-  rewardsTitle: {
+  emptySuppliesText: {
+    fontFamily: 'Jersey10-Regular',
+    fontSize: 12,
+    color: '#EAD9BA',
+    fontStyle: 'italic',
+    paddingVertical: 12,
+  },
+  supplyRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    borderWidth: 1.5,
+    borderColor: '#4D4455',
+    borderRadius: 8,
+    padding: 8,
+    gap: 8,
+    marginBottom: 6,
+  },
+  supplyIconContainer: {
+    width: 32,
+    height: 32,
+    borderRadius: 6,
+    backgroundColor: 'rgba(255,255,255,0.03)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  supplyName: {
+    fontFamily: 'Jersey10-Regular',
+    fontSize: 13,
+    color: '#EAD9BA',
+  },
+  supplyOwned: {
+    fontFamily: 'Silkscreen-Regular',
+    fontSize: 8,
+    color: '#FFE39B',
+  },
+  supplyControls: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  cntBtn: {
+    width: 28,
+    height: 28,
+    borderRadius: 6,
+    backgroundColor: 'rgba(255,255,255,0.02)',
+    borderWidth: 1,
+    borderColor: '#4D4455',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cntBtnDim: {
+    backgroundColor: 'rgba(255,255,255,0.01)',
+    borderColor: 'rgba(255,255,255,0.04)',
+  },
+  cntBtnText: {
     fontFamily: 'Jersey10-Regular',
     fontSize: 16,
-    fontWeight: 'normal',
-    color: '#D4A754',
-    letterSpacing: 0.3,
+    color: '#FFE39B',
   },
-  modalRewardsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 12,
-    marginTop: 2,
-    marginBottom: 16,
+  cntText: {
+    fontFamily: 'Jersey10-Regular',
+    fontSize: 14,
+    color: '#EAD9BA',
+    minWidth: 14,
+    textAlign: 'center',
   },
-  modalRewardChip: {
-    alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.03)',
-    borderColor: 'rgba(212, 167, 84, 0.18)',
-    borderWidth: 1.5,
-    borderRadius: 10,
-    paddingTop: 8,
-    paddingBottom: 6,
-    paddingHorizontal: 12,
-    minWidth: 76,
-  },
-  modalRewardQty: {
-    fontFamily: 'Silkscreen-Regular',
-    fontSize: 11,
-    color: '#F8FAFC',
-    marginTop: 4,
-  },
+
 });

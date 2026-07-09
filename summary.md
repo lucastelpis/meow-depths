@@ -38,6 +38,15 @@ Meow Depths is an RPG/region-crawler game built using React Native and Expo, fea
   - **Creatures tab**: Displays discovered creature cards (sprite, name, region, item drops, and lore). Creature star levels are not shown because star levels dynamically scale in combat.
   - **Notes tab**: Lists collectible field notes unlocked on first-time floor clears by region, readable via a parchment reader modal. Unread notes display a red retro '!' badge in the top-right corner. When new unread notes are collected, a clickable notification badge tag (exclamation mark) appears on the main Camp Hub banner that links directly to this tab. Opening/reading the note clears its unread state.
 
+## Navigation Headers & UI Aesthetics
+- **Unified Navigation Headers**: All secondary screens (WorldMap, Quest, Journal, Shop, Skill Tree, Profile, and Dungeon Floor selection) share a consistent, compact navigation bar:
+  - **Header Heights**: Reduced vertical padding to `6px` to maximize map and gameplay container heights.
+  - **3D Crimson Back Button**: Replaces text back buttons with a custom `44x44` 3D nested double-border button rendering the back arrow sprite (`frameIndex={43}` from `icons-map.png`). Uses a crimson fill (`#A61C1C`), light red inner border highlight (`#D8483F`), dark bronze outer outline (`#84735B`), and a dark bronze bottom shadow base (`#4F3C1E`).
+  - **Gold-Rimmed Title Plaque**: Centers the screen title inside a custom plaque matching the Camp Hub's visual style (outer `#4A3917`, inner `#D4A754`, and charcoal background `#1E1E20`).
+- **Scroll Discovery**: Consumables supplies list utilizes visual truncation (`maxHeight: 134`) to render a 35% cutoff of the third row, breaking the illusion of completeness and acting as a clear indicator to scroll. Shows vertical scroll indicators on interaction.
+- **Skill Tree Crystal Spacing**: Top crystal stash bar has `marginTop: 12` to space it cleanly below the compact header bottom divider.
+
+
 ## Crystal Forging & Fusion
 Players can fuse lower-tier crystal shards and crystals into higher-tier ones in the **Forge** tab at the Market (Shop):
 - **Fusion Rate**: 

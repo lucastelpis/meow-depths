@@ -101,12 +101,31 @@ export default function WorldMapScreen({ navigation }) {
 
       {/* ── Header ─────────────────────────────────────────────────────── */}
       <View style={[styles.header, { paddingTop: insets.top }]}>
-        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()} activeOpacity={0.7}>
-          <Text style={styles.backText}>← Hub</Text>
-        </TouchableOpacity>
-        <View style={styles.titleContainer}>
-          <ItemSprite spritesheet="icons-1" frameIndex={0} displaySize={22} />
-          <Text style={styles.title}>Expeditions</Text>
+        <View style={styles.headerBackButtonWrapper}>
+          {/* 1. Bevel Shadow Base */}
+          <View style={styles.headerBackButtonBevelShadow} />
+
+          {/* 2. Main Outer Button */}
+          <TouchableOpacity
+            activeOpacity={0.8}
+            onPress={() => navigation.goBack()}
+            style={styles.headerBackButtonOuter}
+          >
+            {/* 3. Inner Highlight & Fill */}
+            <View style={styles.headerBackButtonInner}>
+              <ItemSprite
+                spritesheet="icons-map"
+                frameIndex={43}
+                displaySize={26}
+              />
+            </View>
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.headerTitleOuterBorder}>
+          <View style={styles.headerTitleInnerBorder}>
+            <Text style={styles.headerTitleText}>Expeditions</Text>
+          </View>
         </View>
         <View style={styles.headerSpacer} />
       </View>
@@ -242,12 +261,79 @@ const styles = StyleSheet.create({
   scroll:          { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 40 },
 
   // Header (shared hub style)
-  header:       { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: 'rgba(255, 255, 255, 0.04)' },
-  backButton:   { width: 70, paddingVertical: 6, justifyContent: 'center' },
-  backText:     { fontFamily: 'Jersey10-Regular', color: '#D4A754', fontSize: 16, letterSpacing: 0.5 },
-  titleContainer: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
-  title:        { fontFamily: 'Jersey10-Regular', fontSize: 20, color: '#F8FAFC', letterSpacing: 0.8, textAlign: 'center' },
-  headerSpacer: { width: 70 },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+    borderBottomWidth: 2,
+    borderBottomColor: '#84735B',
+    backgroundColor: 'rgba(0,0,0,0.15)',
+  },
+  headerBackButtonWrapper: {
+    width: 44,
+    height: 44,
+    position: 'relative',
+  },
+  headerBackButtonBevelShadow: {
+    position: 'absolute',
+    left: 0,
+    top: 3,
+    width: 44,
+    height: 44,
+    borderRadius: 8,
+    zIndex: 1,
+    backgroundColor: '#4F3C1E',
+  },
+  headerBackButtonOuter: {
+    width: 44,
+    height: 44,
+    borderRadius: 8,
+    borderWidth: 2.5,
+    borderColor: '#84735B',
+    backgroundColor: '#4F3C1E',
+    zIndex: 2,
+  },
+  headerBackButtonInner: {
+    flex: 1,
+    margin: 2,
+    borderRadius: 5,
+    borderWidth: 2.5,
+    borderTopColor: '#D8483F',
+    borderLeftColor: '#D8483F',
+    borderRightColor: '#D8483F',
+    borderBottomColor: '#590D0E',
+    borderBottomWidth: 4,
+    backgroundColor: '#A61C1C',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  headerTitleOuterBorder: {
+    borderWidth: 2.5,
+    borderColor: '#4A3917',
+    borderRadius: 8,
+    backgroundColor: 'transparent',
+    padding: 2,
+  },
+  headerTitleInnerBorder: {
+    borderWidth: 2,
+    borderColor: '#D4A754',
+    borderRadius: 5,
+    backgroundColor: '#1E1E20',
+    paddingVertical: 6,
+    paddingHorizontal: 20,
+  },
+  headerTitleText: {
+    fontFamily: 'Jersey10-Regular',
+    fontSize: 28,
+    color: '#FFF3DA',
+    textAlign: 'center',
+    textShadowColor: '#000',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 1,
+  },
+  headerSpacer: { width: 44 },
 
   // Zone cards
   zoneCard:         { width: '100%', aspectRatio: 600 / 296, borderRadius: 20, marginBottom: 24, position: 'relative', overflow: 'hidden', borderWidth: 3, borderColor: theme.COLORS.candleGold, backgroundColor: theme.COLORS.voidNavy },

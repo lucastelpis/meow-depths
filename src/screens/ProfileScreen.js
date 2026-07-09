@@ -539,16 +539,31 @@ export default function ProfileScreen() {
 
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn} activeOpacity={0.7}>
-          <Text style={styles.backText}>← Hub</Text>
-        </TouchableOpacity>
-        <View style={styles.titleContainer}>
-          <ExpoImage
-            source={require('../../assets/sprites/units/hero/hero_head.png')}
-            style={{ width: 24, height: 24 }}
-            contentFit="contain"
-          />
-          <Text style={styles.titleText}>Profile</Text>
+        <View style={styles.headerBackButtonWrapper}>
+          {/* 1. Bevel Shadow Base */}
+          <View style={styles.headerBackButtonBevelShadow} />
+
+          {/* 2. Main Outer Button */}
+          <TouchableOpacity
+            activeOpacity={0.8}
+            onPress={() => navigation.goBack()}
+            style={styles.headerBackButtonOuter}
+          >
+            {/* 3. Inner Highlight & Fill */}
+            <View style={styles.headerBackButtonInner}>
+              <ItemSprite
+                spritesheet="icons-map"
+                frameIndex={43}
+                displaySize={26}
+              />
+            </View>
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.headerTitleOuterBorder}>
+          <View style={styles.headerTitleInnerBorder}>
+            <Text style={styles.headerTitleText}>Profile</Text>
+          </View>
         </View>
         <View style={styles.headerSpacer} />
       </View>
@@ -1927,31 +1942,74 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingVertical: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.04)',
+    paddingVertical: 6,
+    borderBottomWidth: 2,
+    borderBottomColor: '#84735B',
+    backgroundColor: 'rgba(0,0,0,0.15)',
   },
-  backBtn: { width: 70, paddingVertical: 6 },
-  backText: {
-    color: '#D4A754',
-    fontFamily: 'Jersey10-Regular',
-    fontSize: 16,
-    letterSpacing: 0.5,
+  headerBackButtonWrapper: {
+    width: 44,
+    height: 44,
+    position: 'relative',
   },
-  titleContainer: {
+  headerBackButtonBevelShadow: {
+    position: 'absolute',
+    left: 0,
+    top: 3,
+    width: 44,
+    height: 44,
+    borderRadius: 8,
+    zIndex: 1,
+    backgroundColor: '#4F3C1E',
+  },
+  headerBackButtonOuter: {
+    width: 44,
+    height: 44,
+    borderRadius: 8,
+    borderWidth: 2.5,
+    borderColor: '#84735B',
+    backgroundColor: '#4F3C1E',
+    zIndex: 2,
+  },
+  headerBackButtonInner: {
     flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
+    margin: 2,
+    borderRadius: 5,
+    borderWidth: 2.5,
+    borderTopColor: '#D8483F',
+    borderLeftColor: '#D8483F',
+    borderRightColor: '#D8483F',
+    borderBottomColor: '#590D0E',
+    borderBottomWidth: 4,
+    backgroundColor: '#A61C1C',
     justifyContent: 'center',
-    gap: 8,
+    alignItems: 'center',
   },
-  titleText: {
+  headerTitleOuterBorder: {
+    borderWidth: 2.5,
+    borderColor: '#4A3917',
+    borderRadius: 8,
+    backgroundColor: 'transparent',
+    padding: 2,
+  },
+  headerTitleInnerBorder: {
+    borderWidth: 2,
+    borderColor: '#D4A754',
+    borderRadius: 5,
+    backgroundColor: '#1E1E20',
+    paddingVertical: 6,
+    paddingHorizontal: 20,
+  },
+  headerTitleText: {
     fontFamily: 'Jersey10-Regular',
-    fontSize: 20,
-    color: '#F8FAFC',
-    letterSpacing: 0.8,
+    fontSize: 28,
+    color: '#FFF3DA',
+    textAlign: 'center',
+    textShadowColor: '#000',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 1,
   },
-  headerSpacer: { width: 70 },
+  headerSpacer: { width: 44 },
   scrollContent: {
     paddingHorizontal: 16,
     paddingTop: 16,

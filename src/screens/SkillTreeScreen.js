@@ -555,12 +555,31 @@ export default function SkillTreeScreen() {
 
       {/* ── Header ──────────────────────────────────────────────────────── */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn} activeOpacity={0.7}>
-          <Text style={styles.backText}>← Hub</Text>
-        </TouchableOpacity>
-        <View style={styles.titleContainer}>
-          <ItemSprite spritesheet="icons-1" frameIndex={4} displaySize={24} />
-          <Text style={styles.titleText}>Skills</Text>
+        <View style={styles.headerBackButtonWrapper}>
+          {/* 1. Bevel Shadow Base */}
+          <View style={styles.headerBackButtonBevelShadow} />
+
+          {/* 2. Main Outer Button */}
+          <TouchableOpacity
+            activeOpacity={0.8}
+            onPress={() => navigation.goBack()}
+            style={styles.headerBackButtonOuter}
+          >
+            {/* 3. Inner Highlight & Fill */}
+            <View style={styles.headerBackButtonInner}>
+              <ItemSprite
+                spritesheet="icons-map"
+                frameIndex={43}
+                displaySize={26}
+              />
+            </View>
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.headerTitleOuterBorder}>
+          <View style={styles.headerTitleInnerBorder}>
+            <Text style={styles.headerTitleText}>Skills</Text>
+          </View>
         </View>
         <View style={styles.headerSpacer} />
       </View>
@@ -934,20 +953,83 @@ const styles = StyleSheet.create({
 
   /* Header */
   header: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: 16, paddingVertical: 14,
-    borderBottomWidth: 1, borderBottomColor: 'rgba(255, 255, 255, 0.04)',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+    borderBottomWidth: 2,
+    borderBottomColor: '#84735B',
+    backgroundColor: 'rgba(0,0,0,0.15)',
   },
-  backBtn: { width: 70, paddingVertical: 6 },
-  backText: { color: '#D4A754', fontFamily: 'Jersey10-Regular', fontSize: 16, letterSpacing: 0.5 },
-  titleContainer: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
-  titleText: { fontFamily: 'Jersey10-Regular', fontSize: 20, color: '#F8FAFC', letterSpacing: 0.8 },
-  headerSpacer: { width: 70 },
+  headerBackButtonWrapper: {
+    width: 44,
+    height: 44,
+    position: 'relative',
+  },
+  headerBackButtonBevelShadow: {
+    position: 'absolute',
+    left: 0,
+    top: 3,
+    width: 44,
+    height: 44,
+    borderRadius: 8,
+    zIndex: 1,
+    backgroundColor: '#4F3C1E',
+  },
+  headerBackButtonOuter: {
+    width: 44,
+    height: 44,
+    borderRadius: 8,
+    borderWidth: 2.5,
+    borderColor: '#84735B',
+    backgroundColor: '#4F3C1E',
+    zIndex: 2,
+  },
+  headerBackButtonInner: {
+    flex: 1,
+    margin: 2,
+    borderRadius: 5,
+    borderWidth: 2.5,
+    borderTopColor: '#D8483F',
+    borderLeftColor: '#D8483F',
+    borderRightColor: '#D8483F',
+    borderBottomColor: '#590D0E',
+    borderBottomWidth: 4,
+    backgroundColor: '#A61C1C',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  headerTitleOuterBorder: {
+    borderWidth: 2.5,
+    borderColor: '#4A3917',
+    borderRadius: 8,
+    backgroundColor: 'transparent',
+    padding: 2,
+  },
+  headerTitleInnerBorder: {
+    borderWidth: 2,
+    borderColor: '#D4A754',
+    borderRadius: 5,
+    backgroundColor: '#1E1E20',
+    paddingVertical: 6,
+    paddingHorizontal: 20,
+  },
+  headerTitleText: {
+    fontFamily: 'Jersey10-Regular',
+    fontSize: 28,
+    color: '#FFF3DA',
+    textAlign: 'center',
+    textShadowColor: '#000',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 1,
+  },
+  headerSpacer: { width: 44 },
 
   /* Crystal stash bar */
   crystalBar: {
     flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center',
-    marginHorizontal: 20, paddingVertical: 8, paddingHorizontal: 8,
+    marginHorizontal: 20, marginTop: 12, paddingVertical: 8, paddingHorizontal: 8,
     backgroundColor: C.panelDeep, borderRadius: 10,
     borderWidth: 2, borderColor: 'rgba(74,57,23,0.6)',
   },
