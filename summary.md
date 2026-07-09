@@ -21,7 +21,11 @@ Meow Depths is an RPG/region-crawler game built using React Native and Expo, fea
 - **Onboarding Flow (First Launch)**: Shown when `hero.element` is null.
   - **Name Input Screen**: The player enters their character's name (defaults to "Mochi").
   - **Element Selection Screen**: A horizontal snap-carousel where players choose their starting element path (Fire, Water, Earth, Wind). Confirming dispatches the `SELECT_ELEMENT` action, locking in their choice and transitioning to the main game.
-- **Camp Hub (Main Screen)**: The player can navigate to the Region Map, Quests Board, Skills, Market (Shop), and Profile. Features a Settings modal accessible via the gear icon, which contains options to reset game data or reset character progression (reclaiming spent attribute points and refunding all crystal materials spent on skill tree unlocks and upgrades).
+- **Camp Hub (Main Screen)**: The player can navigate to the Region Map, Quests Board, Skills, Market (Shop), and Profile. Features a Settings modal accessible via the gear icon, which contains options to reset game data or reset character progression (reclaiming spent attribute points and refunding all Skill Points spent on skill tree unlocks and upgrades).
+  - **Banner Tags Stack**: Displays active character status tags (Gold, Level, Stats point availability, Skill point availability, Unread notes notification).
+    - **Stats Tag**: Appears when there are available attribute points to allocate. Uses an icon-only style with the 5th frame of the 8th row of `icons-map.png` (frame index 109).
+    - **Skill Points Tag**: Appears when there are available skill points to distribute. Uses an icon-only style matching the Skills button (icons-map frame index 14).
+    - **Notes Tag**: Appears when there are unread collectible field notes. Uses an icon-only style with frame index 58 of `icons-map.png`.
 - **Quest Screen & Daily Quests Accordion**:
   - **Daily Quests Accordion (Camp Modal)**: An interactive list inside the Camp Hub where daily quests default to a collapsed header. Completed-unclaimed quests can be claimed directly from the header.
   - **Quest Screen**: A full screen with tabs for Daily Quests (with countdown timers) and Campaign progression milestones.
@@ -29,11 +33,11 @@ Meow Depths is an RPG/region-crawler game built using React Native and Expo, fea
 - **Profile Screen**: Accessible from the hub. Features a scaled-up avatar, a modern font style (`Jersey10-Regular`), and is split into three tabs:
   - **Stats tab**: Displays base attributes (STR, AGI, VIT) where players allocate points earned from leveling up, previews and displays effective combat stats (ATK, DEF, MAX HP, etc.), describes their current elemental stance, and includes interactive `?` info tags next to attributes and stats which open a custom explanation popup modal.
   - **Gear tab**: Displays equipped gear across 8 slots (Head, Chest, Gloves, Legs, Boots, Weapon, Trinket, Storage), active set bonuses, and a grid of crafted gear in inventory with side-by-side comparison overlays.
-  - **Bag tab**: Displays Supplies (consumables) and Materials (crystal shards, crystals, and cores).
-- **Market (Shop) Screen**: Accessible from the hub. Contains three tabs (Supplies shop, Gear armory, Forge fusion) styled as cozy parchment/wood tabs.
+  - **Bag tab**: Displays Supplies (consumables).
+- **Market (Shop) Screen**: Accessible from the hub. Contains two tabs (Supplies shop, Gear armory) styled as cozy parchment/wood tabs.
 - **Region Map Screen**: Allows entering zones to fight enemies.
 - **Expeditions Screen**: Displays available regions (Soggy Ruins, Twisted Gardens, Sunken Docks) with custom level ranges, run completion statistics, and zone completion status. Each region card features a full-bleed premium background banner image scaled to a perfect 2:1 aspect ratio matching the dimensions of the assets.
-- **Skill Tree Screen**: Unlocks and upgrades active and passive skills using gold/crystals.
+- **Skill Tree Screen**: Unlocks and upgrades active and passive skills using Skill Points (SP) gained on level-up.
 - **Journal Screen**: Split into two tabs:
   - **Creatures tab**: Displays discovered creature cards (sprite, name, region, item drops, and lore). Creature star levels are not shown because star levels dynamically scale in combat.
   - **Notes tab**: Lists collectible field notes unlocked on first-time floor clears by region, readable via a parchment reader modal. Unread notes display a red retro '!' badge in the top-right corner. When new unread notes are collected, a clickable notification badge tag (exclamation mark) appears on the main Camp Hub banner that links directly to this tab. Opening/reading the note clears its unread state.
@@ -44,43 +48,12 @@ Meow Depths is an RPG/region-crawler game built using React Native and Expo, fea
   - **3D Crimson Back Button**: Replaces text back buttons with a custom `44x44` 3D nested double-border button rendering the back arrow sprite (`frameIndex={43}` from `icons-map.png`). Uses a crimson fill (`#A61C1C`), light red inner border highlight (`#D8483F`), dark bronze outer outline (`#84735B`), and a dark bronze bottom shadow base (`#4F3C1E`).
   - **Gold-Rimmed Title Plaque**: Centers the screen title inside a custom plaque matching the Camp Hub's visual style (outer `#4A3917`, inner `#D4A754`, and charcoal background `#1E1E20`).
 - **Scroll Discovery**: Consumables supplies list utilizes visual truncation (`maxHeight: 134`) to render a 35% cutoff of the third row, breaking the illusion of completeness and acting as a clear indicator to scroll. Shows vertical scroll indicators on interaction.
-- **Skill Tree Crystal Spacing**: Top crystal stash bar has `marginTop: 12` to space it cleanly below the compact header bottom divider.
+- **Skill Tree SP Spacing**: Top Skill Points bar has `marginTop: 12` to space it cleanly below the compact header bottom divider.
 
-
-## Crystal Forging & Fusion
-Players can fuse lower-tier crystal shards and crystals into higher-tier ones in the **Forge** tab at the Market (Shop):
-- **Fusion Rate**: 
-  - 10x Crystal Shards ➔ 1x Small Crystal of the same color.
-  - 10x Small Crystals ➔ 1x Big Crystal of the same color.
-- **Cores**: Crystal Cores cannot be forged and are only obtained as rare boss/chest drops.
-- **Progression Lock**: Crystals and fusion recipes are locked by region progression:
-  - **Black Crystals (Zone 1 - Soggy Ruins)**: Always unlocked and available from the start.
-  - **Green Crystals (Zone 2 - Twisted Garden)**: Unlocked/visible only after Zone 1 is cleared (`state.progress.zone1Cleared` is true).
-  - **Yellow Crystals (Zone 3 - Sunken Docks)**: Unlocked/visible only after Zone 2 is cleared (`state.progress.zone2Cleared` is true).
 
 ## Tabs Icons Reference (icons-1 spritesheet)
 - **Supplies**: Frame index 26 (Frame 27)
 - **Gear**: Frame index 10 (Frame 11)
-- **Forge**: Frame index 9 (Frame 10)
-- **Materials**: Frame index 29 (Frame 30)
-
-## Crystals Spritesheet Reference (crystals-1 spritesheet)
-Crystals and shards use frames from the `crystals-1` spritesheet:
-- **Black Crystal family (Zone 1)**:
-  - Shard: Frame index 0
-  - Small: Frame index 1
-  - Big: Frame index 2
-  - Core: Frame index 3
-- **Green Crystal family (Zone 2)**:
-  - Shard: Frame index 4
-  - Small: Frame index 5
-  - Big: Frame index 6
-  - Core: Frame index 7
-- **Yellow Crystal family (Zone 3)**:
-  - Shard: Frame index 8
-  - Small: Frame index 9
-  - Big: Frame index 10
-  - Core: Frame index 11
 
 ## Consumables Spritesheet Reference (consumables-1 spritesheet)
 - **Potion**: Frame index 0
@@ -178,12 +151,19 @@ This is a 15-column layout matrix of various game icons (480x320 px, 32x32 px pe
 - **Row 9**: 121: Beer alt, 122: Green potion round, 123: Bread angle, 124: Heart/plus, 125: Cave entrance, 126: Red chest gold locks, 127: Compass alt, 128: Gold key crown, 129: Gold crown, 130: Flame/fire, 131: Warning sign, 132: Blue potion light, 133: Wood stack, 134: Green arrow, 135: EXP Scroll
 - **Row 10**: 136: Grey mountain, 137: Blue fish, 138-150: Additional cells.
 
+## Audio & Music Systems
+- **BGM Assets**:
+  - Main Hub and menus BGM: `hub&menus.mp3`
+  - Soggy Ruins (Zone 1) BGM: `soggy-ruins.mp3`
+  - Twisted Garden (Zone 2) BGM: `forest.mp3`
+  - Sunken Docks (Zone 3) BGM: `sunken-docks.mp3`
+- **SFX Assets**:
+  - Hero attacks/skills: `hero-attack.mp3` (played sequentially for multi-hits like dual-slash).
+  - Enemy attacks/skills: `enemy-attack.mp3` (played sequentially for multi-hits).
+- **Mute Control**: Mute toggle settings are persisted in global settings (`state.settings.muteSounds`) and can be adjusted from the settings modal in the Camp Hub. It instantly applies mute/unmute status to the active background music player.
+
 ## Simulation Script
 A standalone Node-based simulation script is available at [simulate.js](file:///Users/lucastelpisferrante/Documents/Vibe_Coding_Projects/meow-depths/scripts/simulate.js) to model player progression from Floor 1 to 10.
-- **Purpose**: Simulate full dungeon crawling, combat encounters (including the Tyrant Rat boss fight on Floor 10), camp hub shop management, skill upgrades/pricing, attribute allocations, daily ration claims, and crystal fusions.
-- **How to Run**:
-  1. Bundle the script for Node:
-     `npx esbuild scripts/simulate.js --bundle --platform=node --outfile=scripts/simulate.bundled.js`
-  2. Run the bundled script:
-     `node scripts/simulate.bundled.js`
-- **Output**: Logs the floor-by-floor level-ups, crystal fusions, gear/potion purchases, combat encounters, potion consumption, and prints a final metrics report showing clear/death status, levels reached, damage dealt, and skill upgrade levels.
+- **Purpose**: Simulate full dungeon crawling, combat encounters (including the Tyrant Rat boss fight on Floor 10), camp hub shop management, skill upgrades/pricing, attribute allocations, and daily ration claims.
+- **Interactive Stance Toggling**: Auto-swaps between Fire, Water, Earth, and Wind stances during the run depending on combat needs.
+- **Output**: Logs the floor-by-floor level-ups, gear/potion purchases, combat encounters, potion consumption, and prints a final metrics report showing clear/death status, levels reached, damage dealt, and skill upgrade levels.

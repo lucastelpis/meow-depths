@@ -49,79 +49,7 @@ import { STAR_MULTIPLIERS } from '../data/enemies';
  * }}
  */
 export function calculateDrops(enemy, zoneId, floorNumber) {
-  // -- Resolve crystal prefix based on zoneId or enemy.zone -----------------
-  const zoneKey = zoneId || (enemy.zone ? `zone${enemy.zone}` : 'zone1');
-  let prefix = 'black';
-  if (zoneKey === 'zone2' || zoneKey === 2 || zoneKey === '2') {
-    prefix = 'green';
-  } else if (zoneKey === 'zone3' || zoneKey === 3 || zoneKey === '3') {
-    prefix = 'yellow';
-  }
-
   const materials = [];
-
-  // -- Roll for material drops ------------------------------------------------
-  if (enemy.isBoss) {
-    // Bosses always drop 3 Big Crystals and 1 Core Crystal
-    materials.push({ itemId: `${prefix}_crystal_big`, quantity: 3 });
-    materials.push({ itemId: `${prefix}_crystal_core`, quantity: 1 });
-
-    // Plus custom drops defined in the boss template (excluding standard crystals)
-    const standardCrystals = new Set([
-      `${prefix}_shard`,
-      `${prefix}_crystal_small`,
-      `${prefix}_crystal_big`,
-      `${prefix}_crystal_core`
-    ]);
-
-    const drops = enemy.drops || [];
-    for (const drop of drops) {
-      if (standardCrystals.has(drop.itemId)) continue;
-
-      const roll = Math.random();
-      if (roll < drop.chance) {
-        materials.push({ itemId: drop.itemId, quantity: drop.count || 1 });
-      }
-    }
-  } else {
-    // Common monster drops scale by Star Level, Zone, and Profile
-    const starLevel = enemy.stars || 1;
-    let qty = 0;
-
-    if (['sewer_rat', 'mutated_plant', 'mineral_pincher'].includes(enemy.id)) {
-      // Rat Profile: quantity = level
-      qty = starLevel;
-    } else if (['cockroach_knight', 'ironclad_beetle'].includes(enemy.id)) {
-      // Cockroach Profile: quantity = level + 1
-      qty = starLevel + 1;
-    } else {
-      // Frog / Slime Profile: quantity = level + 50% chance of +1
-      qty = starLevel + (Math.random() < 0.5 ? 1 : 0);
-    }
-
-    const crystalCounts = {};
-    for (let i = 0; i < qty; i++) {
-      let itemId;
-      const roll = Math.random();
-      if (starLevel === 1) {
-        itemId = `${prefix}_shard`;
-      } else if (starLevel === 2) {
-        itemId = roll < 0.20 ? `${prefix}_crystal_small` : `${prefix}_shard`;
-      } else if (starLevel === 3) {
-        itemId = roll < 0.30 ? `${prefix}_crystal_big` : `${prefix}_crystal_small`;
-      } else if (starLevel === 4) {
-        itemId = `${prefix}_crystal_big`;
-      } else {
-        // level 5
-        itemId = roll < 0.05 ? `${prefix}_crystal_core` : `${prefix}_crystal_big`;
-      }
-      crystalCounts[itemId] = (crystalCounts[itemId] || 0) + 1;
-    }
-
-    for (const [itemId, count] of Object.entries(crystalCounts)) {
-      materials.push({ itemId, quantity: count });
-    }
-  }
 
   // -- Calculate XP and gold based on star level --------------------------------
   // Bosses use fixed xp / gold defined on their template.
@@ -234,109 +162,37 @@ export function calculateEncounterLoot(enemies, zoneId, floorNumber) {
  * }}
  */
 export function generateTreasureDrops(zoneId, floorNumber, isDouble = false) {
-  let prefix = 'black';
-  if (zoneId === 'zone2') prefix = 'green';
-  else if (zoneId === 'zone3') prefix = 'yellow';
-
   const materials = {};
   const consumables = {};
 
   const mult = isDouble ? 2 : 1;
 
-  // 1. Materials based on floor level
-  let shardCount = 0;
-  let smallCount = 0;
-  let bigCount = 0;
-  let coreCount = 0;
-
-  if (floorNumber === 1) {
-    shardCount = randomInRange(1, 5) * mult;
-  } else if (floorNumber === 2) {
-    shardCount = randomInRange(5, 10) * mult;
-    smallCount = randomInRange(1, 2) * mult;
-  } else if (floorNumber === 3) {
-    shardCount = randomInRange(10, 15) * mult;
-    smallCount = randomInRange(3, 5) * mult;
-  } else if (floorNumber === 4) {
-    smallCount = randomInRange(5, 10) * mult;
-  } else if (floorNumber === 5) {
-    smallCount = randomInRange(10, 15) * mult;
-    bigCount = randomInRange(1, 2) * mult;
-  } else if (floorNumber === 6) {
-    smallCount = randomInRange(15, 20) * mult;
-    bigCount = randomInRange(3, 5) * mult;
-  } else if (floorNumber === 7) {
-    bigCount = randomInRange(5, 8) * mult;
-  } else if (floorNumber === 8) {
-    bigCount = randomInRange(9, 12) * mult;
-  } else if (floorNumber === 9) {
-    bigCount = randomInRange(12, 15) * mult;
-  } else { // floor 10
-    bigCount = randomInRange(15, 20) * mult;
-    coreCount = randomInRange(0, 1) * mult;
-  }
-
-  if (shardCount > 0) materials[`${prefix}_shard`] = shardCount;
-  if (smallCount > 0) materials[`${prefix}_crystal_small`] = smallCount;
-  if (bigCount > 0) materials[`${prefix}_crystal_big`] = bigCount;
-  if (coreCount > 0) materials[`${prefix}_crystal_core`] = coreCount;
-
-  // 2. Gold & potions based on floor level
+  // Gold based on floor level
   let gold = 0;
-  let potionType = 'potion';
-  let potionCount = 0;
 
   if (floorNumber === 1) {
     gold = randomInRange(50, 100);
-    potionType = 'potion';
-    potionCount = 1;
   } else if (floorNumber === 2) {
     gold = randomInRange(100, 150);
-    potionType = 'potion';
-    potionCount = randomInRange(1, 2);
   } else if (floorNumber === 3) {
     gold = randomInRange(150, 200);
-    potionType = 'potion';
-    potionCount = randomInRange(2, 3);
   } else if (floorNumber === 4) {
     gold = randomInRange(200, 250);
-    potionType = 'potion';
-    potionCount = randomInRange(3, 4);
   } else if (floorNumber === 5) {
     gold = randomInRange(250, 300);
-    potionType = 'potion';
-    potionCount = randomInRange(4, 5);
   } else if (floorNumber === 6) {
     gold = randomInRange(300, 400);
-    potionType = 'super_potion';
-    potionCount = randomInRange(1, 2);
   } else if (floorNumber === 7) {
     gold = randomInRange(400, 500);
-    potionType = 'super_potion';
-    potionCount = randomInRange(2, 3);
   } else if (floorNumber === 8) {
     gold = randomInRange(500, 600);
-    potionType = 'super_potion';
-    potionCount = randomInRange(3, 4);
   } else if (floorNumber === 9) {
     gold = randomInRange(600, 700);
-    potionType = 'super_potion';
-    potionCount = randomInRange(4, 5);
   } else { // floor 10
     gold = randomInRange(700, 800);
-    potionType = 'ultra_potion';
-    potionCount = randomInRange(1, 2);
   }
 
   gold *= mult;
-  potionCount *= mult;
-
-  // Potions are no longer dropped in the dungeons
-  /*
-  if (potionCount > 0) {
-    consumables[potionType] = potionCount;
-  }
-  */
 
   return { gold, materials, consumables };
 }

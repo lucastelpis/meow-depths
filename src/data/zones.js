@@ -96,22 +96,9 @@ export function getGridSizeForFloor(floorNumber, zoneId) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const FLOOR_MATERIAL_POOLS = {
-  zone1: [
-    { maxFloor: 3, allowed: ['black_shard'] },
-    { maxFloor: 6, allowed: ['black_shard', 'black_crystal_small'] },
-    { maxFloor: 9, allowed: ['black_crystal_small', 'black_crystal_big'] },
-    // floor 10 (boss) → no entry → null → unfiltered
-  ],
-  zone2: [
-    { maxFloor: 3, allowed: ['green_shard'] },
-    { maxFloor: 6, allowed: ['green_shard', 'green_crystal_small'] },
-    { maxFloor: 9, allowed: ['green_crystal_small', 'green_crystal_big'] },
-  ],
-  zone3: [
-    { maxFloor: 3, allowed: ['yellow_shard'] },
-    { maxFloor: 6, allowed: ['yellow_shard', 'yellow_crystal_small'] },
-    { maxFloor: 9, allowed: ['yellow_crystal_small', 'yellow_crystal_big'] },
-  ],
+  zone1: [],
+  zone2: [],
+  zone3: [],
 };
 
 // ─────────────────────────────────────────────────────────────────────────────

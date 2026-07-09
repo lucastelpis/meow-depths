@@ -165,15 +165,17 @@ export function checkLevelUp(hero) {
   let levelsGained = 0;
   let currentLevel = hero.level;
   let currentStatPoints = hero.statPoints || 0;
+  let currentSkillPoints = hero.skillPoints || 0;
   const messages = [];
 
   // Keep leveling up as long as XP exceeds the next level's threshold
   while (hero.xp >= getXpForLevel(currentLevel + 1)) {
     currentLevel += 1;
     currentStatPoints += 3; // +3 Stat Points per level
+    currentSkillPoints += 1; // +1 Skill Point per level
     levelsGained += 1;
 
-    messages.push(`🎉 Level up! You are now level ${currentLevel}! Gained +3 Stat Points.`);
+    messages.push(`🎉 Level up! You are now level ${currentLevel}! Gained +3 Stat Points and +1 Skill Point.`);
   }
 
   const strength = hero.strength || 10;
@@ -189,6 +191,7 @@ export function checkLevelUp(hero) {
     newCritChance: agility * 0.005,
     newDodge: agility * 0.005,
     newStatPoints: currentStatPoints,
+    newSkillPoints: currentSkillPoints,
     messages,
   };
 }

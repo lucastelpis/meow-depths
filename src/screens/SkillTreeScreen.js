@@ -465,17 +465,12 @@ export default function SkillTreeScreen() {
             {cardState !== 'maxed' && (() => {
               const nextCost = getSkillUpgradeCost(skill, stars + 1);
               if (!nextCost) return null;
-              const [matId, matQty] = Object.entries(nextCost.materials)[0];
               return (
                 <View style={styles.cardCostRow}>
                   <Text style={styles.cardCostLabel}>★{stars + 1}</Text>
-                  {MATERIALS[matId]?.spritesheet ? (
-                    <ItemSprite spritesheet={MATERIALS[matId].spritesheet} frameIndex={MATERIALS[matId].frameIndex} displaySize={11} />
-                  ) : (
-                    <Text style={{ fontSize: 9 }}>{CRYSTAL_INFO[matId]?.icon}</Text>
-                  )}
+                  <Text style={{ fontSize: 9 }}>✨</Text>
                   <Text style={styles.cardCostText} numberOfLines={1}>
-                    {matQty}{Object.keys(nextCost.materials).length > 1 ? '+' : ''} · LV{nextCost.requiredLevel}
+                    {nextCost.skillPoints} SP · LV{nextCost.requiredLevel}
                   </Text>
                 </View>
               );
@@ -483,17 +478,12 @@ export default function SkillTreeScreen() {
           </View>
         ) : cardState === 'available' ? (() => {
           const cost = getSkillUpgradeCost(skill, 1);
-          const [matId, matQty] = Object.entries(cost.materials)[0];
           return (
             <View style={styles.cardCostRow}>
               <Text style={[styles.cardCostLabel, { color: C.candleGold }]}>UNLOCK</Text>
-              {MATERIALS[matId]?.spritesheet ? (
-                <ItemSprite spritesheet={MATERIALS[matId].spritesheet} frameIndex={MATERIALS[matId].frameIndex} displaySize={11} />
-              ) : (
-                <Text style={{ fontSize: 9 }}>{CRYSTAL_INFO[matId]?.icon}</Text>
-              )}
+              <Text style={{ fontSize: 9 }}>✨</Text>
               <Text style={[styles.cardCostText, { color: C.candleGold }]} numberOfLines={1}>
-                {matQty} · LV{cost.requiredLevel}
+                {cost.skillPoints} SP · LV{cost.requiredLevel}
               </Text>
             </View>
           );
@@ -584,22 +574,17 @@ export default function SkillTreeScreen() {
         <View style={styles.headerSpacer} />
       </View>
 
-      {/* ── Crystal stash bar ─────────────────────────────────────────────── */}
+      {/* ── Skill Points Bar ─────────────────────────────────────────────── */}
       <View style={styles.crystalBar}>
-        {CRYSTAL_ORDER.map((itemId) => {
-          const info = CRYSTAL_INFO[itemId];
-          const owned = materials[itemId] || 0;
-          return (
-            <View key={itemId} style={styles.crystalChip}>
-              {MATERIALS[itemId]?.spritesheet ? (
-                <ItemSprite spritesheet={MATERIALS[itemId].spritesheet} frameIndex={MATERIALS[itemId].frameIndex} displaySize={15} />
-              ) : (
-                <Text style={styles.crystalChipIcon}>{info.icon}</Text>
-              )}
-              <Text style={styles.crystalChipCount}>{owned}</Text>
-            </View>
-          );
-        })}
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+          <Text style={{ fontFamily: 'Silkscreen-Regular', fontSize: 10, color: C.textDim }}>HERO LEVEL:</Text>
+          <Text style={{ fontFamily: 'Silkscreen-Regular', fontSize: 12, color: C.candleGold }}>{hero.level}</Text>
+        </View>
+        <View style={{ width: 2, height: 16, backgroundColor: 'rgba(74,57,23,0.3)' }} />
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+          <Text style={{ fontFamily: 'Silkscreen-Regular', fontSize: 10, color: C.textDim }}>SKILL POINTS:</Text>
+          <Text style={{ fontFamily: 'Silkscreen-Regular', fontSize: 12, color: '#3FB56E' }}>{hero.skillPoints || 0}</Text>
+        </View>
       </View>
 
       {/* ── Element tabs ───────────────────────────────────────────────── */}
@@ -809,24 +794,20 @@ export default function SkillTreeScreen() {
                           {hero.level} / {relevantCost.requiredLevel}
                         </Text>
                       </View>
-                      {Object.entries(relevantCost.materials).map(([itemId, qty]) => {
-                        const owned = materials[itemId] || 0;
+                      {relevantCost.skillPoints !== undefined && (() => {
+                        const owned = hero.skillPoints || 0;
+                        const qty = relevantCost.skillPoints;
                         const enough = owned >= qty;
-                        const info = CRYSTAL_INFO[itemId] || { icon: '✨', name: itemId };
                         return (
-                          <View key={itemId} style={styles.modalCostMatRow}>
+                          <View style={styles.modalCostMatRow}>
                             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                              {MATERIALS[itemId]?.spritesheet ? (
-                                <ItemSprite spritesheet={MATERIALS[itemId].spritesheet} frameIndex={MATERIALS[itemId].frameIndex} displaySize={14} />
-                              ) : (
-                                <Text style={{ fontSize: 12 }}>{info.icon}</Text>
-                              )}
-                              <Text style={styles.modalCostMatName}>{info.name}</Text>
+                              <Text style={{ fontSize: 12 }}>✨</Text>
+                              <Text style={styles.modalCostMatName}>Skill Points (SP)</Text>
                             </View>
                             <Text style={[styles.modalCostMatValue, { color: enough ? C.good : C.bad }]}>{owned} / {qty}</Text>
                           </View>
                         );
-                      })}
+                      })()}
                     </View>
                   )}
 

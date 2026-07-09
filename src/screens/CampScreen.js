@@ -460,8 +460,24 @@ export default function CampScreen({ navigation }) {
                       onPress={() => navigation.navigate('Profile', { initialTab: 'stats' })}
                       activeOpacity={0.7}
                     >
-                      <ItemSprite spritesheet="icons-1" frameIndex={28} displaySize={18} />
-                      <Text style={styles.bannerTagText}>STATS</Text>
+                      <ItemSprite spritesheet="icons-map" frameIndex={109} displaySize={18} />
+                    </TouchableOpacity>
+
+                    <View style={styles.bannerTagBadge}>
+                      <Text style={styles.bannerTagBadgeText}>!</Text>
+                    </View>
+                  </View>
+                )}
+
+                {/* Tag 4: Skill Points (Clickable) — only shown when skill points are available */}
+                {(hero.skillPoints || 0) > 0 && (
+                  <View style={styles.bannerTagClickableWrapper}>
+                    <TouchableOpacity
+                      style={styles.bannerTagClickableInner}
+                      onPress={() => navigation.navigate('SkillTree')}
+                      activeOpacity={0.7}
+                    >
+                      <ItemSprite spritesheet="icons-map" frameIndex={14} displaySize={18} />
                     </TouchableOpacity>
 
                     <View style={styles.bannerTagBadge}>
@@ -478,8 +494,7 @@ export default function CampScreen({ navigation }) {
                       onPress={() => navigation.navigate('Journal', { initialTab: 'notes' })}
                       activeOpacity={0.7}
                     >
-                      <ItemSprite spritesheet="icons-map" frameIndex={36} displaySize={18} />
-                      <Text style={styles.bannerTagText}>NOTES</Text>
+                      <ItemSprite spritesheet="icons-map" frameIndex={58} displaySize={18} />
                     </TouchableOpacity>
 
                     <View style={styles.bannerTagBadge}>
@@ -592,7 +607,7 @@ export default function CampScreen({ navigation }) {
               >
                 <View style={styles.subSpriteContainer}>
                   <IconGlowBackground size={44} />
-                  <ItemSprite spritesheet="icons-1" frameIndex={4} displaySize={38} />
+                  <ItemSprite spritesheet="icons-map" frameIndex={14} displaySize={38} />
                 </View>
                 <Text style={styles.subCardLabel}>SKILLS</Text>
               </TouchableOpacity>
@@ -605,7 +620,7 @@ export default function CampScreen({ navigation }) {
               >
                 <View style={styles.subSpriteContainer}>
                   <IconGlowBackground size={44} />
-                  <ItemSprite spritesheet="icons-map" frameIndex={140} displaySize={38} />
+                  <ItemSprite spritesheet="icons-map" frameIndex={73} displaySize={38} />
                 </View>
                 <Text style={styles.subCardLabel}>QUESTS</Text>
                 {hasClaimableQuestReward && (
@@ -912,6 +927,25 @@ export default function CampScreen({ navigation }) {
                   <Text style={styles.drCloseText}>✕</Text>
                 </TouchableOpacity>
 
+                <Text style={styles.settingsSectionLabel}>Audio Settings</Text>
+
+                <TouchableOpacity
+                  activeOpacity={0.85}
+                  style={styles.settingsAudioBtn}
+                  onPress={() => {
+                    dispatch({ type: 'TOGGLE_MUTE_SOUNDS' });
+                  }}
+                >
+                  <View style={styles.settingsAudioBtnInner}>
+                    <Text style={styles.settingsAudioBtnText}>
+                      {state?.settings?.muteSounds ? 'UNMUTE SOUNDS' : 'MUTE SOUNDS'}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+                <Text style={[styles.settingsHint, { marginBottom: 20 }]}>
+                  {state?.settings?.muteSounds ? 'Sounds are currently muted.' : 'Sounds are currently enabled.'}
+                </Text>
+
                 <Text style={styles.settingsSectionLabel}>Character Progression</Text>
 
                 <TouchableOpacity
@@ -920,7 +954,7 @@ export default function CampScreen({ navigation }) {
                   onPress={() => {
                     Alert.alert(
                       'Reset Stats & Skills',
-                      'Are you sure you want to reset all attribute points and skills? You will be fully refunded all spent crystal materials.',
+                      'Are you sure you want to reset all attribute points and skills? You will be fully refunded all spent Skill Points.',
                       [
                         { text: 'Cancel', style: 'cancel' },
                         {
@@ -1562,6 +1596,40 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     alignSelf: 'flex-start',
     marginBottom: 8,
+  },
+  settingsAudioBtn: {
+    alignSelf: 'stretch',
+    backgroundColor: '#7D5A0F',
+    borderColor: '#3D2A00',
+    borderWidth: 2,
+    borderRadius: 12,
+    padding: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 3,
+    elevation: 4,
+  },
+  settingsAudioBtnInner: {
+    backgroundColor: '#AD8226',
+    borderRadius: 9,
+    paddingVertical: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderTopWidth: 1.5,
+    borderTopColor: '#DEC168',
+    borderBottomWidth: 2,
+    borderBottomColor: '#6B4C08',
+  },
+  settingsAudioBtnText: {
+    fontFamily: 'Silkscreen-Regular',
+    fontSize: 12,
+    color: '#FFF5DB',
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+    textShadowColor: '#4A3300',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 1,
   },
   settingsResetStatsBtn: {
     alignSelf: 'stretch',

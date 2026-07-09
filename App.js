@@ -24,6 +24,9 @@ import ScreenLoader from './src/components/ScreenLoader';
 // Global state provider
 import { GameProvider, useGame } from './src/state/gameState';
 
+// Sound Manager
+import SoundManager from './src/utils/soundManager';
+
 // Screens
 import CampScreen from './src/screens/CampScreen';
 import WorldMapScreen from './src/screens/WorldMapScreen';
@@ -62,6 +65,30 @@ const APP_FONTS = {
 function AppNavigator() {
   const { state, loading } = useGame();
   const hasElement = !!(state?.hero?.element);
+
+  React.useEffect(() => {
+    if (loading || !state) return;
+
+    // 1. Sync mute settings
+    const isMuted = !!(state.settings?.muteSounds);
+    SoundManager.setMuted(isMuted);
+
+    // 2. Play BGM based on active run status
+    if (state.currentRun?.active) {
+      const zoneId = state.currentRun.zoneId;
+      if (zoneId === 'zone1') {
+        SoundManager.playMusic('zone1');
+      } else if (zoneId === 'zone2') {
+        SoundManager.playMusic('zone2');
+      } else if (zoneId === 'zone3') {
+        SoundManager.playMusic('zone3');
+      } else {
+        SoundManager.playMusic('hub');
+      }
+    } else {
+      SoundManager.playMusic('hub');
+    }
+  }, [loading, state?.currentRun?.active, state?.currentRun?.zoneId, state?.settings?.muteSounds]);
 
   if (loading) {
     return <View style={{ flex: 1, backgroundColor: '#0D0D0D' }} />;

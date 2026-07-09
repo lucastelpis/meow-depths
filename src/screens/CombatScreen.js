@@ -57,6 +57,7 @@ import Button from '../components/ui/Button';
 import ResourceBar from '../components/ui/ResourceBar';
 import ItemSprite from '../components/ItemSprite';
 import { HERO_SPRITE, getEnemySprite } from '../constants/sprites';
+import SoundManager from '../utils/soundManager';
 import {
   executeAttack,
   executeEnemyTurn,
@@ -958,6 +959,7 @@ export default function CombatScreen() {
     const animDuration = Math.round((attackFrames / 10) * 1000);
 
     triggerHeroAttackLunge(animDuration);
+    SoundManager.playSfx('hero-attack');
 
     // Execute the attack
     const result = executeAttack(heroState, target, heroState);
@@ -1090,6 +1092,7 @@ export default function CombatScreen() {
     // Only set standard animation if this isn't a sequential multi-hit skill (handled inside loop)
     if (skillId !== 'dual_slash') {
       setHeroAnim(skillId);
+      SoundManager.playSfx('hero-attack');
     }
 
     // Set cooldown — landslide uses per-star cooldowns defined in star data
@@ -1240,6 +1243,7 @@ export default function CombatScreen() {
 
           setHeroAnim(animKey);
           triggerHeroAttackLunge(currentHitDuration);
+          SoundManager.playSfx('hero-attack');
 
           // Trigger recoils and popups for this hit's targets.
           hit.targets.forEach(t => {
@@ -1503,6 +1507,7 @@ export default function CombatScreen() {
       await delay(350); // Beat before the enemy acts, for high-fidelity combat feel
 
       const enemyData = ENEMIES[enemy.id] || enemy;
+      const spriteDef = getEnemySprite(enemy);
 
       const turnResult = executeEnemyTurn(
         { ...enemyData, moves: [enemy.intent].filter(Boolean) },
@@ -1539,6 +1544,7 @@ export default function CombatScreen() {
 
           setEnemyAnims(prev => ({ ...prev, [enemyUid]: animKey }));
           triggerEnemyAttackLunge(enemyUid, currentHitDuration);
+          SoundManager.playSfx('enemy-attack');
 
           hit.targets.forEach(t => {
             if (t.uid === 'hero') {
@@ -1582,13 +1588,13 @@ export default function CombatScreen() {
         // Trigger this enemy's attack animation if they are not stunned or skipped
         if (!turnResult.isStunned && !turnResult.isSkipped) {
           setEnemyAnims(prev => ({ ...prev, [enemyUid]: 'attack' }));
-          const spriteDef = getEnemySprite(enemy);
           const attackFrames = (spriteDef.attack?.endFrame !== undefined && spriteDef.attack?.startFrame !== undefined)
             ? (spriteDef.attack.endFrame - spriteDef.attack.startFrame + 1)
             : (spriteDef.attack?.frames || 4);
           const attackFps = spriteDef.attack?.fps || 10;
           animDuration = Math.round((attackFrames / attackFps) * 1000);
           triggerEnemyAttackLunge(enemyUid, animDuration);
+          SoundManager.playSfx('enemy-attack');
         }
 
         if (turnResult.damage > 0) {
@@ -1902,6 +1908,7 @@ export default function CombatScreen() {
           newAttack: lvlResult.newAttack,
           newDefence: lvlResult.newDefence,
           newStatPoints: lvlResult.newStatPoints,
+          newSkillPoints: lvlResult.newSkillPoints,
         },
       });
       setLevelUpMessages(lvlResult.messages);

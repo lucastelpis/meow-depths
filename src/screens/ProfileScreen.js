@@ -488,36 +488,40 @@ export default function ProfileScreen() {
   };
 
   const handleOpenChest = () => {
-    const rolledGold = Math.floor(Math.random() * 31) + 15;
-    const rolledMaterials = {};
-    const families = ['black', 'green', 'yellow'];
-    const rollTier = () => {
-      const r = Math.random() * 100;
-      if (r < 60) return 'shard';
-      if (r < 85) return 'crystal_small';
-      if (r < 97) return 'crystal_big';
-      return 'core';
+    const rolledGold = Math.floor(Math.random() * 51) + 50; // 50 to 100 gold
+    const rolledConsumables = {};
+    const potionOptions = ['potion', 'super_potion', 'mega_potion', 'antidote'];
+    const potionNames = {
+      potion: 'Health Potion',
+      super_potion: 'Super Potion',
+      mega_potion: 'Mega Potion',
+      antidote: 'Antidote',
     };
-    for (let i = 0; i < 3; i++) {
-      const fam = families[Math.floor(Math.random() * families.length)];
-      const tier = rollTier();
-      const key = tier === 'shard' ? `${fam}_shard`
-        : tier === 'core' ? `${fam}_crystal_core`
-          : `${fam}_${tier}`;
-      rolledMaterials[key] = (rolledMaterials[key] || 0) + 1;
+    const potionEmojis = {
+      potion: '🧪',
+      super_potion: '🧪✨',
+      mega_potion: '🧪🌟',
+      antidote: '🧪💚',
+    };
+
+    // Roll 2 to 3 potions
+    const potionCount = Math.floor(Math.random() * 2) + 2;
+    for (let i = 0; i < potionCount; i++) {
+      const pot = potionOptions[Math.floor(Math.random() * potionOptions.length)];
+      rolledConsumables[pot] = (rolledConsumables[pot] || 0) + 1;
     }
-    const lines = [`💰 ${rolledGold} gold`];
-    Object.entries(rolledMaterials).forEach(([id, qty]) => {
-      let e = '💎';
-      if (id.startsWith('black')) e = '🖤';
-      if (id.startsWith('green')) e = '💚';
-      if (id.startsWith('yellow')) e = '💛';
-      lines.push(`${e} ${MATERIALS[id]?.name || id} ×${qty}`);
+
+    const lines = [`💰 ${rolledGold} Gold`];
+    Object.entries(rolledConsumables).forEach(([id, qty]) => {
+      const name = potionNames[id] || id;
+      const emoji = potionEmojis[id] || '🧪';
+      lines.push(`${emoji} ${name} ×${qty}`);
     });
+
     Alert.alert('🎁 Chest Opened!', `You obtained:\n\n${lines.join('\n')}`, [{
       text: 'Awesome!',
       onPress: () => {
-        dispatch({ type: 'OPEN_LOOTBOX', payload: { gold: rolledGold, materials: rolledMaterials } });
+        dispatch({ type: 'OPEN_LOOTBOX', payload: { gold: rolledGold, consumables: rolledConsumables } });
         setModalVisible(false);
       },
     }]);
@@ -1050,8 +1054,8 @@ export default function ProfileScreen() {
                 <View style={{ marginBottom: 8 }}>
                   <ItemSprite spritesheet="icons-map" frameIndex={69} displaySize={36} />
                 </View>
-                <Text style={styles.emptyTitle}>No Gear Crafted</Text>
-                <Text style={styles.emptyDesc}>Visit the Shop to forge equipment from your materials.</Text>
+                <Text style={styles.emptyTitle}>No Gear Owned</Text>
+                <Text style={styles.emptyDesc}>Visit the Shop to buy equipment with Gold.</Text>
               </View>
             ) : (
               <View style={styles.gridContainer}>
@@ -1172,86 +1176,7 @@ export default function ProfileScreen() {
               );
             })()}
 
-            {/* Materials Section */}
-            <Text style={[styles.sectionTitle, { marginTop: 24 }]}>Materials</Text>
-            {(() => {
-              const materials = hero.inventory?.materials || {};
-              const allMaterials = [];
-              MATERIAL_ZONES.forEach((zone, zIdx) => {
-                if (!isMaterialZoneOpened(zIdx)) return;
 
-                zone.ids.forEach((id) => {
-                  const qty = materials[id] || 0;
-                  if (qty > 0) {
-                    allMaterials.push({
-                      id,
-                      qty,
-                      name: MATERIALS[id]?.name || id,
-                      zone,
-                    });
-                  }
-                });
-              });
-
-              if (allMaterials.length === 0) {
-                return (
-                  <View style={styles.emptyBox}>
-                    <View style={{ marginBottom: 8 }}>
-                      <ItemSprite spritesheet="crystals-1" frameIndex={2} displaySize={36} />
-                    </View>
-                    <Text style={styles.emptyTitle}>No Materials</Text>
-                    <Text style={styles.emptyDesc}>Explore regions and defeat enemies to collect crystals and shards.</Text>
-                  </View>
-                );
-              }
-
-              return (
-                <View style={styles.gridContainer}>
-                  {allMaterials.map((mat) => {
-                    return (
-                      <TouchableOpacity
-                        key={mat.id}
-                        style={[styles.gridCard, { width: itemWidth, height: itemWidth }]}
-                        onPress={() => handleOpenDetails(mat, 'material')}
-                        activeOpacity={0.8}
-                      >
-                        <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
-                          <Defs>
-                            <RadialGradient id={`matGlow_${mat.id}`} cx="0%" cy="50%" rx="50%" ry="80%">
-                              <Stop offset="0%" stopColor={mat.zone.zoneColor} stopOpacity="0.04" />
-                              <Stop offset="100%" stopColor="transparent" stopOpacity="0" />
-                            </RadialGradient>
-                          </Defs>
-                          <Rect width="100%" height="100%" fill="rgba(255,255,255,0.015)" rx={14} />
-                          <Rect width="100%" height="100%" fill={`url(#matGlow_${mat.id})`} rx={14} />
-                          <Rect x="1" y="1" width="98%" height="98%" rx={13} fill="none"
-                            stroke="rgba(255,255,255,0.04)" strokeWidth={1} />
-                        </Svg>
-                        <View style={styles.gridCardInner}>
-                          <Text style={styles.gridName} numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.8}>{mat.name}</Text>
-                          <View style={styles.gridIconWrap}>
-                            {MATERIALS[mat.id]?.spritesheet ? (
-                              <ItemSprite
-                                spritesheet={MATERIALS[mat.id].spritesheet}
-                                frameIndex={MATERIALS[mat.id].frameIndex}
-                                displaySize={42}
-                              />
-                            ) : (
-                              <ItemSprite spritesheet="crystals-1" frameIndex={0} displaySize={42} />
-                            )}
-                          </View>
-                          <View style={styles.gridTagSlot}>
-                            <View style={[styles.gridTagBadge, styles.gridQtyBadge]}>
-                              <Text style={[styles.gridTagText, styles.gridQtyText]}>×{mat.qty}</Text>
-                            </View>
-                          </View>
-                        </View>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </View>
-              );
-            })()}
           </View>
         )}
       </ScrollView>

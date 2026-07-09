@@ -47,6 +47,7 @@ async function runSimulation() {
     agility: 10,
     vitality: 10,
     statPoints: 0,
+    skillPoints: 0,
     gear: {
       weapon: 'wooden_branch', // starter item
       chest: 'cardboard_armor', // starter item
@@ -61,12 +62,7 @@ async function runSimulation() {
     equippedSkills: [null, null],
     inventory: {
       healthPotions: 0,
-      materials: {
-        black_shard: 0,
-        black_crystal_small: 0,
-        black_crystal_big: 0,
-        black_crystal_core: 0,
-      },
+      materials: {},
     },
     lastDailyClaim: null,
   };
@@ -99,108 +95,10 @@ async function runSimulation() {
 
   // Helper to roll crystal drops based on star rating and profile
   function getEnemyDrops(enemyId, starRating) {
-    const drops = {};
-    const enemyKey = enemyId.replace(/^elite_/, '');
-    
-    // Star Level 1: 100% Shards.
-    // Star Level 2: 80% Shards, 20% Small.
-    // Star Level 3: 70% Small, 30% Big.
-    // Star Level 4: 100% Big.
-    // Star Level 5: 95% Big, 5% Core.
-    const roll = Math.random();
-    let crystalType = 'black_shard';
-    if (starRating === 2) {
-      crystalType = roll < 0.20 ? 'black_crystal_small' : 'black_shard';
-    } else if (starRating === 3) {
-      crystalType = roll < 0.30 ? 'black_crystal_big' : 'black_crystal_small';
-    } else if (starRating === 4) {
-      crystalType = 'black_crystal_big';
-    } else if (starRating === 5) {
-      crystalType = roll < 0.05 ? 'black_crystal_core' : 'black_crystal_big';
-    }
-
-    // Drops count by profile
-    let qty = starRating;
-    const profile = ['sewer_rat', 'mutated_plant', 'mineral_pincher'].includes(enemyKey) ? 'rat' :
-                    ['cockroach_knight', 'ironclad_beetle'].includes(enemyKey) ? 'cockroach' : 'frog';
-    
-    if (profile === 'frog') {
-      qty = starRating + (Math.random() < 0.50 ? 1 : 0);
-    } else if (profile === 'cockroach') {
-      qty = starRating + 1;
-    }
-
-    drops[crystalType] = qty;
-    return drops;
+    return {};
   }
 
-  // Helper to calculate total crystals/shards needed for all future upgrades
-  function getUpgradePathRemainingCosts(h) {
-    let shards = 0;
-    let small = 0;
-    let big = 0;
-    let core = 0;
 
-    const t1Skills = ELEMENT_SKILLS[h.element].t1;
-    const t2Skills = ELEMENT_SKILLS[h.element].t2;
-
-    // Tier 1 skills
-    for (const sId of t1Skills) {
-      const entry = h.unlockedSkills[sId];
-      const currentStars = entry ? entry.stars : 0;
-      for (let star = currentStars + 1; star <= 5; star++) {
-        const cost = SKILL_UPGRADE_COSTS[1][star];
-        if (cost && cost.materials) {
-          shards += cost.materials.black_shard || 0;
-          small += cost.materials.black_crystal_small || 0;
-        }
-      }
-    }
-
-    // Tier 2 skills
-    for (const sId of t2Skills) {
-      const entry = h.unlockedSkills[sId];
-      const currentStars = entry ? entry.stars : 0;
-      for (let star = currentStars + 1; star <= 5; star++) {
-        const cost = SKILL_UPGRADE_COSTS[2][star];
-        if (cost && cost.materials) {
-          small += cost.materials.black_crystal_small || 0;
-          big += cost.materials.black_crystal_big || 0;
-          core += cost.materials.black_crystal_core || 0;
-        }
-      }
-    }
-
-    return { shards, small, big, core };
-  }
-
-  // Smart crystal fusion logic: only fuse lower tier crystals if we don't need them anymore
-  function performSmartCrystalFusion(inventory, h) {
-    const mats = inventory.materials;
-    const needed = getUpgradePathRemainingCosts(h);
-
-    // 1. Shards -> Small
-    if (mats.black_shard > needed.shards) {
-      const available = mats.black_shard - needed.shards;
-      const fused = Math.floor(available / 10);
-      if (fused > 0) {
-        mats.black_shard -= fused * 10;
-        mats.black_crystal_small = (mats.black_crystal_small || 0) + fused;
-        console.log(`🔨 Smart Fuse: Combined ${fused * 10} Shards into ${fused} Small Crystals.`);
-      }
-    }
-
-    // 2. Small -> Big
-    if (mats.black_crystal_small > needed.small) {
-      const available = mats.black_crystal_small - needed.small;
-      const fused = Math.floor(available / 10);
-      if (fused > 0) {
-        mats.black_crystal_small -= fused * 10;
-        mats.black_crystal_big = (mats.black_crystal_big || 0) + fused;
-        console.log(`🔨 Smart Fuse: Combined ${fused * 10} Small Crystals into ${fused} Big Crystals.`);
-      }
-    }
-  }
 
   // Helper to allocate level-up points
   function allocateStatPoints(h) {
@@ -303,9 +201,6 @@ async function runSimulation() {
 
   // Upgrade Skills loop
   function manageSkillUpgrades(h) {
-    // Perform smart fusions first
-    performSmartCrystalFusion(h.inventory, h);
-
     const t1Skills = ELEMENT_SKILLS[h.element].t1;
     const t2Skills = ELEMENT_SKILLS[h.element].t2;
 
@@ -315,9 +210,7 @@ async function runSimulation() {
         const check = canUnlockElementSkill(skillId, h);
         if (check.can) {
           h.unlockedSkills[skillId] = { stars: 1 };
-          for (const [matId, qty] of Object.entries(check.cost.materials)) {
-            h.inventory.materials[matId] -= qty;
-          }
+          h.skillPoints -= check.cost.skillPoints;
           console.log(`🔮 UNLOCKED Skill: ${SKILLS[skillId].name} ★1.`);
           if (SKILLS[skillId].type === 'active') {
             if (h.equippedSkills[0] === null) h.equippedSkills[0] = skillId;
@@ -335,9 +228,7 @@ async function runSimulation() {
           const check = canStarUpSkill(skillId, h);
           if (check.can) {
             h.unlockedSkills[skillId].stars = targetStar;
-            for (const [matId, qty] of Object.entries(check.cost.materials)) {
-              h.inventory.materials[matId] -= qty;
-            }
+            h.skillPoints -= check.cost.skillPoints;
             console.log(`🌟 UPGRADED Skill: ${SKILLS[skillId].name} to ★${targetStar}.`);
           }
         }
@@ -350,9 +241,7 @@ async function runSimulation() {
         const check = canUnlockElementSkill(skillId, h);
         if (check.can) {
           h.unlockedSkills[skillId] = { stars: 1 };
-          for (const [matId, qty] of Object.entries(check.cost.materials)) {
-            h.inventory.materials[matId] -= qty;
-          }
+          h.skillPoints -= check.cost.skillPoints;
           console.log(`🔮 UNLOCKED Skill: ${SKILLS[skillId].name} ★1.`);
           if (SKILLS[skillId].type === 'active') {
             if (h.equippedSkills[0] === null) h.equippedSkills[0] = skillId;
@@ -368,12 +257,10 @@ async function runSimulation() {
         const entry = h.unlockedSkills[skillId];
         if (entry && entry.stars === targetStar - 1) {
           const check = canStarUpSkill(skillId, h);
-          console.log(`[DEBUG] canStarUpSkill check for ${skillId} (target: ★${targetStar}):`, check, `Current materials:`, JSON.stringify(h.inventory.materials));
+          console.log(`[DEBUG] canStarUpSkill check for ${skillId} (target: ★${targetStar}):`, check, `Current skill points:`, h.skillPoints);
           if (check.can) {
             h.unlockedSkills[skillId].stars = targetStar;
-            for (const [matId, qty] of Object.entries(check.cost.materials)) {
-              h.inventory.materials[matId] -= qty;
-            }
+            h.skillPoints -= check.cost.skillPoints;
             console.log(`🌟 UPGRADED Skill: ${SKILLS[skillId].name} to ★${targetStar}.`);
           }
         }
@@ -894,7 +781,6 @@ async function runSimulation() {
       } else if (room.type === 'treasure') {
         // Treasure room drops
         runGoldEarned += Math.floor(20 + Math.random() * 30);
-        runMaterialsEarned.black_shard = (runMaterialsEarned.black_shard || 0) + Math.floor(2 + Math.random() * 3);
 
       } else if (room.type === 'rest') {
         // Rest Room decision: heal if low HP, otherwise buff
@@ -911,7 +797,6 @@ async function runSimulation() {
         } else if (roll < 0.66) {
           // Treasure
           runGoldEarned += 50;
-          runMaterialsEarned.black_crystal_small = (runMaterialsEarned.black_crystal_small || 0) + 1;
         }
       }
     }
@@ -1217,8 +1102,6 @@ async function runSimulation() {
         }
         runGoldEarned += 300;
         runXpEarned += 500;
-        runMaterialsEarned.black_crystal_core = (runMaterialsEarned.black_crystal_core || 0) + 1;
-        runMaterialsEarned.black_crystal_big = (runMaterialsEarned.black_crystal_big || 0) + 3;
       }
     }
 
@@ -1237,12 +1120,9 @@ async function runSimulation() {
       hero.gold += runGoldEarned + completionGold;
       hero.xp += runXpEarned + completionXp;
 
-      for (const [matId, qty] of Object.entries(runMaterialsEarned)) {
-        hero.inventory.materials[matId] = (hero.inventory.materials[matId] || 0) + qty;
-      }
 
       if (isFarmRun) {
-        console.log(`🌾 [FARM CLEAR] Gold: +${runGoldEarned} G, XP: +${runXpEarned}, Materials: ${JSON.stringify(runMaterialsEarned)}`);
+        console.log(`🌾 [FARM CLEAR] Gold: +${runGoldEarned} G, XP: +${runXpEarned}`);
       } else {
         console.log(`✅ Floor ${floorNum} Cleared! Gold Earned: ${runGoldEarned + completionGold} G. XP Earned: ${runXpEarned + completionXp}.`);
       }
@@ -1252,6 +1132,7 @@ async function runSimulation() {
       if (levelRes.levelsGained > 0) {
         hero.level = levelRes.newLevel;
         hero.statPoints = levelRes.newStatPoints;
+        hero.skillPoints = levelRes.newSkillPoints;
         console.log(`🎉 Level Up! reached level ${hero.level}!`);
       }
 
@@ -1279,21 +1160,11 @@ async function runSimulation() {
     let attempts = 0;
 
     while (!floorCleared) {
-      // Farm lower floors if approaching Floor 5+ and skills aren't fully upgraded, OR if resources are depleted
+      // Farm lower floors if resources are depleted
       const farmFloor = floorNum >= 8 ? 6 : (floorNum >= 6 ? 4 : (floorNum >= 4 ? 2 : 1));
-      const t1Skills = ELEMENT_SKILLS[hero.element].t1;
-      const getT1StarsText = () => t1Skills.map(sId => `${SKILLS[sId].name}: ★${getStars(sId)}`).join(', ');
-      const needsFarmForSkills = () => floorNum >= 5 && t1Skills.some(sId => getStars(sId) < 5);
 
-      while (
-        needsFarmForSkills() ||
-        (floorNum >= 2 && isLowOnResources())
-      ) {
-        if (needsFarmForSkills()) {
-          console.log(`\n🌾 Skills not maxed (${getT1StarsText()}). Farming Floor 3...`);
-        } else {
-          console.log(`\n🌾 Low on resources (Gold: ${hero.gold} G, Potions: ${hero.inventory.healthPotions}). Farming Floor ${farmFloor} to recover...`);
-        }
+      while (floorNum >= 2 && isLowOnResources()) {
+        console.log(`\n🌾 Low on resources (Gold: ${hero.gold} G, Potions: ${hero.inventory.healthPotions}). Farming Floor ${farmFloor} to recover...`);
         await executeFloorRun(farmFloor, true);
       }
 
@@ -1316,7 +1187,7 @@ async function runSimulation() {
         floorCleared = true;
         // Print player state summary at end of floor clear
         console.log(`🎒 Mochi's Wallet: ${hero.gold} G.`);
-        console.log(`📦 Crystal Stash: Shards: ${hero.inventory.materials.black_shard}, Small: ${hero.inventory.materials.black_crystal_small}, Big: ${hero.inventory.materials.black_crystal_big}, Cores: ${hero.inventory.materials.black_crystal_core}`);
+        console.log(`✨ Skill Points (SP): ${hero.skillPoints}`);
       }
     }
     if (!successfullyClearedDungeon) {

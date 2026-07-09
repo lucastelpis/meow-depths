@@ -60,18 +60,6 @@ export function generateDailyQuests(hero, progress, dateStr) {
 
   const pool = [];
 
-  // Quest type: Collect crystals
-  pool.push({
-    type: 'collect_crystals',
-    title: `${color} Crystal Gathering`,
-    desc: `Gather ${5 + lvl * 2} ${color} Crystal Shards during expeditions in the ${getZoneName(currentZone)}.`,
-    target: 5 + lvl * 2,
-    rewards: {
-      gold: 150 + lvl * 20,
-      materials: { [`${color.toLowerCase()}_shard`]: 3 }
-    }
-  });
-
   // Quest type: Clear a cleared floor
   const clearedFloorsCount = progress.floorsCleared?.[currentZone] || 0;
   if (clearedFloorsCount > 0) {
@@ -118,7 +106,7 @@ export function generateDailyQuests(hero, progress, dateStr) {
     enemyId: pickedEnemy.id,
     rewards: {
       gold: 150 + lvl * 25,
-      materials: { [`${color.toLowerCase()}_shard`]: 2 }
+      consumables: { potion: 2 }
     }
   });
 
@@ -133,7 +121,7 @@ export function generateDailyQuests(hero, progress, dateStr) {
     stars: targetStars,
     rewards: {
       gold: 180 + lvl * 30,
-      materials: { [`${color.toLowerCase()}_shard`]: 4 }
+      consumables: { super_potion: 1 }
     }
   });
 
@@ -200,7 +188,7 @@ export const CAMPAIGN_QUEST_TEMPLATES = [
     target: 1,
     completed: false,
     claimed: false,
-    rewards: { gold: 300, materials: { green_shard: 5 } },
+    rewards: { gold: 300, consumables: { potion: 3 } },
     tag: 'Story',
     prerequisite: {
       type: 'quest_completed',
@@ -231,7 +219,7 @@ export const CAMPAIGN_QUEST_TEMPLATES = [
     target: 1,
     completed: false,
     claimed: false,
-    rewards: { gold: 400, materials: { black_crystal_small: 2 } },
+    rewards: { gold: 500, consumables: { super_potion: 1 } },
     tag: 'Campaign'
   },
   // 5. Max two T1 skills
@@ -244,7 +232,7 @@ export const CAMPAIGN_QUEST_TEMPLATES = [
     target: 2,
     completed: false,
     claimed: false,
-    rewards: { gold: 600, materials: { black_crystal_big: 1 } },
+    rewards: { gold: 800, consumables: { super_potion: 2 } },
     tag: 'Campaign',
     prerequisite: {
       type: 'quest_completed',
@@ -261,27 +249,14 @@ export const CAMPAIGN_QUEST_TEMPLATES = [
     target: 5,
     completed: false,
     claimed: false,
-    rewards: { gold: 800, materials: { black_crystal_core: 1 } },
+    rewards: { gold: 1200, consumables: { mega_potion: 1 } },
     tag: 'Campaign',
     prerequisite: {
       type: 'quest_completed',
       questId: 'camp_max_two_t1_skills'
     }
   },
-  // 7. Perform a fusion
-  {
-    id: 'camp_forge_crystal',
-    title: 'Alchemical Apprentice',
-    desc: 'Fuse crystal shards to forge a Small or Big Crystal in the Shop.',
-    type: 'forge_crystal',
-    progress: 0,
-    target: 1,
-    completed: false,
-    claimed: false,
-    rewards: { gold: 150, materials: { black_shard: 5 } },
-    tag: 'Campaign'
-  },
-  // 8. Defeat King Rat Boss
+  // 7. Defeat King Rat Boss
   {
     id: 'camp_defeat_king_rat',
     title: 'Bane of Sewer Rats',
@@ -292,7 +267,7 @@ export const CAMPAIGN_QUEST_TEMPLATES = [
     target: 1,
     completed: false,
     claimed: false,
-    rewards: { gold: 500, materials: { black_crystal_core: 1 } },
+    rewards: { gold: 800, consumables: { mega_potion: 2 } },
     tag: 'Story',
     prerequisite: {
       type: 'clear_floor',
@@ -344,8 +319,14 @@ export function syncPersistentQuests(state) {
       questsState = { ...questsState, campaign: getInitialCampaignQuests() };
       changed = true;
     } else {
+      // Filter out campaign quests from state that are no longer in templates (e.g. camp_forge_crystal)
+      const existingCampaign = questsState.campaign.filter(q => CAMPAIGN_QUEST_TEMPLATES.some(t => t.id === q.id));
+      if (existingCampaign.length !== questsState.campaign.length) {
+        changed = true;
+      }
+
       // Hydrate existing campaign quests in the state to include newly introduced template properties
-      const hydratedCampaign = questsState.campaign.map(q => {
+      const hydratedCampaign = existingCampaign.map(q => {
         const template = CAMPAIGN_QUEST_TEMPLATES.find(t => t.id === q.id);
         if (template) {
           let merged = { ...q };
@@ -372,19 +353,9 @@ export function syncPersistentQuests(state) {
   const hero = state.hero;
   const progress = state.progress;
 
-
-
   const dailies = (questsState.dailies || []).map(q => {
     if (q.completed) return q;
     let newProgress = q.progress;
-    if (q.type === 'collect_crystals') {
-      const color = getZoneCrystalColor(getHighestUnlockedZone(progress)).toLowerCase();
-      const currentCrystals = hero.inventory?.materials?.[`${color}_shard`] || 0;
-      if (currentCrystals !== q.progress) {
-        newProgress = Math.min(q.target, currentCrystals);
-        changed = true;
-      }
-    }
     const completed = newProgress >= q.target;
     if (newProgress !== q.progress || completed !== q.completed) {
       changed = true;

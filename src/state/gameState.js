@@ -76,6 +76,7 @@ const initialState = {
     dodge: 0.05,              // 5 % base dodge chance
     gold: 0,                  // hero starts with no gold; first daily reward grants some
     statPoints: 0,            // 3 stat points per level-up, allocated manually
+    skillPoints: 0,           // 1 skill point per level-up, allocated manually
     strength: 10,             // core attribute
     agility: 10,              // core attribute
     vitality: 10,             // core attribute
@@ -153,6 +154,9 @@ const initialState = {
       maxHpBonus: 0
     }
   },
+  settings: {
+    muteSounds: false,
+  },
 };
 
 // ============================================================================
@@ -204,6 +208,18 @@ function baseGameReducer(state, action) {
     // -----------------------------------------------------------------------
     case 'SET_STATE':
       return { ...action.payload };
+
+    // -----------------------------------------------------------------------
+    // TOGGLE_MUTE_SOUNDS — toggle the muteSounds setting
+    // -----------------------------------------------------------------------
+    case 'TOGGLE_MUTE_SOUNDS':
+      return {
+        ...state,
+        settings: {
+          ...state.settings,
+          muteSounds: !state.settings?.muteSounds,
+        },
+      };
 
     // -----------------------------------------------------------------------
     // UPDATE_HERO — merge partial hero updates
@@ -340,7 +356,7 @@ function baseGameReducer(state, action) {
     }
 
     // -----------------------------------------------------------------------
-    // UNLOCK_SKILL — learn a new element skill at ★1, spending crystals
+    // UNLOCK_SKILL — learn a new element skill at ★1, spending skill points
     // Payload: { skillId: string }
     // -----------------------------------------------------------------------
     case 'UNLOCK_SKILL': {
@@ -352,11 +368,8 @@ function baseGameReducer(state, action) {
         ? state.hero.unlockedSkills
         : {};
 
-      const newMaterials = { ...state.hero.inventory.materials };
-      for (const [itemId, qty] of Object.entries(cost.materials)) {
-        newMaterials[itemId] = (newMaterials[itemId] || 0) - qty;
-        if (newMaterials[itemId] <= 0) delete newMaterials[itemId];
-      }
+      const currentSkillPoints = state.hero.skillPoints || 0;
+      if (currentSkillPoints < cost.skillPoints) return state;
 
       // Auto-equip newly unlocked ACTIVE skills into the first free combat slot,
       // so a player who just gained their first active skill isn't left with an
@@ -377,21 +390,18 @@ function baseGameReducer(state, action) {
         ...state,
         hero: {
           ...state.hero,
+          skillPoints: currentSkillPoints - cost.skillPoints,
           unlockedSkills: {
             ...unlocked,
             [action.payload.skillId]: { stars: 1 },
           },
           equippedSkills: equipped,
-          inventory: {
-            ...state.hero.inventory,
-            materials: newMaterials,
-          },
         },
       };
     }
 
     // -----------------------------------------------------------------------
-    // STAR_UP_SKILL — increase a skill's star level, spending crystals
+    // STAR_UP_SKILL — increase a skill's star level, spending skill points
     // Payload: { skillId: string }
     // -----------------------------------------------------------------------
     case 'STAR_UP_SKILL': {
@@ -403,23 +413,17 @@ function baseGameReducer(state, action) {
       const cost = skill && getSkillUpgradeCost(skill, targetStar);
       if (!cost) return state;
 
-      const newMaterials = { ...state.hero.inventory.materials };
-      for (const [itemId, qty] of Object.entries(cost.materials)) {
-        newMaterials[itemId] = (newMaterials[itemId] || 0) - qty;
-        if (newMaterials[itemId] <= 0) delete newMaterials[itemId];
-      }
+      const currentSkillPoints = state.hero.skillPoints || 0;
+      if (currentSkillPoints < cost.skillPoints) return state;
 
       return {
         ...state,
         hero: {
           ...state.hero,
+          skillPoints: currentSkillPoints - cost.skillPoints,
           unlockedSkills: {
             ...state.hero.unlockedSkills,
             [action.payload.skillId]: { ...existing, stars: targetStar },
-          },
-          inventory: {
-            ...state.hero.inventory,
-            materials: newMaterials,
           },
         },
       };
@@ -428,29 +432,6 @@ function baseGameReducer(state, action) {
     // -----------------------------------------------------------------------
     // FORGE_CRYSTAL — craft higher-tier crystals from lower-tier crystals
     // Payload: { inputId: string, outputId: string }
-    // -----------------------------------------------------------------------
-    case 'FORGE_CRYSTAL': {
-      const { inputId, outputId } = action.payload;
-      const currentInputQty = state.hero.inventory.materials[inputId] || 0;
-      if (currentInputQty < 10) return state;
-
-      const newMaterials = { ...state.hero.inventory.materials };
-      newMaterials[inputId] = currentInputQty - 10;
-      if (newMaterials[inputId] <= 0) delete newMaterials[inputId];
-
-      newMaterials[outputId] = (newMaterials[outputId] || 0) + 1;
-
-      return {
-        ...state,
-        hero: {
-          ...state.hero,
-          inventory: {
-            ...state.hero.inventory,
-            materials: newMaterials,
-          },
-        },
-      };
-    }
 
     // -----------------------------------------------------------------------
     // EQUIP_SKILL — assign a skill to a combat slot
@@ -781,6 +762,7 @@ function baseGameReducer(state, action) {
             attack: lvlResult.newAttack,
             defence: lvlResult.newDefence,
             statPoints: lvlResult.newStatPoints,
+            skillPoints: lvlResult.newSkillPoints,
             critChance: lvlResult.newCritChance !== undefined ? lvlResult.newCritChance : heroStats.critChance,
             dodge: lvlResult.newDodge !== undefined ? lvlResult.newDodge : heroStats.dodge,
           };
@@ -1072,21 +1054,27 @@ function baseGameReducer(state, action) {
     // Payload: { gold: number, materials: { [itemId: string]: number } }
     // -----------------------------------------------------------------------
     case 'OPEN_LOOTBOX': {
-      const { gold, materials } = action.payload;
+      const { gold, consumables } = action.payload;
 
-      // Decrement Mystery Chest count
-      const newConsumables = state.hero.inventory.consumables.map(c => {
+      // Decrement Mystery Chest count, then add/merge rolled consumables
+      let updatedConsumables = state.hero.inventory.consumables.map(c => {
         if (c.id === 'mystery_chest') {
           return { ...c, quantity: Math.max(0, c.quantity - 1) };
         }
         return c;
       }).filter(c => c.quantity > 0);
 
-      // Merge rolled materials
-      const newMaterials = { ...state.hero.inventory.materials };
-      Object.entries(materials || {}).forEach(([id, qty]) => {
+      Object.entries(consumables || {}).forEach(([id, qty]) => {
         if (qty > 0) {
-          newMaterials[id] = (newMaterials[id] || 0) + qty;
+          const existingIdx = updatedConsumables.findIndex(c => c.id === id);
+          if (existingIdx >= 0) {
+            updatedConsumables[existingIdx] = {
+              ...updatedConsumables[existingIdx],
+              quantity: updatedConsumables[existingIdx].quantity + qty,
+            };
+          } else {
+            updatedConsumables.push({ id, quantity: qty });
+          }
         }
       });
 
@@ -1097,8 +1085,7 @@ function baseGameReducer(state, action) {
           gold: state.hero.gold + (gold || 0),
           inventory: {
             ...state.hero.inventory,
-            consumables: newConsumables,
-            materials: newMaterials,
+            consumables: updatedConsumables,
           },
         },
       };
@@ -1182,6 +1169,7 @@ function baseGameReducer(state, action) {
           critChance:  tempHero.critChance,
           dodge:       tempHero.dodge,
           statPoints:  action.payload.newStatPoints !== undefined ? action.payload.newStatPoints : (state.hero.statPoints || 0),
+          skillPoints: action.payload.newSkillPoints !== undefined ? action.payload.newSkillPoints : (state.hero.skillPoints || 0),
           // Fully heal on level up — it feels good! 🎉
           hp:          effectiveMaxHp,
         },
@@ -1282,33 +1270,9 @@ function baseGameReducer(state, action) {
     // RESET_STATS_AND_SKILLS — reset attribute points and skills, refunding spent crystals
     // -----------------------------------------------------------------------
     case 'RESET_STATS_AND_SKILLS': {
-      // 1. Calculate crystals/materials to refund
-      const refundMaterials = {};
       const startingSkill = ELEMENT_TO_STARTING_SKILL[state.hero.element];
       
-      for (const [skillId, entry] of Object.entries(state.hero.unlockedSkills || {})) {
-        const skill = SKILLS[skillId];
-        if (!skill) continue;
-        const stars = entry.stars || 1;
-        // Start refund at star 2 for starting skill (so baseline unlock at star 1 is not refunded)
-        const startStar = (skillId === startingSkill) ? 2 : 1;
-        for (let star = startStar; star <= stars; star++) {
-          const cost = getSkillUpgradeCost(skill, star);
-          if (cost && cost.materials) {
-            for (const [itemId, qty] of Object.entries(cost.materials)) {
-              refundMaterials[itemId] = (refundMaterials[itemId] || 0) + qty;
-            }
-          }
-        }
-      }
-
-      // 2. Add refund materials to inventory
-      const newMaterials = { ...state.hero.inventory.materials };
-      for (const [itemId, qty] of Object.entries(refundMaterials)) {
-        newMaterials[itemId] = (newMaterials[itemId] || 0) + qty;
-      }
-
-      // 3. Reset attributes
+      // Reset attributes
       const newStr = 10;
       const newAgi = 10;
       const newVit = 10;
@@ -1320,6 +1284,7 @@ function baseGameReducer(state, action) {
       const newDodge = newAgi * 0.005;
 
       const newStatPoints = (state.hero.level - 1) * 3;
+      const newSkillPoints = (state.hero.level - 1) * 1;
 
       const newUnlockedSkills = {};
       if (startingSkill) {
@@ -1338,6 +1303,7 @@ function baseGameReducer(state, action) {
         critChance: newCritChance,
         dodge: newDodge,
         statPoints: newStatPoints,
+        skillPoints: newSkillPoints,
         unlockedSkills: newUnlockedSkills,
         equippedSkills: newEquippedSkills,
       };
@@ -1358,13 +1324,10 @@ function baseGameReducer(state, action) {
           critChance: newCritChance,
           dodge: newDodge,
           statPoints: newStatPoints,
+          skillPoints: newSkillPoints,
           unlockedSkills: newUnlockedSkills,
           equippedSkills: newEquippedSkills,
           hp: newHp,
-          inventory: {
-            ...state.hero.inventory,
-            materials: newMaterials,
-          },
         },
       };
     }

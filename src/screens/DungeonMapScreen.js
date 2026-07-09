@@ -1716,8 +1716,10 @@ export default function DungeonMapScreen({ navigation }) {
                     </Text>
                   </View>
 
-                  {currentRun.lootCollected.gold === 0 && Object.keys(currentRun.lootCollected.materials).length === 0 ? (
-                    <Text style={styles.emptyBagText}>No gold or materials collected yet.</Text>
+                  {currentRun.lootCollected.gold === 0 &&
+                   Object.keys(currentRun.lootCollected.materials || {}).length === 0 &&
+                   Object.keys(currentRun.lootCollected.consumables || {}).length === 0 ? (
+                    <Text style={styles.emptyBagText}>No gold or items collected yet.</Text>
                   ) : (
                     <View style={styles.bagChipsContainer}>
                       {currentRun.lootCollected.gold > 0 && (
@@ -1726,9 +1728,25 @@ export default function DungeonMapScreen({ navigation }) {
                           <Text style={styles.bagChipQty}>{currentRun.lootCollected.gold} G</Text>
                         </View>
                       )}
-                      {Object.entries(currentRun.lootCollected.materials).map(([id, qty]) => {
+                      {Object.entries(currentRun.lootCollected.materials || {}).map(([id, qty]) => {
                         if (qty <= 0) return null;
                         const def = MATERIALS[id];
+                        return (
+                          <View key={id} style={styles.bagItemChip}>
+                            {def?.spritesheet && (
+                              <ItemSprite
+                                  spritesheet={def.spritesheet}
+                                  frameIndex={def.frameIndex}
+                                  displaySize={32}
+                                />
+                            )}
+                            <Text style={styles.bagChipQty}>{qty}</Text>
+                          </View>
+                        );
+                      })}
+                      {Object.entries(currentRun.lootCollected.consumables || {}).map(([id, qty]) => {
+                        if (qty <= 0) return null;
+                        const def = CONSUMABLES.find(c => c.id === id);
                         return (
                           <View key={id} style={styles.bagItemChip}>
                             {def?.spritesheet && (
