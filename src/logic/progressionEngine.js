@@ -32,7 +32,7 @@ import { GEAR, SET_BONUSES } from '../data/gear';
 // ============================================================================
 export const STANCES = {
   fire: {
-    name: 'Smoldering Aura',
+    name: 'Fire Stance',
     description: '+1% ATK per level. Burn ticks deal more damage.',
     getBonus: (level) => ({
       atkPercent: level * 0.01,

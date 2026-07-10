@@ -404,24 +404,45 @@ export default function SkillTreeScreen() {
     const equipped = isEquipped(skillId);
     const isOwnedElement = viewingElement === element;
 
-    let borderColor = 'rgba(74, 57, 23, 0.55)';
-    let borderWidth = 2;
-    let opacity = 1;
-    let bg = C.panel;
+    // 3D double borders colors depending on state:
+    let outerOutlineColor = '#84735B'; // default bronze
+    let shadowBaseColor = '#4F3C1E'; // default shadow base
+    let innerFillColor = '#1B4030'; // default background moss green
+    let innerTopBorderColor = '#4F856C'; // default top highlight
+    let innerBottomBorderColor = '#0D2118'; // default bottom shadow border
     let nameColor = C.textDim;
+    let opacity = 1;
 
     if (cardState === 'locked') {
       opacity = 0.62;
+      outerOutlineColor = 'rgba(74, 57, 23, 0.4)';
+      shadowBaseColor = 'rgba(74, 57, 23, 0.2)';
+      innerFillColor = '#131A13';
+      innerTopBorderColor = 'rgba(74, 57, 23, 0.2)';
+      innerBottomBorderColor = '#070A07';
+      nameColor = C.textFaint;
     } else if (cardState === 'available') {
-      borderColor = C.candleGold;
-      nameColor = C.candleGold;
+      // available to unlock / upgrade: standard dark green theme matching skilled nodes!
+      outerOutlineColor = '#84735B';
+      shadowBaseColor = '#0D2118';
+      innerFillColor = '#1B4030'; // standard moss green fill
+      innerTopBorderColor = '#4F856C'; // standard sage highlight
+      innerBottomBorderColor = '#0D2118'; // dark green shadow
+      nameColor = '#FFF3DA'; // cream text for high contrast
     } else if (cardState === 'maxed') {
-      borderColor = '#F5CF4A';
+      // max level: shiny gold theme!
+      outerOutlineColor = '#84735B';
+      shadowBaseColor = '#4F3C1E';
+      innerFillColor = '#1E351F'; // nice emerald forest green
+      innerTopBorderColor = '#F5CF4A'; // treasureGold highlight
+      innerBottomBorderColor = '#0A150A';
       nameColor = C.text;
-      bg = '#1C2E1B';
-    } else { // unlocked / equipped
-      borderColor = viewColor;
-      borderWidth = equipped ? 3 : 2;
+    } else { // unlocked (but not maxed) / equipped
+      outerOutlineColor = '#84735B';
+      shadowBaseColor = '#4F3C1E';
+      innerFillColor = '#1B4030'; // warm moss green
+      innerTopBorderColor = '#4F856C'; // moss green highlight
+      innerBottomBorderColor = '#0D2118';
       nameColor = C.text;
     }
 
@@ -429,84 +450,76 @@ export default function SkillTreeScreen() {
     const badgeColor = isActive ? '#F08A4A' : '#5CC489';
 
     return (
-      <TouchableOpacity
-        key={skillId}
-        style={[styles.skillCard, cardStyle, { borderColor, borderWidth, opacity, backgroundColor: bg }]}
-        onPress={() => isOwnedElement && handleOpenSkill(skill)}
-        activeOpacity={0.85}
-        disabled={!isOwnedElement}
-      >
-        {/* Top row: sprite + badges */}
-        <View style={styles.cardHeader}>
-          <SkillSprite
-            skillId={skillId}
-            size={38}
-            glow={cardState === 'unlocked' || cardState === 'maxed' || cardState === 'available'}
-            glowColor={cardState === 'available' ? C.candleGold : viewColor}
-          />
-          <View style={styles.cardBadgeCol}>
-            <View style={[styles.typeBadge, { borderColor: `${badgeColor}55` }]}>
-              <Text style={[styles.typeBadgeText, { color: badgeColor }]}>{isActive ? 'ACTIVE' : 'PASSIVE'}</Text>
+      <View style={[cardStyle, { position: 'relative', opacity, overflow: 'visible' }]} key={skillId}>
+        {/* 1. Bevel Shadow Base */}
+        <View style={styles.skillCardShadow} />
+
+        {/* 2. Main Outer Container */}
+        <TouchableOpacity
+          style={[styles.skillCardOuter, { borderColor: outerOutlineColor, backgroundColor: shadowBaseColor }]}
+          onPress={() => isOwnedElement && handleOpenSkill(skill)}
+          activeOpacity={0.85}
+          disabled={!isOwnedElement}
+        >
+          {/* 3. Inner Container */}
+          <View style={[
+            styles.skillCardInner,
+            {
+              backgroundColor: innerFillColor,
+              borderTopColor: innerTopBorderColor,
+              borderLeftColor: innerTopBorderColor,
+              borderRightColor: innerTopBorderColor,
+              borderBottomColor: innerBottomBorderColor,
+            }
+          ]}>
+            {/* Top row: sprite + badges */}
+            <View style={styles.cardHeader}>
+              <SkillSprite
+                skillId={skillId}
+                size={32}
+                glow={cardState === 'unlocked' || cardState === 'maxed' || cardState === 'available'}
+                glowColor={viewColor}
+              />
+              <View style={styles.cardBadgeCol}>
+                <View style={[styles.typeBadge, { borderColor: `${badgeColor}55` }]}>
+                  <Text style={[styles.typeBadgeText, { color: badgeColor }]}>{isActive ? 'ACTIVE' : 'PASSIVE'}</Text>
+                </View>
+                {equipped && (
+                  <View style={[styles.equippedBadge, { borderColor: viewColor }]}>
+                    <Text style={[styles.equippedBadgeText, { color: viewColor }]}>EQUIPPED</Text>
+                  </View>
+                )}
+              </View>
             </View>
-            {equipped && (
-              <View style={[styles.equippedBadge, { borderColor: viewColor }]}>
-                <Text style={[styles.equippedBadgeText, { color: viewColor }]}>EQUIPPED</Text>
+
+            <Text style={[styles.cardName, { color: nameColor }]} numberOfLines={2}>{skill.name}</Text>
+
+            {/* Footer: stars or unlock/cost info */}
+            {stars > 0 ? (
+              <View>
+                <Stars count={stars} color={cardState === 'maxed' ? '#F5CF4A' : viewColor} size={11} />
+              </View>
+            ) : cardState === 'available' ? (
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
+                <Text style={[styles.cardLockText, { color: '#8CAF9F' }]} numberOfLines={1}>
+                  AVAILABLE
+                </Text>
+              </View>
+            ) : (
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
+                <ItemSprite spritesheet="icons-map" frameIndex={115} displaySize={9} opacity={0.4} />
+                <Text style={styles.cardLockText} numberOfLines={1}>
+                  {(() => {
+                    const check = canUnlockElementSkill(skillId, hero);
+                    if (check.cost && hero.level < check.cost.requiredLevel) return `LV ${check.cost.requiredLevel}`;
+                    return 'LOCKED';
+                  })()}
+                </Text>
               </View>
             )}
           </View>
-        </View>
-
-        <Text style={[styles.cardName, { color: nameColor }]} numberOfLines={2}>{skill.name}</Text>
-
-        {/* Footer: stars or unlock/cost info */}
-        {stars > 0 ? (
-          <View>
-            <Stars count={stars} color={cardState === 'maxed' ? '#F5CF4A' : viewColor} size={11} />
-            {cardState !== 'maxed' && (() => {
-              const nextCost = getSkillUpgradeCost(skill, stars + 1);
-              if (!nextCost) return null;
-              return (
-                <View style={styles.cardCostRow}>
-                  <Text style={styles.cardCostLabel}>★{stars + 1}</Text>
-                  <Text style={{ fontSize: 9 }}>✨</Text>
-                  <Text style={styles.cardCostText} numberOfLines={1}>
-                    {nextCost.skillPoints} SP · LV{nextCost.requiredLevel}
-                  </Text>
-                </View>
-              );
-            })()}
-          </View>
-        ) : cardState === 'available' ? (() => {
-          const cost = getSkillUpgradeCost(skill, 1);
-          return (
-            <View style={styles.cardCostRow}>
-              <Text style={[styles.cardCostLabel, { color: C.candleGold }]}>UNLOCK</Text>
-              <Text style={{ fontSize: 9 }}>✨</Text>
-              <Text style={[styles.cardCostText, { color: C.candleGold }]} numberOfLines={1}>
-                {cost.skillPoints} SP · LV{cost.requiredLevel}
-              </Text>
-            </View>
-          );
-        })() : (
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
-            <ItemSprite spritesheet="icons-map" frameIndex={115} displaySize={9} opacity={0.4} />
-            <Text style={styles.cardLockText} numberOfLines={1}>
-              {(() => {
-                const check = canUnlockElementSkill(skillId, hero);
-                if (check.cost && hero.level < check.cost.requiredLevel) return `LV ${check.cost.requiredLevel}`;
-                return 'LOCKED';
-              })()}
-            </Text>
-          </View>
-        )}
-
-        {isActive && skill.cooldown > 0 && (
-          <View style={styles.cardCooldownRow}>
-            <ItemSprite spritesheet="icons-map" frameIndex={86} displaySize={11} />
-            <Text style={styles.cardCooldown}>{skill.cooldown}-TURN CD</Text>
-          </View>
-        )}
-      </TouchableOpacity>
+        </TouchableOpacity>
+      </View>
     );
   };
 
@@ -593,15 +606,33 @@ export default function SkillTreeScreen() {
           const isOwned   = el.id === element;
           const isViewing = el.id === viewingElement;
           return (
-            <TouchableOpacity key={el.id} style={styles.tab} onPress={() => setViewingElement(el.id)} activeOpacity={0.8}>
-              <View style={{ opacity: isOwned ? 1 : 0.4 }}>
-                <ItemSprite spritesheet="icons-1" frameIndex={el.frame} displaySize={22} />
-              </View>
-              <Text style={[styles.tabLabel, { color: isViewing ? el.color : isOwned ? C.textDim : C.textFaint }]}>
-                {el.label}
-              </Text>
-              <View style={[styles.tabIndicator, { backgroundColor: isViewing ? el.color : 'transparent' }]} />
-            </TouchableOpacity>
+            <View key={el.id} style={styles.elementTabWrapper}>
+              <View style={styles.elementTabShadow} />
+              <TouchableOpacity
+                style={styles.elementTabOuter}
+                onPress={() => setViewingElement(el.id)}
+                activeOpacity={0.8}
+              >
+                <View
+                  style={[
+                    styles.elementTabInner,
+                    isViewing ? styles.elementTabInnerActive : styles.elementTabInnerInactive
+                  ]}
+                >
+                  <View style={{ opacity: isOwned ? 1 : 0.4, marginTop: -2 }}>
+                    <ItemSprite spritesheet="icons-1" frameIndex={el.frame} displaySize={18} />
+                  </View>
+                  <Text
+                    style={[
+                      styles.tabLabel,
+                      { color: isViewing ? '#2A1A0C' : isOwned ? C.textDim : C.textFaint }
+                    ]}
+                  >
+                    {el.label}
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            </View>
           );
         })}
       </View>
@@ -686,28 +717,42 @@ export default function SkillTreeScreen() {
             const skillId = equippedSkills[slotIdx];
             const sk = skillId ? SKILLS[skillId] : null;
             return (
-              <TouchableOpacity
-                key={slotIdx}
-                style={[styles.dockSlot, sk ? { borderColor: elementColor } : styles.dockSlotEmpty]}
-                onPress={() => sk && handleOpenSkill(sk)}
-                activeOpacity={0.85}
-                disabled={!sk}
-              >
+              <View key={slotIdx} style={styles.dockSlotWrapper}>
                 {sk ? (
-                  <SkillSprite skillId={sk.id} size={34} glow glowColor={elementColor} />
+                  <>
+                    <View style={styles.dockSlotShadow} />
+                    <TouchableOpacity
+                      style={styles.dockSlotOuter}
+                      onPress={() => handleOpenSkill(sk)}
+                      activeOpacity={0.85}
+                    >
+                      <View style={styles.dockSlotInner}>
+                        <SkillSprite skillId={sk.id} size={30} glow glowColor={viewColor} />
+                        <View style={styles.dockSlotText}>
+                          <Text style={styles.dockSlotLabel}>SLOT {slotIdx + 1}</Text>
+                          <Text style={[styles.dockSlotName, { color: C.text }]} numberOfLines={1}>
+                            {sk.name}
+                          </Text>
+                          <Text style={styles.dockSlotType}>{sk.type === 'passive' ? 'Passive' : 'Active'}</Text>
+                        </View>
+                      </View>
+                    </TouchableOpacity>
+                  </>
                 ) : (
-                  <View style={styles.dockEmptyIcon}>
-                    <ItemSprite spritesheet="icons-map" frameIndex={76} displaySize={24} opacity={0.4} />
+                  <View style={styles.dockSlotEmptyContainer}>
+                    <View style={styles.dockEmptyIcon}>
+                      <ItemSprite spritesheet="icons-map" frameIndex={76} displaySize={20} opacity={0.4} />
+                    </View>
+                    <View style={styles.dockSlotText}>
+                      <Text style={styles.dockSlotLabel}>SLOT {slotIdx + 1}</Text>
+                      <Text style={[styles.dockSlotName, { color: C.textFaint }]} numberOfLines={1}>
+                        Empty
+                      </Text>
+                      <Text style={styles.dockSlotType}>Tap a skill to equip</Text>
+                    </View>
                   </View>
                 )}
-                <View style={styles.dockSlotText}>
-                  <Text style={styles.dockSlotLabel}>SLOT {slotIdx + 1}</Text>
-                  <Text style={[styles.dockSlotName, { color: sk ? C.text : C.textFaint }]} numberOfLines={1}>
-                    {sk ? sk.name : 'Empty'}
-                  </Text>
-                  <Text style={styles.dockSlotType}>{sk ? (sk.type === 'passive' ? 'Passive' : 'Active') : 'Tap a skill to equip'}</Text>
-                </View>
-              </TouchableOpacity>
+              </View>
             );
           })}
         </View>
@@ -1020,12 +1065,70 @@ const styles = StyleSheet.create({
 
   /* Tabs */
   tabs: {
-    flexDirection: 'row', marginHorizontal: 20, marginTop: 12,
-    borderBottomWidth: 2, borderBottomColor: 'rgba(74,57,23,0.6)',
+    flexDirection: 'row',
+    gap: 8,
+    marginHorizontal: 20,
+    marginTop: 12,
+    marginBottom: 16,
   },
-  tab: { flex: 1, alignItems: 'center', paddingVertical: 8, gap: 3 },
-  tabLabel: { fontFamily: 'Silkscreen-Regular', fontSize: 9, letterSpacing: 0.5 },
-  tabIndicator: { width: 26, height: 3, borderRadius: 1.5, marginTop: 4 },
+  elementTabWrapper: {
+    flex: 1,
+    height: 50,
+    position: 'relative',
+  },
+  elementTabShadow: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 3,
+    height: 50,
+    borderRadius: 8,
+    zIndex: 1,
+    backgroundColor: '#4F3C1E',
+  },
+  elementTabOuter: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    height: 50,
+    borderRadius: 8,
+    borderWidth: 2.2,
+    borderColor: '#84735B',
+    backgroundColor: '#4F3C1E',
+    zIndex: 2,
+  },
+  elementTabInner: {
+    flex: 1,
+    margin: 1.5,
+    borderRadius: 5,
+    borderWidth: 2.2,
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 2,
+  },
+  elementTabInnerActive: {
+    backgroundColor: '#F3E2BD',
+    borderTopColor: '#FFF3DA',
+    borderLeftColor: '#FFF3DA',
+    borderRightColor: '#FFF3DA',
+    borderBottomColor: '#B5A07A',
+    borderBottomWidth: 3.5,
+  },
+  elementTabInnerInactive: {
+    backgroundColor: '#1B4030',
+    borderTopColor: '#4F856C',
+    borderLeftColor: '#4F856C',
+    borderRightColor: '#4F856C',
+    borderBottomColor: '#0D2118',
+    borderBottomWidth: 3.5,
+  },
+  tabLabel: {
+    fontFamily: 'Silkscreen-Regular',
+    fontSize: 9,
+    letterSpacing: 0.5,
+  },
 
   /* Stance card */
   stanceCard: {
@@ -1074,9 +1177,35 @@ const styles = StyleSheet.create({
   toastIcon: { fontFamily: 'Jersey10-Regular', fontSize: 18 },
   toastText: { flex: 1, fontFamily: 'Jersey10-Regular', fontSize: 15, color: C.text },
 
-  /* Skill cards */
-  skillCard: {
-    borderRadius: 12, padding: 10, overflow: 'hidden',
+  skillCardShadow: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 3,
+    bottom: -3,
+    borderRadius: 12,
+    zIndex: 1,
+    backgroundColor: '#4F3C1E',
+  },
+  skillCardOuter: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
+    borderRadius: 12,
+    borderWidth: 2.5,
+    borderColor: '#84735B',
+    backgroundColor: '#4F3C1E',
+    zIndex: 2,
+  },
+  skillCardInner: {
+    flex: 1,
+    margin: 2,
+    borderRadius: 9,
+    borderWidth: 2.5,
+    borderBottomWidth: 4,
+    padding: 8,
     justifyContent: 'space-between',
   },
   cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
@@ -1106,13 +1235,63 @@ const styles = StyleSheet.create({
     textShadowColor: 'rgba(0,0,0,0.6)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 2,
   },
   dockRow: { flexDirection: 'row', gap: 10 },
-  dockSlot: {
-    flex: 1, flexDirection: 'row', alignItems: 'center', gap: 6,
-    borderWidth: 2, borderRadius: 10, backgroundColor: C.panel,
-    paddingVertical: 8, paddingHorizontal: 10, minHeight: 58,
+  dockSlotWrapper: {
+    flex: 1,
+    height: 62,
+    position: 'relative',
   },
-  dockSlotEmpty: { borderColor: 'rgba(74,57,23,0.7)', borderStyle: 'dashed', backgroundColor: 'transparent' },
-  dockEmptyIcon: { width: 42, height: 42, justifyContent: 'center', alignItems: 'center', opacity: 0.8 },
+  dockSlotShadow: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 3,
+    height: 62,
+    borderRadius: 10,
+    zIndex: 1,
+    backgroundColor: '#4F3C1E',
+  },
+  dockSlotOuter: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    height: 62,
+    borderRadius: 10,
+    borderWidth: 2.2,
+    borderColor: '#84735B',
+    backgroundColor: '#4F3C1E',
+    zIndex: 2,
+  },
+  dockSlotInner: {
+    flex: 1,
+    margin: 1.5,
+    borderRadius: 7,
+    borderWidth: 2.2,
+    borderTopColor: '#4F856C',
+    borderLeftColor: '#4F856C',
+    borderRightColor: '#4F856C',
+    borderBottomColor: '#0D2118',
+    borderBottomWidth: 3.5,
+    backgroundColor: '#1B4030',
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    gap: 6,
+  },
+  dockSlotEmptyContainer: {
+    flex: 1,
+    height: 62,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    borderWidth: 2,
+    borderColor: 'rgba(74,57,23,0.4)',
+    borderStyle: 'dashed',
+    borderRadius: 10,
+    backgroundColor: 'transparent',
+    paddingHorizontal: 8,
+  },
+  dockEmptyIcon: { width: 34, height: 34, justifyContent: 'center', alignItems: 'center', opacity: 0.8 },
   dockSlotText: { flex: 1 },
   dockSlotLabel: { fontFamily: 'Silkscreen-Regular', fontSize: 7.5, letterSpacing: 0.8, color: C.textFaint, marginBottom: 1 },
   dockSlotName: { fontFamily: 'Jersey10-Regular', fontSize: 13 },

@@ -213,20 +213,25 @@ export default function QuestScreen({ navigation }) {
 
         {/* Claim / Status Button */}
         {isClaimed ? (
-          <View style={[styles.claimBtn, styles.claimBtnDisabled]}>
-            <Text style={[styles.claimBtnText, styles.claimBtnDisabledText]}>CLAIMED</Text>
+          <View style={styles.claimBtn}>
+            <Text style={styles.claimBtnText}>CLAIMED</Text>
           </View>
         ) : isCompleted ? (
-          <TouchableOpacity
-            style={styles.claimBtnActive}
-            activeOpacity={0.8}
-            onPress={() => setCelebrationQuest(quest)}
-          >
-            <Text style={styles.claimBtnTextActive}>CLAIM REWARD</Text>
-          </TouchableOpacity>
+          <View style={styles.claimBtnWrapper}>
+            <View style={styles.claimBtnShadow} />
+            <TouchableOpacity
+              style={styles.claimBtnOuter}
+              activeOpacity={0.8}
+              onPress={() => setCelebrationQuest(quest)}
+            >
+              <View style={styles.claimBtnInner}>
+                <Text style={styles.claimBtnTextActive}>CLAIM REWARD</Text>
+              </View>
+            </TouchableOpacity>
+          </View>
         ) : (
-          <View style={[styles.claimBtn, styles.claimBtnDisabled]}>
-            <Text style={[styles.claimBtnText, styles.claimBtnDisabledText]}>IN PROGRESS</Text>
+          <View style={styles.claimBtn}>
+            <Text style={styles.claimBtnText}>IN PROGRESS</Text>
           </View>
         )}
       </View>
@@ -271,34 +276,43 @@ export default function QuestScreen({ navigation }) {
         {[
           { key: 'dailies', label: 'Daily Quests' },
           { key: 'campaign', label: 'Campaign' },
-        ].map((t) => (
-          <TouchableOpacity
-            key={t.key}
-            style={[styles.tab, tab === t.key && styles.tabActive]}
-            onPress={() => setTab(t.key)}
-            activeOpacity={0.8}
-          >
-            <Text style={[styles.tabText, tab === t.key && styles.tabTextActive]}>{t.label}</Text>
-          </TouchableOpacity>
-        ))}
+        ].map((t) => {
+          const isActive = tab === t.key;
+          return (
+            <View key={t.key} style={styles.tabWrapper}>
+              <View style={styles.tabShadow} />
+              <TouchableOpacity
+                style={styles.tabOuter}
+                activeOpacity={0.8}
+                onPress={() => setTab(t.key)}
+              >
+                <View style={[styles.tabInner, isActive ? styles.tabInnerActive : styles.tabInnerInactive]}>
+                  <Text style={[styles.tabText, isActive && styles.tabTextActive]}>{t.label}</Text>
+                </View>
+              </TouchableOpacity>
+            </View>
+          );
+        })}
       </View>
 
       {/* Campaign Sub-Tabs (only when campaign tab is selected) */}
       {tab === 'campaign' && (
         <View style={styles.subTabBar}>
           {[
-            { key: 'active', label: 'Active' },
-            { key: 'completed', label: 'Completed' },
+            { key: 'active', label: 'ACTIVE' },
+            { key: 'completed', label: 'COMPLETED' },
           ].map((st) => {
             const active = campaignSubTab === st.key;
             return (
               <TouchableOpacity
                 key={st.key}
-                style={[styles.subTab, active && styles.subTabActive]}
+                style={[styles.subTab, active ? styles.subTabActive : styles.subTabInactive]}
                 onPress={() => setCampaignSubTab(st.key)}
                 activeOpacity={0.8}
               >
-                <Text style={[styles.subTabText, active && styles.subTabTextActive]}>{st.label}</Text>
+                <Text style={[styles.subTabText, active ? styles.subTabTextActive : styles.subTabTextInactive]}>
+                  {st.label}
+                </Text>
               </TouchableOpacity>
             );
           })}
@@ -489,29 +503,71 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 12,
     gap: 10,
+    marginBottom: 6,
   },
-  tab: {
+  tabWrapper: {
     flex: 1,
-    paddingVertical: 10,
-    borderRadius: theme.BORDER_RADIUS.button,
-    borderWidth: 2,
-    borderColor: theme.COLORS.panelBorderGold,
-    backgroundColor: theme.COLORS.panelGreen,
-    alignItems: 'center',
+    height: 44,
+    position: 'relative',
   },
-  tabActive: {
-    borderColor: theme.COLORS.candleGold,
-    backgroundColor: 'rgba(232,167,58,0.12)',
+  tabShadow: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 3,
+    height: 44,
+    borderRadius: 8,
+    zIndex: 1,
+    backgroundColor: '#4F3C1E',
+  },
+  tabOuter: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    height: 44,
+    borderRadius: 8,
+    borderWidth: 2.2,
+    borderColor: '#84735B',
+    backgroundColor: '#4F3C1E',
+    zIndex: 2,
+  },
+  tabInner: {
+    flex: 1,
+    margin: 1.5,
+    borderRadius: 5,
+    borderWidth: 2.2,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+  },
+  tabInnerActive: {
+    backgroundColor: '#F3E2BD',
+    borderTopColor: '#FFF3DA',
+    borderLeftColor: '#FFF3DA',
+    borderRightColor: '#FFF3DA',
+    borderBottomColor: '#B5A07A',
+    borderBottomWidth: 3.5,
+  },
+  tabInnerInactive: {
+    backgroundColor: '#1B4030',
+    borderTopColor: '#4F856C',
+    borderLeftColor: '#4F856C',
+    borderRightColor: '#4F856C',
+    borderBottomColor: '#0D2118',
+    borderBottomWidth: 3.5,
   },
   tabText: {
     fontFamily: 'Silkscreen-Regular',
     fontSize: 10,
     fontWeight: 'normal',
-    color: 'rgba(207,224,238,0.55)',
+    color: '#FFF3DA',
+    opacity: 0.75,
     textTransform: 'uppercase',
   },
   tabTextActive: {
-    color: theme.COLORS.warmGlow,
+    color: '#2A1A0C',
   },
   scroll: {
     padding: 16,
@@ -623,13 +679,45 @@ const styles = StyleSheet.create({
     fontSize: 8,
     color: theme.COLORS.warmGlow,
   },
-  claimBtnActive: {
-    backgroundColor: '#1C3F27',
-    borderColor: '#D4A754',
-    borderWidth: 2,
+  claimBtnWrapper: {
+    width: '100%',
+    height: 42,
+    position: 'relative',
+    marginTop: 12,
+  },
+  claimBtnShadow: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 3,
+    height: 42,
     borderRadius: 8,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
+    zIndex: 1,
+    backgroundColor: '#4F3C1E',
+  },
+  claimBtnOuter: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    height: 42,
+    borderRadius: 8,
+    borderWidth: 2.2,
+    borderColor: '#84735B',
+    backgroundColor: '#4F3C1E',
+    zIndex: 2,
+  },
+  claimBtnInner: {
+    flex: 1,
+    margin: 1.5,
+    borderRadius: 5,
+    borderWidth: 2.2,
+    borderTopColor: '#4F856C',
+    borderLeftColor: '#4F856C',
+    borderRightColor: '#4F856C',
+    borderBottomColor: '#0D2118',
+    borderBottomWidth: 3.5,
+    backgroundColor: '#1B4030',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -640,12 +728,13 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
   },
   claimBtn: {
+    width: '100%',
+    height: 42,
     backgroundColor: '#1E1E20',
     borderColor: '#3A3A3C',
     borderWidth: 2,
     borderRadius: 8,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
+    marginTop: 12,
     justifyContent: 'center',
     alignItems: 'center',
     opacity: 0.6,
@@ -656,37 +745,44 @@ const styles = StyleSheet.create({
     color: '#8A9384',
     textTransform: 'uppercase',
   },
-  claimBtnDisabled: {
-    // Styling matching the container above
-  },
-  claimBtnDisabledText: {
-    // Styling matching the text above
-  },
   subTabBar: {
     flexDirection: 'row',
-    paddingHorizontal: 16,
-    paddingTop: 10,
-    gap: 8,
+    marginHorizontal: 16,
+    marginTop: 12,
+    marginBottom: 6,
+    backgroundColor: '#0D2118',
+    borderColor: '#3E2E15',
+    borderWidth: 2,
+    borderRadius: 8,
+    padding: 3,
   },
   subTab: {
-    paddingVertical: 6,
-    paddingHorizontal: 14,
-    borderRadius: theme.BORDER_RADIUS.pill,
-    borderWidth: 1.5,
-    borderColor: theme.COLORS.panelBorderGold,
-    backgroundColor: theme.COLORS.panelGreen,
+    flex: 1,
+    height: 32,
+    borderRadius: 5,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   subTabActive: {
-    borderColor: theme.COLORS.candleGold,
-    backgroundColor: 'rgba(232, 167, 58, 0.12)',
+    backgroundColor: '#F3E2BD',
+    borderWidth: 1.5,
+    borderColor: '#B5A07A',
+  },
+  subTabInactive: {
+    backgroundColor: 'transparent',
   },
   subTabText: {
-    fontFamily: 'Jersey10-Regular',
-    fontSize: 14,
-    color: 'rgba(207,224,238,0.55)',
+    fontFamily: 'Silkscreen-Regular',
+    fontSize: 9,
+    fontWeight: 'normal',
+    textTransform: 'uppercase',
   },
   subTabTextActive: {
-    color: theme.COLORS.warmGlow,
+    color: '#2A1A0C',
+  },
+  subTabTextInactive: {
+    color: '#FFF3DA',
+    opacity: 0.6,
   },
   drOverlay: {
     flex: 1,

@@ -50,6 +50,13 @@ import { isQuestUnlocked } from '../data/quests';
 import ScreenLoader from '../components/ScreenLoader';
 import { DUNGEON_RUN_ASSETS } from '../constants/sprites';
 
+const ZONE_BACKGROUNDS = {
+  zone1: require('../../assets/sprites/banners/soggy-ruins-zones.png'),
+  zone2: require('../../assets/sprites/banners/wicked-garden-zones.png'),
+  zone3: require('../../assets/sprites/banners/sunken-docks-zones.png'),
+};
+
+
 // ─── SVG Soft Icon Glow Background Component ─────────────────────────────────
 function IconGlowBackground({ size = 56 }) {
   const radius = size / 2;
@@ -719,7 +726,6 @@ export default function DungeonMapScreen({ navigation }) {
     }
 
     let label = 'Locked';
-    let cellStyle = styles.fogCell;
     let labelColor = 'rgba(255, 255, 255, 0.25)';
 
     const CLEARED_COLOR = '#5CC489'; // buffMint
@@ -742,28 +748,22 @@ export default function DungeonMapScreen({ navigation }) {
 
     if (tile.type === 'start') {
       label = 'Start';
-      cellStyle = styles.startCell;
       labelColor = '#5A9FE0'; // coldBlue — start is a special revealed tile
     } else if (!isFog) {
       if (tile.type === 'combat') {
         label = tile.cleared ? 'Cleared' : 'Combat';
-        cellStyle = styles.combatCell;
         labelColor = tile.cleared ? CLEARED_COLOR : '#5A9FE0'; // coldBlue
       } else if (tile.type === 'rest') {
         label = tile.cleared ? 'Cleared' : 'Rest';
-        cellStyle = styles.restCell;
         labelColor = tile.cleared ? CLEARED_COLOR : '#3FB56E'; // healthGreen
       } else if (tile.type === 'treasure') {
         label = tile.cleared ? 'Cleared' : 'Treasure';
-        cellStyle = styles.treasureCell;
         labelColor = tile.cleared ? CLEARED_COLOR : '#F5CF4A'; // treasureGold
       } else if (tile.type === 'gamble') {
         label = tile.cleared ? 'Cleared' : '???';
-        cellStyle = styles.gambleCell;
         labelColor = tile.cleared ? CLEARED_COLOR : '#A98EE0'; // mysteryViolet
       } else if (tile.type === 'boss') {
         label = tile.cleared ? 'Cleared' : bossLocked ? 'Sealed' : 'Boss';
-        cellStyle = bossLocked ? styles.bossLockedCell : styles.bossCell;
         labelColor = tile.cleared ? CLEARED_COLOR : bossLocked ? 'rgba(255,255,255,0.3)' : '#DD7A86';
       }
     }
@@ -819,76 +819,218 @@ export default function DungeonMapScreen({ navigation }) {
       );
     };
 
+    let shadowStyle = {};
+    let outerStyle = {};
+    let innerStyle = {};
+
+    if (isFog) {
+      shadowStyle = { backgroundColor: 'transparent' };
+      outerStyle = { borderColor: 'rgba(255, 255, 255, 0.08)', backgroundColor: '#131513' };
+      innerStyle = { backgroundColor: '#1A1A1A', borderColor: 'transparent', borderWidth: 0 };
+    } else if (tile.type === 'start') {
+      shadowStyle = { backgroundColor: '#131513' };
+      outerStyle = { borderColor: '#84735B', backgroundColor: '#131513' };
+      innerStyle = {
+        backgroundColor: '#262926',
+        borderTopColor: '#404540',
+        borderLeftColor: '#404540',
+        borderRightColor: '#404540',
+        borderBottomColor: '#131513',
+      };
+    } else if (tile.type === 'combat') {
+      if (tile.cleared) {
+        shadowStyle = { backgroundColor: '#131513' };
+        outerStyle = { borderColor: '#84735B', backgroundColor: '#131513', opacity: 0.6 };
+        innerStyle = {
+          backgroundColor: '#262926',
+          borderTopColor: '#404540',
+          borderLeftColor: '#404540',
+          borderRightColor: '#404540',
+          borderBottomColor: '#131513',
+        };
+      } else {
+        shadowStyle = { backgroundColor: '#0D2118' };
+        outerStyle = { borderColor: '#84735B', backgroundColor: '#0D2118' };
+        innerStyle = {
+          backgroundColor: '#1B4030',
+          borderTopColor: '#4F856C',
+          borderLeftColor: '#4F856C',
+          borderRightColor: '#4F856C',
+          borderBottomColor: '#0D2118',
+        };
+      }
+    } else if (tile.type === 'rest') {
+      if (tile.cleared) {
+        shadowStyle = { backgroundColor: '#131513' };
+        outerStyle = { borderColor: '#84735B', backgroundColor: '#131513', opacity: 0.6 };
+        innerStyle = {
+          backgroundColor: '#262926',
+          borderTopColor: '#404540',
+          borderLeftColor: '#404540',
+          borderRightColor: '#404540',
+          borderBottomColor: '#131513',
+        };
+      } else {
+        shadowStyle = { backgroundColor: '#0D2118' };
+        outerStyle = { borderColor: '#84735B', backgroundColor: '#0D2118' };
+        innerStyle = {
+          backgroundColor: '#1B4030',
+          borderTopColor: '#4F856C',
+          borderLeftColor: '#4F856C',
+          borderRightColor: '#4F856C',
+          borderBottomColor: '#0D2118',
+        };
+      }
+    } else if (tile.type === 'treasure') {
+      if (tile.cleared) {
+        shadowStyle = { backgroundColor: '#131513' };
+        outerStyle = { borderColor: '#84735B', backgroundColor: '#131513', opacity: 0.6 };
+        innerStyle = {
+          backgroundColor: '#262926',
+          borderTopColor: '#404540',
+          borderLeftColor: '#404540',
+          borderRightColor: '#404540',
+          borderBottomColor: '#131513',
+        };
+      } else {
+        shadowStyle = { backgroundColor: '#6E5528' };
+        outerStyle = { borderColor: '#84735B', backgroundColor: '#6E5528' };
+        innerStyle = {
+          backgroundColor: '#A84C27',
+          borderTopColor: '#D67545',
+          borderLeftColor: '#D67545',
+          borderRightColor: '#D67545',
+          borderBottomColor: '#5C2814',
+        };
+      }
+    } else if (tile.type === 'gamble') {
+      if (tile.cleared) {
+        shadowStyle = { backgroundColor: '#131513' };
+        outerStyle = { borderColor: '#84735B', backgroundColor: '#131513', opacity: 0.6 };
+        innerStyle = {
+          backgroundColor: '#262926',
+          borderTopColor: '#404540',
+          borderLeftColor: '#404540',
+          borderRightColor: '#404540',
+          borderBottomColor: '#131513',
+        };
+      } else {
+        shadowStyle = { backgroundColor: '#1A1230' };
+        outerStyle = { borderColor: '#84735B', backgroundColor: '#1A1230' };
+        innerStyle = {
+          backgroundColor: '#382860',
+          borderTopColor: '#56408F',
+          borderLeftColor: '#56408F',
+          borderRightColor: '#56408F',
+          borderBottomColor: '#1D123D',
+        };
+      }
+    } else if (tile.type === 'boss') {
+      if (tile.cleared) {
+        shadowStyle = { backgroundColor: '#131513' };
+        outerStyle = { borderColor: '#84735B', backgroundColor: '#131513', opacity: 0.6 };
+        innerStyle = {
+          backgroundColor: '#262926',
+          borderTopColor: '#404540',
+          borderLeftColor: '#404540',
+          borderRightColor: '#404540',
+          borderBottomColor: '#131513',
+        };
+      } else if (bossLocked) {
+        shadowStyle = { backgroundColor: 'transparent' };
+        outerStyle = { borderColor: '#4E4256', backgroundColor: '#1A1408', opacity: 0.65 };
+        innerStyle = {
+          backgroundColor: '#3A2C14',
+          borderTopColor: '#564426',
+          borderLeftColor: '#564426',
+          borderRightColor: '#564426',
+          borderBottomColor: '#1F1404',
+        };
+      } else {
+        shadowStyle = { backgroundColor: '#590D0E' };
+        outerStyle = { borderColor: '#84735B', backgroundColor: '#590D0E' };
+        innerStyle = {
+          backgroundColor: '#A61C1C',
+          borderTopColor: '#D8483F',
+          borderLeftColor: '#D8483F',
+          borderRightColor: '#D8483F',
+          borderBottomColor: '#590D0E',
+        };
+      }
+    }
 
     return (
       <View
         key={`${x}_${y}`}
-        style={[
-          styles.cellShadowContainer,
-          { 
-            width: cellWidth, 
-            height: cellWidth, 
-            position: 'relative',
-            zIndex: adjacent ? 10 : 1,
-            elevation: adjacent ? 6 : 5
-          },
-        ]}
+        style={{ 
+          width: cellWidth, 
+          height: cellWidth, 
+          position: 'relative',
+          zIndex: adjacent ? 10 : 1,
+          elevation: adjacent ? 6 : 5
+        }}
       >
+        {/* 1. Bevel Shadow Base */}
+        <View style={[styles.cellShadowContainer, shadowStyle]} />
+
+        {/* 2. Main Outer Button */}
         <TouchableOpacity
           style={[
-            styles.cell,
-            { width: '100%', height: '100%' },
-            cellStyle,
-            isPlayerHere && styles.currentCell,
-            tile.cleared && !isPlayerHere && styles.clearedCell,
+            styles.cellOuter,
+            outerStyle,
+            isPlayerHere && styles.currentCellOuter,
           ]}
           disabled={!adjacent}
           onPress={() => handleTileTap(tile)}
           activeOpacity={0.7}
         >
-          {/* Render zone-specific background SVG */}
-          {renderCellSVG(currentRun.zoneId, tile, isPlayerHere, isFog)}
-  
-          <View style={styles.cellContent}>
-            {renderCellSprite()}
-            <Text style={[styles.cellLabel, { color: isPlayerHere ? '#D4A754' : labelColor }]} numberOfLines={1}>
-              {isPlayerHere ? "You're Here" : label}
-            </Text>
-            {/* Star badge for combat tiles (only when revealed and not cleared) */}
-            {tile.type === 'combat' && !isFog && !tile.cleared && tile.battleRating && !isPlayerHere && (
-              <Text 
-                style={[styles.starBadge, { color: STAR_COLORS[tile.battleRating] }]}
-                numberOfLines={1}
-                adjustsFontSizeToFit={true}
-              >
-                {STAR_LABELS[tile.battleRating]}
+          {/* 3. Inner Highlight & Fill */}
+          <View style={[styles.cellInner, innerStyle, isPlayerHere && styles.currentCellInner]}>
+            {/* Render zone-specific background SVG */}
+            {renderCellSVG(currentRun.zoneId, tile, isPlayerHere, isFog)}
+     
+            <View style={styles.cellContent}>
+              {renderCellSprite()}
+              <Text style={[styles.cellLabel, { color: isPlayerHere ? '#FFF3DA' : labelColor }]} numberOfLines={1}>
+                {isPlayerHere ? "Here" : label}
               </Text>
+              
+              {/* Star badge for combat tiles (only when revealed and not cleared) */}
+              {tile.type === 'combat' && !isFog && !tile.cleared && tile.battleRating && !isPlayerHere && (
+                <Text 
+                  style={[styles.starBadge, { color: STAR_COLORS[tile.battleRating] }]}
+                  numberOfLines={1}
+                  adjustsFontSizeToFit={true}
+                >
+                  {STAR_LABELS[tile.battleRating]}
+                </Text>
+              )}
+            </View>
+
+            {/* Sealed Overlay for Locked Boss */}
+            {bossLocked && !isPlayerHere && (
+              <View style={styles.sealedOverlay}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2 }}>
+                  <ItemSprite spritesheet="icons-map" frameIndex={49} displaySize={10} />
+                  <Text style={styles.sealedText}>SEALED</Text>
+                </View>
+              </View>
+            )}
+
+            {/* Pulsing glow border if adjacent (tappable) */}
+            {adjacent && (
+              <Animated.View
+                style={[
+                  styles.pulseBorder,
+                  {
+                    borderColor: tile.cleared ? 'rgba(255, 255, 255, 0.4)' : zTheme.accent,
+                    shadowColor: tile.cleared ? 'rgba(255, 255, 255, 0.5)' : zTheme.accent,
+                    opacity: pulseAnim,
+                  },
+                ]}
+              />
             )}
           </View>
-  
-          {/* Sealed Overlay for Locked Boss */}
-          {bossLocked && !isPlayerHere && (
-            <View style={styles.sealedOverlay}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2 }}>
-                <ItemSprite spritesheet="icons-map" frameIndex={49} displaySize={10} />
-                <Text style={styles.sealedText}>SEALED</Text>
-              </View>
-            </View>
-          )}
-  
-          {/* Pulsing glow border if adjacent (tappable) */}
-          {adjacent && (
-            <Animated.View
-              style={[
-                styles.pulseBorder,
-                {
-                  borderColor: tile.cleared ? 'rgba(255, 255, 255, 0.4)' : zTheme.accent,
-                  shadowColor: tile.cleared ? 'rgba(255, 255, 255, 0.5)' : zTheme.accent,
-                  opacity: pulseAnim,
-                },
-              ]}
-            />
-          )}
         </TouchableOpacity>
         {/* Directional movement arrow indicator (outside cell to prevent overflow clipping) */}
         {arrowIndicator}
@@ -958,20 +1100,20 @@ export default function DungeonMapScreen({ navigation }) {
     );
   };
 
+  const bgImage = ZONE_BACKGROUNDS[currentRun.zoneId] || ZONE_BACKGROUNDS.zone1;
+
   return (
     <ScreenLoader assets={runAssets}>
-      <SafeAreaView style={[styles.root, { backgroundColor: zTheme.bg }]}>
-      {/* Dynamic Zone-Colored Ambient Glow */}
-      <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
-        <Defs>
-          <RadialGradient id="zoneGlow" cx="50%" cy="50%" r="50%">
-            <Stop offset="0%" stopColor={zTheme.accent} stopOpacity="0.15" />
-            <Stop offset="100%" stopColor={zTheme.bg} stopOpacity="0" />
-          </RadialGradient>
-        </Defs>
-        <Rect width="100%" height="100%" fill={zTheme.bg} />
-        <Rect width="100%" height="100%" fill="url(#zoneGlow)" />
-      </Svg>
+      <SafeAreaView style={[styles.root, { backgroundColor: '#07070A' }]}>
+        {/* Full-screen Background Artwork with Blur */}
+        <ExpoImage
+          source={bgImage}
+          style={StyleSheet.absoluteFillObject}
+          contentFit="cover"
+          blurRadius={6}
+        />
+        {/* Slight Dark Overlay for contrast */}
+        <View style={[StyleSheet.absoluteFillObject, { backgroundColor: 'rgba(7, 7, 10, 0.65)' }]} />
 
       {/* ── HUD card ─────────────────────────────────────────────── */}
       <View style={styles.hud}>
@@ -1118,7 +1260,7 @@ export default function DungeonMapScreen({ navigation }) {
         <View style={{ flex: 1, position: 'relative', overflow: 'visible' }}>
           <Button
             title="Quests"
-            icon={<ItemSprite spritesheet="icons-map" frameIndex={140} displaySize={24} />}
+            icon={<ItemSprite spritesheet="icons-map" frameIndex={73} displaySize={24} />}
             variant="secondary"
             onPress={() => setActiveModal('quests')}
             style={{ width: '100%' }}
@@ -1133,7 +1275,7 @@ export default function DungeonMapScreen({ navigation }) {
           <Button
             title="Flee"
             icon={<ItemSprite spritesheet="icons-map" frameIndex={127} displaySize={24} />}
-            variant="danger"
+            variant="flee"
             onPress={() => setActiveModal('flee')}
             style={{ width: '100%' }}
           />
@@ -1422,8 +1564,8 @@ export default function DungeonMapScreen({ navigation }) {
               )}
 
               <View style={styles.fleeBtnRow}>
-                <TouchableOpacity activeOpacity={0.85} onPress={handleConfirmFlee} style={[styles.cozyButtonDanger, { flex: 1 }]}>
-                  <View style={styles.cozyButtonDangerInner}>
+                <TouchableOpacity activeOpacity={0.85} onPress={handleConfirmFlee} style={[styles.cozyButtonFlee, { flex: 1 }]}>
+                  <View style={styles.cozyButtonFleeInner}>
                     <Text style={styles.cozyButtonText}>FLEE</Text>
                   </View>
                 </TouchableOpacity>
@@ -1579,7 +1721,7 @@ export default function DungeonMapScreen({ navigation }) {
             <View style={styles.cozyParchment}>
               <View style={styles.cozyBevel} pointerEvents="none" />
 
-              <ScrollView style={{ width: '100%', paddingHorizontal: 12, marginTop: 32 }} showsVerticalScrollIndicator={false}>
+              <ScrollView style={{ width: '100%', paddingHorizontal: 12, marginTop: 32 }} showsVerticalScrollIndicator={true} persistentScrollbar={true}>
                 <Text style={[{ color: '#6A4A2A', fontFamily: 'Jersey10-Regular', fontSize: 24, marginBottom: 8 }]}>Daily Quests</Text>
                 {(!state.progress.questsState?.dailies || state.progress.questsState.dailies.length === 0) ? (
                   <Text style={[{ color: '#6A4A2A', fontStyle: 'italic', marginBottom: 16, fontSize: 14 }]}>No daily quests active.</Text>
@@ -1642,7 +1784,7 @@ export default function DungeonMapScreen({ navigation }) {
             <View style={styles.cozyParchment}>
               <View style={styles.cozyBevel} pointerEvents="none" />
 
-              <ScrollView style={styles.modalBagScroll} showsVerticalScrollIndicator={false}>
+              <ScrollView style={styles.modalBagScroll} showsVerticalScrollIndicator={true} persistentScrollbar={true}>
                 {/* Section 1: Packed Supplies */}
                 {(() => {
                   const equippedStorageId = hero.gear?.storage;
@@ -1689,11 +1831,11 @@ export default function DungeonMapScreen({ navigation }) {
                                     onPress={() => handleUseItemOnMap(item)}
                                     style={styles.bagChipUseBtn}
                                   >
-                                    <Text style={styles.bagChipUseBtnText}>Use</Text>
+                                    <View style={styles.bagChipUseBtnInner}><Text style={styles.bagChipUseBtnText}>Use</Text></View>
                                   </TouchableOpacity>
                                 ) : (
                                   <View style={styles.bagChipInfoBtn}>
-                                    <Text style={styles.bagChipInfoBtnText}>Info</Text>
+                                    <View style={styles.bagChipInfoBtnInner}><Text style={styles.bagChipInfoBtnText}>Info</Text></View>
                                   </View>
                                 )}
                               </View>
@@ -2012,22 +2154,28 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   cellShadowContainer: {
-    position: 'relative',
-    borderRadius: 14,
-    backgroundColor: '#000000',
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.45,
-    shadowRadius: 3.5,
-    elevation: 5,
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 3,
+    bottom: -3,
+    borderRadius: 8,
+    zIndex: 1,
   },
-  cell: {
-    borderRadius: 14,
-    borderWidth: 1.5,
-    borderColor: 'rgba(255, 255, 255, 0.05)',
+  cellOuter: {
+    flex: 1,
+    borderRadius: 8,
+    borderWidth: 2,
+    zIndex: 2,
+  },
+  cellInner: {
+    flex: 1,
+    margin: 1.2,
+    borderRadius: 5,
+    borderWidth: 1.2,
+    borderBottomWidth: 2.5,
     justifyContent: 'center',
     alignItems: 'center',
-    position: 'relative',
     overflow: 'hidden',
   },
   cellContent: {
@@ -2037,8 +2185,8 @@ const styles = StyleSheet.create({
   },
   pulseBorder: {
     ...StyleSheet.absoluteFillObject,
-    borderWidth: 2,
-    borderRadius: 14,
+    borderWidth: 1.5,
+    borderRadius: 5,
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.7,
     shadowRadius: 5,
@@ -2079,44 +2227,15 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: 'bold',
   },
-
-  // Room tile colors — exact values from the design system
-  fogCell: {
-    backgroundColor: '#15191F',
-    borderColor: '#252A32',
-  },
-  startCell: {
-    backgroundColor: '#10243A',
-    borderColor: '#1D3A5E',
-  },
-  combatCell: {
-    backgroundColor: '#10243A',
-    borderColor: '#1D3A5E',
-  },
-  restCell: {
-    backgroundColor: '#10301F',
-    borderColor: '#1D4A32',
-  },
-  treasureCell: {
-    backgroundColor: '#2A2410',
-    borderColor: '#57431A',
-  },
-  gambleCell: {
-    backgroundColor: '#241A2E',
-    borderColor: '#3D2A5E',
-  },
-  bossCell: {
-    backgroundColor: '#3A1A22',
-    borderColor: '#6A2535',
-  },
-  currentCell: {
-    borderColor: '#F5CF4A', // treasureGold — matches design system "current tile" spec
-    borderWidth: 2,
-    backgroundColor: 'rgba(245, 207, 74, 0.06)',
+  currentCellOuter: {
+    borderColor: '#F5CF4A',
     shadowColor: '#F5CF4A',
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.85,
     shadowRadius: 8,
+  },
+  currentCellInner: {
+    borderColor: '#F5CF4A',
   },
   clearedCell: {
     opacity: 0.55,
@@ -2576,36 +2695,54 @@ const styles = StyleSheet.create({
   },
   bagChipUseBtn: {
     marginTop: 6,
-    backgroundColor: '#7A4A24',
-    borderColor: '#3A2210',
-    borderWidth: 1.2,
+    backgroundColor: '#0D2118',
+    borderColor: '#84735B',
+    borderWidth: 1.5,
     borderRadius: 6,
-    paddingVertical: 3,
-    paddingHorizontal: 10,
+    padding: 1.2,
     alignSelf: 'stretch',
+  },
+  bagChipUseBtnInner: {
+    backgroundColor: '#1B4030',
+    borderRadius: 4,
+    paddingVertical: 2,
     alignItems: 'center',
+    justifyContent: 'center',
+    borderTopWidth: 1,
+    borderTopColor: '#4F856C',
+    borderBottomWidth: 1.5,
+    borderBottomColor: '#0D2118',
   },
   bagChipUseBtnText: {
     fontFamily: 'Silkscreen-Regular',
-    fontSize: 8,
-    color: '#FFF',
+    fontSize: 7.5,
+    color: '#FFF3DA',
   },
   bagChipInfoBtn: {
     marginTop: 6,
-    backgroundColor: '#8A6E44',
-    borderColor: '#5C442A',
-    borderWidth: 1.2,
+    backgroundColor: '#131513',
+    borderColor: 'rgba(255,255,255,0.06)',
+    borderWidth: 1.5,
     borderRadius: 6,
-    paddingVertical: 3,
-    paddingHorizontal: 10,
+    padding: 1.2,
     alignSelf: 'stretch',
-    alignItems: 'center',
     opacity: 0.6,
+  },
+  bagChipInfoBtnInner: {
+    backgroundColor: '#262926',
+    borderRadius: 4,
+    paddingVertical: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderTopWidth: 1,
+    borderTopColor: '#404540',
+    borderBottomWidth: 1.5,
+    borderBottomColor: '#131513',
   },
   bagChipInfoBtnText: {
     fontFamily: 'Silkscreen-Regular',
-    fontSize: 8,
-    color: '#FFF',
+    fontSize: 7.5,
+    color: '#8A8A8A',
   },
   fleeButtonText: {
     fontFamily: 'Jersey10-Regular',
@@ -2825,11 +2962,11 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(24, 14, 6, 0.78)',
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 24,
+    padding: 14,
   },
   cozyFrame: {
     width: '100%',
-    maxWidth: 360,
+    maxWidth: 480,
     backgroundColor: '#6E4524',
     borderColor: '#3A2210',
     borderWidth: 3,
@@ -3019,91 +3156,94 @@ const styles = StyleSheet.create({
   },
   cozyButton: {
     alignSelf: 'stretch',
-    backgroundColor: '#7A4A24',
-    borderColor: '#3A2210',
-    borderWidth: 2,
-    borderRadius: 12,
-    padding: 3,
-    marginBottom: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.3,
-    shadowRadius: 3,
-    elevation: 4,
+    backgroundColor: '#0D2118',
+    borderColor: '#84735B',
+    borderWidth: 2.5,
+    borderRadius: 8,
+    padding: 2,
     marginTop: 8,
+    marginBottom: 4,
   },
   cozyButtonInner: {
-    backgroundColor: '#9A632F',
-    borderRadius: 9,
-    paddingVertical: 12,
+    backgroundColor: '#1B4030',
+    borderRadius: 5,
+    paddingVertical: 10,
     alignItems: 'center',
     justifyContent: 'center',
     borderTopWidth: 1.5,
-    borderTopColor: '#C58E4E',
-    borderBottomWidth: 2,
-    borderBottomColor: '#5A3318',
+    borderTopColor: '#4F856C',
+    borderBottomWidth: 2.5,
+    borderBottomColor: '#0D2118',
   },
   cozyButtonText: {
     fontFamily: 'Silkscreen-Regular',
-    fontSize: 12,
+    fontSize: 10.5,
     color: '#FFF3DA',
-    letterSpacing: 1,
+    letterSpacing: 0.5,
     textTransform: 'uppercase',
-    textShadowColor: '#4A2A10',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 1,
   },
   cozyButtonSecondary: {
     alignSelf: 'stretch',
-    backgroundColor: '#4E2C14',
-    borderColor: '#241208',
-    borderWidth: 2,
-    borderRadius: 12,
-    padding: 3,
-    marginBottom: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 2,
-    elevation: 3,
+    backgroundColor: '#131513',
+    borderColor: '#84735B',
+    borderWidth: 2.5,
+    borderRadius: 8,
+    padding: 2,
     marginTop: 8,
+    marginBottom: 4,
   },
   cozyButtonSecondaryInner: {
-    backgroundColor: '#633D1E',
-    borderRadius: 9,
-    paddingVertical: 12,
+    backgroundColor: '#262926',
+    borderRadius: 5,
+    paddingVertical: 10,
     alignItems: 'center',
     justifyContent: 'center',
     borderTopWidth: 1.5,
-    borderTopColor: '#8E5E35',
-    borderBottomWidth: 2,
-    borderBottomColor: '#361F0E',
+    borderTopColor: '#404540',
+    borderBottomWidth: 2.5,
+    borderBottomColor: '#131513',
   },
   cozyButtonDanger: {
     alignSelf: 'stretch',
-    backgroundColor: '#7A1C16',
-    borderColor: '#3A0A06',
-    borderWidth: 2,
-    borderRadius: 12,
-    padding: 3,
-    marginBottom: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.3,
-    shadowRadius: 3,
-    elevation: 4,
+    backgroundColor: '#590D0E',
+    borderColor: '#84735B',
+    borderWidth: 2.5,
+    borderRadius: 8,
+    padding: 2,
     marginTop: 8,
+    marginBottom: 4,
   },
   cozyButtonDangerInner: {
-    backgroundColor: '#9A2B23',
-    borderRadius: 9,
-    paddingVertical: 12,
+    backgroundColor: '#A61C1C',
+    borderRadius: 5,
+    paddingVertical: 10,
     alignItems: 'center',
     justifyContent: 'center',
     borderTopWidth: 1.5,
-    borderTopColor: '#C5544C',
-    borderBottomWidth: 2,
-    borderBottomColor: '#5A1713',
+    borderTopColor: '#D8483F',
+    borderBottomWidth: 2.5,
+    borderBottomColor: '#590D0E',
+  },
+  cozyButtonFlee: {
+    alignSelf: 'stretch',
+    backgroundColor: '#3A1E1E',
+    borderColor: '#84735B',
+    borderWidth: 2.5,
+    borderRadius: 8,
+    padding: 2,
+    marginTop: 8,
+    marginBottom: 4,
+  },
+  cozyButtonFleeInner: {
+    backgroundColor: '#7A3F3F',
+    borderRadius: 5,
+    paddingVertical: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderTopWidth: 1.5,
+    borderTopColor: '#A85A5A',
+    borderBottomWidth: 2.5,
+    borderBottomColor: '#3A1E1E',
   },
   trackerQuestCard: {
     backgroundColor: '#F4E6C0',

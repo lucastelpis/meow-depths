@@ -204,20 +204,29 @@ export default function JournalScreen({ navigation, route }) {
       </View>
 
       {/* Top tabs */}
-      <View style={styles.tabBar}>
+      <View style={styles.tabContainer}>
         {[
           { key: 'creatures', label: 'Creatures' },
           { key: 'notes', label: 'Notes' },
-        ].map((t) => (
-          <TouchableOpacity
-            key={t.key}
-            style={[styles.tab, tab === t.key && styles.tabActive]}
-            onPress={() => setTab(t.key)}
-            activeOpacity={0.8}
-          >
-            <Text style={[styles.tabText, tab === t.key && styles.tabTextActive]}>{t.label}</Text>
-          </TouchableOpacity>
-        ))}
+        ].map((t) => {
+          const isActive = tab === t.key;
+          return (
+            <View key={t.key} style={styles.tabWrapper}>
+              <View style={styles.tabShadow} />
+              <TouchableOpacity
+                style={styles.tabOuter}
+                onPress={() => setTab(t.key)}
+                activeOpacity={0.8}
+              >
+                <View style={[styles.tabInner, isActive ? styles.tabInnerActive : styles.tabInnerInactive]}>
+                  <Text style={[styles.tabLabel, isActive ? styles.tabLabelActive : styles.tabLabelInactive]}>
+                    {t.label}
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            </View>
+          );
+        })}
       </View>
 
       {/* ── CREATURES TAB ────────────────────────────────────────── */}
@@ -389,33 +398,75 @@ const styles = StyleSheet.create({
   headerSpacer: { width: 44 },
 
   // Top tabs
-  tabBar: {
+  tabContainer: {
     flexDirection: 'row',
     paddingHorizontal: 16,
     paddingTop: 12,
-    gap: 10,
+    gap: 12,
   },
-  tab: {
+  tabWrapper: {
     flex: 1,
-    paddingVertical: 10,
-    borderRadius: theme.BORDER_RADIUS.button,
-    borderWidth: 2,
-    borderColor: theme.COLORS.panelBorderGold,
-    backgroundColor: theme.COLORS.panelGreen,
+    height: 42,
+    position: 'relative',
+  },
+  tabShadow: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 3,
+    height: 42,
+    borderRadius: 8,
+    zIndex: 1,
+    backgroundColor: '#0D2118',
+  },
+  tabOuter: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    height: 42,
+    borderRadius: 8,
+    borderWidth: 2.2,
+    borderColor: '#84735B',
+    backgroundColor: '#0D2118',
+    zIndex: 2,
+  },
+  tabInner: {
+    flex: 1,
+    margin: 1.5,
+    borderRadius: 5,
+    borderWidth: 2.2,
+    justifyContent: 'center',
     alignItems: 'center',
   },
-  tabActive: {
-    borderColor: theme.COLORS.candleGold,
-    backgroundColor: 'rgba(232,167,58,0.12)',
+  tabInnerActive: {
+    borderTopColor: '#FFF3DA',
+    borderLeftColor: '#FFF3DA',
+    borderRightColor: '#FFF3DA',
+    borderBottomColor: '#B5A07A',
+    borderBottomWidth: 3.5,
+    backgroundColor: '#F3E2BD',
   },
-  tabText: {
+  tabInnerInactive: {
+    borderTopColor: '#4F856C',
+    borderLeftColor: '#4F856C',
+    borderRightColor: '#4F856C',
+    borderBottomColor: '#0D2118',
+    borderBottomWidth: 3.5,
+    backgroundColor: '#1B4030',
+  },
+  tabLabel: {
     fontFamily: 'Silkscreen-Regular',
     fontSize: 10,
     fontWeight: 'normal',
-    color: 'rgba(207,224,238,0.55)',
     textTransform: 'uppercase',
   },
-  tabTextActive: { color: theme.COLORS.warmGlow },
+  tabLabelActive: {
+    color: '#2A1A0C',
+  },
+  tabLabelInactive: {
+    color: '#8CAF9F',
+  },
 
   scroll: { padding: 16, paddingBottom: 40 },
 

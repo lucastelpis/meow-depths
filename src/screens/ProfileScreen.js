@@ -239,6 +239,7 @@ export default function ProfileScreen() {
 
   const initialTab = route.params?.initialTab || 'stats';
   const [activeTab, setActiveTab] = useState(initialTab);
+  const [gearSubTab, setGearSubTab] = useState('equipped');
 
   const [selectedSlot, setSelectedSlot] = useState(null);
   const [modalData, setModalData] = useState({
@@ -643,27 +644,31 @@ export default function ProfileScreen() {
           {TABS.map(({ key, spritesheet, frameIndex, label }) => {
             const isActive = activeTab === key;
             return (
-              <TouchableOpacity
-                key={key}
-                style={[styles.tabButton, isActive ? styles.tabBtnActive : styles.tabBtnInactive]}
-                activeOpacity={0.8}
-                onPress={() => {
-                  setActiveTab(key);
-                  setTempStrAlloc(0);
-                  setTempAgiAlloc(0);
-                  setTempVitAlloc(0);
-                }}
-              >
-                <ItemSprite
-                  spritesheet={spritesheet || "icons-1"}
-                  frameIndex={frameIndex}
-                  displaySize={18}
-                  opacity={isActive ? 1.0 : 0.6}
-                />
-                <Text style={[styles.tabLabel, isActive ? styles.tabLabelActive : styles.tabLabelInactive]}>
-                  {label}
-                </Text>
-              </TouchableOpacity>
+              <View key={key} style={styles.tabWrapper}>
+                <View style={styles.tabShadow} />
+                <TouchableOpacity
+                  style={styles.tabOuter}
+                  activeOpacity={0.8}
+                  onPress={() => {
+                    setActiveTab(key);
+                    setTempStrAlloc(0);
+                    setTempAgiAlloc(0);
+                    setTempVitAlloc(0);
+                  }}
+                >
+                  <View style={[styles.tabInner, isActive ? styles.tabInnerActive : styles.tabInnerInactive]}>
+                    <ItemSprite
+                      spritesheet={spritesheet || "icons-1"}
+                      frameIndex={frameIndex}
+                      displaySize={16}
+                      opacity={isActive ? 1.0 : 0.75}
+                    />
+                    <Text style={[styles.tabLabel, isActive ? styles.tabLabelActive : styles.tabLabelInactive]}>
+                      {label}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              </View>
             );
           })}
         </View>
@@ -801,12 +806,33 @@ export default function ProfileScreen() {
             {/* Allocation Save/Cancel Row */}
             {showControls && totalAllocated > 0 && (
               <View style={styles.saveRow}>
-                <TouchableOpacity style={styles.cancelBtn} onPress={handleCancelAlloc} activeOpacity={0.7}>
-                  <Text style={styles.cancelBtnText}>Reset Points</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.saveBtn} onPress={handleSaveAlloc} activeOpacity={0.7}>
-                  <Text style={styles.saveBtnText}>Apply Stats</Text>
-                </TouchableOpacity>
+                {/* Reset Points (Crimson 3D Button) */}
+                <View style={styles.cancelBtnWrapper}>
+                  <View style={styles.cancelBtnShadow} />
+                  <TouchableOpacity
+                    style={styles.cancelBtnOuter}
+                    onPress={handleCancelAlloc}
+                    activeOpacity={0.8}
+                  >
+                    <View style={styles.cancelBtnInner}>
+                      <Text style={styles.cancelBtnText}>Reset Points</Text>
+                    </View>
+                  </TouchableOpacity>
+                </View>
+
+                {/* Apply Stats (Earthy Green 3D Button) */}
+                <View style={styles.saveBtnWrapper}>
+                  <View style={styles.saveBtnShadow} />
+                  <TouchableOpacity
+                    style={styles.saveBtnOuter}
+                    onPress={handleSaveAlloc}
+                    activeOpacity={0.8}
+                  >
+                    <View style={styles.saveBtnInner}>
+                      <Text style={styles.saveBtnText}>Apply Stats</Text>
+                    </View>
+                  </TouchableOpacity>
+                </View>
               </View>
             )}
 
@@ -934,187 +960,235 @@ export default function ProfileScreen() {
 
         {activeTab === 'equipment' && (
           <View style={styles.tabContent}>
-            {/* Active Set Bonuses */}
-            {activeSets.length > 0 && (
-              <View style={styles.statsSection}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 }}>
-                  <ItemSprite spritesheet="icons-map" frameIndex={140} displaySize={16} />
-                  <Text style={[styles.subSectionTitle, { marginBottom: 0 }]}>Active Set Bonuses</Text>
-                </View>
-                {activeSets.map((set) => (
-                  <View key={set.name} style={styles.setBonusCard}>
-                    <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
-                      <Defs>
-                        <LinearGradient id={`setGrad_${set.name}`} x1="0" y1="0" x2="1" y2="0">
-                          <Stop offset="0%" stopColor="#102418" />
-                          <Stop offset="100%" stopColor="#060F0A" />
-                        </LinearGradient>
-                      </Defs>
-                      <Rect width="100%" height="100%" fill={`url(#setGrad_${set.name})`} rx={12} />
-                      <Rect x="1" y="1" width="99%" height="98%" rx={11} fill="none"
-                        stroke="rgba(212,167,84,0.25)" strokeWidth={1} />
-                    </Svg>
-                    <View style={styles.setBonusInner}>
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 2 }}>
-                        <ItemSprite spritesheet="icons-map" frameIndex={95} displaySize={14} />
-                        <Text style={[styles.setBonusName, { marginBottom: 0 }]}>{set.name}</Text>
-                      </View>
-                      <Text style={styles.setBonusDesc}>{set.bonus}</Text>
+            {/* Gear Subtabs */}
+            <View style={styles.subTabBar}>
+              <TouchableOpacity
+                style={[styles.subTab, gearSubTab === 'equipped' ? styles.subTabActive : styles.subTabInactive]}
+                onPress={() => setGearSubTab('equipped')}
+                activeOpacity={0.8}
+              >
+                <Text style={[styles.subTabText, gearSubTab === 'equipped' ? styles.subTabTextActive : styles.subTabTextInactive]}>
+                  Equipped
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.subTab, gearSubTab === 'owned' ? styles.subTabActive : styles.subTabInactive]}
+                onPress={() => setGearSubTab('owned')}
+                activeOpacity={0.8}
+              >
+                <Text style={[styles.subTabText, gearSubTab === 'owned' ? styles.subTabTextActive : styles.subTabTextInactive]}>
+                  Owned
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            {gearSubTab === 'equipped' && (
+              <View>
+                {/* Active Set Bonuses */}
+                {activeSets.length > 0 && (
+                  <View style={styles.statsSection}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+                      <ItemSprite spritesheet="icons-map" frameIndex={140} displaySize={16} />
+                      <Text style={[styles.subSectionTitle, { marginBottom: 0 }]}>Active Set Bonuses</Text>
                     </View>
+                    {activeSets.map((set) => (
+                      <View key={set.name} style={styles.setBonusCard}>
+                        <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
+                          <Defs>
+                            <LinearGradient id={`setGrad_${set.name}`} x1="0" y1="0" x2="1" y2="0">
+                              <Stop offset="0%" stopColor="#102418" />
+                              <Stop offset="100%" stopColor="#060F0A" />
+                            </LinearGradient>
+                          </Defs>
+                          <Rect width="100%" height="100%" fill={`url(#setGrad_${set.name})`} rx={12} />
+                          <Rect x="1" y="1" width="99%" height="98%" rx={11} fill="none"
+                            stroke="rgba(212,167,84,0.25)" strokeWidth={1} />
+                        </Svg>
+                        <View style={styles.setBonusInner}>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 2 }}>
+                            <ItemSprite spritesheet="icons-map" frameIndex={95} displaySize={14} />
+                            <Text style={[styles.setBonusName, { marginBottom: 0 }]}>{set.name}</Text>
+                          </View>
+                          <Text style={styles.setBonusDesc}>{set.bonus}</Text>
+                        </View>
+                      </View>
+                    ))}
                   </View>
-                ))}
+                )}
+
+                {/* Equipment Grid */}
+                <View style={styles.equipmentGrid}>
+                  {SLOT_ROWS.map((row, rowIdx) => (
+                    <View key={rowIdx} style={styles.slotRow}>
+                      {row.map((slotKey) => {
+                        const slotConfig = SLOT_CONFIG.find((s) => s.key === slotKey);
+                        const gearId = hero.gear?.[slotKey];
+                        const gearDef = gearId ? GEAR[gearId] : null;
+                        const isEmpty = !gearDef;
+                        const isWeapon = slotKey === 'weapon';
+
+                        return (
+                          <View key={slotKey} style={styles.slotCardWrapper}>
+                            {/* 1. 3D Under-Shadow */}
+                            <View style={[
+                              styles.slotCardShadow,
+                              isEmpty ? styles.slotCardShadowEmpty : styles.slotCardShadowEquipped,
+                            ]} />
+
+                            {/* 2. Main Outer Container */}
+                            <TouchableOpacity
+                              style={[
+                                styles.slotCardOuter,
+                                isEmpty ? styles.slotCardOuterEmpty : styles.slotCardOuterEquipped,
+                              ]}
+                              onPress={() => handleOpenSlot(slotKey)}
+                              activeOpacity={0.8}
+                            >
+                              {/* 3. Inner Container (with bevel borders and background) */}
+                              <View style={[
+                                styles.slotCardInner,
+                                isEmpty ? styles.slotCardInnerEmpty : styles.slotCardInnerEquipped,
+                              ]}>
+                                <View style={styles.slotCardInfo}>
+                                  <Text style={[
+                                    styles.slotLabel,
+                                    isEmpty ? styles.slotLabelEmpty : styles.slotLabelEquipped,
+                                  ]}>{slotConfig.label}</Text>
+                                  <Text
+                                    style={isEmpty ? styles.slotEmptyText : styles.slotItemName}
+                                    numberOfLines={2}
+                                  >
+                                    {isEmpty ? 'Empty' : gearDef.name}
+                                  </Text>
+                                  <Text style={[
+                                    styles.slotItemStats,
+                                    isEmpty ? styles.slotItemStatsEmpty : styles.slotItemStatsEquipped,
+                                  ]} numberOfLines={1}>
+                                    {isEmpty ? ' ' : (statSummary(gearDef) || ' ')}
+                                  </Text>
+                                </View>
+
+                                <View style={[
+                                  styles.slotIconBox,
+                                  isEmpty ? styles.slotIconBoxEmpty : styles.slotIconBoxEquipped,
+                                ]}>
+                                  {isEmpty ? (
+                                    isWeapon ? (
+                                      <SpriteFrame
+                                        source={WEAPONS_SHEET}
+                                        frameIndex={0}
+                                        frameSize={WEAPONS_FRAME_SIZE}
+                                        totalFrames={WEAPONS_FRAMES}
+                                        displaySize={36}
+                                        opacity={0.18}
+                                      />
+                                    ) : SLOT_EMPTY_FRAME[slotKey] !== undefined && (
+                                      <SpriteFrame
+                                        source={EQUIPMENT_LEATHER_SHEET}
+                                        frameIndex={SLOT_EMPTY_FRAME[slotKey]}
+                                        frameSize={EQUIPMENT_LEATHER_FRAME_SIZE}
+                                        totalFrames={EQUIPMENT_LEATHER_FRAMES}
+                                        displaySize={36}
+                                        opacity={0.18}
+                                      />
+                                    )
+                                  ) : (
+                                    gearDef.spritesheet ? (
+                                      <ItemSprite
+                                        spritesheet={gearDef.spritesheet}
+                                        frameIndex={gearDef.frameIndex}
+                                        displaySize={36}
+                                      />
+                                    ) : (
+                                      <ExpoImage
+                                        source={GEAR_ICON_PLACEHOLDER}
+                                        style={styles.slotIconImage}
+                                        contentFit="contain"
+                                      />
+                                    )
+                                  )}
+                                </View>
+                              </View>
+                            </TouchableOpacity>
+                          </View>
+                        );
+                      })}
+                    </View>
+                  ))}
+                </View>
               </View>
             )}
 
-            {/* Equipment Grid */}
-            <Text style={styles.sectionTitle}>Equipped</Text>
-            <View style={styles.equipmentGrid}>
-              {SLOT_ROWS.map((row, rowIdx) => (
-                <View key={rowIdx} style={styles.slotRow}>
-                  {row.map((slotKey) => {
-                    const slotConfig = SLOT_CONFIG.find((s) => s.key === slotKey);
-                    const gearId = hero.gear?.[slotKey];
-                    const gearDef = gearId ? GEAR[gearId] : null;
-                    const isEmpty = !gearDef;
-                    const isWeapon = slotKey === 'weapon';
-
-                    return (
-                      <TouchableOpacity
-                        key={slotKey}
-                        style={[
-                          styles.slotCard,
-                          isEmpty ? styles.slotCardEmpty : styles.slotCardEquipped,
-                        ]}
-                        onPress={() => handleOpenSlot(slotKey)}
-                        activeOpacity={0.8}
-                      >
-                        <View style={styles.slotCardInfo}>
-                          <Text style={styles.slotLabel}>{slotConfig.label}</Text>
-                          <Text
-                            style={isEmpty ? styles.slotEmptyText : styles.slotItemName}
-                            numberOfLines={2}
+            {gearSubTab === 'owned' && (
+              <View>
+                {(hero.inventory?.craftedGear || []).length === 0 ? (
+                  <View style={styles.emptyBox}>
+                    <View style={{ marginBottom: 8 }}>
+                      <ItemSprite spritesheet="icons-map" frameIndex={69} displaySize={36} />
+                    </View>
+                    <Text style={styles.emptyTitle}>No Gear Owned</Text>
+                    <Text style={styles.emptyDesc}>Visit the Shop to buy equipment with Gold.</Text>
+                  </View>
+                ) : (
+                  <View style={styles.gridContainer}>
+                    {[...(hero.inventory?.craftedGear || [])]
+                      .map(gearId => ({ id: gearId, ...GEAR[gearId] }))
+                      .filter(item => !!item.name)
+                      .sort((a, b) => {
+                        if (a.zone !== b.zone) {
+                          return a.zone - b.zone;
+                        }
+                        return (a.goldCost || 0) - (b.goldCost || 0);
+                      })
+                      .map((gearDef) => {
+                        const gearId = gearDef.id;
+                        const isEquipped = Object.values(hero.gear).includes(gearId);
+                        return (
+                          <TouchableOpacity
+                            key={gearId}
+                            style={[
+                              styles.gridCard,
+                              { width: itemWidth, height: itemWidth },
+                              isEquipped && styles.gridCardGearEquipped,
+                            ]}
+                            onPress={() => handleOpenSlot(gearDef.type)}
+                            activeOpacity={0.8}
                           >
-                            {isEmpty ? 'Empty' : gearDef.name}
-                          </Text>
-                          <Text style={styles.slotItemStats} numberOfLines={1}>
-                            {isEmpty ? ' ' : (statSummary(gearDef) || ' ')}
-                          </Text>
-                        </View>
-                        <View style={[
-                          styles.slotIconBox,
-                          isEmpty ? styles.slotIconBoxEmpty : styles.slotIconBoxEquipped,
-                        ]}>
-                          {isEmpty ? (
-                            isWeapon ? (
-                              <SpriteFrame
-                                source={WEAPONS_SHEET}
-                                frameIndex={0}
-                                frameSize={WEAPONS_FRAME_SIZE}
-                                totalFrames={WEAPONS_FRAMES}
-                                displaySize={36}
-                                opacity={0.18}
-                              />
-                            ) : SLOT_EMPTY_FRAME[slotKey] !== undefined && (
-                              <SpriteFrame
-                                source={EQUIPMENT_LEATHER_SHEET}
-                                frameIndex={SLOT_EMPTY_FRAME[slotKey]}
-                                frameSize={EQUIPMENT_LEATHER_FRAME_SIZE}
-                                totalFrames={EQUIPMENT_LEATHER_FRAMES}
-                                displaySize={36}
-                                opacity={0.18}
-                              />
-                            )
-                          ) : (
-                            gearDef.spritesheet ? (
-                              <ItemSprite
-                                spritesheet={gearDef.spritesheet}
-                                frameIndex={gearDef.frameIndex}
-                                displaySize={36}
-                              />
-                            ) : (
-                              <ExpoImage
-                                source={GEAR_ICON_PLACEHOLDER}
-                                style={styles.slotIconImage}
-                                contentFit="contain"
-                              />
-                            )
-                          )}
-                        </View>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </View>
-              ))}
-            </View>
-
-            {/* Crafted Gear Section (My Armory) */}
-            <Text style={[styles.sectionTitle, { marginTop: 24 }]}>Owned</Text>
-            {(hero.inventory?.craftedGear || []).length === 0 ? (
-              <View style={styles.emptyBox}>
-                <View style={{ marginBottom: 8 }}>
-                  <ItemSprite spritesheet="icons-map" frameIndex={69} displaySize={36} />
-                </View>
-                <Text style={styles.emptyTitle}>No Gear Owned</Text>
-                <Text style={styles.emptyDesc}>Visit the Shop to buy equipment with Gold.</Text>
-              </View>
-            ) : (
-              <View style={styles.gridContainer}>
-                {[...(hero.inventory?.craftedGear || [])]
-                  .map(gearId => ({ id: gearId, ...GEAR[gearId] }))
-                  .filter(item => !!item.name)
-                  .sort((a, b) => {
-                    if (a.zone !== b.zone) {
-                      return a.zone - b.zone;
-                    }
-                    return (a.goldCost || 0) - (b.goldCost || 0);
-                  })
-                  .map((gearDef) => {
-                    const gearId = gearDef.id;
-                    const isEquipped = Object.values(hero.gear).includes(gearId);
-                    return (
-                      <TouchableOpacity
-                        key={gearId}
-                        style={[
-                          styles.gridCard,
-                          { width: itemWidth, height: itemWidth },
-                          isEquipped && styles.gridCardGearEquipped,
-                        ]}
-                        onPress={() => handleOpenSlot(gearDef.type)}
-                        activeOpacity={0.8}
-                      >
-                        <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
-                          <Rect width="100%" height="100%" fill="rgba(255,255,255,0.015)" rx={14} />
-                          <Rect x="1" y="1" width="98%" height="98%" rx={13} fill="none"
-                            stroke={isEquipped ? 'rgba(212,167,84,0.4)' : 'rgba(255,255,255,0.04)'} strokeWidth={isEquipped ? 1.5 : 1} />
-                        </Svg>
-                        <View style={styles.gridCardInner}>
-                          <Text style={styles.gridName} numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.8}>{gearDef.name}</Text>
-                          <View style={styles.gridIconWrap}>
-                            {gearDef.spritesheet ? (
-                              <ItemSprite
-                                spritesheet={gearDef.spritesheet}
-                                frameIndex={gearDef.frameIndex}
-                                displaySize={42}
-                              />
-                            ) : (
-                              <ItemSprite spritesheet="icons-map" frameIndex={17} displaySize={42} />
-                            )}
-                          </View>
-                          <View style={styles.gridTagSlot}>
-                            {isEquipped ? (
-                              <View style={[styles.gridTagBadge, styles.gridEquippedBadge]}>
-                                <Text style={[styles.gridTagText, styles.gridEquippedText]}>EQUIPPED</Text>
+                            <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
+                              <Rect width="100%" height="100%" fill="rgba(255,255,255,0.015)" rx={14} />
+                              <Rect x="1" y="1" width="98%" height="98%" rx={13} fill="none"
+                                stroke={isEquipped ? 'rgba(212,167,84,0.4)' : 'rgba(255,255,255,0.04)'} strokeWidth={isEquipped ? 1.5 : 1} />
+                            </Svg>
+                            <View style={styles.gridCardInner}>
+                              <Text style={styles.gridName} numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.8}>{gearDef.name}</Text>
+                              <View style={styles.gridIconWrap}>
+                                {gearDef.spritesheet ? (
+                                  <ItemSprite
+                                    spritesheet={gearDef.spritesheet}
+                                    frameIndex={gearDef.frameIndex}
+                                    displaySize={42}
+                                  />
+                                ) : (
+                                  <ItemSprite spritesheet="icons-map" frameIndex={17} displaySize={42} />
+                                )}
                               </View>
-                            ) : (
-                              <View style={[styles.gridTagBadge, styles.gridSlotBadge]}>
-                                <Text style={styles.gridTagText}>{gearDef.type.toUpperCase()}</Text>
+                              <View style={styles.gridTagSlot}>
+                                {isEquipped ? (
+                                  <View style={[styles.gridTagBadge, styles.gridEquippedBadge]}>
+                                    <Text style={[styles.gridTagText, styles.gridEquippedText]}>EQUIPPED</Text>
+                                  </View>
+                                ) : (
+                                  <View style={[styles.gridTagBadge, styles.gridSlotBadge]}>
+                                    <Text style={styles.gridTagText}>{gearDef.type.toUpperCase()}</Text>
+                                  </View>
+                                )}
                               </View>
-                            )}
-                          </View>
-                        </View>
-                      </TouchableOpacity>
-                    );
-                  })}
+                            </View>
+                          </TouchableOpacity>
+                        );
+                      })}
+                  </View>
+                )}
               </View>
             )}
           </View>
@@ -1275,9 +1349,20 @@ export default function ProfileScreen() {
               )}
 
               {!!modalData.currentGearId && (
-                <TouchableOpacity style={styles.unequipBtn} onPress={handleUnequip} activeOpacity={0.8}>
-                  <Text style={styles.unequipBtnText}>Unequip {modalData.slotConfig?.label}</Text>
-                </TouchableOpacity>
+                <View style={styles.unequipBtnWrapper}>
+                  <View style={styles.unequipBtnShadow} />
+                  <TouchableOpacity
+                    style={styles.unequipBtnOuter}
+                    onPress={handleUnequip}
+                    activeOpacity={0.8}
+                  >
+                    <View style={styles.unequipBtnInner}>
+                      <Text style={styles.unequipBtnText}>
+                        Unequip {modalData.slotConfig?.label}
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                </View>
               )}
             </View>
           </Pressable>
@@ -1572,27 +1657,61 @@ const styles = StyleSheet.create({
     borderRadius: 0,
     padding: 0,
     marginTop: 6,
-    marginBottom: 14,
+    marginBottom: 16,
     borderWidth: 0,
   },
-  tabButton: {
+  tabWrapper: {
     flex: 1,
+    height: 44,
+    position: 'relative',
+  },
+  tabShadow: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 3,
+    height: 44,
+    borderRadius: 8,
+    zIndex: 1,
+    backgroundColor: '#4F3C1E',
+  },
+  tabOuter: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    height: 44,
+    borderRadius: 8,
+    borderWidth: 2.2,
+    borderColor: '#84735B',
+    backgroundColor: '#4F3C1E',
+    zIndex: 2,
+  },
+  tabInner: {
+    flex: 1,
+    margin: 1.5,
+    borderRadius: 5,
+    borderWidth: 2.2,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 8,
-    paddingVertical: 8,
-    paddingHorizontal: 4,
     gap: 6,
-    borderWidth: 2,
   },
-  tabBtnActive: {
+  tabInnerActive: {
     backgroundColor: '#F3E2BD',
-    borderColor: '#4A3917',
+    borderTopColor: '#FFF3DA',
+    borderLeftColor: '#FFF3DA',
+    borderRightColor: '#FFF3DA',
+    borderBottomColor: '#B5A07A',
+    borderBottomWidth: 3.5,
   },
-  tabBtnInactive: {
-    backgroundColor: '#0D2216',
-    borderColor: '#183C25',
+  tabInnerInactive: {
+    backgroundColor: '#1B4030',
+    borderTopColor: '#4F856C',
+    borderLeftColor: '#4F856C',
+    borderRightColor: '#4F856C',
+    borderBottomColor: '#0D2118',
+    borderBottomWidth: 3.5,
   },
   tabLabel: {
     fontFamily: 'Silkscreen-Regular',
@@ -1609,6 +1728,44 @@ const styles = StyleSheet.create({
   },
   tabContent: {
     marginTop: 4,
+  },
+  subTabBar: {
+    flexDirection: 'row',
+    marginTop: 6,
+    marginBottom: 16,
+    backgroundColor: '#0D2118',
+    borderColor: '#3E2E15',
+    borderWidth: 2,
+    borderRadius: 8,
+    padding: 3,
+  },
+  subTab: {
+    flex: 1,
+    height: 32,
+    borderRadius: 5,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  subTabActive: {
+    backgroundColor: '#F3E2BD',
+    borderWidth: 1.5,
+    borderColor: '#B5A07A',
+  },
+  subTabInactive: {
+    backgroundColor: 'transparent',
+  },
+  subTabText: {
+    fontFamily: 'Silkscreen-Regular',
+    fontSize: 9,
+    fontWeight: 'normal',
+    textTransform: 'uppercase',
+  },
+  subTabTextActive: {
+    color: '#2A1A0C',
+  },
+  subTabTextInactive: {
+    color: '#FFF3DA',
+    opacity: 0.6,
   },
   pointsBadge: {
     backgroundColor: 'rgba(212, 167, 84, 0.08)',
@@ -1721,40 +1878,103 @@ const styles = StyleSheet.create({
   },
   saveRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: 8,
+    gap: 12,
     marginTop: 10,
     marginBottom: 16,
   },
-  cancelBtn: {
+  cancelBtnWrapper: {
     flex: 1,
-    height: 38,
+    height: 42,
+    position: 'relative',
+  },
+  cancelBtnShadow: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 3,
+    height: 42,
     borderRadius: 8,
-    backgroundColor: 'rgba(239, 68, 68, 0.1)',
-    borderWidth: 1.5,
-    borderColor: 'rgba(239, 68, 68, 0.35)',
-    alignItems: 'center',
+    zIndex: 1,
+    backgroundColor: '#4F3C1E',
+  },
+  cancelBtnOuter: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    height: 42,
+    borderRadius: 8,
+    borderWidth: 2.2,
+    borderColor: '#84735B',
+    backgroundColor: '#4F3C1E',
+    zIndex: 2,
+  },
+  cancelBtnInner: {
+    flex: 1,
+    margin: 1.5,
+    borderRadius: 5,
+    borderWidth: 2.2,
+    borderTopColor: '#D8483F',
+    borderLeftColor: '#D8483F',
+    borderRightColor: '#D8483F',
+    borderBottomColor: '#590D0E',
+    borderBottomWidth: 3.5,
+    backgroundColor: '#A61C1C',
     justifyContent: 'center',
+    alignItems: 'center',
   },
   cancelBtnText: {
     fontFamily: 'Jersey10-Regular',
-    fontSize: 14,
-    color: '#EF4444',
+    fontSize: 16,
+    color: '#FFF3DA',
+    textTransform: 'uppercase',
   },
-  saveBtn: {
+  saveBtnWrapper: {
     flex: 1,
-    height: 38,
+    height: 42,
+    position: 'relative',
+  },
+  saveBtnShadow: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 3,
+    height: 42,
     borderRadius: 8,
-    backgroundColor: 'rgba(92, 196, 137, 0.15)',
-    borderWidth: 1.5,
-    borderColor: 'rgba(92, 196, 137, 0.45)',
-    alignItems: 'center',
+    zIndex: 1,
+    backgroundColor: '#0D2118',
+  },
+  saveBtnOuter: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    height: 42,
+    borderRadius: 8,
+    borderWidth: 2.2,
+    borderColor: '#84735B',
+    backgroundColor: '#0D2118',
+    zIndex: 2,
+  },
+  saveBtnInner: {
+    flex: 1,
+    margin: 1.5,
+    borderRadius: 5,
+    borderWidth: 2.2,
+    borderTopColor: '#4F856C',
+    borderLeftColor: '#4F856C',
+    borderRightColor: '#4F856C',
+    borderBottomColor: '#0D2118',
+    borderBottomWidth: 3.5,
+    backgroundColor: '#1B4030',
     justifyContent: 'center',
+    alignItems: 'center',
   },
   saveBtnText: {
     fontFamily: 'Jersey10-Regular',
-    fontSize: 14,
-    color: '#5CC489',
+    fontSize: 16,
+    color: '#FFF3DA',
+    textTransform: 'uppercase',
   },
   attributeValueHighlight: {
     color: '#D4A754',
@@ -2193,63 +2413,116 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 8,
   },
-  slotCard: {
+  slotCardWrapper: {
     flex: 1,
-    minHeight: 92,
+    height: 92,
+    position: 'relative',
+    overflow: 'visible',
+  },
+  slotCardShadow: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 3,
+    height: 92,
     borderRadius: 12,
-    paddingVertical: 10,
-    paddingHorizontal: 10,
+    zIndex: 1,
+  },
+  slotCardShadowEmpty: {
+    backgroundColor: '#0D2118',
+  },
+  slotCardShadowEquipped: {
+    backgroundColor: '#4F3C1E',
+  },
+  slotCardOuter: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    height: 92,
+    borderRadius: 12,
+    borderWidth: 2.2,
+    borderColor: '#84735B',
+    zIndex: 2,
+  },
+  slotCardOuterEmpty: {
+    backgroundColor: '#0D2118',
+  },
+  slotCardOuterEquipped: {
+    backgroundColor: '#4F3C1E',
+  },
+  slotCardInner: {
+    flex: 1,
+    margin: 1.5,
+    borderRadius: 9,
+    borderWidth: 2.2,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: 'rgba(212,167,84,0.06)',
-    borderWidth: 1,
-    borderColor: 'rgba(212,167,84,0.25)',
+    paddingVertical: 8,
+    paddingHorizontal: 8,
     gap: 8,
   },
-  slotCardEmpty: {
-    backgroundColor: 'rgba(255,255,255,0.02)',
-    borderStyle: 'dashed',
-    borderColor: 'rgba(255,255,255,0.12)',
+  slotCardInnerEmpty: {
+    backgroundColor: '#1B4030',
+    borderTopColor: '#4F856C',
+    borderLeftColor: '#4F856C',
+    borderRightColor: '#4F856C',
+    borderBottomColor: '#0D2118',
+    borderBottomWidth: 3.5,
   },
-  slotCardEquipped: {
-    backgroundColor: 'rgba(232, 167, 58, 0.08)',
-    borderColor: '#E8A73A',
-    borderWidth: 1.5,
+  slotCardInnerEquipped: {
+    backgroundColor: '#F3E2BD',
+    borderTopColor: '#FFF3DA',
+    borderLeftColor: '#FFF3DA',
+    borderRightColor: '#FFF3DA',
+    borderBottomColor: '#B5A07A',
+    borderBottomWidth: 3.5,
   },
   slotCardInfo: {
     flex: 1,
-    minHeight: 72,
     justifyContent: 'space-between',
+    height: '100%',
   },
   slotLabel: {
     fontFamily: 'Silkscreen-Regular',
     fontSize: 9,
     fontWeight: 'normal',
-    color: '#94A3B8', // brighter slate grey for slot names
     letterSpacing: 0.5,
     textAlign: 'left',
+  },
+  slotLabelEmpty: {
+    color: '#8CAF9F', // Muted sage/moss green
+  },
+  slotLabelEquipped: {
+    color: '#6B5A3E', // Muted dark gold-brown
   },
   slotItemName: {
     fontFamily: 'Silkscreen-Regular',
     fontSize: 10,
     lineHeight: 14,
     fontWeight: 'bold',
-    color: '#FFFFFF', // high-contrast white
+    color: '#2A1A0C', // Dark text on parchment
     textAlign: 'left',
   },
   slotItemStats: {
     fontFamily: 'Silkscreen-Regular',
     fontSize: 9,
     fontWeight: 'normal',
-    color: '#6EE7B7', // brighter mint for stats readability
     textAlign: 'left',
+  },
+  slotItemStatsEmpty: {
+    color: '#6EE7B7',
+  },
+  slotItemStatsEquipped: {
+    color: '#1D7044', // Dark green on parchment for readability
   },
   slotEmptyText: {
     fontFamily: 'Silkscreen-Regular',
     fontSize: 10,
     fontStyle: 'italic',
-    color: '#64748B', // readable slate grey for empty text
+    color: '#FFF3DA',
+    opacity: 0.45,
     textAlign: 'left',
   },
   slotIconBox: {
@@ -2258,18 +2531,15 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(0,0,0,0.2)',
-    borderWidth: 1,
-    borderColor: 'rgba(212,167,84,0.25)',
+    borderWidth: 1.5,
   },
   slotIconBoxEmpty: {
-    backgroundColor: 'rgba(255,255,255,0.02)',
-    borderStyle: 'dashed',
-    borderColor: 'rgba(255,255,255,0.12)',
+    backgroundColor: 'rgba(0,0,0,0.2)',
+    borderColor: 'rgba(79, 133, 108, 0.35)',
   },
   slotIconBoxEquipped: {
-    backgroundColor: 'rgba(139, 90, 43, 0.25)',
-    borderColor: 'rgba(212, 167, 84, 0.45)',
+    backgroundColor: 'rgba(79, 60, 30, 0.1)',
+    borderColor: 'rgba(181, 160, 122, 0.65)',
   },
   slotIconImage: {
     width: 36,
@@ -2413,21 +2683,54 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: theme.COLORS.candleGold,
   },
-  unequipBtn: {
-    backgroundColor: 'rgba(239,68,68,0.10)',
-    borderWidth: 1,
-    borderColor: 'rgba(239,68,68,0.35)',
-    borderRadius: 12,
-    paddingVertical: 10,
-    paddingHorizontal: 20,
+  unequipBtnWrapper: {
+    width: '100%',
+    height: 42,
+    position: 'relative',
     marginTop: 12,
+  },
+  unequipBtnShadow: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 3,
+    height: 42,
+    borderRadius: 8,
+    zIndex: 1,
+    backgroundColor: '#4F3C1E',
+  },
+  unequipBtnOuter: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    height: 42,
+    borderRadius: 8,
+    borderWidth: 2.2,
+    borderColor: '#84735B',
+    backgroundColor: '#4F3C1E',
+    zIndex: 2,
+  },
+  unequipBtnInner: {
+    flex: 1,
+    margin: 1.5,
+    borderRadius: 5,
+    borderWidth: 2.2,
+    borderTopColor: '#D8483F',
+    borderLeftColor: '#D8483F',
+    borderRightColor: '#D8483F',
+    borderBottomColor: '#590D0E',
+    borderBottomWidth: 3.5,
+    backgroundColor: '#A61C1C',
+    justifyContent: 'center',
     alignItems: 'center',
   },
   unequipBtnText: {
     fontFamily: 'Jersey10-Regular',
     fontWeight: 'normal',
-    fontSize: 13,
-    color: '#EF4444',
+    fontSize: 16,
+    color: '#FFF3DA',
+    textTransform: 'uppercase',
   },
 
   /* ── Grid Layouts ── */

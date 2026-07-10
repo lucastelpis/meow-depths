@@ -395,22 +395,26 @@ export default function ShopScreen() {
         {TABS.map(({ key, frameIndex, label }) => {
           const isActive = activeTab === key;
           return (
-            <TouchableOpacity
-              key={key}
-              style={[styles.tabButton, isActive ? styles.tabBtnActive : styles.tabBtnInactive]}
-              activeOpacity={0.8}
-              onPress={() => setActiveTab(key)}
-            >
-              <ItemSprite
-                spritesheet="icons-1"
-                frameIndex={frameIndex}
-                displaySize={18}
-                opacity={isActive ? 1.0 : 0.6}
-              />
-              <Text style={[styles.tabLabel, isActive ? styles.tabLabelActive : styles.tabLabelInactive]}>
-                {label}
-              </Text>
-            </TouchableOpacity>
+            <View key={key} style={styles.tabWrapper}>
+              <View style={styles.tabShadow} />
+              <TouchableOpacity
+                style={styles.tabOuter}
+                onPress={() => setActiveTab(key)}
+                activeOpacity={0.8}
+              >
+                <View style={[styles.tabInner, isActive ? styles.tabInnerActive : styles.tabInnerInactive]}>
+                  <ItemSprite
+                    spritesheet="icons-1"
+                    frameIndex={frameIndex}
+                    displaySize={16}
+                    opacity={isActive ? 1.0 : 0.65}
+                  />
+                  <Text style={[styles.tabLabelText, isActive ? styles.tabLabelActive : styles.tabLabelInactive]}>
+                    {label}
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            </View>
           );
         })}
       </View>
@@ -493,32 +497,22 @@ export default function ShopScreen() {
                           </TouchableOpacity>
                         </View>
 
-                        <TouchableOpacity
-                          style={[styles.buyBtn, !canAffordTotal && styles.buyBtnDisabled]}
-                          activeOpacity={0.7}
-                          disabled={!canAffordTotal}
-                          onPress={() => handleBuySupplies(item)}
-                        >
-                          {canAffordTotal && (
-                            <View style={StyleSheet.absoluteFill}>
-                              <Svg width="100%" height="100%">
-                                <Defs>
-                                  <LinearGradient id={`buyBtnGrad_${item.id}`} x1="0" y1="0" x2="1" y2="0">
-                                    <Stop offset="0%" stopColor="#3FB56E" />
-                                    <Stop offset="100%" stopColor="#2A8A50" />
-                                  </LinearGradient>
-                                </Defs>
-                                <Rect width="100%" height="100%" fill={`url(#buyBtnGrad_${item.id})`} rx={10} />
-                              </Svg>
+                        <View style={styles.buyBtnWrapper}>
+                          <View style={[styles.buyBtnShadow, !canAffordTotal && styles.buyBtnShadowDisabled]} />
+                          <TouchableOpacity
+                            style={[styles.buyBtnOuter, !canAffordTotal && styles.buyBtnOuterDisabled]}
+                            activeOpacity={0.8}
+                            disabled={!canAffordTotal}
+                            onPress={() => handleBuySupplies(item)}
+                          >
+                            <View style={[styles.buyBtnInner, !canAffordTotal && styles.buyBtnInnerDisabled]}>
+                              <ItemSprite spritesheet="icons-1" frameIndex={11} displaySize={14} opacity={canAffordTotal ? 1.0 : 0.4} />
+                              <Text style={[styles.buyBtnText, !canAffordTotal && styles.buyBtnTextDisabled]}>
+                                {totalCost} G
+                              </Text>
                             </View>
-                          )}
-                          <View style={styles.buyBtnContent}>
-                            <ItemSprite spritesheet="icons-1" frameIndex={11} displaySize={16} />
-                            <Text style={[styles.buyBtnText, !canAffordTotal && styles.buyBtnTextDisabled, canAffordTotal && styles.buyBtnTextActive]}>
-                              {totalCost} G
-                            </Text>
-                          </View>
-                        </TouchableOpacity>
+                          </TouchableOpacity>
+                        </View>
                       </View>
                     </View>
                   </View>
@@ -611,39 +605,22 @@ export default function ShopScreen() {
 
                         {/* Right: Buy Button */}
                         <View style={styles.buyArea}>
-                          <TouchableOpacity
-                            style={[
-                              styles.armoryBuyBtn,
-                              !canAfford && styles.armoryBuyBtnDisabled
-                            ]}
-                            disabled={!canAfford}
-                            onPress={() => handleBuyGear(item)}
-                          >
-                            {canAfford && (
-                              <View style={StyleSheet.absoluteFill}>
-                                <Svg width="100%" height="100%">
-                                  <Defs>
-                                    <LinearGradient id={`armoryBuyGrad_${item.id}`} x1="0" y1="0" x2="1" y2="0">
-                                      <Stop offset="0%" stopColor="#F9D99A" />
-                                      <Stop offset="100%" stopColor="#D4A754" />
-                                    </LinearGradient>
-                                  </Defs>
-                                  <Rect width="100%" height="100%" fill={`url(#armoryBuyGrad_${item.id})`} rx={10} />
-                                </Svg>
+                          <View style={styles.buyBtnWrapper}>
+                            <View style={[styles.buyBtnShadow, !canAfford && styles.buyBtnShadowDisabled]} />
+                            <TouchableOpacity
+                              style={[styles.buyBtnOuter, !canAfford && styles.buyBtnOuterDisabled]}
+                              activeOpacity={0.8}
+                              disabled={!canAfford}
+                              onPress={() => handleBuyGear(item)}
+                            >
+                              <View style={[styles.buyBtnInnerGold, !canAfford && styles.buyBtnInnerDisabled]}>
+                                <ItemSprite spritesheet="icons-1" frameIndex={11} displaySize={14} opacity={canAfford ? 1.0 : 0.4} />
+                                <Text style={[styles.buyBtnText, styles.buyBtnTextGold, !canAfford && styles.buyBtnTextDisabled]}>
+                                  {item.goldCost} G
+                                </Text>
                               </View>
-                            )}
-                            <View style={styles.buyBtnContent}>
-                              <ItemSprite spritesheet="icons-1" frameIndex={11} displaySize={16} />
-                              <Text
-                                style={[
-                                  styles.armoryBuyBtnText,
-                                  !canAfford && styles.armoryBuyBtnTextDisabled
-                                ]}
-                              >
-                                {item.goldCost} G
-                              </Text>
-                            </View>
-                          </TouchableOpacity>
+                            </TouchableOpacity>
+                          </View>
                         </View>
                       </View>
                     </View>
@@ -683,12 +660,33 @@ export default function ShopScreen() {
                 </View>
 
                 <View style={styles.equipModalBtnRow}>
-                  <TouchableOpacity style={[styles.equipModalBtn, styles.equipModalBtnGhost]} onPress={() => setBuyPrompt(null)} activeOpacity={0.8}>
-                    <Text style={styles.equipModalBtnGhostText}>Cancel</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity style={[styles.equipModalBtn, styles.equipModalBtnPrimary]} onPress={handleConfirmBuy} activeOpacity={0.85}>
-                    <Text style={styles.equipModalBtnPrimaryText}>Buy</Text>
-                  </TouchableOpacity>
+                  {/* Cancel Button (Crimson 3D) */}
+                  <View style={styles.modalCancelBtnWrapper}>
+                    <View style={styles.modalCancelBtnShadow} />
+                    <TouchableOpacity
+                      style={styles.modalCancelBtnOuter}
+                      onPress={() => setBuyPrompt(null)}
+                      activeOpacity={0.8}
+                    >
+                      <View style={styles.modalCancelBtnInner}>
+                        <Text style={styles.modalCancelBtnText}>Cancel</Text>
+                      </View>
+                    </TouchableOpacity>
+                  </View>
+
+                  {/* Buy Button (Green 3D) */}
+                  <View style={styles.modalConfirmBtnWrapper}>
+                    <View style={styles.modalConfirmBtnShadow} />
+                    <TouchableOpacity
+                      style={styles.modalConfirmBtnOuter}
+                      onPress={handleConfirmBuy}
+                      activeOpacity={0.8}
+                    >
+                      <View style={styles.modalConfirmBtnInner}>
+                        <Text style={styles.modalConfirmBtnText}>Buy</Text>
+                      </View>
+                    </TouchableOpacity>
+                  </View>
                 </View>
               </>
             )}
@@ -730,12 +728,33 @@ export default function ShopScreen() {
                   </View>
 
                   <View style={styles.equipModalBtnRow}>
-                    <TouchableOpacity style={[styles.equipModalBtn, styles.equipModalBtnGhost]} onPress={() => setEquipPrompt(null)} activeOpacity={0.8}>
-                      <Text style={styles.equipModalBtnGhostText}>Not Now</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={[styles.equipModalBtn, styles.equipModalBtnPrimary]} onPress={handleEquipNow} activeOpacity={0.85}>
-                      <Text style={styles.equipModalBtnPrimaryText}>Equip Now</Text>
-                    </TouchableOpacity>
+                    {/* Not Now Button (Crimson 3D) */}
+                    <View style={styles.modalCancelBtnWrapper}>
+                      <View style={styles.modalCancelBtnShadow} />
+                      <TouchableOpacity
+                        style={styles.modalCancelBtnOuter}
+                        onPress={() => setEquipPrompt(null)}
+                        activeOpacity={0.8}
+                      >
+                        <View style={styles.modalCancelBtnInner}>
+                          <Text style={styles.modalCancelBtnText}>Not Now</Text>
+                        </View>
+                      </TouchableOpacity>
+                    </View>
+
+                    {/* Equip Now Button (Green 3D) */}
+                    <View style={styles.modalConfirmBtnWrapper}>
+                      <View style={styles.modalConfirmBtnShadow} />
+                      <TouchableOpacity
+                        style={styles.modalConfirmBtnOuter}
+                        onPress={handleEquipNow}
+                        activeOpacity={0.8}
+                      >
+                        <View style={styles.modalConfirmBtnInner}>
+                          <Text style={styles.modalConfirmBtnText}>Equip Now</Text>
+                        </View>
+                      </TouchableOpacity>
+                    </View>
                   </View>
                 </>
               );
@@ -921,37 +940,71 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     borderWidth: 0,
   },
-  tabButton: {
+  tabWrapper: {
+    flex: 1,
+    height: 42,
+    position: 'relative',
+  },
+  tabShadow: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 3,
+    height: 42,
+    borderRadius: 8,
+    zIndex: 1,
+    backgroundColor: '#0D2118',
+  },
+  tabOuter: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    height: 42,
+    borderRadius: 8,
+    borderWidth: 2.2,
+    borderColor: '#84735B',
+    backgroundColor: '#0D2118',
+    zIndex: 2,
+  },
+  tabInner: {
     flex: 1,
     flexDirection: 'row',
-    alignItems: 'center',
+    margin: 1.5,
+    borderRadius: 5,
+    borderWidth: 2.2,
     justifyContent: 'center',
-    borderRadius: 8,
-    paddingVertical: 8,
-    paddingHorizontal: 4,
+    alignItems: 'center',
     gap: 6,
-    borderWidth: 2,
   },
-  tabBtnActive: {
+  tabInnerActive: {
+    borderTopColor: '#FFF3DA',
+    borderLeftColor: '#FFF3DA',
+    borderRightColor: '#FFF3DA',
+    borderBottomColor: '#B5A07A',
+    borderBottomWidth: 3.5,
     backgroundColor: '#F3E2BD',
-    borderColor: '#4A3917',
   },
-  tabBtnInactive: {
-    backgroundColor: '#3C2D1E',
-    borderColor: '#4A3917',
+  tabInnerInactive: {
+    borderTopColor: '#4F856C',
+    borderLeftColor: '#4F856C',
+    borderRightColor: '#4F856C',
+    borderBottomColor: '#0D2118',
+    borderBottomWidth: 3.5,
+    backgroundColor: '#1B4030',
   },
-  tabLabel: {
+  tabLabelText: {
     fontFamily: 'Silkscreen-Regular',
     fontSize: 10,
     fontWeight: 'normal',
     letterSpacing: 0,
+    textTransform: 'uppercase',
   },
   tabLabelActive: {
     color: '#2A1A0C',
   },
   tabLabelInactive: {
-    color: '#F3E2BD',
-    opacity: 0.6,
+    color: '#8CAF9F',
   },
   tabContent: {
     marginTop: 12,
@@ -1110,39 +1163,86 @@ const styles = StyleSheet.create({
     minWidth: 22,
     textAlign: 'center',
   },
-  buyBtn: {
-    borderRadius: 10,
-    paddingVertical: 8,
-    paddingHorizontal: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-    minWidth: 90,
-    overflow: 'hidden',
+  buyBtnWrapper: {
+    width: 96,
+    height: 38,
+    position: 'relative',
   },
-  buyBtnDisabled: {
-    backgroundColor: 'rgba(255, 255, 255, 0.02)',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.05)',
+  buyBtnShadow: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 2.5,
+    height: 38,
+    borderRadius: 8,
+    zIndex: 1,
+    backgroundColor: '#0D2118',
   },
-  buyBtnText: {
-    fontFamily: 'Silkscreen-Regular',
-    fontSize: 10,
-    letterSpacing: 0,
-    fontWeight: 'normal',
+  buyBtnShadowDisabled: {
+    backgroundColor: 'transparent',
+  },
+  buyBtnOuter: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    height: 38,
+    borderRadius: 8,
+    borderWidth: 2,
+    borderColor: '#84735B',
+    backgroundColor: '#0D2118',
     zIndex: 2,
   },
-  buyBtnTextActive: {
-    color: '#071A0E',
+  buyBtnOuterDisabled: {
+    borderColor: 'rgba(212, 167, 84, 0.15)',
+    backgroundColor: 'rgba(16, 44, 28, 0.25)',
+  },
+  buyBtnInner: {
+    flex: 1,
+    flexDirection: 'row',
+    margin: 1.2,
+    borderRadius: 5,
+    borderWidth: 1.8,
+    borderTopColor: '#4F856C',
+    borderLeftColor: '#4F856C',
+    borderRightColor: '#4F856C',
+    borderBottomColor: '#0D2118',
+    borderBottomWidth: 3,
+    backgroundColor: '#1B4030',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 4,
+  },
+  buyBtnInnerGold: {
+    flex: 1,
+    flexDirection: 'row',
+    margin: 1.2,
+    borderRadius: 5,
+    borderWidth: 1.8,
+    borderTopColor: '#FFF3DA',
+    borderLeftColor: '#FFF3DA',
+    borderRightColor: '#FFF3DA',
+    borderBottomColor: '#B5A07A',
+    borderBottomWidth: 3,
+    backgroundColor: '#F3E2BD',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 4,
+  },
+  buyBtnInnerDisabled: {
+    borderWidth: 0,
+    backgroundColor: 'rgba(255, 255, 255, 0.02)',
+  },
+  buyBtnText: {
+    fontFamily: 'Jersey10-Regular',
+    fontSize: 16,
+    color: '#FFF3DA',
+  },
+  buyBtnTextGold: {
+    color: '#2A1A0C',
   },
   buyBtnTextDisabled: {
     color: 'rgba(255, 255, 255, 0.15)',
-  },
-  buyBtnContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 4,
-    zIndex: 3,
   },
 
   /* ── Armory Tab Styles ───────────────────────────────────── */
@@ -1210,31 +1310,7 @@ const styles = StyleSheet.create({
     fontWeight: 'normal',
     marginTop: 4,
   },
-  armoryBuyBtn: {
-    borderRadius: 10,
-    paddingVertical: 8,
-    paddingHorizontal: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-    minWidth: 90,
-    overflow: 'hidden',
-  },
-  armoryBuyBtnDisabled: {
-    backgroundColor: 'rgba(255, 255, 255, 0.02)',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.05)',
-  },
-  armoryBuyBtnText: {
-    fontFamily: 'Silkscreen-Regular',
-    fontSize: 10,
-    letterSpacing: 0,
-    fontWeight: 'normal',
-    zIndex: 2,
-    color: '#1A1200',
-  },
-  armoryBuyBtnTextDisabled: {
-    color: 'rgba(255, 255, 255, 0.15)',
-  },
+
   armoryBuyBtnOwned: {
     borderRadius: 10,
     paddingVertical: 8,
@@ -1568,32 +1644,98 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 12,
   },
-  equipModalBtn: {
+  modalCancelBtnWrapper: {
     flex: 1,
-    borderRadius: 10,
-    paddingVertical: 12,
-    alignItems: 'center',
+    height: 42,
+    position: 'relative',
+  },
+  modalCancelBtnShadow: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 3,
+    height: 42,
+    borderRadius: 8,
+    zIndex: 1,
+    backgroundColor: '#4F3C1E',
+  },
+  modalCancelBtnOuter: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    height: 42,
+    borderRadius: 8,
+    borderWidth: 2.2,
+    borderColor: '#84735B',
+    backgroundColor: '#4F3C1E',
+    zIndex: 2,
+  },
+  modalCancelBtnInner: {
+    flex: 1,
+    margin: 1.5,
+    borderRadius: 5,
+    borderWidth: 2.2,
+    borderTopColor: '#D8483F',
+    borderLeftColor: '#D8483F',
+    borderRightColor: '#D8483F',
+    borderBottomColor: '#590D0E',
+    borderBottomWidth: 3.5,
+    backgroundColor: '#A61C1C',
     justifyContent: 'center',
-    borderWidth: 2,
+    alignItems: 'center',
   },
-  equipModalBtnGhost: {
-    backgroundColor: 'transparent',
-    borderColor: 'rgba(243,226,189,0.3)',
-  },
-  equipModalBtnGhostText: {
+  modalCancelBtnText: {
     fontFamily: 'Silkscreen-Regular',
-    fontSize: 11,
-    letterSpacing: 0.5,
-    color: 'rgba(243,226,189,0.75)',
+    fontSize: 10,
+    color: '#FFF3DA',
+    textTransform: 'uppercase',
   },
-  equipModalBtnPrimary: {
-    backgroundColor: '#F3E2BD',
-    borderColor: '#4A3917',
+  modalConfirmBtnWrapper: {
+    flex: 1,
+    height: 42,
+    position: 'relative',
   },
-  equipModalBtnPrimaryText: {
+  modalConfirmBtnShadow: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 3,
+    height: 42,
+    borderRadius: 8,
+    zIndex: 1,
+    backgroundColor: '#0D2118',
+  },
+  modalConfirmBtnOuter: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    height: 42,
+    borderRadius: 8,
+    borderWidth: 2.2,
+    borderColor: '#84735B',
+    backgroundColor: '#0D2118',
+    zIndex: 2,
+  },
+  modalConfirmBtnInner: {
+    flex: 1,
+    margin: 1.5,
+    borderRadius: 5,
+    borderWidth: 2.2,
+    borderTopColor: '#4F856C',
+    borderLeftColor: '#4F856C',
+    borderRightColor: '#4F856C',
+    borderBottomColor: '#0D2118',
+    borderBottomWidth: 3.5,
+    backgroundColor: '#1B4030',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalConfirmBtnText: {
     fontFamily: 'Silkscreen-Regular',
-    fontSize: 11,
-    letterSpacing: 0.5,
-    color: '#2A1A0C',
+    fontSize: 10,
+    color: '#FFF3DA',
+    textTransform: 'uppercase',
   },
 });

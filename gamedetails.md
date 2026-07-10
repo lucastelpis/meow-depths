@@ -79,10 +79,10 @@ Mochi chooses an **Elemental Path** (Fire, Water, Earth, or Wind) upon starting 
 
 ### Stances (Innate & Passive)
 Elemental stances are always active and scale with Mochi's level:
-- 🔥 **Fire (Smoldering Aura)**: Grants **+1% ATK per level** and boosts Burn damage ticks by **+1 damage per 5 levels**.
+- 🔥 **Fire (Fire Stance)**: Grants **+1% ATK per level** and boosts Burn damage ticks by **+1 damage per 5 levels**.
 - 💧 **Water (Water Stance)**: Grants **+1% Max HP per level**.
-- 🪨 **Earth**: *Coming Soon* (No active bonuses).
-- 🌪️ **Wind**: *Coming Soon* (No active bonuses).
+- 🪨 **Earth (Earth Stance)**: Grants **+1 DEF per level**.
+- 🌪️ **Wind (Wind Stance)**: Grants **+1 AGI per level**.
 
 ---
 

@@ -515,11 +515,11 @@ export default function DungeonFloorScreen() {
                 <View style={styles.actionRow}>
                   {(() => {
                     const isStartDisabled = selectedStatus === 'locked';
-                    const btnBgColor = isStartDisabled ? '#4E4256' : '#A84C27';
-                    const btnInnerBorder = isStartDisabled ? '#776A81' : '#D67545';
-                    const btnInnerShadow = isStartDisabled ? '#2E2536' : '#5C2814';
-                    const btnOuterBorder = isStartDisabled ? '#6C5E77' : '#E5C25F';
-                    const btnBevel = isStartDisabled ? '#2C2534' : '#6E5528';
+                    const btnBgColor = isStartDisabled ? '#4E4256' : '#1B4030';
+                    const btnInnerBorder = isStartDisabled ? '#776A81' : '#4F856C';
+                    const btnInnerShadow = isStartDisabled ? '#2E2536' : '#0D2118';
+                    const btnOuterBorder = isStartDisabled ? '#6C5E77' : '#84735B';
+                    const btnBevel = isStartDisabled ? '#2C2534' : '#0D2118';
 
                     return (
                       <View style={styles.wideButtonWrapper}>
@@ -570,13 +570,18 @@ export default function DungeonFloorScreen() {
               <View style={{ width: PAGE_WIDTH, padding: 12 }}>
                 {/* Row 1: Header row with Back Button */}
                 <View style={styles.detailHeaderLine}>
-                  <TouchableOpacity
-                    style={styles.backBtnHeader}
-                    onPress={() => detailsScrollRef.current?.scrollTo({ x: 0, animated: true })}
-                    activeOpacity={0.8}
-                  >
-                    <Text style={styles.backBtnText}>← BACK</Text>
-                  </TouchableOpacity>
+                  <View style={styles.backBtnHeaderWrapper}>
+                    <View style={styles.backBtnHeaderShadow} />
+                    <TouchableOpacity
+                      style={styles.backBtnHeaderOuter}
+                      onPress={() => detailsScrollRef.current?.scrollTo({ x: 0, animated: true })}
+                      activeOpacity={0.8}
+                    >
+                      <View style={styles.backBtnHeaderInner}>
+                        <Text style={styles.backBtnText}>← BACK</Text>
+                      </View>
+                    </TouchableOpacity>
+                  </View>
 
                   <Text style={styles.detailTitleCompact}>PACK SUPPLIES</Text>
 
@@ -621,21 +626,45 @@ export default function DungeonFloorScreen() {
                               <Text style={styles.supplyOwned}>Owned: {entry.quantity}</Text>
                             </View>
                             <View style={styles.supplyControls}>
-                              <TouchableOpacity
-                                style={[styles.cntBtn, packed === 0 && styles.cntBtnDim]}
-                                onPress={() => removeItem(entry.id)}
-                                disabled={packed === 0}
-                              >
-                                <Text style={[styles.cntBtnText, packed === 0 && { color: 'rgba(255,255,255,0.2)' }]}>−</Text>
-                              </TouchableOpacity>
+                              {packed === 0 ? (
+                                <View style={styles.cntBtnDisabled}>
+                                  <Text style={styles.cntBtnTextDisabled}>−</Text>
+                                </View>
+                              ) : (
+                                <View style={styles.cntBtnWrapper}>
+                                  <View style={styles.cntBtnShadowMinus} />
+                                  <TouchableOpacity
+                                    style={styles.cntBtnOuter}
+                                    onPress={() => removeItem(entry.id)}
+                                    activeOpacity={0.8}
+                                  >
+                                    <View style={styles.cntBtnInnerMinus}>
+                                      <Text style={styles.cntBtnText}>−</Text>
+                                    </View>
+                                  </TouchableOpacity>
+                                </View>
+                              )}
+
                               <Text style={styles.cntText}>{packed}</Text>
-                              <TouchableOpacity
-                                style={[styles.cntBtn, !canAdd && styles.cntBtnDim]}
-                                onPress={() => addItem(entry.id)}
-                                disabled={!canAdd}
-                              >
-                                <Text style={[styles.cntBtnText, !canAdd && { color: 'rgba(255,255,255,0.2)' }]}>+</Text>
-                              </TouchableOpacity>
+
+                              {!canAdd ? (
+                                <View style={styles.cntBtnDisabled}>
+                                  <Text style={styles.cntBtnTextDisabled}>+</Text>
+                                </View>
+                              ) : (
+                                <View style={styles.cntBtnWrapper}>
+                                  <View style={styles.cntBtnShadowPlus} />
+                                  <TouchableOpacity
+                                    style={styles.cntBtnOuter}
+                                    onPress={() => addItem(entry.id)}
+                                    activeOpacity={0.8}
+                                  >
+                                    <View style={styles.cntBtnInnerPlus}>
+                                      <Text style={styles.cntBtnText}>+</Text>
+                                    </View>
+                                  </TouchableOpacity>
+                                </View>
+                              )}
                             </View>
                           </View>
                         );
@@ -647,7 +676,7 @@ export default function DungeonFloorScreen() {
                 <View style={styles.actionRow}>
                   <View style={styles.wideButtonWrapper}>
                     {/* 1. Bevel Shadow Base */}
-                    <View style={[styles.wideButtonBevelShadow, { backgroundColor: '#6E5528' }]} />
+                    <View style={[styles.wideButtonBevelShadow, { backgroundColor: '#0D2118' }]} />
 
                     {/* 2. Main Outer Button */}
                     <TouchableOpacity
@@ -656,8 +685,8 @@ export default function DungeonFloorScreen() {
                       style={[
                         styles.wideButtonOuter,
                         {
-                          backgroundColor: '#6E5528', // gap fill
-                          borderColor: '#E5C25F',
+                          backgroundColor: '#0D2118', // gap fill
+                          borderColor: '#84735B',
                         }
                       ]}
                     >
@@ -665,11 +694,11 @@ export default function DungeonFloorScreen() {
                       <View style={[
                         styles.wideButtonInner,
                         {
-                          backgroundColor: '#A84C27',
-                          borderTopColor: '#D67545',
-                          borderLeftColor: '#D67545',
-                          borderRightColor: '#D67545',
-                          borderBottomColor: '#5C2814',
+                          backgroundColor: '#1B4030',
+                          borderTopColor: '#4F856C',
+                          borderLeftColor: '#4F856C',
+                          borderRightColor: '#4F856C',
+                          borderBottomColor: '#0D2118',
                         }
                       ]}>
                         <Text style={styles.wideButtonText}>START EXPEDITION</Text>
@@ -973,18 +1002,46 @@ const styles = StyleSheet.create({
   },
 
   /* ── Pack Supplies Card styles ── */
-  backBtnHeader: {
-    borderWidth: 1.5,
-    borderColor: '#D8483F',
+  backBtnHeaderWrapper: {
+    width: 60,
+    height: 26,
+    position: 'relative',
+  },
+  backBtnHeaderShadow: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 2,
+    height: 26,
     borderRadius: 6,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+    zIndex: 1,
+    backgroundColor: '#590D0E',
+  },
+  backBtnHeaderOuter: {
+    width: 60,
+    height: 26,
+    borderRadius: 6,
+    borderWidth: 1.5,
+    borderColor: '#84735B',
+    backgroundColor: '#590D0E',
+    zIndex: 2,
+  },
+  backBtnHeaderInner: {
+    flex: 1,
+    margin: 1,
+    borderRadius: 4,
+    borderWidth: 1.5,
+    borderBottomWidth: 2.5,
+    borderColor: '#D8483F',
     backgroundColor: '#A61C1C',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   backBtnText: {
     fontFamily: 'Silkscreen-Regular',
-    fontSize: 10,
+    fontSize: 8.5,
     color: '#EAD9BA',
+    marginTop: -1,
   },
   loadoutIndicatorRow: {
     flexDirection: 'row',
@@ -1062,24 +1119,82 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
   },
-  cntBtn: {
+  cntBtnWrapper: {
+    width: 28,
+    height: 28,
+    position: 'relative',
+  },
+  cntBtnOuter: {
     width: 28,
     height: 28,
     borderRadius: 6,
+    borderWidth: 1.5,
+    borderColor: '#84735B',
+    zIndex: 2,
+  },
+  cntBtnInnerMinus: {
+    flex: 1,
+    margin: 1,
+    borderRadius: 4,
+    borderWidth: 1.5,
+    borderBottomWidth: 2.5,
+    borderColor: '#D8483F',
+    backgroundColor: '#A61C1C',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  cntBtnShadowMinus: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 2,
+    height: 28,
+    borderRadius: 6,
+    backgroundColor: '#590D0E',
+    zIndex: 1,
+  },
+  cntBtnInnerPlus: {
+    flex: 1,
+    margin: 1,
+    borderRadius: 4,
+    borderWidth: 1.5,
+    borderBottomWidth: 2.5,
+    borderColor: '#4F856C',
+    backgroundColor: '#1B4030',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  cntBtnShadowPlus: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 2,
+    height: 28,
+    borderRadius: 6,
+    backgroundColor: '#0D2118',
+    zIndex: 1,
+  },
+  cntBtnDisabled: {
+    width: 28,
+    height: 28,
+    borderRadius: 6,
+    borderWidth: 1.5,
+    borderColor: 'rgba(255,255,255,0.06)',
     backgroundColor: 'rgba(255,255,255,0.02)',
-    borderWidth: 1,
-    borderColor: '#4D4455',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  cntBtnDim: {
-    backgroundColor: 'rgba(255,255,255,0.01)',
-    borderColor: 'rgba(255,255,255,0.04)',
+  cntBtnTextDisabled: {
+    fontFamily: 'Jersey10-Regular',
+    fontSize: 16,
+    color: 'rgba(255,255,255,0.2)',
+    marginTop: -2,
   },
   cntBtnText: {
     fontFamily: 'Jersey10-Regular',
     fontSize: 16,
-    color: '#FFE39B',
+    color: '#FFF3DA',
+    marginTop: -2,
   },
   cntText: {
     fontFamily: 'Jersey10-Regular',

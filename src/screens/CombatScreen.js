@@ -2176,17 +2176,28 @@ export default function CombatScreen() {
               <View style={styles.actionAreaContainer}>
                 {/* Row 1: Attack and 2 Skills, expanding to fill horizontal space */}
                 <View style={styles.actionRowSingle}>
-                  <TouchableOpacity
-                    style={[styles.actionBtn, styles.actionBtnAttack]}
-                    onPress={handleAttack}
-                    activeOpacity={0.75}
-                  >
-                    <View style={styles.actionBtnSprite}>
-                      <ItemSprite spritesheet="icons-1" frameIndex={10} displaySize={28} />
-                    </View>
-                    <Text style={[styles.actionBtnTitle, { color: '#5CC489' }]}>ATTACK</Text>
-                    <Text style={styles.actionBtnSub}>Basic</Text>
-                  </TouchableOpacity>
+                  <View style={styles.actionBtnWrapper}>
+                    <View style={[styles.actionBtnShadow, { backgroundColor: '#0D2118' }]} />
+                    <TouchableOpacity
+                      style={[styles.actionBtnOuter, { borderColor: '#84735B', backgroundColor: '#0D2118' }]}
+                      onPress={handleAttack}
+                      activeOpacity={0.75}
+                    >
+                      <View style={[styles.actionBtnInner, {
+                        backgroundColor: '#1B4030',
+                        borderTopColor: '#4F856C',
+                        borderLeftColor: '#4F856C',
+                        borderRightColor: '#4F856C',
+                        borderBottomColor: '#0D2118',
+                      }]}>
+                        <View style={styles.actionBtnSprite}>
+                          <ItemSprite spritesheet="icons-1" frameIndex={10} displaySize={26} />
+                        </View>
+                        <Text style={[styles.actionBtnTitle, { color: '#FFF3DA', fontSize: 10.5 }]}>ATTACK</Text>
+                        <Text style={[styles.actionBtnSub, { fontSize: 8.5, color: '#FFF3DA', opacity: 0.85 }]}>Basic</Text>
+                      </View>
+                    </TouchableOpacity>
+                  </View>
 
                   {renderSkillButton(0)}
                   {renderSkillButton(1)}
@@ -2195,41 +2206,79 @@ export default function CombatScreen() {
 
                 {/* Row 2: Flee and Items buttons, side-by-side */}
                 <View style={styles.actionRowSub}>
-                  <TouchableOpacity
-                    style={[
-                      styles.actionBtnSubRow,
-                      state.currentRun.combatFleeUsed ? styles.actionBtnEmpty : styles.actionBtnFlee,
-                      state.currentRun.combatFleeUsed && { opacity: 0.5 }
-                    ]}
-                    onPress={() => !state.currentRun.combatFleeUsed && setShowFleeConfirmModal(true)}
-                    activeOpacity={0.75}
-                    disabled={state.currentRun.combatFleeUsed}
-                  >
-                    <View style={styles.subBtnContent}>
-                      <View style={[styles.subBtnSprite, state.currentRun.combatFleeUsed && { opacity: 0.4 }]}>
-                        <ItemSprite spritesheet="icons-map" frameIndex={127} displaySize={18} />
+                  {state.currentRun.combatFleeUsed ? (
+                    <View style={[styles.actionBtnEmptyWrapper, { height: 35 }]}>
+                      <View style={[styles.actionBtn, styles.actionBtnEmpty, { flex: 1, opacity: 0.5 }]}>
+                        <View style={styles.subBtnContent}>
+                          <View style={[styles.subBtnSprite, { opacity: 0.4 }]}>
+                            <ItemSprite spritesheet="icons-map" frameIndex={127} displaySize={18} />
+                          </View>
+                          <Text style={[styles.subBtnTitle, { color: '#5A5A5A' }]}>FLED (USED)</Text>
+                        </View>
                       </View>
-                      <Text style={[styles.subBtnTitle, { color: state.currentRun.combatFleeUsed ? '#5A5A5A' : '#DD7A86' }]}>
-                        {state.currentRun.combatFleeUsed ? 'FLED (USED)' : 'FLEE'}
-                      </Text>
                     </View>
-                  </TouchableOpacity>
+                  ) : (
+                    <View style={styles.actionBtnWrapper}>
+                      <View style={[styles.actionBtnShadow, { backgroundColor: '#3A1E1E' }]} />
+                      <TouchableOpacity
+                        style={[styles.actionBtnOuter, { borderColor: '#84735B', backgroundColor: '#3A1E1E' }]}
+                        onPress={() => setShowFleeConfirmModal(true)}
+                        activeOpacity={0.75}
+                      >
+                        <View style={[styles.actionBtnInner, {
+                          backgroundColor: '#7A3F3F',
+                          borderTopColor: '#A85A5A',
+                          borderLeftColor: '#A85A5A',
+                          borderRightColor: '#A85A5A',
+                          borderBottomColor: '#3A1E1E',
+                        }]}>
+                          <View style={styles.subBtnContent}>
+                            <View style={styles.subBtnSprite}>
+                              <ItemSprite spritesheet="icons-map" frameIndex={127} displaySize={18} />
+                            </View>
+                            <Text style={[styles.subBtnTitle, { color: '#FFF3DA' }]}>FLEE</Text>
+                          </View>
+                        </View>
+                      </TouchableOpacity>
+                    </View>
+                  )}
 
-                  <TouchableOpacity
-                    style={[styles.actionBtnSubRow, totalConsumables > 0 ? styles.actionBtnItem : styles.actionBtnEmpty]}
-                    onPress={() => totalConsumables > 0 && setShowItemModal(true)}
-                    activeOpacity={0.75}
-                    disabled={totalConsumables === 0}
-                  >
-                    <View style={styles.subBtnContent}>
-                      <View style={[styles.subBtnSprite, totalConsumables === 0 && { opacity: 0.4 }]}>
-                        <ItemSprite spritesheet="icons-1" frameIndex={26} displaySize={18} />
+                  {totalConsumables === 0 ? (
+                    <View style={[styles.actionBtnEmptyWrapper, { height: 35 }]}>
+                      <View style={[styles.actionBtn, styles.actionBtnEmpty, { flex: 1, opacity: 0.5 }]}>
+                        <View style={styles.subBtnContent}>
+                          <View style={[styles.subBtnSprite, { opacity: 0.4 }]}>
+                            <ItemSprite spritesheet="icons-1" frameIndex={26} displaySize={18} />
+                          </View>
+                          <Text style={[styles.subBtnTitle, { color: '#5A5A5A' }]}>ITEMS (0)</Text>
+                        </View>
                       </View>
-                      <Text style={[styles.subBtnTitle, { color: totalConsumables > 0 ? '#F5CF4A' : '#5A5A5A' }]}>
-                        ITEMS ({totalConsumables})
-                      </Text>
                     </View>
-                  </TouchableOpacity>
+                  ) : (
+                    <View style={styles.actionBtnWrapper}>
+                      <View style={[styles.actionBtnShadow, { backgroundColor: '#543E12' }]} />
+                      <TouchableOpacity
+                        style={[styles.actionBtnOuter, { borderColor: '#84735B', backgroundColor: '#543E12' }]}
+                        onPress={() => setShowItemModal(true)}
+                        activeOpacity={0.75}
+                      >
+                        <View style={[styles.actionBtnInner, {
+                          backgroundColor: '#9E782F',
+                          borderTopColor: '#D6B570',
+                          borderLeftColor: '#D6B570',
+                          borderRightColor: '#D6B570',
+                          borderBottomColor: '#543E12',
+                        }]}>
+                          <View style={styles.subBtnContent}>
+                            <View style={styles.subBtnSprite}>
+                              <ItemSprite spritesheet="icons-1" frameIndex={26} displaySize={18} />
+                            </View>
+                            <Text style={[styles.subBtnTitle, { color: '#FFF3DA' }]}>ITEMS ({totalConsumables})</Text>
+                          </View>
+                        </View>
+                      </TouchableOpacity>
+                    </View>
+                  )}
                 </View>
               </View>
             )}
@@ -2963,22 +3012,6 @@ export default function CombatScreen() {
     const hasSkill = !!skillDef;
     const isDisabled = !hasSkill || isOnCooldown || isPassive;
 
-    const elColor = state.hero.element === 'fire' ? '#FF6B35'
-      : state.hero.element === 'water' ? '#3B9EFF'
-        : state.hero.element === 'earth' ? '#639922'
-          : state.hero.element === 'wind' ? '#5CC4B8'
-            : '#A98EE0';
-
-    const btnStyle = !hasSkill ? styles.actionBtnEmpty
-      : isPassive ? styles.actionBtnSkill
-        : isOnCooldown ? styles.actionBtnSkillCooldown
-          : styles.actionBtnSkill;
-
-    const titleColor = !hasSkill ? '#5A5A5A'
-      : isPassive ? `${elColor}99`
-        : isOnCooldown ? '#9C7D44'
-          : elColor;
-
     const skillFrame = skillId != null ? SKILL_SPRITE_FRAMES[skillId] : undefined;
     const icon = skillDef?.icon || (hasSkill ? '✨' : '—');
 
@@ -2990,51 +3023,87 @@ export default function CombatScreen() {
           ? `${cd} turn${cd !== 1 ? 's' : ''}`
           : 'Ready';
 
-    return (
-      <TouchableOpacity
-        key={slotIndex}
-        style={[
-          styles.actionBtn, btnStyle,
-          isDisabled && !isPassive && { opacity: isOnCooldown ? 0.65 : 0.38 },
-          isPassive && { opacity: 0.7 },
-        ]}
-        onPress={() => !isDisabled && handleSkill(slotIndex)}
-        activeOpacity={0.75}
-        disabled={isDisabled}
-      >
-        {hasSkill && (
-          <TouchableOpacity
-            style={styles.infoTag}
-            onPress={() => setInfoSkillId(skillId)}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-            activeOpacity={0.6}
-          >
-            <Text style={styles.infoTagText}>?</Text>
-          </TouchableOpacity>
-        )}
-        {hasSkill ? (
-          skillFrame != null ? (
-            <View style={[styles.actionBtnSprite, isDisabled && !isPassive && { opacity: 0.85 }]}>
-              <ItemSprite spritesheet="skill-icons-1" frameIndex={skillFrame} displaySize={28} />
+    if (!hasSkill) {
+      return (
+        <View key={slotIndex} style={styles.actionBtnEmptyWrapper}>
+          <View style={[styles.actionBtn, styles.actionBtnEmpty, { flex: 1 }]}>
+            <View style={[styles.actionBtnSprite, { opacity: 0.22 }]}>
+              <ItemSprite spritesheet="icons-map" frameIndex={76} displaySize={24} />
             </View>
-          ) : (
-            <Text style={styles.actionBtnIcon}>{icon}</Text>
-          )
-        ) : (
-          <View style={[styles.actionBtnSprite, { opacity: 0.22 }]}>
-            <ItemSprite spritesheet="icons-map" frameIndex={76} displaySize={24} />
+            <Text style={[styles.actionBtnTitle, { color: '#5A5A5A' }]}>{`SKILL ${slotIndex + 1}`}</Text>
+            <Text style={styles.actionBtnSub}>{subText}</Text>
           </View>
-        )}
-        <Text
-          style={[styles.actionBtnTitle, { color: titleColor }]}
-          numberOfLines={1}
-          adjustsFontSizeToFit
-          minimumScaleFactor={0.7}
+        </View>
+      );
+    }
+
+    // Standard active skill purple color theme
+    let shadowColor = '#1A1230';
+    let outerColor = '#1A1230';
+    let innerColor = '#382860';
+    let innerTopColor = '#56408F';
+    let innerBottomColor = '#1D123D';
+
+    if (isOnCooldown) {
+      shadowColor = '#1A1408';
+      outerColor = '#1A1408';
+      innerColor = '#3A2C14';
+      innerTopColor = '#564426';
+      innerBottomColor = '#1F1404';
+    }
+
+    const titleColor = '#FFF3DA';
+
+    return (
+      <View key={slotIndex} style={styles.actionBtnWrapper}>
+        <View style={[styles.actionBtnShadow, { backgroundColor: shadowColor }]} />
+        <TouchableOpacity
+          style={[
+            styles.actionBtnOuter,
+            { borderColor: '#84735B', backgroundColor: outerColor },
+            isDisabled && !isPassive && { opacity: isOnCooldown ? 0.65 : 0.38 },
+            isPassive && { opacity: 0.7 },
+          ]}
+          onPress={() => !isDisabled && handleSkill(slotIndex)}
+          activeOpacity={0.75}
+          disabled={isDisabled}
         >
-          {hasSkill ? skillDef.name.toUpperCase() : `SKILL ${slotIndex + 1}`}
-        </Text>
-        <Text style={styles.actionBtnSub}>{subText}</Text>
-      </TouchableOpacity>
+          <View style={[styles.actionBtnInner, {
+            backgroundColor: innerColor,
+            borderTopColor: innerTopColor,
+            borderLeftColor: innerTopColor,
+            borderRightColor: innerTopColor,
+            borderBottomColor: innerBottomColor,
+          }]}>
+            {hasSkill && (
+              <TouchableOpacity
+                style={styles.infoTag}
+                onPress={() => setInfoSkillId(skillId)}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                activeOpacity={0.6}
+              >
+                <Text style={styles.infoTagText}>?</Text>
+              </TouchableOpacity>
+            )}
+            {skillFrame != null ? (
+              <View style={[styles.actionBtnSprite, isDisabled && !isPassive && { opacity: 0.85 }]}>
+                <ItemSprite spritesheet="skill-icons-1" frameIndex={skillFrame} displaySize={26} />
+              </View>
+            ) : (
+              <Text style={styles.actionBtnIcon}>{icon}</Text>
+            )}
+            <Text
+              style={[styles.actionBtnTitle, { color: titleColor, fontSize: 10.5 }]}
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              minimumScaleFactor={0.7}
+            >
+              {skillDef.name.toUpperCase()}
+            </Text>
+            <Text style={[styles.actionBtnSub, { fontSize: 8.5, color: '#FFF3DA', opacity: 0.85 }]}>{subText}</Text>
+          </View>
+        </TouchableOpacity>
+      </View>
     );
   }
 
@@ -3043,47 +3112,72 @@ export default function CombatScreen() {
     const count = activePassives.length;
     const hasPassives = count > 0;
 
-    return (
-      <TouchableOpacity
-        style={[
-          styles.actionBtn,
-          hasPassives ? styles.actionBtnPassive : styles.actionBtnEmpty,
-          !hasPassives && { opacity: 0.45 },
-        ]}
-        onPress={() => hasPassives && setShowPassivesModal(true)}
-        activeOpacity={0.75}
-        disabled={!hasPassives}
-      >
-        <View style={styles.passiveIconRow}>
-          {hasPassives ? (
-            activePassives.slice(0, 2).map((id) => {
-              const frame = SKILL_SPRITE_FRAMES[id];
-              return (
-                <View key={id} style={styles.passiveIconSmall}>
-                  {frame != null ? (
-                    <ItemSprite spritesheet="skill-icons-1" frameIndex={frame} displaySize={22} />
-                  ) : (
-                    <Text style={{ fontSize: 18 }}>{SKILLS[id]?.icon || '✨'}</Text>
-                  )}
-                </View>
-              );
-            })
-          ) : (
+    if (!hasPassives) {
+      return (
+        <View style={styles.actionBtnEmptyWrapper}>
+          <View style={[styles.actionBtn, styles.actionBtnEmpty, { flex: 1 }]}>
             <View style={[styles.actionBtnSprite, { opacity: 0.3 }]}>
               <ItemSprite spritesheet="icons-1" frameIndex={4} displaySize={24} />
             </View>
-          )}
+            <Text style={[styles.actionBtnTitle, { color: '#5A5A5A' }]}>PASSIVES</Text>
+            <Text style={styles.actionBtnSub}>none</Text>
+          </View>
         </View>
-        <Text
-          style={[styles.actionBtnTitle, { color: hasPassives ? heroElementColor : '#5A5A5A' }]}
-          numberOfLines={1}
-          adjustsFontSizeToFit
-          minimumScaleFactor={0.7}
+      );
+    }
+
+    // Active Passives 3D Button Style
+    const shadowColor = '#0D2522';
+    const outerColor = '#0D2522';
+    const innerColor = '#163F38';
+    const innerTopColor = '#307569';
+    const innerBottomColor = '#0D2522';
+
+    return (
+      <View style={styles.actionBtnWrapper}>
+        <View style={[styles.actionBtnShadow, { backgroundColor: shadowColor }]} />
+        <TouchableOpacity
+          style={[
+            styles.actionBtnOuter,
+            { borderColor: '#84735B', backgroundColor: outerColor }
+          ]}
+          onPress={() => setShowPassivesModal(true)}
+          activeOpacity={0.75}
+          disabled={!hasPassives}
         >
-          PASSIVES
-        </Text>
-        <Text style={styles.actionBtnSub}>{hasPassives ? `${count} active` : 'none'}</Text>
-      </TouchableOpacity>
+          <View style={[styles.actionBtnInner, {
+            backgroundColor: innerColor,
+            borderTopColor: innerTopColor,
+            borderLeftColor: innerTopColor,
+            borderRightColor: innerTopColor,
+            borderBottomColor: innerBottomColor,
+          }]}>
+            <View style={styles.passiveIconRow}>
+              {activePassives.slice(0, 2).map((id) => {
+                const frame = SKILL_SPRITE_FRAMES[id];
+                return (
+                  <View key={id} style={styles.passiveIconSmall}>
+                    {frame != null ? (
+                      <ItemSprite spritesheet="skill-icons-1" frameIndex={frame} displaySize={22} />
+                    ) : (
+                      <Text style={{ fontSize: 18 }}>{SKILLS[id]?.icon || '✨'}</Text>
+                    )}
+                  </View>
+                );
+              })}
+            </View>
+            <Text
+              style={[styles.actionBtnTitle, { color: '#FFF3DA', fontSize: 10.5 }]}
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              minimumScaleFactor={0.7}
+            >
+              PASSIVES
+            </Text>
+            <Text style={[styles.actionBtnSub, { fontSize: 8.5 }]}>{`${count} active`}</Text>
+          </View>
+        </TouchableOpacity>
+      </View>
     );
   }
 
@@ -4275,57 +4369,52 @@ const styles = StyleSheet.create({
     zIndex: 2,
   },
   cozyButton: {
-    backgroundColor: '#7A4A24',
-    borderColor: '#3A2210',
-    borderWidth: 2,
+    alignSelf: 'stretch',
+    backgroundColor: '#0D2118',
+    borderColor: '#84735B',
+    borderWidth: 2.5,
     borderRadius: 8,
     padding: 2,
-    width: '100%',
     marginTop: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 2,
-    elevation: 3,
   },
   cozyButtonInner: {
-    borderWidth: 1.5,
-    borderColor: '#D4A754',
-    borderRadius: 6,
-    backgroundColor: '#7A4A24',
+    backgroundColor: '#1B4030',
+    borderRadius: 5,
     paddingVertical: 10,
     alignItems: 'center',
+    justifyContent: 'center',
+    borderTopWidth: 1.5,
+    borderTopColor: '#4F856C',
+    borderBottomWidth: 2.5,
+    borderBottomColor: '#0D2118',
   },
   cozyButtonText: {
-    fontFamily: 'PressStart2P-Regular',
-    fontSize: 10,
+    fontFamily: 'Silkscreen-Regular',
+    fontSize: 10.5,
     color: '#FFF3DA',
-    textShadowColor: '#000',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 1,
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
     textAlign: 'center',
   },
   cozyButtonDanger: {
-    backgroundColor: '#9E2A2B',
-    borderColor: '#541012',
-    borderWidth: 2,
+    alignSelf: 'stretch',
+    backgroundColor: '#590D0E',
+    borderColor: '#84735B',
+    borderWidth: 2.5,
     borderRadius: 8,
     padding: 2,
-    width: '100%',
     marginTop: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 2,
-    elevation: 3,
   },
   cozyButtonDangerInner: {
-    borderWidth: 1.5,
-    borderColor: '#E65D5E',
-    borderRadius: 6,
-    backgroundColor: '#9E2A2B',
+    backgroundColor: '#A61C1C',
+    borderRadius: 5,
     paddingVertical: 10,
     alignItems: 'center',
+    justifyContent: 'center',
+    borderTopWidth: 1.5,
+    borderTopColor: '#D8483F',
+    borderBottomWidth: 2.5,
+    borderBottomColor: '#590D0E',
   },
   cozyTopWrap: {
     position: 'absolute',
@@ -4434,6 +4523,40 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
     marginBottom: 4,
+  },
+  actionBtnWrapper: {
+    flex: 1,
+    position: 'relative',
+    height: '100%',
+  },
+  actionBtnShadow: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 3,
+    bottom: -3,
+    borderRadius: 8,
+    zIndex: 1,
+  },
+  actionBtnOuter: {
+    flex: 1,
+    borderRadius: 8,
+    borderWidth: 2,
+    zIndex: 2,
+  },
+  actionBtnInner: {
+    flex: 1,
+    margin: 1.2,
+    borderRadius: 5,
+    borderWidth: 1.2,
+    borderBottomWidth: 2.5,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 4,
+  },
+  actionBtnEmptyWrapper: {
+    flex: 1,
+    height: 71,
   },
   // ── Dying enemy visual effects ────────────────────────────────────────────
   dyingOverlay: {
