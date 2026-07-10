@@ -175,7 +175,7 @@ export function checkLevelUp(hero) {
     currentSkillPoints += 1; // +1 Skill Point per level
     levelsGained += 1;
 
-    messages.push(`🎉 Level up! You are now level ${currentLevel}! Gained +3 Stat Points and +1 Skill Point.`);
+    messages.push(`Level up! You are now level ${currentLevel}! Gained +3 Stat Points and +1 Skill Point.`);
   }
 
   const strength = hero.strength || 10;

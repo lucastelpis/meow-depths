@@ -2523,7 +2523,7 @@ export default function CombatScreen() {
                   <View style={styles.levelUpSection}>
                     {levelUpMessages.map((msg, i) => (
                       <View key={`lu_${i}`} style={styles.levelUpRow}>
-                        <Text style={styles.levelUpStar}>✦</Text>
+                        <ItemSprite spritesheet="icons-map" frameIndex={29} displaySize={18} />
                         <Text style={styles.levelUpText}>{msg}</Text>
                       </View>
                     ))}
@@ -4503,8 +4503,9 @@ const styles = StyleSheet.create({
   levelUpRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
+    gap: 12,
+    paddingHorizontal: 8,
+    width: '100%',
     marginBottom: 4,
   },
   levelUpStar: {
@@ -4516,7 +4517,8 @@ const styles = StyleSheet.create({
     ...theme.FONTS.body,
     color: '#4A2E14',
     fontWeight: 'bold',
-    textAlign: 'center',
+    textAlign: 'left',
+    flex: 1,
   },
   lostLootRow: {
     flexDirection: 'row',

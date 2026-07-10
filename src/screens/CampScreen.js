@@ -460,7 +460,7 @@ export default function CampScreen({ navigation }) {
                       onPress={() => navigation.navigate('Profile', { initialTab: 'stats' })}
                       activeOpacity={0.7}
                     >
-                      <ItemSprite spritesheet="icons-map" frameIndex={109} displaySize={18} />
+                      <ItemSprite spritesheet="icons-map" frameIndex={29} displaySize={18} />
                     </TouchableOpacity>
 
                     <View style={styles.bannerTagBadge}>

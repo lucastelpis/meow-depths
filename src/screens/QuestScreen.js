@@ -33,6 +33,12 @@ export default function QuestScreen({ navigation }) {
   const [campaignSubTab, setCampaignSubTab] = useState('active');
   const [nowTs, setNowTs] = useState(Date.now());
   const [celebrationQuest, setCelebrationQuest] = useState(null);
+  const [expandedQuestId, setExpandedQuestId] = useState(null);
+
+  // Reset expanded quest state when tab changes
+  useEffect(() => {
+    setExpandedQuestId(null);
+  }, [tab, campaignSubTab]);
 
   // Tick every second to keep the reset countdown live
   useEffect(() => {
@@ -176,62 +182,93 @@ export default function QuestScreen({ navigation }) {
   const renderQuestRow = (quest) => {
     const isCompleted = quest.completed;
     const isClaimed = quest.claimed;
+    const isExpanded = expandedQuestId === quest.id;
 
     return (
       <View key={quest.id} style={styles.questRow}>
-        <View style={styles.questInfo}>
-          <Text style={styles.questTitle}>{quest.title}</Text>
-          <Text style={styles.questDesc}>{quest.desc}</Text>
-          
-          {/* Visual progress bar */}
-          <View style={styles.progressBarBg}>
-            <View 
-              style={[
-                styles.progressBarFill, 
-                { width: `${Math.min(100, (quest.progress / quest.target) * 100)}%` }
-              ]} 
-            />
-          </View>
-          <Text style={styles.progressText}>
-            Progress: {quest.progress} / {quest.target}
-          </Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <TouchableOpacity
+            activeOpacity={0.7}
+            onPress={() => setExpandedQuestId(isExpanded ? null : quest.id)}
+            style={{ flex: 1 }}
+          >
+            <View style={styles.questTitleRow}>
+              <Text style={styles.questTitle}>{quest.title}</Text>
+              {!isCompleted || isClaimed || isExpanded ? (
+                <Text style={styles.chevronText}>{isExpanded ? '▲' : '▼'}</Text>
+              ) : null}
+            </View>
+            
+            {/* Visual progress bar */}
+            <View style={styles.progressBarBg}>
+              <View 
+                style={[
+                  styles.progressBarFill, 
+                  { width: `${Math.min(100, (quest.progress / quest.target) * 100)}%` }
+                ]} 
+              />
+            </View>
+            <Text style={styles.progressText}>
+              Progress: {quest.progress} / {quest.target}
+            </Text>
+          </TouchableOpacity>
+
+          {isCompleted && !isClaimed && !isExpanded && (
+            <View style={styles.headerClaimBtnWrapper}>
+              <TouchableOpacity
+                style={styles.headerClaimBtnOuter}
+                activeOpacity={0.8}
+                onPress={() => setCelebrationQuest(quest)}
+              >
+                <View style={styles.headerClaimBtnInner}>
+                  <Text style={styles.headerClaimBtnText}>CLAIM</Text>
+                </View>
+              </TouchableOpacity>
+            </View>
+          )}
         </View>
 
-        {/* Rewards Preview */}
-        <View style={styles.questRewardsRow}>
-          <Text style={styles.rewardsLabel}>Rewards:</Text>
-          <View style={styles.rewardsList}>
-            {quest.rewards.gold > 0 && renderRewardChip('gold', 'gold', quest.rewards.gold)}
-            {quest.rewards.consumables && Object.entries(quest.rewards.consumables).map(([id, qty]) => 
-              renderRewardChip('consumables', id, qty)
-            )}
-            {quest.rewards.materials && Object.entries(quest.rewards.materials).map(([id, qty]) => 
-              renderRewardChip('materials', id, qty)
-            )}
-          </View>
-        </View>
-
-        {/* Claim / Status Button */}
-        {isClaimed ? (
-          <View style={styles.claimBtn}>
-            <Text style={styles.claimBtnText}>CLAIMED</Text>
-          </View>
-        ) : isCompleted ? (
-          <View style={styles.claimBtnWrapper}>
-            <View style={styles.claimBtnShadow} />
-            <TouchableOpacity
-              style={styles.claimBtnOuter}
-              activeOpacity={0.8}
-              onPress={() => setCelebrationQuest(quest)}
-            >
-              <View style={styles.claimBtnInner}>
-                <Text style={styles.claimBtnTextActive}>CLAIM REWARD</Text>
+        {isExpanded && (
+          <View style={styles.expandedContent}>
+            <Text style={styles.questDesc}>{quest.desc}</Text>
+            
+            {/* Rewards Preview */}
+            <View style={styles.questRewardsRow}>
+              <Text style={styles.rewardsLabel}>Rewards:</Text>
+              <View style={styles.rewardsList}>
+                {quest.rewards.gold > 0 && renderRewardChip('gold', 'gold', quest.rewards.gold)}
+                {quest.rewards.consumables && Object.entries(quest.rewards.consumables).map(([id, qty]) => 
+                  renderRewardChip('consumables', id, qty)
+                )}
+                {quest.rewards.materials && Object.entries(quest.rewards.materials).map(([id, qty]) => 
+                  renderRewardChip('materials', id, qty)
+                )}
               </View>
-            </TouchableOpacity>
-          </View>
-        ) : (
-          <View style={styles.claimBtn}>
-            <Text style={styles.claimBtnText}>IN PROGRESS</Text>
+            </View>
+
+            {/* Claim / Status Button */}
+            {isClaimed ? (
+              <View style={styles.claimBtn}>
+                <Text style={styles.claimBtnText}>CLAIMED</Text>
+              </View>
+            ) : isCompleted ? (
+              <View style={styles.claimBtnWrapper}>
+                <View style={styles.claimBtnShadow} />
+                <TouchableOpacity
+                  style={styles.claimBtnOuter}
+                  activeOpacity={0.8}
+                  onPress={() => setCelebrationQuest(quest)}
+                >
+                  <View style={styles.claimBtnInner}>
+                    <Text style={styles.claimBtnTextActive}>CLAIM REWARD</Text>
+                  </View>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <View style={styles.claimBtn}>
+                <Text style={styles.claimBtnText}>IN PROGRESS</Text>
+              </View>
+            )}
           </View>
         )}
       </View>
@@ -611,20 +648,36 @@ const styles = StyleSheet.create({
     padding: 14,
     marginBottom: 12,
   },
-  questInfo: {
-    marginBottom: 8,
+  questTitleRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  chevronText: {
+    fontFamily: 'Silkscreen-Regular',
+    fontSize: 10,
+    color: theme.COLORS.warmGlow,
+    opacity: 0.8,
+  },
+  expandedContent: {
+    marginTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(232, 167, 58, 0.15)',
+    paddingTop: 10,
   },
   questTitle: {
     fontFamily: 'Silkscreen-Regular',
     fontSize: 12,
     color: theme.COLORS.warmGlow,
     fontWeight: 'bold',
+    flex: 1,
+    marginRight: 8,
   },
   questDesc: {
     fontFamily: 'Jersey10-Regular',
     fontSize: 14,
     color: 'rgba(207,224,238,0.7)',
-    marginTop: 4,
   },
   progressBarBg: {
     height: 10,
@@ -937,5 +990,33 @@ const styles = StyleSheet.create({
     textShadowColor: '#4A2A10',
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 1,
+  },
+  headerClaimBtnWrapper: {
+    width: 66,
+    height: 28,
+    borderRadius: 6,
+    borderWidth: 1.5,
+    borderColor: '#84735B',
+    backgroundColor: '#4F3C1E',
+    padding: 2,
+    marginLeft: 12,
+  },
+  headerClaimBtnOuter: {
+    flex: 1,
+  },
+  headerClaimBtnInner: {
+    flex: 1,
+    borderRadius: 3,
+    borderWidth: 1,
+    borderColor: '#4F856C',
+    backgroundColor: '#1B4030',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  headerClaimBtnText: {
+    fontFamily: 'Silkscreen-Regular',
+    fontSize: 8,
+    color: '#FFF3DA',
+    textAlign: 'center',
   },
 });

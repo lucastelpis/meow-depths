@@ -57,14 +57,14 @@ export function calculateDrops(enemy, zoneId, floorNumber) {
   let xp, gold;
   if (enemy.isBoss) {
     xp = enemy.xp || 200;
-    const goldMin = enemy.goldMin || 80;
-    const goldMax = enemy.goldMax || 120;
+    const goldMin = enemy.goldMin || 100;
+    const goldMax = enemy.goldMax || 200;
     gold = randomInRange(goldMin, goldMax);
   } else {
     const starLevel = enemy.stars || 1;
     const mult = STAR_MULTIPLIERS[starLevel] || 1.0;
-    xp = Math.floor((enemy.baseXp || 20) * mult);
-    gold = Math.floor((enemy.baseGold || 7) * mult);
+    xp = Math.floor((enemy.baseXp || 1) * mult);
+    gold = Math.floor((enemy.baseGold || 1) * mult);
   }
 
   return { materials, gold, xp };

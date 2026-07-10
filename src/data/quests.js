@@ -128,7 +128,7 @@ export function generateDailyQuests(hero, progress, dateStr) {
   // Pick 2 random unique quests from the pool
   const selectedQuests = [];
   const tempPool = [...pool];
-  
+
   // Shuffle tempPool using our seeded random
   for (let i = tempPool.length - 1; i > 0; i--) {
     const j = Math.floor(rand() * (i + 1));
@@ -161,11 +161,13 @@ export function generateDailyQuests(hero, progress, dateStr) {
 // Campaign Quests Configurations
 // ─────────────────────────────────────────────────────────────────────────────
 export const CAMPAIGN_QUEST_TEMPLATES = [
-  // 1. Clear Soggy Ruins Floor 1
+  // ==========================================
+  // Dungeon 1: Soggy Ruins (Floors 1-10)
+  // ==========================================
   {
     id: 'camp_clear_zone1_f1',
     title: 'Ruins Initiate',
-    desc: 'Clear Floor 1 of Soggy Ruins (Zone 1).',
+    desc: 'Clear Floor 1 of Soggy Ruins.',
     type: 'progression_clear_floor',
     zoneId: 'zone1',
     floorNumber: 1,
@@ -173,14 +175,152 @@ export const CAMPAIGN_QUEST_TEMPLATES = [
     target: 1,
     completed: false,
     claimed: false,
-    rewards: { gold: 150, consumables: { Potion: 2 } },
+    rewards: { gold: 150, consumables: { potion: 2 } },
     tag: 'Story'
   },
-  // 2. Clear Twisted Garden Floor 1
+  {
+    id: 'camp_clear_zone1_f2',
+    title: 'Ruins Scout',
+    desc: 'Clear Floor 2 of Soggy Ruins.',
+    type: 'progression_clear_floor',
+    zoneId: 'zone1',
+    floorNumber: 2,
+    progress: 0,
+    target: 1,
+    completed: false,
+    claimed: false,
+    rewards: { gold: 200, consumables: { potion: 2 } },
+    tag: 'Story',
+    prerequisite: { type: 'quest_completed', questId: 'camp_clear_zone1_f1' }
+  },
+  {
+    id: 'camp_clear_zone1_f3',
+    title: 'Ruins Explorer',
+    desc: 'Clear Floor 3 of Soggy Ruins.',
+    type: 'progression_clear_floor',
+    zoneId: 'zone1',
+    floorNumber: 3,
+    progress: 0,
+    target: 1,
+    completed: false,
+    claimed: false,
+    rewards: { gold: 250, consumables: { potion: 2 } },
+    tag: 'Story',
+    prerequisite: { type: 'quest_completed', questId: 'camp_clear_zone1_f2' }
+  },
+  {
+    id: 'camp_clear_zone1_f4',
+    title: 'Ruins Excavator',
+    desc: 'Clear Floor 4 of Soggy Ruins.',
+    type: 'progression_clear_floor',
+    zoneId: 'zone1',
+    floorNumber: 4,
+    progress: 0,
+    target: 1,
+    completed: false,
+    claimed: false,
+    rewards: { gold: 300, consumables: { potion: 2 } },
+    tag: 'Story',
+    prerequisite: { type: 'quest_completed', questId: 'camp_clear_zone1_f3' }
+  },
+  {
+    id: 'camp_clear_zone1_f5',
+    title: 'Ruins Delver',
+    desc: 'Clear Floor 5 of Soggy Ruins.',
+    type: 'progression_clear_floor',
+    zoneId: 'zone1',
+    floorNumber: 5,
+    progress: 0,
+    target: 1,
+    completed: false,
+    claimed: false,
+    rewards: { gold: 350, consumables: { potion: 2 } },
+    tag: 'Story',
+    prerequisite: { type: 'quest_completed', questId: 'camp_clear_zone1_f4' }
+  },
+  {
+    id: 'camp_clear_zone1_f6',
+    title: 'Ruins Pathfinder',
+    desc: 'Clear Floor 6 of Soggy Ruins.',
+    type: 'progression_clear_floor',
+    zoneId: 'zone1',
+    floorNumber: 6,
+    progress: 0,
+    target: 1,
+    completed: false,
+    claimed: false,
+    rewards: { gold: 400, consumables: { potion: 2 } },
+    tag: 'Story',
+    prerequisite: { type: 'quest_completed', questId: 'camp_clear_zone1_f5' }
+  },
+  {
+    id: 'camp_clear_zone1_f7',
+    title: 'Ruins Veteran',
+    desc: 'Clear Floor 7 of Soggy Ruins.',
+    type: 'progression_clear_floor',
+    zoneId: 'zone1',
+    floorNumber: 7,
+    progress: 0,
+    target: 1,
+    completed: false,
+    claimed: false,
+    rewards: { gold: 450, consumables: { potion: 2 } },
+    tag: 'Story',
+    prerequisite: { type: 'quest_completed', questId: 'camp_clear_zone1_f6' }
+  },
+  {
+    id: 'camp_clear_zone1_f8',
+    title: 'Ruins Conqueror',
+    desc: 'Clear Floor 8 of Soggy Ruins.',
+    type: 'progression_clear_floor',
+    zoneId: 'zone1',
+    floorNumber: 8,
+    progress: 0,
+    target: 1,
+    completed: false,
+    claimed: false,
+    rewards: { gold: 500, consumables: { potion: 2 } },
+    tag: 'Story',
+    prerequisite: { type: 'quest_completed', questId: 'camp_clear_zone1_f7' }
+  },
+  {
+    id: 'camp_clear_zone1_f9',
+    title: 'Ruins Vanguard',
+    desc: 'Clear Floor 9 of Soggy Ruins.',
+    type: 'progression_clear_floor',
+    zoneId: 'zone1',
+    floorNumber: 9,
+    progress: 0,
+    target: 1,
+    completed: false,
+    claimed: false,
+    rewards: { gold: 550, consumables: { potion: 2 } },
+    tag: 'Story',
+    prerequisite: { type: 'quest_completed', questId: 'camp_clear_zone1_f8' }
+  },
+  {
+    id: 'camp_defeat_king_rat',
+    title: 'Bane of Sewer Rats',
+    desc: 'Defeat the Sewer King (King Rat) on Floor 10 of Soggy Ruins.',
+    type: 'defeat_boss',
+    bossId: 'king_rat',
+    zoneId: 'zone1',
+    progress: 0,
+    target: 1,
+    completed: false,
+    claimed: false,
+    rewards: { gold: 800, consumables: { mega_potion: 2 } },
+    tag: 'Story',
+    prerequisite: { type: 'quest_completed', questId: 'camp_clear_zone1_f9' }
+  },
+
+  // ==========================================
+  // Dungeon 2: Twisted Garden (Floors 1-10)
+  // ==========================================
   {
     id: 'camp_clear_zone2_f1',
     title: 'Garden Pathfinder',
-    desc: 'Clear Floor 1 of Twisted Garden (Zone 2).',
+    desc: 'Clear Floor 1 of Twisted Garden.',
     type: 'progression_clear_floor',
     zoneId: 'zone2',
     floorNumber: 1,
@@ -190,12 +330,301 @@ export const CAMPAIGN_QUEST_TEMPLATES = [
     claimed: false,
     rewards: { gold: 300, consumables: { potion: 3 } },
     tag: 'Story',
-    prerequisite: {
-      type: 'quest_completed',
-      questId: 'camp_defeat_king_rat'
-    }
+    prerequisite: { type: 'quest_completed', questId: 'camp_defeat_king_rat' }
   },
-  // 3. Equip 4 items of any tier (starter or crafted)
+  {
+    id: 'camp_clear_zone2_f2',
+    title: 'Garden Scout',
+    desc: 'Clear Floor 2 of Twisted Garden.',
+    type: 'progression_clear_floor',
+    zoneId: 'zone2',
+    floorNumber: 2,
+    progress: 0,
+    target: 1,
+    completed: false,
+    claimed: false,
+    rewards: { gold: 400, consumables: { potion: 3 } },
+    tag: 'Story',
+    prerequisite: { type: 'quest_completed', questId: 'camp_clear_zone2_f1' }
+  },
+  {
+    id: 'camp_clear_zone2_f3',
+    title: 'Garden Explorer',
+    desc: 'Clear Floor 3 of Twisted Garden.',
+    type: 'progression_clear_floor',
+    zoneId: 'zone2',
+    floorNumber: 3,
+    progress: 0,
+    target: 1,
+    completed: false,
+    claimed: false,
+    rewards: { gold: 500, consumables: { potion: 3 } },
+    tag: 'Story',
+    prerequisite: { type: 'quest_completed', questId: 'camp_clear_zone2_f2' }
+  },
+  {
+    id: 'camp_clear_zone2_f4',
+    title: 'Garden Weed-Cutter',
+    desc: 'Clear Floor 4 of Twisted Garden.',
+    type: 'progression_clear_floor',
+    zoneId: 'zone2',
+    floorNumber: 4,
+    progress: 0,
+    target: 1,
+    completed: false,
+    claimed: false,
+    rewards: { gold: 600, consumables: { potion: 3 } },
+    tag: 'Story',
+    prerequisite: { type: 'quest_completed', questId: 'camp_clear_zone2_f3' }
+  },
+  {
+    id: 'camp_clear_zone2_f5',
+    title: 'Garden Herbalist',
+    desc: 'Clear Floor 5 of Twisted Garden.',
+    type: 'progression_clear_floor',
+    zoneId: 'zone2',
+    floorNumber: 5,
+    progress: 0,
+    target: 1,
+    completed: false,
+    claimed: false,
+    rewards: { gold: 700, consumables: { potion: 3 } },
+    tag: 'Story',
+    prerequisite: { type: 'quest_completed', questId: 'camp_clear_zone2_f4' }
+  },
+  {
+    id: 'camp_clear_zone2_f6',
+    title: 'Garden Trailblazer',
+    desc: 'Clear Floor 6 of Twisted Garden.',
+    type: 'progression_clear_floor',
+    zoneId: 'zone2',
+    floorNumber: 6,
+    progress: 0,
+    target: 1,
+    completed: false,
+    claimed: false,
+    rewards: { gold: 800, consumables: { potion: 3 } },
+    tag: 'Story',
+    prerequisite: { type: 'quest_completed', questId: 'camp_clear_zone2_f5' }
+  },
+  {
+    id: 'camp_clear_zone2_f7',
+    title: 'Garden Botanist',
+    desc: 'Clear Floor 7 of Twisted Garden.',
+    type: 'progression_clear_floor',
+    zoneId: 'zone2',
+    floorNumber: 7,
+    progress: 0,
+    target: 1,
+    completed: false,
+    claimed: false,
+    rewards: { gold: 900, consumables: { potion: 3 } },
+    tag: 'Story',
+    prerequisite: { type: 'quest_completed', questId: 'camp_clear_zone2_f6' }
+  },
+  {
+    id: 'camp_clear_zone2_f8',
+    title: 'Garden Defoliator',
+    desc: 'Clear Floor 8 of Twisted Garden.',
+    type: 'progression_clear_floor',
+    zoneId: 'zone2',
+    floorNumber: 8,
+    progress: 0,
+    target: 1,
+    completed: false,
+    claimed: false,
+    rewards: { gold: 1000, consumables: { potion: 3 } },
+    tag: 'Story',
+    prerequisite: { type: 'quest_completed', questId: 'camp_clear_zone2_f7' }
+  },
+  {
+    id: 'camp_clear_zone2_f9',
+    title: 'Garden Sentinel',
+    desc: 'Clear Floor 9 of Twisted Garden.',
+    type: 'progression_clear_floor',
+    zoneId: 'zone2',
+    floorNumber: 9,
+    progress: 0,
+    target: 1,
+    completed: false,
+    claimed: false,
+    rewards: { gold: 1100, consumables: { potion: 3 } },
+    tag: 'Story',
+    prerequisite: { type: 'quest_completed', questId: 'camp_clear_zone2_f8' }
+  },
+  {
+    id: 'camp_defeat_granite_crawler',
+    title: 'Crawler Crusher',
+    desc: 'Defeat the Granite Crawler on Floor 10 of Twisted Garden.',
+    type: 'defeat_boss',
+    bossId: 'granite_crawler',
+    zoneId: 'zone2',
+    progress: 0,
+    target: 1,
+    completed: false,
+    claimed: false,
+    rewards: { gold: 1600, consumables: { mega_potion: 4 } },
+    tag: 'Story',
+    prerequisite: { type: 'quest_completed', questId: 'camp_clear_zone2_f9' }
+  },
+
+  // ==========================================
+  // Dungeon 3: Sunken Docks (Floors 1-10)
+  // ==========================================
+  {
+    id: 'camp_clear_zone3_f1',
+    title: 'Docks Explorer',
+    desc: 'Clear Floor 1 of Sunken Docks.',
+    type: 'progression_clear_floor',
+    zoneId: 'zone3',
+    floorNumber: 1,
+    progress: 0,
+    target: 1,
+    completed: false,
+    claimed: false,
+    rewards: { gold: 450, consumables: { potion: 4 } },
+    tag: 'Story',
+    prerequisite: { type: 'quest_completed', questId: 'camp_defeat_granite_crawler' }
+  },
+  {
+    id: 'camp_clear_zone3_f2',
+    title: 'Docks Wharf-Scout',
+    desc: 'Clear Floor 2 of Sunken Docks.',
+    type: 'progression_clear_floor',
+    zoneId: 'zone3',
+    floorNumber: 2,
+    progress: 0,
+    target: 1,
+    completed: false,
+    claimed: false,
+    rewards: { gold: 600, consumables: { potion: 4 } },
+    tag: 'Story',
+    prerequisite: { type: 'quest_completed', questId: 'camp_clear_zone3_f1' }
+  },
+  {
+    id: 'camp_clear_zone3_f3',
+    title: 'Docks Beachcomber',
+    desc: 'Clear Floor 3 of Sunken Docks.',
+    type: 'progression_clear_floor',
+    zoneId: 'zone3',
+    floorNumber: 3,
+    progress: 0,
+    target: 1,
+    completed: false,
+    claimed: false,
+    rewards: { gold: 750, consumables: { potion: 4 } },
+    tag: 'Story',
+    prerequisite: { type: 'quest_completed', questId: 'camp_clear_zone3_f2' }
+  },
+  {
+    id: 'camp_clear_zone3_f4',
+    title: 'Docks Mariner',
+    desc: 'Clear Floor 4 of Sunken Docks.',
+    type: 'progression_clear_floor',
+    zoneId: 'zone3',
+    floorNumber: 4,
+    progress: 0,
+    target: 1,
+    completed: false,
+    claimed: false,
+    rewards: { gold: 900, consumables: { potion: 4 } },
+    tag: 'Story',
+    prerequisite: { type: 'quest_completed', questId: 'camp_clear_zone3_f3' }
+  },
+  {
+    id: 'camp_clear_zone3_f5',
+    title: 'Docks Diver',
+    desc: 'Clear Floor 5 of Sunken Docks.',
+    type: 'progression_clear_floor',
+    zoneId: 'zone3',
+    floorNumber: 5,
+    progress: 0,
+    target: 1,
+    completed: false,
+    claimed: false,
+    rewards: { gold: 1050, consumables: { potion: 4 } },
+    tag: 'Story',
+    prerequisite: { type: 'quest_completed', questId: 'camp_clear_zone3_f4' }
+  },
+  {
+    id: 'camp_clear_zone3_f6',
+    title: 'Docks Navigator',
+    desc: 'Clear Floor 6 of Sunken Docks.',
+    type: 'progression_clear_floor',
+    zoneId: 'zone3',
+    floorNumber: 6,
+    progress: 0,
+    target: 1,
+    completed: false,
+    claimed: false,
+    rewards: { gold: 1200, consumables: { potion: 4 } },
+    tag: 'Story',
+    prerequisite: { type: 'quest_completed', questId: 'camp_clear_zone3_f5' }
+  },
+  {
+    id: 'camp_clear_zone3_f7',
+    title: 'Docks Ship-Master',
+    desc: 'Clear Floor 7 of Sunken Docks.',
+    type: 'progression_clear_floor',
+    zoneId: 'zone3',
+    floorNumber: 7,
+    progress: 0,
+    target: 1,
+    completed: false,
+    claimed: false,
+    rewards: { gold: 1350, consumables: { potion: 4 } },
+    tag: 'Story',
+    prerequisite: { type: 'quest_completed', questId: 'camp_clear_zone3_f6' }
+  },
+  {
+    id: 'camp_clear_zone3_f8',
+    title: 'Docks Leviathan-Hunter',
+    desc: 'Clear Floor 8 of Sunken Docks.',
+    type: 'progression_clear_floor',
+    zoneId: 'zone3',
+    floorNumber: 8,
+    progress: 0,
+    target: 1,
+    completed: false,
+    claimed: false,
+    rewards: { gold: 1500, consumables: { potion: 4 } },
+    tag: 'Story',
+    prerequisite: { type: 'quest_completed', questId: 'camp_clear_zone3_f7' }
+  },
+  {
+    id: 'camp_clear_zone3_f9',
+    title: 'Docks Admiral',
+    desc: 'Clear Floor 9 of Sunken Docks.',
+    type: 'progression_clear_floor',
+    zoneId: 'zone3',
+    floorNumber: 9,
+    progress: 0,
+    target: 1,
+    completed: false,
+    claimed: false,
+    rewards: { gold: 1650, consumables: { potion: 4 } },
+    tag: 'Story',
+    prerequisite: { type: 'quest_completed', questId: 'camp_clear_zone3_f8' }
+  },
+  {
+    id: 'camp_defeat_sea_abomination',
+    title: 'Dread of the Deep',
+    desc: 'Defeat the Sea Abomination on Floor 10 of Sunken Docks.',
+    type: 'defeat_boss',
+    bossId: 'sea_abomination',
+    zoneId: 'zone3',
+    progress: 0,
+    target: 1,
+    completed: false,
+    claimed: false,
+    rewards: { gold: 2400, consumables: { mega_potion: 6 } },
+    tag: 'Story',
+    prerequisite: { type: 'quest_completed', questId: 'camp_clear_zone3_f9' }
+  },
+
+  // ==========================================
+  // Campaign Standard Quests
+  // ==========================================
   {
     id: 'camp_equip_four_items',
     title: 'Armored Adventurer',
@@ -209,7 +638,6 @@ export const CAMPAIGN_QUEST_TEMPLATES = [
     rewards: { gold: 200 },
     tag: 'Campaign'
   },
-  // 4. Max any Tier 1 skill to star 5
   {
     id: 'camp_max_t1_skill',
     title: 'Skill Master',
@@ -222,7 +650,6 @@ export const CAMPAIGN_QUEST_TEMPLATES = [
     rewards: { gold: 500, consumables: { super_potion: 1 } },
     tag: 'Campaign'
   },
-  // 5. Max two T1 skills
   {
     id: 'camp_max_two_t1_skills',
     title: 'Versatile Warrior',
@@ -239,7 +666,6 @@ export const CAMPAIGN_QUEST_TEMPLATES = [
       questId: 'camp_max_t1_skill'
     }
   },
-  // 6. Max a Tier 2 skill
   {
     id: 'camp_max_t2_skill',
     title: 'Aura Ascendancy',
@@ -254,25 +680,6 @@ export const CAMPAIGN_QUEST_TEMPLATES = [
     prerequisite: {
       type: 'quest_completed',
       questId: 'camp_max_two_t1_skills'
-    }
-  },
-  // 7. Defeat King Rat Boss
-  {
-    id: 'camp_defeat_king_rat',
-    title: 'Bane of Sewer Rats',
-    desc: 'Defeat the Sewer King (King Rat) on Floor 10 of Soggy Ruins.',
-    type: 'defeat_boss',
-    bossId: 'king_rat',
-    progress: 0,
-    target: 1,
-    completed: false,
-    claimed: false,
-    rewards: { gold: 800, consumables: { mega_potion: 2 } },
-    tag: 'Story',
-    prerequisite: {
-      type: 'clear_floor',
-      zoneId: 'zone1',
-      floorNumber: 9
     }
   }
 ];
@@ -320,8 +727,15 @@ export function syncPersistentQuests(state) {
       changed = true;
     } else {
       // Filter out campaign quests from state that are no longer in templates (e.g. camp_forge_crystal)
-      const existingCampaign = questsState.campaign.filter(q => CAMPAIGN_QUEST_TEMPLATES.some(t => t.id === q.id));
+      let existingCampaign = questsState.campaign.filter(q => CAMPAIGN_QUEST_TEMPLATES.some(t => t.id === q.id));
       if (existingCampaign.length !== questsState.campaign.length) {
+        changed = true;
+      }
+
+      // Add any missing campaign quests from templates
+      const missingCampaignTemplates = CAMPAIGN_QUEST_TEMPLATES.filter(t => !existingCampaign.some(q => q.id === t.id));
+      if (missingCampaignTemplates.length > 0) {
+        existingCampaign = [...existingCampaign, ...missingCampaignTemplates.map(t => ({ ...t }))];
         changed = true;
       }
 
@@ -397,7 +811,8 @@ export function syncPersistentQuests(state) {
       const maxed = t2Skills.some(sId => unlocked[sId]?.stars >= 5);
       newProgress = maxed ? 5 : 0;
     } else if (q.type === 'defeat_boss') {
-      const cleared = progress.floorsCleared?.zone1 || 0;
+      const zone = q.zoneId || 'zone1';
+      const cleared = progress.floorsCleared?.[zone] || 0;
       if (cleared >= 10) {
         newProgress = 1;
       }

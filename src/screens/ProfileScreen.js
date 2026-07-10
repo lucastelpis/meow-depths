@@ -55,7 +55,7 @@ const WEAPONS_FRAME_SIZE = 32;
 const WEAPONS_FRAMES = 7;
 
 const TABS = [
-  { key: 'stats', spritesheet: 'icons-map', frameIndex: 105, label: 'Stats' },
+  { key: 'stats', spritesheet: 'icons-map', frameIndex: 29, label: 'Stats' },
   { key: 'equipment', spritesheet: 'icons-1', frameIndex: 10, label: 'Gear' },
   { key: 'bag', spritesheet: 'icons-1', frameIndex: 26, label: 'Bag' },
 ];
