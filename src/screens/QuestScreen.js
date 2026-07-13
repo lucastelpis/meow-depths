@@ -207,10 +207,12 @@ export default function QuestScreen({ navigation }) {
                   { width: `${Math.min(100, (quest.progress / quest.target) * 100)}%` }
                 ]} 
               />
+              <View style={styles.progressBarTextWrapper}>
+                <Text style={styles.progressBarText}>
+                  Progress: {quest.progress} / {quest.target}
+                </Text>
+              </View>
             </View>
-            <Text style={styles.progressText}>
-              Progress: {quest.progress} / {quest.target}
-            </Text>
           </TouchableOpacity>
 
           {isCompleted && !isClaimed && !isExpanded && (
@@ -680,24 +682,33 @@ const styles = StyleSheet.create({
     color: 'rgba(207,224,238,0.7)',
   },
   progressBarBg: {
-    height: 10,
+    height: 14,
     backgroundColor: 'rgba(0, 0, 0, 0.3)',
-    borderRadius: 5,
+    borderRadius: 7,
     overflow: 'hidden',
     marginTop: 8,
     marginBottom: 4,
     borderWidth: 1,
     borderColor: theme.COLORS.panelBorderGoldStrong,
+    position: 'relative',
   },
   progressBarFill: {
     height: '100%',
     backgroundColor: theme.COLORS.candleGold,
-    borderRadius: 4,
+    borderRadius: 6,
   },
-  progressText: {
+  progressBarTextWrapper: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  progressBarText: {
     fontFamily: 'Silkscreen-Regular',
     fontSize: 8,
-    color: 'rgba(207,224,238,0.4)',
+    color: '#FFF3DA',
+    textShadowColor: 'rgba(0, 0, 0, 0.8)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 1,
   },
   questRewardsRow: {
     flexDirection: 'row',

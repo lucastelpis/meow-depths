@@ -768,6 +768,7 @@ export default function SkillTreeScreen() {
         <Pressable style={styles.modalBackdrop} onPress={() => setSelectedSkill(null)}>
           <Pressable style={styles.modalCardOuter}>
             <View style={[styles.modalCardInner, { borderColor: `${elementColor}80` }]}>
+              <View style={styles.modalBevel} pointerEvents="none" />
               {targetSkill && (
                 <ScrollView
                   style={{ maxHeight: SCREEN_HEIGHT * 0.82 }}
@@ -846,7 +847,7 @@ export default function SkillTreeScreen() {
                         return (
                           <View style={styles.modalCostMatRow}>
                             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                              <Text style={{ fontSize: 12 }}>✨</Text>
+                              <ItemSprite spritesheet="icons-map" frameIndex={89} displaySize={14} />
                               <Text style={styles.modalCostMatName}>Skill Points (SP)</Text>
                             </View>
                             <Text style={[styles.modalCostMatValue, { color: enough ? C.good : C.bad }]}>{owned} / {qty}</Text>
@@ -898,9 +899,18 @@ export default function SkillTreeScreen() {
                         {selectedEquipped ? (
                           <>
                             <Text style={[styles.equippedLabel, { color: elementColor }]}>✓ EQUIPPED IN SLOT {equippedSlot + 1}</Text>
-                            <TouchableOpacity style={styles.unequipBtn} onPress={() => handleUnequip(equippedSlot)}>
-                              <Text style={styles.unequipBtnText}>UNEQUIP</Text>
-                            </TouchableOpacity>
+                            <View style={styles.unequipBtnWrapper}>
+                              <View style={styles.unequipBtnShadow} />
+                              <TouchableOpacity
+                                style={styles.unequipBtnOuter}
+                                onPress={() => handleUnequip(equippedSlot)}
+                                activeOpacity={0.8}
+                              >
+                                <View style={styles.unequipBtnInner}>
+                                  <Text style={styles.unequipBtnText}>UNEQUIP</Text>
+                                </View>
+                              </TouchableOpacity>
+                            </View>
                           </>
                         ) : (
                           <>
@@ -909,10 +919,19 @@ export default function SkillTreeScreen() {
                               {[0, 1].map((si) => {
                                 const occupant = equippedSkills[si] ? SKILLS[equippedSkills[si]]?.name : 'Empty';
                                 return (
-                                  <TouchableOpacity key={si} style={styles.equipSlotBtn} onPress={() => handleEquip(si)}>
-                                    <Text style={styles.equipSlotBtnText}>SLOT {si + 1}</Text>
-                                    <Text style={styles.equipSlotSub} numberOfLines={1}>({occupant})</Text>
-                                  </TouchableOpacity>
+                                  <View key={si} style={styles.equipSlotBtnWrapper}>
+                                    <View style={styles.equipSlotBtnShadow} />
+                                    <TouchableOpacity
+                                      style={styles.equipSlotBtnOuter}
+                                      onPress={() => handleEquip(si)}
+                                      activeOpacity={0.8}
+                                    >
+                                      <View style={styles.equipSlotBtnInner}>
+                                        <Text style={styles.equipSlotBtnText}>SLOT {si + 1}</Text>
+                                        <Text style={styles.equipSlotSub} numberOfLines={1}>({occupant})</Text>
+                                      </View>
+                                    </TouchableOpacity>
+                                  </View>
                                 );
                               })}
                             </View>
@@ -955,18 +974,18 @@ export default function SkillTreeScreen() {
 
 function GradientButton({ color, label, onPress }) {
   return (
-    <TouchableOpacity style={[styles.primaryBtn, { shadowColor: color }]} onPress={onPress} activeOpacity={0.85}>
-      <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
-        <Defs>
-          <LinearGradient id={`btn-${label.replace(/[^a-z0-9]/gi, '')}`} x1="0" y1="0" x2="1" y2="0">
-            <Stop offset="0%" stopColor={color} />
-            <Stop offset="100%" stopColor={`${color}99`} />
-          </LinearGradient>
-        </Defs>
-        <Rect width="100%" height="100%" fill={`url(#btn-${label.replace(/[^a-z0-9]/gi, '')})`} rx={10} />
-      </Svg>
-      <Text style={styles.primaryBtnText}>{label}</Text>
-    </TouchableOpacity>
+    <View style={styles.primaryBtnWrapper}>
+      <View style={styles.primaryBtnShadow} />
+      <TouchableOpacity
+        style={styles.primaryBtnOuter}
+        onPress={onPress}
+        activeOpacity={0.8}
+      >
+        <View style={[styles.primaryBtnInner, { backgroundColor: color }]}>
+          <Text style={styles.primaryBtnText}>{label}</Text>
+        </View>
+      </TouchableOpacity>
+    </View>
   );
 }
 
@@ -1298,15 +1317,39 @@ const styles = StyleSheet.create({
   dockSlotType: { fontFamily: 'Jersey10-Regular', fontSize: 10, color: C.textDim, marginTop: 1 },
 
   /* Modal */
-  modalBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.85)', justifyContent: 'center', alignItems: 'center', padding: 20 },
+  modalBackdrop: { flex: 1, backgroundColor: 'rgba(24, 14, 6, 0.8)', justifyContent: 'center', alignItems: 'center', padding: 20 },
   modalCardOuter: {
-    width: '100%', maxWidth: 360, borderRadius: 16, padding: 3,
-    borderWidth: 3, borderColor: C.plaqueDark, backgroundColor: C.plaqueDark,
+    width: '100%', maxWidth: 360, borderRadius: 12, padding: 8,
+    borderWidth: 3, borderColor: '#3E2E15', backgroundColor: '#4A3917',
   },
-  modalCardInner: { borderRadius: 12, borderWidth: 2, backgroundColor: C.plaqueBg, overflow: 'hidden' },
+  modalCardInner: { borderRadius: 9, borderWidth: 2.5, backgroundColor: C.plaqueBg, overflow: 'hidden', position: 'relative' },
+  modalBevel: {
+    position: 'absolute',
+    top: 3,
+    left: 3,
+    right: 3,
+    bottom: 3,
+    borderRadius: 7,
+    borderWidth: 1.5,
+    borderColor: 'rgba(255, 250, 228, 0.08)',
+    zIndex: 1,
+  },
   modalInner: { padding: 20 },
-  modalCloseBtn: { position: 'absolute', top: 10, right: 14, padding: 6, zIndex: 10 },
-  modalCloseText: { fontFamily: 'Jersey10-Regular', fontSize: 16, color: C.textDim },
+  modalCloseBtn: {
+    position: 'absolute',
+    top: 10,
+    right: 14,
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: '#3E2E15',
+    borderColor: '#84735B',
+    borderWidth: 2,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 20,
+  },
+  modalCloseText: { fontFamily: 'Silkscreen-Regular', fontSize: 10, color: '#FFF3DA', fontWeight: 'bold' },
 
   modalTitleRow: { flexDirection: 'row', gap: 12, marginBottom: 12, marginTop: 4, alignItems: 'flex-start' },
   modalTitleRight: { flex: 1 },
@@ -1346,31 +1389,174 @@ const styles = StyleSheet.create({
   modalInfoText: { fontFamily: 'Jersey10-Regular', fontSize: 12, color: '#FFA07A' },
 
   modalActions: { gap: 10, marginTop: 6 },
-  primaryBtn: {
-    height: 48, borderRadius: 10, alignItems: 'center', justifyContent: 'center', overflow: 'hidden',
-    shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.4, shadowRadius: 10, elevation: 4,
+
+  primaryBtnWrapper: {
+    width: '100%',
+    height: 46,
+    position: 'relative',
   },
-  primaryBtnText: { fontFamily: 'Jersey10-Regular', fontSize: 15, color: '#1A1200', zIndex: 2, letterSpacing: 0.3 },
+  primaryBtnShadow: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 3,
+    height: 46,
+    borderRadius: 8,
+    zIndex: 1,
+    backgroundColor: '#0D2118',
+  },
+  primaryBtnOuter: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    height: 46,
+    borderRadius: 8,
+    borderWidth: 2.2,
+    borderColor: '#84735B',
+    backgroundColor: '#4F3C1E',
+    zIndex: 2,
+  },
+  primaryBtnInner: {
+    flex: 1,
+    margin: 1.5,
+    borderRadius: 5,
+    borderWidth: 2.2,
+    borderTopColor: 'rgba(255, 255, 255, 0.35)',
+    borderLeftColor: 'rgba(255, 255, 255, 0.35)',
+    borderRightColor: 'rgba(255, 255, 255, 0.35)',
+    borderBottomColor: 'rgba(0, 0, 0, 0.45)',
+    borderBottomWidth: 3.5,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  primaryBtnText: {
+    fontFamily: 'Silkscreen-Regular',
+    fontSize: 10,
+    color: '#FFF3DA',
+    textShadowColor: 'rgba(0, 0, 0, 0.6)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 1,
+    textTransform: 'uppercase',
+  },
 
   disabledBtn: {
-    height: 44, borderRadius: 10, alignItems: 'center', justifyContent: 'center',
-    borderWidth: 2, borderColor: 'rgba(74,57,23,0.6)', backgroundColor: C.panelDeep,
+    height: 44,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: '#3E2E15',
+    backgroundColor: '#0F2417',
+    opacity: 0.6,
   },
-  disabledBtnText: { fontFamily: 'Silkscreen-Regular', fontSize: 11, color: C.textDim },
+  disabledBtnText: { fontFamily: 'Silkscreen-Regular', fontSize: 9, color: C.textDim, textTransform: 'uppercase' },
 
   equipSection: { gap: 8 },
-  equippedLabel: { fontFamily: 'Silkscreen-Regular', fontSize: 11, textAlign: 'center', letterSpacing: 0.5 },
-  unequipBtn: {
-    height: 40, borderRadius: 8, alignItems: 'center', justifyContent: 'center',
-    borderWidth: 2, borderColor: 'rgba(74,57,23,0.6)', backgroundColor: C.panel,
+  equippedLabel: { fontFamily: 'Silkscreen-Regular', fontSize: 10, textAlign: 'center', letterSpacing: 0.5 },
+
+  unequipBtnWrapper: {
+    width: '100%',
+    height: 40,
+    position: 'relative',
   },
-  unequipBtnText: { fontFamily: 'Silkscreen-Regular', fontSize: 11, color: C.textDim },
-  equipPrompt: { fontFamily: 'Jersey10-Regular', fontSize: 12, color: C.textDim, textAlign: 'center' },
-  equipRow: { flexDirection: 'row', gap: 10 },
-  equipSlotBtn: {
-    flex: 1, height: 52, borderRadius: 8, alignItems: 'center', justifyContent: 'center',
-    borderWidth: 2, borderColor: 'rgba(74,57,23,0.7)', backgroundColor: C.panel, gap: 2,
+  unequipBtnShadow: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 2.5,
+    height: 40,
+    borderRadius: 8,
+    zIndex: 1,
+    backgroundColor: '#4F3C1E',
   },
-  equipSlotBtnText: { fontFamily: 'Silkscreen-Regular', fontSize: 10, color: C.text },
-  equipSlotSub: { fontFamily: 'Jersey10-Regular', fontSize: 10, color: C.textDim },
+  unequipBtnOuter: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    height: 40,
+    borderRadius: 8,
+    borderWidth: 2,
+    borderColor: '#84735B',
+    backgroundColor: '#4F3C1E',
+    zIndex: 2,
+  },
+  unequipBtnInner: {
+    flex: 1,
+    margin: 1.5,
+    borderRadius: 5,
+    borderWidth: 2,
+    borderTopColor: '#D8483F',
+    borderLeftColor: '#D8483F',
+    borderRightColor: '#D8483F',
+    borderBottomColor: '#590D0E',
+    borderBottomWidth: 3,
+    backgroundColor: '#A61C1C',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  unequipBtnText: {
+    fontFamily: 'Silkscreen-Regular',
+    fontSize: 9,
+    color: '#FFF3DA',
+    textShadowColor: 'rgba(0, 0, 0, 0.4)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 1,
+  },
+
+  equipPrompt: { fontFamily: 'Jersey10-Regular', fontSize: 13, color: C.textDim, textAlign: 'center', marginVertical: 4 },
+  equipRow: { flexDirection: 'row', gap: 10, marginTop: 4 },
+
+  equipSlotBtnWrapper: {
+    flex: 1,
+    height: 52,
+    position: 'relative',
+  },
+  equipSlotBtnShadow: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 3,
+    height: 52,
+    borderRadius: 8,
+    zIndex: 1,
+    backgroundColor: '#4F3C1E',
+  },
+  equipSlotBtnOuter: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    height: 52,
+    borderRadius: 8,
+    borderWidth: 2,
+    borderColor: '#84735B',
+    backgroundColor: '#4F3C1E',
+    zIndex: 2,
+  },
+  equipSlotBtnInner: {
+    flex: 1,
+    margin: 1.5,
+    borderRadius: 5,
+    borderWidth: 2,
+    borderTopColor: '#4F856C',
+    borderLeftColor: '#4F856C',
+    borderRightColor: '#4F856C',
+    borderBottomColor: '#0D2118',
+    borderBottomWidth: 3,
+    backgroundColor: '#1B4030',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 2,
+  },
+  equipSlotBtnText: {
+    fontFamily: 'Silkscreen-Regular',
+    fontSize: 9,
+    color: '#FFF3DA',
+    textShadowColor: 'rgba(0, 0, 0, 0.5)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 1,
+  },
+  equipSlotSub: { fontFamily: 'Jersey10-Regular', fontSize: 11, color: '#A8B8A0' },
 });
