@@ -344,10 +344,6 @@ export const ALL_SPRITESHEET_ASSETS = [
 export const ONBOARDING_ASSETS = [
   require('../../assets/sprites/banners/onboarding-banner.png'),
   require('../../assets/sprites/banners/3rd_onboarding_background.png'),
-  require('../../assets/sprites/banners/fire-banner.png'),
-  require('../../assets/sprites/banners/water-banner.png'),
-  require('../../assets/sprites/banners/earth-banner.png'),
-  require('../../assets/sprites/banners/wind-banner.png'),
   require('../../assets/sprites/items/icons-1.png'),
 ];
 

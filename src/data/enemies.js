@@ -38,7 +38,7 @@ const sewer_rat = {
   isBoss: false,
   isElite: false,
   baseXp: 20,
-  baseGold: 5,
+  baseGold: 1,
   drops: [],
   moves: [
     { name: 'Gnaw', damage: 5, minStars: 1 },
@@ -68,7 +68,7 @@ const slimeling = {
   isBoss: false,
   isElite: false,
   baseXp: 25,
-  baseGold: 7,
+  baseGold: 2,
   drops: [],
   moves: [
     {
@@ -103,7 +103,7 @@ const cockroach_knight = {
   isBoss: false,
   isElite: false,
   baseXp: 30,
-  baseGold: 10,
+  baseGold: 4,
   drops: [],
   moves: [
     {
@@ -145,7 +145,7 @@ const plague_frog = {
   isBoss: false,
   isElite: false,
   baseXp: 25,
-  baseGold: 8,
+  baseGold: 3,
   drops: [],
   moves: [
     {
@@ -181,8 +181,8 @@ const king_rat = {
   isBoss: true,
   isElite: false,
   xp: 500,
-  goldMin: 80,
-  goldMax: 120,
+  goldMin: 100,
+  goldMax: 200,
   drops: [
     { itemId: 'gnarlcrown_shard', chance: 1.0 },
     { itemId: 'black_shard_fire', chance: 1.0, count: 2 },

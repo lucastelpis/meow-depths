@@ -38,8 +38,7 @@ import JournalScreen from './src/screens/JournalScreen';
 import QuestScreen from './src/screens/QuestScreen';
 import DungeonMapScreen from './src/screens/DungeonMapScreen';
 import DungeonFloorScreen from './src/screens/DungeonFloorScreen';
-import NameInputScreen from './src/screens/NameInputScreen';
-import ElementSelectionScreen from './src/screens/ElementSelectionScreen';
+import HeroDefinitionScreen from './src/screens/HeroDefinitionScreen';
 import LoreIntroScreen from './src/screens/LoreIntroScreen';
 import { ONBOARDING_ASSETS, HUB_ASSETS } from './src/constants/sprites';
 
@@ -117,9 +116,8 @@ function AppNavigator() {
         >
           {!hasElement ? (
             <>
-              <Stack.Screen name="NameInput" component={NameInputScreen} />
-              <Stack.Screen name="ElementSelection" component={ElementSelectionScreen} />
               <Stack.Screen name="LoreIntro" component={LoreIntroScreen} />
+              <Stack.Screen name="HeroDefinition" component={HeroDefinitionScreen} />
             </>
           ) : (
             <>
