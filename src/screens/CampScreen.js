@@ -198,12 +198,14 @@ export default function CampScreen({ navigation }) {
   // Mochi's banner thought — re-rolled from the unlocked pool each time the hub
   // gains focus, so the hero "says" something new on every visit.
   const [mochiThought, setMochiThought] = React.useState(() =>
-    pickRandomThought(state.progress.notesCollected)
+    Math.random() < 0.20 ? pickRandomThought(state.progress.notesCollected) : null
   );
 
   useFocusEffect(
     React.useCallback(() => {
-      setMochiThought(pickRandomThought(state.progress.notesCollected));
+      setMochiThought(
+        Math.random() < 0.01 ? pickRandomThought(state.progress.notesCollected) : null
+      );
       // Dispatch daily quests generation on focus
       const dateStr = new Date().toDateString();
       dispatch({ type: 'GENERATE_DAILY_QUESTS', payload: { dateStr } });
@@ -334,7 +336,7 @@ export default function CampScreen({ navigation }) {
     let base = 0;
     if (itemId.includes('green')) base = 4;
     else if (itemId.includes('yellow')) base = 8;
-    
+
     if (itemId.includes('shard')) return base + 0;
     if (itemId.includes('small')) return base + 1;
     if (itemId.includes('big')) return base + 2;
@@ -381,7 +383,7 @@ export default function CampScreen({ navigation }) {
     if (normalized === 'super_potion') return 'Super Potion';
     if (normalized === 'mega_potion') return 'Mega Potion';
     if (normalized === 'ultra_potion') return 'Ultra Potion';
-    
+
     return normalized
       .split('_')
       .map(word => word.charAt(0).toUpperCase() + word.slice(1))
@@ -392,7 +394,7 @@ export default function CampScreen({ navigation }) {
     const lowerKey = key.toLowerCase();
     let sprite = null;
     const displayName = getItemName(key);
-    
+
     if (lowerKey === 'gold') {
       sprite = <ItemSprite spritesheet="icons-1" frameIndex={11} displaySize={32} />;
     } else if (type === 'consumables') {
@@ -417,646 +419,646 @@ export default function CampScreen({ navigation }) {
 
   return (
     <SafeAreaView style={styles.container}>
-        <ScrollView
-          contentContainerStyle={styles.scroll}
-          showsVerticalScrollIndicator={false}
-        >
-          {/* ═══════════════════════════════════════════════════════════════════
+      <ScrollView
+        contentContainerStyle={styles.scroll}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* ═══════════════════════════════════════════════════════════════════
             ANIMATED HUB BANNER
             ═══════════════════════════════════════════════════════════════════ */}
-          <View style={[styles.bannerContainer, theme.SHADOWS.cardShadow]}>
-            <AnimatedHubBackground width={BANNER_WIDTH - 6} height={BANNER_WIDTH - 6} />
+        <View style={[styles.bannerContainer, theme.SHADOWS.cardShadow]}>
+          <AnimatedHubBackground width={BANNER_WIDTH - 6} height={BANNER_WIDTH - 6} />
 
-            {/* Mochi's thought balloon — random phrase from the unlocked pool */}
-            <MochiSpeechBubble text={mochiThought.text} />
+          {/* Mochi's thought balloon — random phrase from the unlocked pool (1% chance to appear) */}
+          {mochiThought && <MochiSpeechBubble text={mochiThought.text} />}
 
-            <View style={styles.bannerOverlayContent}>
-              {/* Centered Plaque Title */}
-              <View style={styles.bannerTitleOuterBorder}>
-                <View style={styles.bannerTitleInnerBorder}>
-                  <Text style={styles.bannerTitleText}>MEOW DEPTHS</Text>
-                </View>
-              </View>
-
-              {/* Tags Stack */}
-              <View style={styles.bannerTagsRow}>
-                {/* Tag 1: Gold */}
-                <View style={styles.bannerTag}>
-                  <ItemSprite spritesheet="icons-1" frameIndex={11} displaySize={18} />
-                  <Text style={styles.bannerTagText}>{hero.gold} G</Text>
-                </View>
-
-                {/* Tag 2: Level */}
-                <View style={styles.bannerTag}>
-                  <ItemSprite spritesheet="icons-1" frameIndex={ELEMENT_SPRITES[hero.element] || 33} displaySize={18} />
-                  <Text style={styles.bannerTagText}>LV {hero.level}</Text>
-                </View>
-
-                {/* Tag 3: Stats (Clickable) — only shown when stat points are available */}
-                {(hero.statPoints || 0) > 0 && (
-                  <View style={styles.bannerTagClickableWrapper}>
-                    <TouchableOpacity
-                      style={styles.bannerTagClickableInner}
-                      onPress={() => navigation.navigate('Profile', { initialTab: 'stats' })}
-                      activeOpacity={0.7}
-                    >
-                      <ItemSprite spritesheet="icons-map" frameIndex={29} displaySize={18} />
-                    </TouchableOpacity>
-
-                    <View style={styles.bannerTagBadge}>
-                      <Text style={styles.bannerTagBadgeText}>!</Text>
-                    </View>
-                  </View>
-                )}
-
-                {/* Tag 4: Skill Points (Clickable) — only shown when skill points are available */}
-                {(hero.skillPoints || 0) > 0 && (
-                  <View style={styles.bannerTagClickableWrapper}>
-                    <TouchableOpacity
-                      style={styles.bannerTagClickableInner}
-                      onPress={() => navigation.navigate('SkillTree')}
-                      activeOpacity={0.7}
-                    >
-                      <ItemSprite spritesheet="icons-map" frameIndex={14} displaySize={18} />
-                    </TouchableOpacity>
-
-                    <View style={styles.bannerTagBadge}>
-                      <Text style={styles.bannerTagBadgeText}>!</Text>
-                    </View>
-                  </View>
-                )}
-
-                {/* Tag 4: Notes (Clickable) — only shown when there are unread notes */}
-                {hasUnreadNotes && (
-                  <View style={styles.bannerTagClickableWrapper}>
-                    <TouchableOpacity
-                      style={styles.bannerTagClickableInner}
-                      onPress={() => navigation.navigate('Journal', { initialTab: 'notes' })}
-                      activeOpacity={0.7}
-                    >
-                      <ItemSprite spritesheet="icons-map" frameIndex={58} displaySize={18} />
-                    </TouchableOpacity>
-
-                    <View style={styles.bannerTagBadge}>
-                      <Text style={styles.bannerTagBadgeText}>!</Text>
-                    </View>
-                  </View>
-                )}
+          <View style={styles.bannerOverlayContent}>
+            {/* Centered Plaque Title */}
+            <View style={styles.bannerTitleOuterBorder}>
+              <View style={styles.bannerTitleInnerBorder}>
+                <Text style={styles.bannerTitleText}>MEOW EXPEDITIONS</Text>
               </View>
             </View>
-          </View>
 
-
-
-          {/* Daily Quests Card */}
-          <View style={styles.dailyRewardWrapper}>
-            <View style={styles.dailyRewardShadow} />
-            <TouchableOpacity
-              activeOpacity={0.8}
-              onPress={() => setQuestBoardModalVisible(true)}
-              style={styles.dailyRewardOuter}
-            >
-              <Animated.View
-                style={[
-                  styles.dailyRewardInner,
-                  allDailiesClaimed()
-                    ? styles.dailyRewardInnerClaimed
-                    : {
-                      backgroundColor: bgPulseColor,
-                      borderTopColor: borderPulseColor,
-                      borderLeftColor: borderPulseColor,
-                      borderRightColor: borderPulseColor,
-                    },
-                ]}
-              >
-                <View style={styles.dailyRewardSpriteContainer}>
-                  <IconGlowBackground size={48} />
-                  <ItemSprite spritesheet="icons-map" frameIndex={26} displaySize={42} />
-                </View>
-                <View style={styles.dailyRewardTextContainer}>
-                  <Text style={[
-                    styles.dailyRewardTitle,
-                    allDailiesClaimed() ? styles.dailyRewardTitleClaimed : styles.dailyRewardTitleActive
-                  ]}>
-                    DAILY QUESTS
-                  </Text>
-                  <Text style={[
-                    styles.dailyRewardSub,
-                    allDailiesClaimed() ? styles.dailyRewardSubClaimed : styles.dailyRewardSubActive
-                  ]}>
-                    {`QUESTS: ${completedCount}/3 COMPLETE`}
-                  </Text>
-                </View>
-              </Animated.View>
-            </TouchableOpacity>
-            {hasClaimableDailyQuestReward && (
-              <View style={[styles.questBadge, { top: -2, right: -2 }]}>
-                <Text style={styles.questBadgeText}>!</Text>
+            {/* Tags Stack */}
+            <View style={styles.bannerTagsRow}>
+              {/* Tag 1: Gold */}
+              <View style={styles.bannerTag}>
+                <ItemSprite spritesheet="icons-1" frameIndex={11} displaySize={20} />
+                <Text style={styles.bannerTagText}>{hero.gold} G</Text>
               </View>
-            )}
-          </View>
 
-          {/* ═══════════════════════════════════════════════════════════════════
+              {/* Tag 2: Level */}
+              <View style={styles.bannerTag}>
+                <ItemSprite spritesheet="icons-1" frameIndex={ELEMENT_SPRITES[hero.element] || 33} displaySize={20} />
+                <Text style={styles.bannerTagText}>LV {hero.level}</Text>
+              </View>
+
+              {/* Tag 3: Stats (Clickable) — only shown when stat points are available */}
+              {(hero.statPoints || 0) > 0 && (
+                <View style={styles.bannerTagClickableWrapper}>
+                  <TouchableOpacity
+                    style={styles.bannerTagClickableInner}
+                    onPress={() => navigation.navigate('Profile', { initialTab: 'stats' })}
+                    activeOpacity={0.7}
+                  >
+                    <ItemSprite spritesheet="icons-map" frameIndex={29} displaySize={20} />
+                  </TouchableOpacity>
+
+                  <View style={styles.bannerTagBadge}>
+                    <Text style={styles.bannerTagBadgeText}>!</Text>
+                  </View>
+                </View>
+              )}
+
+              {/* Tag 4: Skill Points (Clickable) — only shown when skill points are available */}
+              {(hero.skillPoints || 0) > 0 && (
+                <View style={styles.bannerTagClickableWrapper}>
+                  <TouchableOpacity
+                    style={styles.bannerTagClickableInner}
+                    onPress={() => navigation.navigate('SkillTree')}
+                    activeOpacity={0.7}
+                  >
+                    <ItemSprite spritesheet="icons-map" frameIndex={95} displaySize={18} />
+                  </TouchableOpacity>
+
+                  <View style={styles.bannerTagBadge}>
+                    <Text style={styles.bannerTagBadgeText}>!</Text>
+                  </View>
+                </View>
+              )}
+
+              {/* Tag 4: Notes (Clickable) — only shown when there are unread notes */}
+              {hasUnreadNotes && (
+                <View style={styles.bannerTagClickableWrapper}>
+                  <TouchableOpacity
+                    style={styles.bannerTagClickableInner}
+                    onPress={() => navigation.navigate('Journal', { initialTab: 'notes' })}
+                    activeOpacity={0.7}
+                  >
+                    <ItemSprite spritesheet="icons-map" frameIndex={58} displaySize={18} />
+                  </TouchableOpacity>
+
+                  <View style={styles.bannerTagBadge}>
+                    <Text style={styles.bannerTagBadgeText}>!</Text>
+                  </View>
+                </View>
+              )}
+            </View>
+          </View>
+        </View>
+
+
+
+        {/* Daily Quests Card */}
+        <View style={styles.dailyRewardWrapper}>
+          <View style={styles.dailyRewardShadow} />
+          <TouchableOpacity
+            activeOpacity={0.8}
+            onPress={() => setQuestBoardModalVisible(true)}
+            style={styles.dailyRewardOuter}
+          >
+            <Animated.View
+              style={[
+                styles.dailyRewardInner,
+                allDailiesClaimed()
+                  ? styles.dailyRewardInnerClaimed
+                  : {
+                    backgroundColor: bgPulseColor,
+                    borderTopColor: borderPulseColor,
+                    borderLeftColor: borderPulseColor,
+                    borderRightColor: borderPulseColor,
+                  },
+              ]}
+            >
+              <View style={styles.dailyRewardSpriteContainer}>
+                <IconGlowBackground size={55} />
+                <ItemSprite spritesheet="icons-map" frameIndex={26} displaySize={50} />
+              </View>
+              <View style={styles.dailyRewardTextContainer}>
+                <Text style={[
+                  styles.dailyRewardTitle,
+                  allDailiesClaimed() ? styles.dailyRewardTitleClaimed : styles.dailyRewardTitleActive
+                ]}>
+                  DAILY MISSIONS
+                </Text>
+                <Text style={[
+                  styles.dailyRewardSub,
+                  allDailiesClaimed() ? styles.dailyRewardSubClaimed : styles.dailyRewardSubActive
+                ]}>
+                  {`TASKS: ${completedCount}/3 COMPLETE`}
+                </Text>
+              </View>
+            </Animated.View>
+          </TouchableOpacity>
+          {hasClaimableDailyQuestReward && (
+            <View style={[styles.questBadge, { top: -2, right: -2 }]}>
+              <Text style={styles.questBadgeText}>!</Text>
+            </View>
+          )}
+        </View>
+
+        {/* ═══════════════════════════════════════════════════════════════════
             NAVIGATION GRID — Glassmorphic Grid Layout
             ═══════════════════════════════════════════════════════════════════ */}
-          {/* ═══════════════════════════════════════════════════════════════════
+        {/* ═══════════════════════════════════════════════════════════════════
             NAVIGATION GRID — Asymmetric Cozy Layout
             ═══════════════════════════════════════════════════════════════════ */}
-          <View style={styles.navGrid}>
-            {/* Enter Regions (WorldMap) — Full Width */}
-            <TouchableOpacity
-              style={styles.dungeonCard}
-              activeOpacity={0.8}
-              onPress={() => navigation.navigate('WorldMap')}
-              onLayout={(e) => {
-                const { width, height } = e.nativeEvent.layout;
-                setDungeonCardLayout({ width, height });
-              }}
-            >
-              <RuggedBorderBackground width={dungeonCardLayout.width} height={dungeonCardLayout.height} />
-              <View style={styles.dungeonSpriteContainer}>
-                <IconGlowBackground size={64} />
-                <ItemSprite spritesheet="icons-1" frameIndex={0} displaySize={56} />
-              </View>
-              <View style={styles.dungeonTextContainer}>
-                <Text style={styles.dungeonLabel}>START EXPEDITION</Text>
-                <Text style={styles.dungeonSub}>EXPLORE REGIONS</Text>
-              </View>
-            </TouchableOpacity>
+        <View style={styles.navGrid}>
+          {/* Enter Regions (WorldMap) — Full Width */}
+          <TouchableOpacity
+            style={styles.dungeonCard}
+            activeOpacity={0.8}
+            onPress={() => navigation.navigate('WorldMap')}
+            onLayout={(e) => {
+              const { width, height } = e.nativeEvent.layout;
+              setDungeonCardLayout({ width, height });
+            }}
+          >
+            <RuggedBorderBackground width={dungeonCardLayout.width} height={dungeonCardLayout.height} />
+            <View style={styles.dungeonSpriteContainer}>
+              <IconGlowBackground size={60} />
+              <ItemSprite spritesheet="icons-1" frameIndex={0} displaySize={55} />
+            </View>
+            <View style={styles.dungeonTextContainer}>
+              <Text style={styles.dungeonLabel}>START EXPEDITION</Text>
+              <Text style={styles.dungeonSub}>EXPLORE REGIONS</Text>
+            </View>
+          </TouchableOpacity>
 
-            {/* Sub Navigation Cards — Row 1 */}
-            <View style={styles.subButtonsRow}>
-              {/* Shopping */}
-              <View style={styles.subCardWrapper}>
-                <View style={styles.subCardShadow} />
-                <TouchableOpacity
-                  style={styles.subCardOuter}
-                  activeOpacity={0.8}
-                  onPress={() => navigation.navigate('Shop')}
-                >
-                  <View style={styles.subCardInner}>
-                    <View style={styles.subSpriteContainer}>
-                      <IconGlowBackground size={36} />
-                      <ItemSprite spritesheet="icons-1" frameIndex={1} displaySize={30} />
-                    </View>
-                    <Text style={styles.subCardLabel}>MARKET</Text>
+          {/* Sub Navigation Cards — Row 1 */}
+          <View style={styles.subButtonsRow}>
+            {/* Shopping */}
+            <View style={styles.subCardWrapper}>
+              <View style={styles.subCardShadow} />
+              <TouchableOpacity
+                style={styles.subCardOuter}
+                activeOpacity={0.8}
+                onPress={() => navigation.navigate('Shop')}
+              >
+                <View style={styles.subCardInner}>
+                  <View style={styles.subSpriteContainer}>
+                    <IconGlowBackground size={44} />
+                    <ItemSprite spritesheet="icons-1" frameIndex={1} displaySize={40} />
                   </View>
-                </TouchableOpacity>
-              </View>
-
-              {/* Skills */}
-              <View style={styles.subCardWrapper}>
-                <View style={styles.subCardShadow} />
-                <TouchableOpacity
-                  style={styles.subCardOuter}
-                  activeOpacity={0.8}
-                  onPress={() => navigation.navigate('SkillTree')}
-                >
-                  <View style={styles.subCardInner}>
-                    <View style={styles.subSpriteContainer}>
-                      <IconGlowBackground size={36} />
-                      <ItemSprite spritesheet="icons-map" frameIndex={14} displaySize={30} />
-                    </View>
-                    <Text style={styles.subCardLabel}>SKILLS</Text>
-                  </View>
-                </TouchableOpacity>
-              </View>
-
-              {/* Quests */}
-              <View style={styles.subCardWrapper}>
-                <View style={styles.subCardShadow} />
-                <TouchableOpacity
-                  style={styles.subCardOuter}
-                  activeOpacity={0.8}
-                  onPress={() => navigation.navigate('Quests')}
-                >
-                  <View style={styles.subCardInner}>
-                    <View style={styles.subSpriteContainer}>
-                      <IconGlowBackground size={36} />
-                      <ItemSprite spritesheet="icons-map" frameIndex={73} displaySize={30} />
-                    </View>
-                    <Text style={styles.subCardLabel}>QUESTS</Text>
-                  </View>
-                </TouchableOpacity>
-                {hasClaimableQuestReward && (
-                  <View style={styles.questBadge}>
-                    <Text style={styles.questBadgeText}>!</Text>
-                  </View>
-                )}
-              </View>
+                  <Text style={styles.subCardLabel}>MARKET</Text>
+                </View>
+              </TouchableOpacity>
             </View>
 
-            {/* Sub Navigation Cards — Row 2 */}
-            <View style={[styles.subButtonsRow, { marginTop: 12 }]}>
-              {/* Profile */}
-              <View style={styles.subCardWrapper}>
-                <View style={styles.subCardShadow} />
-                <TouchableOpacity
-                  style={styles.subCardOuter}
-                  activeOpacity={0.8}
-                  onPress={() => navigation.navigate('Profile')}
-                >
-                  <View style={styles.subCardInner}>
-                    <View style={styles.subSpriteContainer}>
-                      <IconGlowBackground size={36} />
-                      <ExpoImage
-                        source={require('../../assets/sprites/units/hero/hero_head.png')}
-                        style={{ width: 30, height: 30 }}
-                        contentFit="contain"
-                      />
-                    </View>
-                    <Text style={styles.subCardLabel}>PROFILE</Text>
+            {/* Skills */}
+            <View style={styles.subCardWrapper}>
+              <View style={styles.subCardShadow} />
+              <TouchableOpacity
+                style={styles.subCardOuter}
+                activeOpacity={0.8}
+                onPress={() => navigation.navigate('SkillTree')}
+              >
+                <View style={styles.subCardInner}>
+                  <View style={styles.subSpriteContainer}>
+                    <IconGlowBackground size={44} />
+                    <ItemSprite spritesheet="icons-map" frameIndex={95} displaySize={40} />
                   </View>
-                </TouchableOpacity>
-              </View>
+                  <Text style={styles.subCardLabel}>SKILLS</Text>
+                </View>
+              </TouchableOpacity>
+            </View>
 
-              {/* Journal */}
-              <View style={styles.subCardWrapper}>
-                <View style={styles.subCardShadow} />
-                <TouchableOpacity
-                  style={styles.subCardOuter}
-                  activeOpacity={0.8}
-                  onPress={() => navigation.navigate('Journal')}
-                >
-                  <View style={styles.subCardInner}>
-                    <View style={styles.subSpriteContainer}>
-                      <IconGlowBackground size={36} />
-                      <ItemSprite spritesheet="icons-map" frameIndex={121} displaySize={30} />
-                    </View>
-                    <Text style={styles.subCardLabel}>JOURNAL</Text>
+            {/* Quests */}
+            <View style={styles.subCardWrapper}>
+              <View style={styles.subCardShadow} />
+              <TouchableOpacity
+                style={styles.subCardOuter}
+                activeOpacity={0.8}
+                onPress={() => navigation.navigate('Quests')}
+              >
+                <View style={styles.subCardInner}>
+                  <View style={styles.subSpriteContainer}>
+                    <IconGlowBackground size={44} />
+                    <ItemSprite spritesheet="icons-map" frameIndex={73} displaySize={40} />
                   </View>
-                </TouchableOpacity>
-              </View>
-
-              {/* Settings */}
-              <View style={styles.subCardWrapper}>
-                <View style={styles.subCardShadow} />
-                <TouchableOpacity
-                  style={styles.subCardOuter}
-                  activeOpacity={0.8}
-                  onPress={() => setSettingsModalVisible(true)}
-                >
-                  <View style={styles.subCardInner}>
-                    <View style={styles.subSpriteContainer}>
-                      <IconGlowBackground size={36} />
-                      <ItemSprite spritesheet="icons-map" frameIndex={111} displaySize={30} />
-                    </View>
-                    <Text style={styles.subCardLabel}>SETTINGS</Text>
-                  </View>
-                </TouchableOpacity>
-              </View>
+                  <Text style={styles.subCardLabel}>QUESTS</Text>
+                </View>
+              </TouchableOpacity>
+              {hasClaimableQuestReward && (
+                <View style={styles.questBadge}>
+                  <Text style={styles.questBadgeText}>!</Text>
+                </View>
+              )}
             </View>
           </View>
-        </ScrollView>
 
-        {/* ═══════════════════════════════════════════════════════════════════
+          {/* Sub Navigation Cards — Row 2 */}
+          <View style={[styles.subButtonsRow, { marginTop: 12 }]}>
+            {/* Profile */}
+            <View style={styles.subCardWrapper}>
+              <View style={styles.subCardShadow} />
+              <TouchableOpacity
+                style={styles.subCardOuter}
+                activeOpacity={0.8}
+                onPress={() => navigation.navigate('Profile')}
+              >
+                <View style={styles.subCardInner}>
+                  <View style={styles.subSpriteContainer}>
+                    <IconGlowBackground size={44} />
+                    <ExpoImage
+                      source={require('../../assets/sprites/units/hero/hero_head.png')}
+                      style={{ width: 40, height: 40 }}
+                      contentFit="contain"
+                    />
+                  </View>
+                  <Text style={styles.subCardLabel}>PROFILE</Text>
+                </View>
+              </TouchableOpacity>
+            </View>
+
+            {/* Journal */}
+            <View style={styles.subCardWrapper}>
+              <View style={styles.subCardShadow} />
+              <TouchableOpacity
+                style={styles.subCardOuter}
+                activeOpacity={0.8}
+                onPress={() => navigation.navigate('Journal')}
+              >
+                <View style={styles.subCardInner}>
+                  <View style={styles.subSpriteContainer}>
+                    <IconGlowBackground size={44} />
+                    <ItemSprite spritesheet="icons-map" frameIndex={121} displaySize={40} />
+                  </View>
+                  <Text style={styles.subCardLabel}>JOURNAL</Text>
+                </View>
+              </TouchableOpacity>
+            </View>
+
+            {/* Settings */}
+            <View style={styles.subCardWrapper}>
+              <View style={styles.subCardShadow} />
+              <TouchableOpacity
+                style={styles.subCardOuter}
+                activeOpacity={0.8}
+                onPress={() => setSettingsModalVisible(true)}
+              >
+                <View style={styles.subCardInner}>
+                  <View style={styles.subSpriteContainer}>
+                    <IconGlowBackground size={44} />
+                    <ItemSprite spritesheet="icons-map" frameIndex={111} displaySize={40} />
+                  </View>
+                  <Text style={styles.subCardLabel}>SETTINGS</Text>
+                </View>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </ScrollView>
+
+      {/* ═══════════════════════════════════════════════════════════════════
           DAILY REWARD MODAL — themed to match the hub redesign
           ═══════════════════════════════════════════════════════════════════ */}
-        {/* ═══════════════════════════════════════════════════════════════════
+      {/* ═══════════════════════════════════════════════════════════════════
           QUEST BOARD MODAL — scrollable parchment layout containing active
           daily and campaign quests, progress, rewards, and claim buttons.
           ═══════════════════════════════════════════════════════════════════ */}
-        <Modal
-          visible={questBoardModalVisible}
-          transparent
-          animationType="fade"
-          onRequestClose={() => setQuestBoardModalVisible(false)}
-          statusBarTranslucent
-        >
-          <View style={styles.qbOverlay}>
-            <Pressable
-              style={StyleSheet.absoluteFillObject}
-              onPress={() => setQuestBoardModalVisible(false)}
-            />
-            <View style={[styles.qbFrame, theme.SHADOWS.cardShadow]}>
-              <View style={styles.qbParchment}>
-                <View style={styles.drBevel} pointerEvents="none" />
+      <Modal
+        visible={questBoardModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setQuestBoardModalVisible(false)}
+        statusBarTranslucent
+      >
+        <View style={styles.qbOverlay}>
+          <Pressable
+            style={StyleSheet.absoluteFillObject}
+            onPress={() => setQuestBoardModalVisible(false)}
+          />
+          <View style={[styles.qbFrame, theme.SHADOWS.cardShadow]}>
+            <View style={styles.qbParchment}>
+              <View style={styles.drBevel} pointerEvents="none" />
 
-                {/* Close button — inside the panel */}
-                <TouchableOpacity
-                  style={styles.drClose}
-                  onPress={() => setQuestBoardModalVisible(false)}
-                  activeOpacity={0.8}
-                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                >
-                  <Text style={styles.drCloseText}>✕</Text>
-                </TouchableOpacity>
+              {/* Close button — inside the panel */}
+              <TouchableOpacity
+                style={styles.drClose}
+                onPress={() => setQuestBoardModalVisible(false)}
+                activeOpacity={0.8}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <Text style={styles.drCloseText}>✕</Text>
+              </TouchableOpacity>
 
-                {/* Scrollable quests list */}
-                <ScrollView
-                  style={styles.qbScrollView}
-                  contentContainerStyle={styles.qbScrollContent}
-                  showsVerticalScrollIndicator={false}
-                >
-                  {/* Daily Quests Header Divider (Progress + Countdown) */}
-                  <View style={styles.qbSectionHeader}>
-                    <Text style={styles.qbProgressSummaryText}>PROGRESS: {completedCount} / 3</Text>
-                    <Text style={styles.qbCountdownText}>RESET IN: {resetCountdown}</Text>
-                  </View>
+              {/* Scrollable quests list */}
+              <ScrollView
+                style={styles.qbScrollView}
+                contentContainerStyle={styles.qbScrollContent}
+                showsVerticalScrollIndicator={false}
+              >
+                {/* Daily Quests Header Divider (Progress + Countdown) */}
+                <View style={styles.qbSectionHeader}>
+                  <Text style={styles.qbProgressSummaryText}>PROGRESS: {completedCount} / 3</Text>
+                  <Text style={styles.qbCountdownText}>RESET IN: {resetCountdown}</Text>
+                </View>
 
-                  {/* Daily Quests List */}
-                  {sortedDailies.length === 0 ? (
-                    <Text style={styles.qbEmptyText}>No daily quests active.</Text>
-                  ) : (
-                    sortedDailies.map((quest) => {
-                      const isExpanded = expandedQuestId === quest.id;
-                      return (
-                        <View
-                          key={quest.id}
+                {/* Daily Quests List */}
+                {sortedDailies.length === 0 ? (
+                  <Text style={styles.qbEmptyText}>No daily quests active.</Text>
+                ) : (
+                  sortedDailies.map((quest) => {
+                    const isExpanded = expandedQuestId === quest.id;
+                    return (
+                      <View
+                        key={quest.id}
+                        style={[
+                          styles.questAccordionCard,
+                          isExpanded && styles.questAccordionCardExpanded,
+                          quest.claimed && styles.questAccordionCardClaimed,
+                        ]}
+                      >
+                        {/* Header Row */}
+                        <TouchableOpacity
                           style={[
-                            styles.questAccordionCard,
-                            isExpanded && styles.questAccordionCardExpanded,
-                            quest.claimed && styles.questAccordionCardClaimed,
+                            styles.questHeaderRow,
+                            isExpanded && styles.questHeaderRowExpanded,
+                            quest.completed && !quest.claimed && styles.questHeaderRowClaimable,
                           ]}
+                          onPress={() => setExpandedQuestId(isExpanded ? null : quest.id)}
+                          activeOpacity={0.85}
                         >
-                          {/* Header Row */}
-                          <TouchableOpacity
-                            style={[
-                              styles.questHeaderRow,
-                              isExpanded && styles.questHeaderRowExpanded,
-                              quest.completed && !quest.claimed && styles.questHeaderRowClaimable,
-                            ]}
-                            onPress={() => setExpandedQuestId(isExpanded ? null : quest.id)}
-                            activeOpacity={0.85}
-                          >
-                            <View style={styles.questHeaderLeft}>
-                              {quest.claimed ? (
-                                <ItemSprite spritesheet="icons-map" frameIndex={95} displaySize={13} />
-                              ) : quest.completed ? (
-                                <ItemSprite spritesheet="icons-map" frameIndex={140} displaySize={13} />
-                              ) : (
-                                <View style={styles.statusBulletActive} />
-                              )}
-                              <Text
-                                style={[
-                                  styles.questHeaderTitle,
-                                  quest.claimed && styles.questHeaderTitleClaimed,
-                                ]}
-                              >
-                                {quest.title}
-                              </Text>
-                            </View>
+                          <View style={styles.questHeaderLeft}>
+                            {quest.claimed ? (
+                              <ItemSprite spritesheet="icons-map" frameIndex={95} displaySize={13} />
+                            ) : quest.completed ? (
+                              <ItemSprite spritesheet="icons-map" frameIndex={140} displaySize={13} />
+                            ) : (
+                              <View style={styles.statusBulletActive} />
+                            )}
+                            <Text
+                              style={[
+                                styles.questHeaderTitle,
+                                quest.claimed && styles.questHeaderTitleClaimed,
+                              ]}
+                            >
+                              {quest.title}
+                            </Text>
+                          </View>
 
-                            <View style={styles.questHeaderRight}>
-                              {quest.claimed ? (
-                                <Text style={styles.questStatusTextClaimed}>CLAIMED</Text>
-                              ) : quest.completed ? (
-                                <View style={styles.headerClaimBtnWrapper}>
-                                  <View style={styles.headerClaimBtnShadow} />
-                                  <TouchableOpacity
-                                    style={styles.headerClaimBtnOuter}
-                                    activeOpacity={0.7}
-                                    onPress={(e) => {
-                                      e.stopPropagation();
-                                      setCelebrationQuest(quest);
-                                    }}
-                                  >
-                                    <View style={styles.headerClaimBtnInner}>
-                                      <Text style={styles.headerClaimBtnText}>CLAIM</Text>
-                                    </View>
-                                  </TouchableOpacity>
-                                </View>
-                              ) : (
-                                <Text style={styles.questHeaderProgressText}>
-                                  {quest.progress}/{quest.target}
-                                </Text>
-                              )}
-                              <Text style={styles.chevronIcon}>{isExpanded ? '▲' : '▼'}</Text>
-                            </View>
-                          </TouchableOpacity>
-
-                          {/* Expanded Body */}
-                          {isExpanded && (
-                            <View style={styles.questBody}>
-                              <Text style={styles.questDesc}>{quest.desc}</Text>
-
-                              {!quest.claimed && (
-                                <View style={styles.progressBarBg}>
-                                  <View
-                                    style={[
-                                      styles.progressBarFill,
-                                      { width: `${Math.min(100, (quest.progress / quest.target) * 100)}%` },
-                                    ]}
-                                  />
-                                  <View style={styles.progressBarTextWrapper}>
-                                    <Text style={styles.progressBarText}>
-                                      PROGRESS: {quest.progress} / {quest.target}
-                                    </Text>
+                          <View style={styles.questHeaderRight}>
+                            {quest.claimed ? (
+                              <Text style={styles.questStatusTextClaimed}>CLAIMED</Text>
+                            ) : quest.completed ? (
+                              <View style={styles.headerClaimBtnWrapper}>
+                                <View style={styles.headerClaimBtnShadow} />
+                                <TouchableOpacity
+                                  style={styles.headerClaimBtnOuter}
+                                  activeOpacity={0.7}
+                                  onPress={(e) => {
+                                    e.stopPropagation();
+                                    setCelebrationQuest(quest);
+                                  }}
+                                >
+                                  <View style={styles.headerClaimBtnInner}>
+                                    <Text style={styles.headerClaimBtnText}>CLAIM</Text>
                                   </View>
-                                </View>
-                              )}
+                                </TouchableOpacity>
+                              </View>
+                            ) : (
+                              <Text style={styles.questHeaderProgressText}>
+                                {quest.progress}/{quest.target}
+                              </Text>
+                            )}
+                            <Text style={styles.chevronIcon}>{isExpanded ? '▲' : '▼'}</Text>
+                          </View>
+                        </TouchableOpacity>
 
-                              <View style={styles.questRewardsRow}>
-                                <Text style={styles.rewardsLabel}>Rewards:</Text>
-                                <View style={styles.rewardsList}>
-                                  {quest.rewards.gold > 0 && renderRewardChip('gold', 'gold', quest.rewards.gold)}
-                                  {quest.rewards.consumables &&
-                                    Object.entries(quest.rewards.consumables).map(([id, qty]) =>
-                                      renderRewardChip('consumables', id, qty)
-                                    )}
-                                  {quest.rewards.materials &&
-                                    Object.entries(quest.rewards.materials).map(([id, qty]) =>
-                                      renderRewardChip('materials', id, qty)
-                                    )}
+                        {/* Expanded Body */}
+                        {isExpanded && (
+                          <View style={styles.questBody}>
+                            <Text style={styles.questDesc}>{quest.desc}</Text>
+
+                            {!quest.claimed && (
+                              <View style={styles.progressBarBg}>
+                                <View
+                                  style={[
+                                    styles.progressBarFill,
+                                    { width: `${Math.min(100, (quest.progress / quest.target) * 100)}%` },
+                                  ]}
+                                />
+                                <View style={styles.progressBarTextWrapper}>
+                                  <Text style={styles.progressBarText}>
+                                    PROGRESS: {quest.progress} / {quest.target}
+                                  </Text>
                                 </View>
                               </View>
+                            )}
 
-                              {!quest.claimed && quest.completed && (
-                                <View style={styles.claimBtnWrapper}>
-                                  <View style={styles.claimBtnShadow} />
-                                  <TouchableOpacity
-                                    style={styles.claimBtnOuter}
-                                    activeOpacity={0.8}
-                                    onPress={() => setCelebrationQuest(quest)}
-                                  >
-                                    <View style={styles.claimBtnInner}>
-                                      <Text style={styles.claimBtnText}>CLAIM REWARD</Text>
-                                    </View>
-                                  </TouchableOpacity>
-                                </View>
-                              )}
+                            <View style={styles.questRewardsRow}>
+                              <Text style={styles.rewardsLabel}>Rewards:</Text>
+                              <View style={styles.rewardsList}>
+                                {quest.rewards.gold > 0 && renderRewardChip('gold', 'gold', quest.rewards.gold)}
+                                {quest.rewards.consumables &&
+                                  Object.entries(quest.rewards.consumables).map(([id, qty]) =>
+                                    renderRewardChip('consumables', id, qty)
+                                  )}
+                                {quest.rewards.materials &&
+                                  Object.entries(quest.rewards.materials).map(([id, qty]) =>
+                                    renderRewardChip('materials', id, qty)
+                                  )}
+                              </View>
                             </View>
-                          )}
-                        </View>
-                      );
-                    })
-                  )}
-                </ScrollView>
-              </View>
 
-              {/* Title sign mounted on top */}
-              <View style={styles.drTopWrap} pointerEvents="none">
-                <View style={styles.drTopOuter}>
-                  <View style={styles.drTopInner}>
-                    <Text style={styles.drTopText}>DAILY QUESTS</Text>
-                  </View>
+                            {!quest.claimed && quest.completed && (
+                              <View style={styles.claimBtnWrapper}>
+                                <View style={styles.claimBtnShadow} />
+                                <TouchableOpacity
+                                  style={styles.claimBtnOuter}
+                                  activeOpacity={0.8}
+                                  onPress={() => setCelebrationQuest(quest)}
+                                >
+                                  <View style={styles.claimBtnInner}>
+                                    <Text style={styles.claimBtnText}>CLAIM REWARD</Text>
+                                  </View>
+                                </TouchableOpacity>
+                              </View>
+                            )}
+                          </View>
+                        )}
+                      </View>
+                    );
+                  })
+                )}
+              </ScrollView>
+            </View>
+
+            {/* Title sign mounted on top */}
+            <View style={styles.drTopWrap} pointerEvents="none">
+              <View style={styles.drTopOuter}>
+                <View style={styles.drTopInner}>
+                  <Text style={styles.drTopText}>DAILY QUESTS</Text>
                 </View>
               </View>
             </View>
+          </View>
 
-            {/* Quest Reward Celebration Overlay */}
-            {celebrationQuest && (
-              <View style={[StyleSheet.absoluteFillObject, styles.drOverlay, { zIndex: 100 }]}>
-                <View style={[styles.drFrame, theme.SHADOWS.cardShadow]}>
-                  <View style={styles.drParchment}>
-                    <View style={styles.drBevel} pointerEvents="none" />
-                    
-                    {/* Header Banner */}
-                    <View style={styles.drTopWrap} pointerEvents="none">
-                      <View style={styles.drTopOuter}>
-                        <View style={styles.drTopInner}>
-                          <Text style={styles.drTopText}>QUEST COMPLETED</Text>
-                        </View>
+          {/* Quest Reward Celebration Overlay */}
+          {celebrationQuest && (
+            <View style={[StyleSheet.absoluteFillObject, styles.drOverlay, { zIndex: 100 }]}>
+              <View style={[styles.drFrame, theme.SHADOWS.cardShadow]}>
+                <View style={styles.drParchment}>
+                  <View style={styles.drBevel} pointerEvents="none" />
+
+                  {/* Header Banner */}
+                  <View style={styles.drTopWrap} pointerEvents="none">
+                    <View style={styles.drTopOuter}>
+                      <View style={styles.drTopInner}>
+                        <Text style={styles.drTopText}>QUEST COMPLETED</Text>
                       </View>
                     </View>
-
-                    <Text style={styles.drSubtitle}>{celebrationQuest.title}</Text>
-                    
-                    {/* Grid of rewards */}
-                    <View style={styles.drRewards}>
-                      {celebrationQuest.rewards.gold > 0 && renderCelebrationRewardChip('gold', 'gold', celebrationQuest.rewards.gold)}
-                      {celebrationQuest.rewards.consumables && Object.entries(celebrationQuest.rewards.consumables).map(([id, qty]) => 
-                        renderCelebrationRewardChip('consumables', id, qty)
-                      )}
-                      {celebrationQuest.rewards.materials && Object.entries(celebrationQuest.rewards.materials).map(([id, qty]) => 
-                        renderCelebrationRewardChip('materials', id, qty)
-                      )}
-                    </View>
-
-                    {/* AWESOME! button */}
-                    <TouchableOpacity
-                      style={styles.drButton}
-                      activeOpacity={0.8}
-                      onPress={() => {
-                        dispatch({ type: 'CLAIM_QUEST_REWARD', payload: { questId: celebrationQuest.id } });
-                        setCelebrationQuest(null);
-                      }}
-                    >
-                      <View style={styles.drButtonInner}>
-                        <Text style={styles.drButtonText}>AWESOME!</Text>
-                      </View>
-                    </TouchableOpacity>
                   </View>
+
+                  <Text style={styles.drSubtitle}>{celebrationQuest.title}</Text>
+
+                  {/* Grid of rewards */}
+                  <View style={styles.drRewards}>
+                    {celebrationQuest.rewards.gold > 0 && renderCelebrationRewardChip('gold', 'gold', celebrationQuest.rewards.gold)}
+                    {celebrationQuest.rewards.consumables && Object.entries(celebrationQuest.rewards.consumables).map(([id, qty]) =>
+                      renderCelebrationRewardChip('consumables', id, qty)
+                    )}
+                    {celebrationQuest.rewards.materials && Object.entries(celebrationQuest.rewards.materials).map(([id, qty]) =>
+                      renderCelebrationRewardChip('materials', id, qty)
+                    )}
+                  </View>
+
+                  {/* AWESOME! button */}
+                  <TouchableOpacity
+                    style={styles.drButton}
+                    activeOpacity={0.8}
+                    onPress={() => {
+                      dispatch({ type: 'CLAIM_QUEST_REWARD', payload: { questId: celebrationQuest.id } });
+                      setCelebrationQuest(null);
+                    }}
+                  >
+                    <View style={styles.drButtonInner}>
+                      <Text style={styles.drButtonText}>AWESOME!</Text>
+                    </View>
+                  </TouchableOpacity>
                 </View>
               </View>
-            )}
-          </View>
-        </Modal>
+            </View>
+          )}
+        </View>
+      </Modal>
 
-        {/* ═══════════════════════════════════════════════════════════════════
+      {/* ═══════════════════════════════════════════════════════════════════
           SETTINGS MODAL — holds destructive/save actions
           ═══════════════════════════════════════════════════════════════════ */}
-        <Modal
-          visible={settingsModalVisible}
-          transparent
-          animationType="fade"
-          onRequestClose={() => setSettingsModalVisible(false)}
-          statusBarTranslucent
-        >
-          <Pressable style={styles.drOverlay} onPress={() => setSettingsModalVisible(false)}>
-            <Pressable style={[styles.drFrame, theme.SHADOWS.cardShadow]} onPress={() => { }}>
-              <View style={styles.drParchment}>
-                <View style={styles.drBevel} pointerEvents="none" />
+      <Modal
+        visible={settingsModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setSettingsModalVisible(false)}
+        statusBarTranslucent
+      >
+        <Pressable style={styles.drOverlay} onPress={() => setSettingsModalVisible(false)}>
+          <Pressable style={[styles.drFrame, theme.SHADOWS.cardShadow]} onPress={() => { }}>
+            <View style={styles.drParchment}>
+              <View style={styles.drBevel} pointerEvents="none" />
 
-                <TouchableOpacity
-                  style={styles.drClose}
-                  onPress={() => setSettingsModalVisible(false)}
-                  activeOpacity={0.8}
-                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                >
-                  <Text style={styles.drCloseText}>✕</Text>
-                </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.drClose}
+                onPress={() => setSettingsModalVisible(false)}
+                activeOpacity={0.8}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <Text style={styles.drCloseText}>✕</Text>
+              </TouchableOpacity>
 
-                <Text style={styles.settingsSectionLabel}>Audio Settings</Text>
+              <Text style={styles.settingsSectionLabel}>Audio Settings</Text>
 
-                <TouchableOpacity
-                  activeOpacity={0.85}
-                  style={styles.settingsAudioBtn}
-                  onPress={() => {
-                    dispatch({ type: 'TOGGLE_MUTE_SOUNDS' });
-                  }}
-                >
-                  <View style={styles.settingsAudioBtnInner}>
-                    <Text style={styles.settingsAudioBtnText}>
-                      {state?.settings?.muteSounds ? 'UNMUTE SOUNDS' : 'MUTE SOUNDS'}
-                    </Text>
-                  </View>
-                </TouchableOpacity>
-                <Text style={[styles.settingsHint, { marginBottom: 20 }]}>
-                  {state?.settings?.muteSounds ? 'Sounds are currently muted.' : 'Sounds are currently enabled.'}
-                </Text>
+              <TouchableOpacity
+                activeOpacity={0.85}
+                style={styles.settingsAudioBtn}
+                onPress={() => {
+                  dispatch({ type: 'TOGGLE_MUTE_SOUNDS' });
+                }}
+              >
+                <View style={styles.settingsAudioBtnInner}>
+                  <Text style={styles.settingsAudioBtnText}>
+                    {state?.settings?.muteSounds ? 'UNMUTE SOUNDS' : 'MUTE SOUNDS'}
+                  </Text>
+                </View>
+              </TouchableOpacity>
+              <Text style={[styles.settingsHint, { marginBottom: 20 }]}>
+                {state?.settings?.muteSounds ? 'Sounds are currently muted.' : 'Sounds are currently enabled.'}
+              </Text>
 
-                <Text style={styles.settingsSectionLabel}>Character Progression</Text>
+              <Text style={styles.settingsSectionLabel}>Character Progression</Text>
 
-                <TouchableOpacity
-                  activeOpacity={0.85}
-                  style={styles.settingsResetStatsBtn}
-                  onPress={() => {
-                    Alert.alert(
-                      'Reset Stats & Skills',
-                      'Are you sure you want to reset all attribute points and skills? You will be fully refunded all spent Skill Points.',
-                      [
-                        { text: 'Cancel', style: 'cancel' },
-                        {
-                          text: 'Reset Stats & Skills',
-                          style: 'destructive',
-                          onPress: () => {
-                            dispatch({ type: 'RESET_STATS_AND_SKILLS' });
-                            setSettingsModalVisible(false);
-                          },
+              <TouchableOpacity
+                activeOpacity={0.85}
+                style={styles.settingsResetStatsBtn}
+                onPress={() => {
+                  Alert.alert(
+                    'Reset Stats & Skills',
+                    'Are you sure you want to reset all attribute points and skills? You will be fully refunded all spent Skill Points.',
+                    [
+                      { text: 'Cancel', style: 'cancel' },
+                      {
+                        text: 'Reset Stats & Skills',
+                        style: 'destructive',
+                        onPress: () => {
+                          dispatch({ type: 'RESET_STATS_AND_SKILLS' });
+                          setSettingsModalVisible(false);
                         },
-                      ]
-                    );
-                  }}
-                >
-                  <View style={styles.settingsResetStatsBtnInner}>
-                    <Text style={styles.settingsResetStatsBtnText}>RESET STATS & SKILLS</Text>
-                  </View>
-                </TouchableOpacity>
-                <Text style={[styles.settingsHint, { marginBottom: 20 }]}>Reclaims all Strength, Agility, Vitality points, and crystal skill upgrades.</Text>
+                      },
+                    ]
+                  );
+                }}
+              >
+                <View style={styles.settingsResetStatsBtnInner}>
+                  <Text style={styles.settingsResetStatsBtnText}>RESET STATS & SKILLS</Text>
+                </View>
+              </TouchableOpacity>
+              <Text style={[styles.settingsHint, { marginBottom: 20 }]}>Reclaims all Strength, Agility, Vitality points, and crystal skill upgrades.</Text>
 
-                <Text style={styles.settingsSectionLabel}>Save Data</Text>
+              <Text style={styles.settingsSectionLabel}>Save Data</Text>
 
-                <TouchableOpacity
-                  activeOpacity={0.85}
-                  style={styles.settingsResetBtn}
-                  onPress={() => {
-                    Alert.alert(
-                      'Reset Game Data',
-                      'Are you sure you want to nuke your save and start completely fresh?',
-                      [
-                        { text: 'Cancel', style: 'cancel' },
-                        {
-                          text: 'Reset Data',
-                          style: 'destructive',
-                          onPress: () => {
-                            dispatch({ type: 'RESET_GAME' });
-                            setSettingsModalVisible(false);
-                          },
+              <TouchableOpacity
+                activeOpacity={0.85}
+                style={styles.settingsResetBtn}
+                onPress={() => {
+                  Alert.alert(
+                    'Reset Game Data',
+                    'Are you sure you want to nuke your save and start completely fresh?',
+                    [
+                      { text: 'Cancel', style: 'cancel' },
+                      {
+                        text: 'Reset Data',
+                        style: 'destructive',
+                        onPress: () => {
+                          dispatch({ type: 'RESET_GAME' });
+                          setSettingsModalVisible(false);
                         },
-                      ]
-                    );
-                  }}
-                >
-                  <View style={styles.settingsResetBtnInner}>
-                    <Text style={styles.settingsResetBtnText}>RESET SAVE DATA</Text>
-                  </View>
-                </TouchableOpacity>
-                <Text style={styles.settingsHint}>This permanently deletes all of your progress.</Text>
-              </View>
+                      },
+                    ]
+                  );
+                }}
+              >
+                <View style={styles.settingsResetBtnInner}>
+                  <Text style={styles.settingsResetBtnText}>RESET SAVE DATA</Text>
+                </View>
+              </TouchableOpacity>
+              <Text style={styles.settingsHint}>This permanently deletes all of your progress.</Text>
+            </View>
 
-              <View style={styles.drTopWrap} pointerEvents="none">
-                <View style={styles.drTopOuter}>
-                  <View style={styles.drTopInner}>
-                    <Text style={styles.drTopText}>SETTINGS</Text>
-                  </View>
+            <View style={styles.drTopWrap} pointerEvents="none">
+              <View style={styles.drTopOuter}>
+                <View style={styles.drTopInner}>
+                  <Text style={styles.drTopText}>SETTINGS</Text>
                 </View>
               </View>
-            </Pressable>
+            </View>
           </Pressable>
-        </Modal>
+        </Pressable>
+      </Modal>
 
-      </SafeAreaView>
+    </SafeAreaView>
   );
 }
 
@@ -1158,15 +1160,15 @@ const styles = StyleSheet.create({
   dungeonLabel: {
     fontFamily: 'Jersey10-Regular',
     fontWeight: 'normal',
-    fontSize: 30,
-    letterSpacing: 1.5,
+    fontSize: 34,
+    letterSpacing: 1,
     color: '#FFF3DA',
     textTransform: 'uppercase',
   },
   dungeonSub: {
     fontFamily: 'Jersey10-Regular',
     fontWeight: 'normal',
-    fontSize: 13,
+    fontSize: 16,
     letterSpacing: 0.5,
     color: '#FFEED0',
     marginTop: 2,
@@ -1230,7 +1232,7 @@ const styles = StyleSheet.create({
   subCardLabel: {
     fontFamily: 'Jersey10-Regular',
     fontWeight: 'normal',
-    fontSize: 14,
+    fontSize: 16,
     lineHeight: 15,
     letterSpacing: 0.5,
     color: '#FFF3DA',
@@ -1316,8 +1318,8 @@ const styles = StyleSheet.create({
   dailyRewardTitle: {
     fontFamily: 'Jersey10-Regular',
     fontWeight: 'normal',
-    fontSize: 25,
-    letterSpacing: 1.5,
+    fontSize: 30,
+    letterSpacing: 1,
     textTransform: 'uppercase',
   },
   dailyRewardTitleActive: {
@@ -1329,7 +1331,7 @@ const styles = StyleSheet.create({
   dailyRewardSub: {
     fontFamily: 'Jersey10-Regular',
     fontWeight: 'normal',
-    fontSize: 13,
+    fontSize: 16,
     letterSpacing: 0.5,
     marginTop: 2,
   },
@@ -1394,7 +1396,7 @@ const styles = StyleSheet.create({
   },
   bannerOverlayContent: {
     ...StyleSheet.absoluteFillObject,
-    padding: 16,
+    padding: 8,
     justifyContent: 'space-between',
   },
   bannerTitleOuterBorder: {
@@ -1421,7 +1423,8 @@ const styles = StyleSheet.create({
   },
   bannerTitleText: {
     fontFamily: 'PressStart2P-Regular',
-    fontSize: 18,
+    fontSize: 22,
+    lineHeight: 30,
     color: '#FFF3DA',
     textAlign: 'center',
     textShadowColor: '#000',
@@ -1447,9 +1450,9 @@ const styles = StyleSheet.create({
     gap: 3,
   },
   bannerTagText: {
-    fontFamily: 'Silkscreen-Regular',
-    fontSize: 10,
-    letterSpacing: 0,
+    fontFamily: 'Jersey10-Regular',
+    fontSize: 20,
+    letterSpacing: 0.5,
     color: '#2A1A0C',
   },
   bannerTagClickableWrapper: {
@@ -1470,11 +1473,11 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: -6,
     right: -6,
-    width: 14,
-    height: 14,
+    width: 16,
+    height: 16,
     borderRadius: 7,
     backgroundColor: '#D8483F', // damageRed (retro red)
-    borderColor: '#4A3917',
+    borderColor: '#b98c33ff',
     borderWidth: 1.5,
     justifyContent: 'center',
     alignItems: 'center',
@@ -1482,11 +1485,11 @@ const styles = StyleSheet.create({
   },
   bannerTagBadgeText: {
     fontFamily: 'PressStart2P-Regular',
-    fontSize: 8,
+    fontSize: 10,
     color: '#FFF3DA',
     fontWeight: 'bold',
     textAlign: 'center',
-    lineHeight: 8,
+    lineHeight: 10,
     marginTop: -1,
   },
 
@@ -1588,7 +1591,7 @@ const styles = StyleSheet.create({
   },
   drTopText: {
     fontFamily: 'PressStart2P-Regular',
-    fontSize: 12,
+    fontSize: 14,
     color: '#FFF3DA',
     textAlign: 'center',
     textShadowColor: '#000',
@@ -1597,7 +1600,7 @@ const styles = StyleSheet.create({
   },
   drSubtitle: {
     fontFamily: 'Silkscreen-Regular',
-    fontSize: 11,
+    fontSize: 12,
     color: '#4A2E14',
     textAlign: 'center',
     letterSpacing: 0.3,
@@ -1613,7 +1616,7 @@ const styles = StyleSheet.create({
   },
   drWatchLabel: {
     fontFamily: 'Silkscreen-Regular',
-    fontSize: 11,
+    fontSize: 12,
     color: '#4A2E14',
     letterSpacing: 1,
     textTransform: 'uppercase',
@@ -1861,13 +1864,13 @@ const styles = StyleSheet.create({
   },
   qbProgressSummaryText: {
     fontFamily: 'Silkscreen-Regular',
-    fontSize: 8,
+    fontSize: 12,
     color: '#3A2210',
     fontWeight: 'bold',
   },
   qbCountdownText: {
     fontFamily: 'Silkscreen-Regular',
-    fontSize: 8,
+    fontSize: 12,
     color: '#9A7A4A',
   },
   qbEmptyText: {
@@ -1928,7 +1931,7 @@ const styles = StyleSheet.create({
   },
   questHeaderTitle: {
     fontFamily: 'Silkscreen-Regular',
-    fontSize: 11,
+    fontSize: 16,
     color: '#3A2210',
     fontWeight: 'bold',
     flex: 1,
@@ -1939,12 +1942,12 @@ const styles = StyleSheet.create({
   },
   questStatusTextClaimed: {
     fontFamily: 'Silkscreen-Regular',
-    fontSize: 9,
+    fontSize: 12,
     color: '#8A9384',
   },
   questHeaderProgressText: {
     fontFamily: 'Silkscreen-Regular',
-    fontSize: 9,
+    fontSize: 12,
     color: '#3A2210',
   },
   chevronIcon: {
@@ -1996,7 +1999,7 @@ const styles = StyleSheet.create({
   },
   headerClaimBtnText: {
     fontFamily: 'Silkscreen-Regular',
-    fontSize: 8,
+    fontSize: 12,
     color: '#FFF3DA',
     fontWeight: 'bold',
   },
@@ -2006,13 +2009,13 @@ const styles = StyleSheet.create({
   },
   questDesc: {
     fontFamily: 'Jersey10-Regular',
-    fontSize: 14,
+    fontSize: 20,
     color: '#6E4524',
     marginTop: 2,
-    marginBottom: 6,
+    marginBottom: 2,
   },
   progressBarBg: {
-    height: 14,
+    height: 20,
     backgroundColor: '#3A2210',
     borderRadius: 7,
     overflow: 'hidden',
@@ -2024,7 +2027,7 @@ const styles = StyleSheet.create({
   },
   progressBarFill: {
     height: '100%',
-    backgroundColor: '#D4A754',
+    backgroundColor: '#1c823eff',
     borderRadius: 6,
   },
   progressBarTextWrapper: {
@@ -2034,7 +2037,7 @@ const styles = StyleSheet.create({
   },
   progressBarText: {
     fontFamily: 'Silkscreen-Regular',
-    fontSize: 8,
+    fontSize: 12,
     color: '#FFF3DA',
     textShadowColor: '#3A2210',
     textShadowOffset: { width: 1, height: 1 },
@@ -2044,11 +2047,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    marginBottom: 8,
+    marginBottom: 2,
   },
   rewardsLabel: {
     fontFamily: 'Silkscreen-Regular',
-    fontSize: 9,
+    fontSize: 12,
     color: '#9A7A4A',
   },
   rewardsList: {
@@ -2069,7 +2072,7 @@ const styles = StyleSheet.create({
   },
   rewardMiniText: {
     fontFamily: 'Silkscreen-Regular',
-    fontSize: 8,
+    fontSize: 12,
     color: '#3A2210',
   },
   claimBtnWrapper: {
@@ -2116,7 +2119,7 @@ const styles = StyleSheet.create({
   },
   claimBtnText: {
     fontFamily: 'Silkscreen-Regular',
-    fontSize: 10,
+    fontSize: 14,
     color: '#FFF3DA',
     textTransform: 'uppercase',
   },
@@ -2132,23 +2135,23 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: -6,
     right: -6,
-    width: 14,
-    height: 14,
-    borderRadius: 7,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
     backgroundColor: '#D8483F',
-    borderColor: '#4A3917',
-    borderWidth: 1.5,
+    borderColor: '#b98c33ff',
+    borderWidth: 2,
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 10,
   },
   questBadgeText: {
     fontFamily: 'PressStart2P-Regular',
-    fontSize: 8,
+    fontSize: 14,
     color: '#FFF3DA',
     fontWeight: 'bold',
     textAlign: 'center',
-    lineHeight: 8,
+    lineHeight: 14,
     marginTop: -1,
   },
 });

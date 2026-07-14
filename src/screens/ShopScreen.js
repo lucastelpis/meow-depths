@@ -1,9 +1,9 @@
 /**
  * =============================================================================
- * ShopScreen.js — Meow Depths Town Shop (Supplies & Armory - Redesigned Premium UI)
+ * ShopScreen.js — Meow Depths Town Shop (Consumables & Armory - Redesigned Premium UI)
  * =============================================================================
  *
- * This screen consolidates the items shop (supplies bought with Gold) and
+ * This screen consolidates the items shop (consumables bought with Gold) and
  * the equipment forge (armory forged with dungeon crystals).
  *
  * Designed with a premium "Twilight Obsidian & Gilded Amber" theme.
@@ -64,7 +64,7 @@ function getStatDeltas(candidateDef, currentDef) {
 
 // ─── Tab Configuration ───────────────────────────────────────────────────────
 const TABS = [
-  { key: 'supplies', frameIndex: 26, label: 'Supplies' },
+  { key: 'consumables', frameIndex: 26, label: 'Consumables' },
   { key: 'armory', frameIndex: 10, label: 'Gear' },
 ];
 
@@ -210,7 +210,7 @@ export default function ShopScreen() {
   const { state, dispatch } = useGame();
   const { hero } = state;
 
-  const [activeTab, setActiveTab] = useState('supplies'); // 'supplies' | 'armory'
+  const [activeTab, setActiveTab] = useState('consumables'); // 'consumables' | 'armory'
   const [quantities, setQuantities] = useState({});       // { [itemId]: number }
   const [buyPrompt, setBuyPrompt] = useState(null);       // gear purchase-confirm modal
   const [equipPrompt, setEquipPrompt] = useState(null);   // post-purchase equip modal
@@ -289,8 +289,8 @@ export default function ShopScreen() {
 
 
 
-  // ── Supplies: purchase handler ─────────────────────────────────────────────
-  const handleBuySupplies = (item) => {
+  // ── Consumables: purchase handler ──────────────────────────────────────────
+  const handleBuyConsumables = (item) => {
     const qty = getQty(item.id);
     const totalCost = item.cost * qty;
     if (hero.gold < totalCost) return;
@@ -424,11 +424,11 @@ export default function ShopScreen() {
         showsVerticalScrollIndicator={false}
       >
         {/* ═════════════════════════════════════════════════════════════════════
-            TAB 1: SUPPLIES (Gold Purchase)
+            TAB 1: CONSUMABLES (Gold Purchase)
             ═════════════════════════════════════════════════════════════════════ */}
-        {activeTab === 'supplies' && (
+        {activeTab === 'consumables' && (
           <View style={styles.tabContent}>
-            <View style={styles.suppliesIntro}>
+            <View style={styles.consumablesIntro}>
               <Text style={styles.introDesc}>Purchase healing reagents and items to aid your expedition runs.</Text>
             </View>
 
@@ -461,40 +461,50 @@ export default function ShopScreen() {
                           />
                         </View>
                         <View style={styles.shopRowInfo}>
-                          <View style={styles.shopNameRow}>
+                          <View style={styles.shopRowHeader}>
                             <Text style={styles.shopRowName}>{item.name}</Text>
-                            {owned > 0 && (
-                              <View style={styles.shopOwnedPill}>
-                                <Text style={styles.shopOwnedPillText}>Owned: {owned}</Text>
-                              </View>
-                            )}
                           </View>
                           <Text style={styles.shopRowDesc}>{item.description}</Text>
+                          {owned > 0 && (
+                            <Text style={styles.shopOwnedText}>Owned: {owned}</Text>
+                          )}
                         </View>
                       </View>
 
                       {/* Right: stepper + buy */}
                       <View style={styles.buyArea}>
                         <View style={styles.stepper}>
-                          <TouchableOpacity
-                            style={[styles.stepBtn, qty <= 1 && styles.stepBtnDisabled]}
-                            onPress={() => decrementQty(item.id)}
-                            disabled={qty <= 1}
-                            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                          >
-                            <Text style={[styles.stepBtnText, qty <= 1 && styles.stepBtnTextDisabled]}>−</Text>
-                          </TouchableOpacity>
+                          <View style={styles.stepBtnWrapper}>
+                            <View style={[styles.stepBtnShadow, qty <= 1 && styles.stepBtnShadowDisabled]} />
+                            <TouchableOpacity
+                              style={[styles.stepBtnOuter, qty <= 1 && styles.stepBtnOuterDisabled]}
+                              onPress={() => decrementQty(item.id)}
+                              disabled={qty <= 1}
+                              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                              activeOpacity={0.8}
+                            >
+                              <View style={[styles.stepBtnInner, qty <= 1 && styles.stepBtnInnerDisabled]}>
+                                <Text style={[styles.stepBtnText, qty <= 1 && styles.stepBtnTextDisabled]}>−</Text>
+                              </View>
+                            </TouchableOpacity>
+                          </View>
 
                           <Text style={styles.stepQty}>{qty}</Text>
 
-                          <TouchableOpacity
-                            style={[styles.stepBtn, !canIncrement && styles.stepBtnDisabled]}
-                            onPress={() => incrementQty(item)}
-                            disabled={!canIncrement}
-                            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                          >
-                            <Text style={[styles.stepBtnText, !canIncrement && styles.stepBtnTextDisabled]}>+</Text>
-                          </TouchableOpacity>
+                          <View style={styles.stepBtnWrapper}>
+                            <View style={[styles.stepBtnShadow, !canIncrement && styles.stepBtnShadowDisabled]} />
+                            <TouchableOpacity
+                              style={[styles.stepBtnOuter, !canIncrement && styles.stepBtnOuterDisabled]}
+                              onPress={() => incrementQty(item)}
+                              disabled={!canIncrement}
+                              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                              activeOpacity={0.8}
+                            >
+                              <View style={[styles.stepBtnInner, !canIncrement && styles.stepBtnInnerDisabled]}>
+                                <Text style={[styles.stepBtnText, !canIncrement && styles.stepBtnTextDisabled]}>+</Text>
+                              </View>
+                            </TouchableOpacity>
+                          </View>
                         </View>
 
                         <View style={styles.buyBtnWrapper}>
@@ -503,10 +513,10 @@ export default function ShopScreen() {
                             style={[styles.buyBtnOuter, !canAffordTotal && styles.buyBtnOuterDisabled]}
                             activeOpacity={0.8}
                             disabled={!canAffordTotal}
-                            onPress={() => handleBuySupplies(item)}
+                            onPress={() => handleBuyConsumables(item)}
                           >
                             <View style={[styles.buyBtnInner, !canAffordTotal && styles.buyBtnInnerDisabled]}>
-                              <ItemSprite spritesheet="icons-1" frameIndex={11} displaySize={14} opacity={canAffordTotal ? 1.0 : 0.4} />
+                              <ItemSprite spritesheet="icons-1" frameIndex={11} displaySize={18} opacity={canAffordTotal ? 1.0 : 0.4} />
                               <Text style={[styles.buyBtnText, !canAffordTotal && styles.buyBtnTextDisabled]}>
                                 {totalCost} G
                               </Text>
@@ -527,7 +537,7 @@ export default function ShopScreen() {
             ═════════════════════════════════════════════════════════════════════ */}
         {activeTab === 'armory' && (
           <View style={styles.tabContent}>
-            <View style={styles.suppliesIntro}>
+            <View style={styles.consumablesIntro}>
               <Text style={styles.introDesc}>Spend Gold on weapons and gear. New items unlock as you venture deeper into the regions.</Text>
             </View>
 
@@ -590,11 +600,9 @@ export default function ShopScreen() {
                             />
                           </View>
                           <View style={styles.shopRowInfo}>
-                            <View style={styles.shopNameRow}>
-                              <Text style={styles.gearName} numberOfLines={1}>{item.name}</Text>
-                              <View style={styles.gearTypeBadge}>
-                                <Text style={styles.gearTypeBadgeText}>{item.type.toUpperCase()}</Text>
-                              </View>
+                            <Text style={styles.gearName} numberOfLines={1}>{item.name}</Text>
+                            <View style={[styles.gearTypeBadge, { alignSelf: 'flex-start', marginTop: 4 }]}>
+                              <Text style={styles.gearTypeBadgeText}>{item.type.toUpperCase()}</Text>
                             </View>
                             <Text style={styles.statPreview}>{formatStats(item.stats)}</Text>
                             {!!item.description && item.type !== 'storage' && (
@@ -613,9 +621,9 @@ export default function ShopScreen() {
                               disabled={!canAfford}
                               onPress={() => handleBuyGear(item)}
                             >
-                              <View style={[styles.buyBtnInnerGold, !canAfford && styles.buyBtnInnerDisabled]}>
-                                <ItemSprite spritesheet="icons-1" frameIndex={11} displaySize={14} opacity={canAfford ? 1.0 : 0.4} />
-                                <Text style={[styles.buyBtnText, styles.buyBtnTextGold, !canAfford && styles.buyBtnTextDisabled]}>
+                              <View style={[styles.buyBtnInner, !canAfford && styles.buyBtnInnerDisabled]}>
+                                <ItemSprite spritesheet="icons-1" frameIndex={11} displaySize={18} opacity={canAfford ? 1.0 : 0.4} />
+                                <Text style={[styles.buyBtnText, !canAfford && styles.buyBtnTextDisabled]}>
                                   {item.goldCost} G
                                 </Text>
                               </View>
@@ -867,7 +875,8 @@ const styles = StyleSheet.create({
   },
   goldBadgeText: {
     fontFamily: 'Jersey10-Regular',
-    fontSize: 12,
+    fontSize: 20,
+    letterSpacing: 0.5,
     fontWeight: 'normal',
     color: '#FFD700',
   },
@@ -882,7 +891,7 @@ const styles = StyleSheet.create({
   },
   materialsLabel: {
     fontFamily: 'Silkscreen-Regular',
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: 'normal',
     color: '#707F94',
     textTransform: 'uppercase',
@@ -995,7 +1004,7 @@ const styles = StyleSheet.create({
   },
   tabLabelText: {
     fontFamily: 'Silkscreen-Regular',
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: 'normal',
     letterSpacing: 0,
     textTransform: 'uppercase',
@@ -1010,25 +1019,25 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
 
-  /* ── Supplies Tab Styles ─────────────────────────────────── */
-  suppliesIntro: {
+  /* ── Consumables Tab Styles ──────────────────────────────── */
+  consumablesIntro: {
     marginBottom: 16,
     paddingHorizontal: 4,
   },
   introTitle: {
     fontFamily: 'Jersey10-Regular',
-    fontSize: 16,
+    fontSize: 20,
     fontWeight: 'normal',
     color: '#F8FAFC',
   },
   introDesc: {
     fontFamily: 'Jersey10-Regular',
-    fontSize: 12,
+    fontSize: 20,
     color: '#707F94',
     marginTop: 3,
   },
   listContainer: {
-    gap: 10,
+    gap: 8,
   },
   emptyArmoryCard: {
     borderRadius: 16,
@@ -1041,7 +1050,7 @@ const styles = StyleSheet.create({
   },
   emptyArmoryTitle: {
     fontFamily: 'Jersey10-Regular',
-    fontSize: 16,
+    fontSize: 20,
     color: '#D4A754',
     fontWeight: 'normal',
     letterSpacing: 0.5,
@@ -1049,7 +1058,7 @@ const styles = StyleSheet.create({
   },
   emptyArmoryDesc: {
     fontFamily: 'Silkscreen-Regular',
-    fontSize: 9,
+    fontSize: 18,
     color: '#707F94',
     fontWeight: 'normal',
     textAlign: 'center',
@@ -1065,18 +1074,19 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: 14,
+    paddingHorizontal: 12,
+    paddingVertical: 15,
     zIndex: 2,
   },
   shopRowLeft: {
     flexDirection: 'row',
     alignItems: 'center',
     flex: 1,
-    marginRight: 12,
+    marginRight: 10,
   },
   shopIconWrapper: {
-    width: 44,
-    height: 44,
+    width: 50,
+    height: 50,
     borderRadius: 10,
     backgroundColor: 'rgba(255,255,255,0.03)',
     alignItems: 'center',
@@ -1090,6 +1100,7 @@ const styles = StyleSheet.create({
   },
   shopRowInfo: {
     flex: 1,
+    flexShrink: 1,
   },
   shopNameRow: {
     flexDirection: 'row',
@@ -1098,82 +1109,116 @@ const styles = StyleSheet.create({
   },
   shopRowName: {
     fontFamily: 'Jersey10-Regular',
-    fontSize: 13,
+    fontSize: 22,
     color: '#F8FAFC',
     fontWeight: 'normal',
   },
-  shopOwnedPill: {
-    backgroundColor: 'rgba(16, 185, 129, 0.1)',
-    borderWidth: 1,
-    borderColor: 'rgba(16, 185, 129, 0.25)',
-    borderRadius: 6,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-  },
-  shopOwnedPillText: {
-    fontFamily: 'Silkscreen-Regular',
-    fontSize: 8,
-    letterSpacing: 0,
-    fontWeight: 'normal',
+  shopOwnedText: {
+    fontFamily: 'Jersey10-Regular',
+    fontSize: 18,
     color: '#10B981',
+    marginTop: 2,
   },
   shopRowDesc: {
     fontFamily: 'Jersey10-Regular',
-    fontSize: 12,
+    fontSize: 20,
     color: '#707F94',
     marginTop: 4,
-    lineHeight: 15,
+    lineHeight: 20,
+    flexShrink: 1,
   },
   /* ── Quantity stepper + buy area ─────────────────────────── */
   buyArea: {
-    alignItems: 'flex-end',
-    gap: 6,
+    width: 108,
+    alignItems: 'stretch',
+    gap: 8,
   },
   stepper: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    justifyContent: 'space-between',
+    width: '100%',
   },
-  stepBtn: {
-    width: 28,
-    height: 28,
-    borderRadius: 8,
-    backgroundColor: 'rgba(255,255,255,0.06)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.12)',
-    alignItems: 'center',
+  stepBtnWrapper: {
+    width: 36,
+    height: 36,
+    position: 'relative',
+  },
+  stepBtnShadow: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 2.5,
+    height: 36,
+    borderRadius: 7,
+    zIndex: 1,
+    backgroundColor: '#0D2118',
+  },
+  stepBtnShadowDisabled: {
+    backgroundColor: 'transparent',
+  },
+  stepBtnOuter: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    height: 36,
+    borderRadius: 7,
+    borderWidth: 1.8,
+    borderColor: '#84735B',
+    backgroundColor: '#0D2118',
+    zIndex: 2,
+  },
+  stepBtnOuterDisabled: {
+    borderColor: 'rgba(212, 167, 84, 0.15)',
+    backgroundColor: 'rgba(16, 44, 28, 0.25)',
+  },
+  stepBtnInner: {
+    flex: 1,
+    margin: 1,
+    borderRadius: 4,
+    borderWidth: 1.5,
+    borderTopColor: '#4F856C',
+    borderLeftColor: '#4F856C',
+    borderRightColor: '#4F856C',
+    borderBottomColor: '#0D2118',
+    borderBottomWidth: 2.5,
+    backgroundColor: '#1B4030',
     justifyContent: 'center',
+    alignItems: 'center',
   },
-  stepBtnDisabled: {
-    backgroundColor: 'rgba(255,255,255,0.02)',
-    borderColor: 'rgba(255,255,255,0.04)',
+  stepBtnInnerDisabled: {
+    borderWidth: 0,
+    backgroundColor: 'rgba(255, 255, 255, 0.02)',
   },
   stepBtnText: {
-    color: theme.COLORS.parchment,
-    fontSize: 18,
-    fontWeight: '600',
+    fontFamily: 'Jersey10-Regular',
+    fontSize: 20,
+    color: '#FFF3DA',
     lineHeight: 20,
+    marginTop: -2,
   },
   stepBtnTextDisabled: {
-    color: 'rgba(255,255,255,0.2)',
+    color: 'rgba(255, 255, 255, 0.15)',
   },
   stepQty: {
-    ...theme.FONTS.heading,
-    color: theme.COLORS.warmGlow,
-    minWidth: 22,
+    fontFamily: 'Jersey10-Regular',
+    fontSize: 20,
+    color: '#FFF3DA',
     textAlign: 'center',
+    flex: 1,
   },
   buyBtnWrapper: {
-    width: 96,
-    height: 38,
+    width: 108,
+    height: 44,
     position: 'relative',
   },
   buyBtnShadow: {
     position: 'absolute',
     left: 0,
     right: 0,
-    top: 2.5,
-    height: 38,
+    top: 3,
+    height: 44,
     borderRadius: 8,
     zIndex: 1,
     backgroundColor: '#0D2118',
@@ -1186,7 +1231,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     top: 0,
-    height: 38,
+    height: 44,
     borderRadius: 8,
     borderWidth: 2,
     borderColor: '#84735B',
@@ -1235,7 +1280,7 @@ const styles = StyleSheet.create({
   },
   buyBtnText: {
     fontFamily: 'Jersey10-Regular',
-    fontSize: 16,
+    fontSize: 20,
     color: '#FFF3DA',
   },
   buyBtnTextGold: {
@@ -1267,12 +1312,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: 14,
+    paddingHorizontal: 12,
+    paddingVertical: 15,
     zIndex: 2,
   },
   gearIconWrapper: {
-    width: 44,
-    height: 44,
+    width: 50,
+    height: 50,
     borderRadius: 10,
     backgroundColor: 'rgba(255,255,255,0.03)',
     alignItems: 'center',
@@ -1283,28 +1329,34 @@ const styles = StyleSheet.create({
   },
   gearName: {
     fontFamily: 'Jersey10-Regular',
-    fontSize: 13,
+    fontSize: 22,
     color: '#F8FAFC',
     fontWeight: 'normal',
+  },
+  gearMetaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 4,
   },
   gearTypeBadge: {
     backgroundColor: 'rgba(212, 167, 84, 0.08)',
     borderWidth: 1,
     borderColor: 'rgba(212, 167, 84, 0.2)',
     borderRadius: 5,
-    paddingHorizontal: 5,
-    paddingVertical: 1,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
   },
   gearTypeBadgeText: {
     fontFamily: 'Silkscreen-Regular',
-    fontSize: 7,
+    fontSize: 12,
     fontWeight: 'normal',
     color: '#D4A754',
-    letterSpacing: 0,
+    letterSpacing: 0.5,
   },
   statPreview: {
     fontFamily: 'Silkscreen-Regular',
-    fontSize: 10,
+    fontSize: 13,
     letterSpacing: 0,
     color: '#10B981',
     fontWeight: 'normal',

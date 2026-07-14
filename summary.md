@@ -24,7 +24,7 @@ Meow Depths is an RPG/region-crawler game built using React Native and Expo, fea
 - **Camp Hub (Main Screen)**: The player can navigate to the Region Map, Quests Board, Skills, Market (Shop), and Profile. Features a Settings modal accessible via the gear icon. The secondary navigation buttons (Market, Skills, Quests, Profile, Journal, Settings) are styled as 3D pixel-art buttons with double outlines (dark bronze outline `#84735B` and inner gap `#4F3C1E`), top/side earthy moss green highlights (`#4F856C`), a deep forest green bottom shadow bevel (`#0D2118`), and an earthy green face (`#1B4030`). The settings modal contains options to reset game data or reset character progression (reclaiming spent attribute points and refunding all Skill Points spent on skill tree unlocks and upgrades).
   - **Banner Tags Stack**: Displays active character status tags (Gold, Level, Stats point availability, Skill point availability, Unread notes notification).
     - **Stats Tag**: Appears when there are available attribute points to allocate. Uses an icon-only style with the last frame of the 2nd row of `icons-map.png` (frame index 29).
-    - **Skill Points Tag**: Appears when there are available skill points to distribute. Uses an icon-only style matching the Skills button (icons-map frame index 14).
+    - **Skill Points Tag**: Appears when there are available skill points to distribute. Uses an icon-only style matching the Skills button (icons-map frame index 95).
     - **Notes Tag**: Appears when there are unread collectible field notes. Uses an icon-only style with frame index 58 of `icons-map.png`.
 - **Quest Screen & Daily Quests Accordion**:
   - **Daily Quests Accordion (Camp Modal)**: An interactive list inside the Camp Hub where daily quests default to a collapsed header. Completed-unclaimed quests can be claimed directly from the header. The main Daily Quests entry button on the hub is styled as a 3D pixel-art button matching the Earthy Moss Green design with 3D outlines/bevels, a pulsing glow animation when active, and an all-caps subtitle.
@@ -34,10 +34,15 @@ Meow Depths is an RPG/region-crawler game built using React Native and Expo, fea
   - **Stats tab**: Displays base attributes (STR, AGI, VIT) where players allocate points earned from leveling up, previews and displays effective combat stats (ATK, DEF, MAX HP, etc.), describes their current elemental stance, and includes interactive `?` info tags next to attributes and stats which open a custom explanation popup modal.
   - **Gear tab**: Split into two subtabs (Equipped and Owned). Equipped displays equipped gear across 8 slots styled as 3D pixel-art buttons with double outlines (empty slots in Earthy Moss Green, equipped slots in warm Parchment) and active set bonuses. Owned displays a grid of crafted gear in inventory with side-by-side comparison overlays.
   - **Bag tab**: Displays Supplies (consumables).
-- **Market (Shop) Screen**: Accessible from the hub. Contains two tabs (Supplies shop, Gear armory) styled as cozy parchment/wood tabs.
+- **Market (Shop) Screen**: Accessible from the hub. Contains two tabs (Consumables shop, Gear armory) styled as cozy parchment/wood tabs.
 - **Region Map Screen**: Allows entering zones to fight enemies.
 - **Expeditions Screen**: Displays available regions (Soggy Ruins, Twisted Gardens, Sunken Docks) with custom level ranges, run completion statistics, and zone completion status. Each region card features a full-bleed premium background banner image scaled to a perfect 2:1 aspect ratio matching the dimensions of the assets.
 - **Skill Tree Screen**: Unlocks and upgrades active and passive skills using Skill Points (SP) gained on level-up. Skill cards are styled as 3D pixel-art buttons with double outlines, 3D bottom under-shadows, and colored inner highlights mapping to their current state (locked, available/unlockable, maxed, unlocked/equipped in earthy moss green instead of element colors). Equipped loadout slots in the footer dock are also styled as 3D moss green bevel buttons.
+  - **Skill Upgrade Detail Modal**: Refactored to a modern, cozy charcoal theme with translucent panels.
+    - **Centered Stats Grid**: Uses a row-based layout and locked percentage column widths (`44.44%` / `27.78%` / `27.78%`) corresponding to absolute vertical gridlines. Column 2 and 3 values are wrapped in container Views and horizontally centered (`alignItems: 'center'`) to avoid alignment drift. The first vertical line starts below the header (at `top: 41.5`) so the left header is kept open.
+    - **Scroll Container**: Content is wrapped in a `<ScrollView>` capped at `82%` of screen height. Uses a sibling backdrop `<Pressable>` layout to bypass React Native scroll gesture interception.
+    - **Stacked Action Rows**: Unified to vertical stacked rows with a clean `10px` gap. Row 1 renders Unlock/Level Up; Row 2 renders either the passive badge, the unequip button (`UNEQUIP (SLOT X)`), or side-by-side slot assignments.
+    - **Assignment Buttons**: Custom two-line labels (`ASSIGN TO` and `SLOT X`). Hides empty subtitle notifications; only renders occupant warnings (e.g. `(Tidal Strike)`) if a slot is already occupied.
 - **Journal Screen**: Split into two tabs:
   - **Creatures tab**: Displays discovered creature cards (sprite, name, region, item drops, and lore). Creature star levels are not shown because star levels dynamically scale in combat.
   - **Notes tab**: Lists collectible field notes unlocked on first-time floor clears by region, readable via a parchment reader modal. Unread notes display a red retro '!' badge in the top-right corner. When new unread notes are collected, a clickable notification badge tag (exclamation mark) appears on the main Camp Hub banner that links directly to this tab. Opening/reading the note clears its unread state.
@@ -53,7 +58,7 @@ Meow Depths is an RPG/region-crawler game built using React Native and Expo, fea
 
 
 ## Tabs Icons Reference (icons-1 spritesheet)
-- **Supplies**: Frame index 26 (Frame 27)
+- **Consumables**: Frame index 26 (Frame 27)
 - **Gear**: Frame index 10 (Frame 11)
 
 ## Consumables Spritesheet Reference (consumables-1 spritesheet)

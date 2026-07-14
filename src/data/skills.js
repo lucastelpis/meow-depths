@@ -110,7 +110,7 @@ const tidal_strike = {
   cooldown: 3,
   unlockedBy: null,
   icon: '💧',
-  description: 'Deals damage and reduces enemy DEF for a duration. Reliable and methodical.',
+  description: 'Deals damage and reduces enemy DEF for a duration.',
   stars: {
     1: { damageMultiplier: 1.20, defReduce: 0.10, duration: 2 },
     2: { damageMultiplier: 1.35, defReduce: 0.10, duration: 3 },

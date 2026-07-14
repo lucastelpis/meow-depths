@@ -705,23 +705,33 @@ export default function ProfileScreen() {
                 <Text style={styles.attrValue}>{previewStr}</Text>
                 {showControls && (
                   <View style={styles.allocRow}>
-                    <TouchableOpacity
-                      style={[styles.allocBtn, tempStrAlloc === 0 && styles.allocBtnDisabled]}
-                      onPress={() => adjustStat('str', -1)}
-                      disabled={tempStrAlloc === 0}
-                      activeOpacity={0.7}
-                    >
-                      <Text style={styles.allocBtnText}>-</Text>
-                    </TouchableOpacity>
+                    <View style={styles.allocBtnWrapper}>
+                      <View style={[styles.allocBtnShadow, tempStrAlloc === 0 && styles.allocBtnShadowDisabled]} />
+                      <TouchableOpacity
+                        style={[styles.allocBtnOuter, tempStrAlloc === 0 && styles.allocBtnOuterDisabled]}
+                        onPress={() => adjustStat('str', -1)}
+                        disabled={tempStrAlloc === 0}
+                        activeOpacity={0.8}
+                      >
+                        <View style={[styles.allocBtnInner, tempStrAlloc === 0 && styles.allocBtnInnerDisabled]}>
+                          <Text style={[styles.allocBtnText, tempStrAlloc === 0 && styles.allocBtnTextDisabled]}>-</Text>
+                        </View>
+                      </TouchableOpacity>
+                    </View>
                     <Text style={styles.allocNumber}>{tempStrAlloc}</Text>
-                    <TouchableOpacity
-                      style={[styles.allocBtn, remainingPoints === 0 && styles.allocBtnDisabled]}
-                      onPress={() => adjustStat('str', 1)}
-                      disabled={remainingPoints === 0}
-                      activeOpacity={0.7}
-                    >
-                      <Text style={styles.allocBtnText}>+</Text>
-                    </TouchableOpacity>
+                    <View style={styles.allocBtnWrapper}>
+                      <View style={[styles.allocBtnShadow, remainingPoints === 0 && styles.allocBtnShadowDisabled]} />
+                      <TouchableOpacity
+                        style={[styles.allocBtnOuter, remainingPoints === 0 && styles.allocBtnOuterDisabled]}
+                        onPress={() => adjustStat('str', 1)}
+                        disabled={remainingPoints === 0}
+                        activeOpacity={0.8}
+                      >
+                        <View style={[styles.allocBtnInner, remainingPoints === 0 && styles.allocBtnInnerDisabled]}>
+                          <Text style={[styles.allocBtnText, remainingPoints === 0 && styles.allocBtnTextDisabled]}>+</Text>
+                        </View>
+                      </TouchableOpacity>
+                    </View>
                   </View>
                 )}
               </View>
@@ -743,23 +753,33 @@ export default function ProfileScreen() {
                 <Text style={styles.attrValue}>{previewAgi}</Text>
                 {showControls && (
                   <View style={styles.allocRow}>
-                    <TouchableOpacity
-                      style={[styles.allocBtn, tempAgiAlloc === 0 && styles.allocBtnDisabled]}
-                      onPress={() => adjustStat('agi', -1)}
-                      disabled={tempAgiAlloc === 0}
-                      activeOpacity={0.7}
-                    >
-                      <Text style={styles.allocBtnText}>-</Text>
-                    </TouchableOpacity>
+                    <View style={styles.allocBtnWrapper}>
+                      <View style={[styles.allocBtnShadow, tempAgiAlloc === 0 && styles.allocBtnShadowDisabled]} />
+                      <TouchableOpacity
+                        style={[styles.allocBtnOuter, tempAgiAlloc === 0 && styles.allocBtnOuterDisabled]}
+                        onPress={() => adjustStat('agi', -1)}
+                        disabled={tempAgiAlloc === 0}
+                        activeOpacity={0.8}
+                      >
+                        <View style={[styles.allocBtnInner, tempAgiAlloc === 0 && styles.allocBtnInnerDisabled]}>
+                          <Text style={[styles.allocBtnText, tempAgiAlloc === 0 && styles.allocBtnTextDisabled]}>-</Text>
+                        </View>
+                      </TouchableOpacity>
+                    </View>
                     <Text style={styles.allocNumber}>{tempAgiAlloc}</Text>
-                    <TouchableOpacity
-                      style={[styles.allocBtn, remainingPoints === 0 && styles.allocBtnDisabled]}
-                      onPress={() => adjustStat('agi', 1)}
-                      disabled={remainingPoints === 0}
-                      activeOpacity={0.7}
-                    >
-                      <Text style={styles.allocBtnText}>+</Text>
-                    </TouchableOpacity>
+                    <View style={styles.allocBtnWrapper}>
+                      <View style={[styles.allocBtnShadow, remainingPoints === 0 && styles.allocBtnShadowDisabled]} />
+                      <TouchableOpacity
+                        style={[styles.allocBtnOuter, remainingPoints === 0 && styles.allocBtnOuterDisabled]}
+                        onPress={() => adjustStat('agi', 1)}
+                        disabled={remainingPoints === 0}
+                        activeOpacity={0.8}
+                      >
+                        <View style={[styles.allocBtnInner, remainingPoints === 0 && styles.allocBtnInnerDisabled]}>
+                          <Text style={[styles.allocBtnText, remainingPoints === 0 && styles.allocBtnTextDisabled]}>+</Text>
+                        </View>
+                      </TouchableOpacity>
+                    </View>
                   </View>
                 )}
               </View>
@@ -781,23 +801,33 @@ export default function ProfileScreen() {
                 <Text style={styles.attrValue}>{previewVit}</Text>
                 {showControls && (
                   <View style={styles.allocRow}>
-                    <TouchableOpacity
-                      style={[styles.allocBtn, tempVitAlloc === 0 && styles.allocBtnDisabled]}
-                      onPress={() => adjustStat('vit', -1)}
-                      disabled={tempVitAlloc === 0}
-                      activeOpacity={0.7}
-                    >
-                      <Text style={styles.allocBtnText}>-</Text>
-                    </TouchableOpacity>
+                    <View style={styles.allocBtnWrapper}>
+                      <View style={[styles.allocBtnShadow, tempVitAlloc === 0 && styles.allocBtnShadowDisabled]} />
+                      <TouchableOpacity
+                        style={[styles.allocBtnOuter, tempVitAlloc === 0 && styles.allocBtnOuterDisabled]}
+                        onPress={() => adjustStat('vit', -1)}
+                        disabled={tempVitAlloc === 0}
+                        activeOpacity={0.8}
+                      >
+                        <View style={[styles.allocBtnInner, tempVitAlloc === 0 && styles.allocBtnInnerDisabled]}>
+                          <Text style={[styles.allocBtnText, tempVitAlloc === 0 && styles.allocBtnTextDisabled]}>-</Text>
+                        </View>
+                      </TouchableOpacity>
+                    </View>
                     <Text style={styles.allocNumber}>{tempVitAlloc}</Text>
-                    <TouchableOpacity
-                      style={[styles.allocBtn, remainingPoints === 0 && styles.allocBtnDisabled]}
-                      onPress={() => adjustStat('vit', 1)}
-                      disabled={remainingPoints === 0}
-                      activeOpacity={0.7}
-                    >
-                      <Text style={styles.allocBtnText}>+</Text>
-                    </TouchableOpacity>
+                    <View style={styles.allocBtnWrapper}>
+                      <View style={[styles.allocBtnShadow, remainingPoints === 0 && styles.allocBtnShadowDisabled]} />
+                      <TouchableOpacity
+                        style={[styles.allocBtnOuter, remainingPoints === 0 && styles.allocBtnOuterDisabled]}
+                        onPress={() => adjustStat('vit', 1)}
+                        disabled={remainingPoints === 0}
+                        activeOpacity={0.8}
+                      >
+                        <View style={[styles.allocBtnInner, remainingPoints === 0 && styles.allocBtnInnerDisabled]}>
+                          <Text style={[styles.allocBtnText, remainingPoints === 0 && styles.allocBtnTextDisabled]}>+</Text>
+                        </View>
+                      </TouchableOpacity>
+                    </View>
                   </View>
                 )}
               </View>
@@ -1846,27 +1876,67 @@ const styles = StyleSheet.create({
     gap: 12,
     marginVertical: 4,
   },
-  allocBtn: {
-    width: 24,
-    height: 24,
-    borderRadius: 6,
-    backgroundColor: 'rgba(212, 167, 84, 0.25)',
-    borderWidth: 1.5,
-    borderColor: 'rgba(212, 167, 84, 0.5)',
-    alignItems: 'center',
-    justifyContent: 'center',
+  allocBtnWrapper: {
+    width: 26,
+    height: 26,
+    position: 'relative',
   },
-  allocBtnDisabled: {
-    opacity: 0.2,
+  allocBtnShadow: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 2,
+    height: 26,
+    borderRadius: 6,
+    zIndex: 1,
+    backgroundColor: '#0D2118',
+  },
+  allocBtnShadowDisabled: {
+    backgroundColor: 'transparent',
+  },
+  allocBtnOuter: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    height: 26,
+    borderRadius: 6,
+    borderWidth: 1.5,
+    borderColor: '#84735B',
+    backgroundColor: '#0D2118',
+    zIndex: 2,
+  },
+  allocBtnOuterDisabled: {
+    borderColor: 'rgba(212, 167, 84, 0.15)',
+    backgroundColor: 'rgba(16, 44, 28, 0.25)',
+  },
+  allocBtnInner: {
+    flex: 1,
+    margin: 1,
+    borderRadius: 4,
+    borderWidth: 1.5,
+    borderTopColor: '#FFF3DA',
+    borderLeftColor: '#FFF3DA',
+    borderRightColor: '#FFF3DA',
+    borderBottomColor: '#B5A07A',
+    borderBottomWidth: 2.2,
+    backgroundColor: '#F3E2BD',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  allocBtnInnerDisabled: {
+    borderWidth: 0,
     backgroundColor: 'rgba(255, 255, 255, 0.02)',
-    borderColor: 'rgba(255, 255, 255, 0.08)',
   },
   allocBtnText: {
     fontFamily: 'Jersey10-Regular',
-    color: '#F5CF7A',
+    color: '#2A1A0C',
     fontSize: 18,
     fontWeight: 'normal',
     marginTop: -2,
+  },
+  allocBtnTextDisabled: {
+    color: 'rgba(255, 255, 255, 0.15)',
   },
   allocNumber: {
     fontFamily: 'Jersey10-Regular',

@@ -41,21 +41,21 @@ export const STANCES = {
   },
   water: {
     name: 'Water Stance',
-    description: '+1% max HP per level → +20% at level 20.',
+    description: '+1% max HP per level.',
     getBonus: (level) => ({
       maxHpPercent: level * 0.01,  // +1% max HP per level → +20% at level 20
     }),
   },
   earth: {
     name: 'Earth Stance',
-    description: '+1 DEF per level → +20 DEF at level 20.',
+    description: '+1 DEF per level.',
     getBonus: (level) => ({
       defBonus: level * 1, // +1 DEF per level → +20 DEF at level 20
     }),
   },
   wind: {
     name: 'Wind Stance',
-    description: '+1 AGI per level → +0.5% crit + 0.5% dodge per AGI point.',
+    description: '+1 AGI per level.',
     getBonus: (level) => ({
       agiBonus: level * 1,
     }),

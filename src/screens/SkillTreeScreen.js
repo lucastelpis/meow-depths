@@ -50,45 +50,45 @@ const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 // ─── Wood / parchment palette (matches Camp hub + onboarding) ─────────────────
 
 const C = {
-  bg:          '#133131',
-  panel:       '#142C1C',
-  panelDeep:   '#0F2417',
-  plaqueDark:  '#4A3917',
-  plaqueGold:  '#D4A754',
-  plaqueBg:    '#1E1E20',
-  parchment:   '#F3E2BD',
-  candleGold:  '#E8A73A',
-  text:        '#FFF3DA',
-  textDim:     'rgba(255, 243, 218, 0.6)',
-  textFaint:   'rgba(255, 243, 218, 0.32)',
-  inkDark:     '#2A1A0C',
-  good:        '#7CFFB2',
-  bad:         '#FF8A8A',
+  bg: '#133131',
+  panel: '#142C1C',
+  panelDeep: '#0F2417',
+  plaqueDark: '#4A3917',
+  plaqueGold: '#D4A754',
+  plaqueBg: '#1E1E20',
+  parchment: '#F3E2BD',
+  candleGold: '#E8A73A',
+  text: '#FFF3DA',
+  textDim: 'rgba(255, 243, 218, 0.6)',
+  textFaint: 'rgba(255, 243, 218, 0.32)',
+  inkDark: '#2A1A0C',
+  good: '#7CFFB2',
+  bad: '#FF8A8A',
 };
 
 // ─── Element metadata (colors + icons-1 sprite frames, as in onboarding) ───────
 
 const ELEMENTS = [
-  { id: 'fire',  label: 'FIRE',  color: '#FF6B35', frame: 33 },
+  { id: 'fire', label: 'FIRE', color: '#FF6B35', frame: 33 },
   { id: 'water', label: 'WATER', color: '#3B9EFF', frame: 35 },
   { id: 'earth', label: 'EARTH', color: '#D4A754', frame: 36 },
-  { id: 'wind',  label: 'WIND',  color: '#5CC4B8', frame: 34 },
+  { id: 'wind', label: 'WIND', color: '#5CC4B8', frame: 34 },
 ];
 
 const ELEMENT_COLORS = {
-  fire:  '#FF6B35',
+  fire: '#FF6B35',
   water: '#3B9EFF',
   earth: '#D4A754',
-  wind:  '#5CC4B8',
+  wind: '#5CC4B8',
 };
 
 // ─── Crystal currency metadata (Zone 1 — Black Crystals) ──────────────────────
 
 const CRYSTAL_INFO = {
-  black_shard:         { name: 'Black Crystal Shard',  short: 'Shards',         icon: '🔹', color: '#8FA3FF' },
-  black_crystal_small: { name: 'Small Black Crystal',  short: 'Small Crystals', icon: '🔷', color: '#6E8BFF' },
-  black_crystal_big:   { name: 'Big Black Crystal',    short: 'Big Crystals',   icon: '💎', color: '#9B7CFF' },
-  black_crystal_core:  { name: 'Black Crystal Core',   short: 'Crystal Core',   icon: '🌑', color: '#FFD700' },
+  black_shard: { name: 'Black Crystal Shard', short: 'Shards', icon: '🔹', color: '#8FA3FF' },
+  black_crystal_small: { name: 'Small Black Crystal', short: 'Small Crystals', icon: '🔷', color: '#6E8BFF' },
+  black_crystal_big: { name: 'Big Black Crystal', short: 'Big Crystals', icon: '💎', color: '#9B7CFF' },
+  black_crystal_core: { name: 'Black Crystal Core', short: 'Crystal Core', icon: '🌑', color: '#FFD700' },
 };
 
 const CRYSTAL_ORDER = ['black_shard', 'black_crystal_small', 'black_crystal_big', 'black_crystal_core'];
@@ -226,6 +226,56 @@ function SkillSprite({ skillId, size = 38, glow, glowColor }) {
   );
 }
 
+const getSlotTheme = (elId) => {
+  switch (elId) {
+    case 'fire':
+      return {
+        innerFill: '#381610',
+        topBorder: '#A6432D',
+        bottomBorder: '#1A0805',
+        shadowColor: '#1A0805',
+      };
+    case 'water':
+      return {
+        innerFill: '#112236',
+        topBorder: '#2963A3',
+        bottomBorder: '#060E18',
+        shadowColor: '#060E18',
+      };
+    case 'earth':
+      return {
+        innerFill: '#2E2210',
+        topBorder: '#8C6C35',
+        bottomBorder: '#140F06',
+        shadowColor: '#140F06',
+      };
+    case 'wind':
+      return {
+        innerFill: '#132A26',
+        topBorder: '#3C8578',
+        bottomBorder: '#081412',
+        shadowColor: '#081412',
+      };
+    default:
+      return {
+        innerFill: '#1B4030',
+        topBorder: '#4F856C',
+        bottomBorder: '#0D2118',
+        shadowColor: '#0D2118',
+      };
+  }
+};
+
+const getStanceBgColor = (elId) => {
+  switch (elId) {
+    case 'fire': return '#20110B';
+    case 'water': return '#0A1724';
+    case 'earth': return '#1C150A';
+    case 'wind': return '#0B1A17';
+    default: return C.panel;
+  }
+};
+
 // ─── Main component ──────────────────────────────────────────────────────────
 
 export default function SkillTreeScreen() {
@@ -266,18 +316,11 @@ export default function SkillTreeScreen() {
 
   const targetSkill = selectedSkill || activeSkill;
   const elementColor = ELEMENT_COLORS[element] || C.candleGold;
-  const stanceBonus  = getStanceBonus(element, level);
-  const stance       = STANCES[element];
-
-  const activeTabElement = element || 'fire';
-  const [viewingElement, setViewingElement] = useState(activeTabElement);
-
-  useEffect(() => {
-    if (element) setViewingElement(element);
-  }, [element]);
-
-  const viewColor = ELEMENT_COLORS[viewingElement] || C.candleGold;
-  const elementSkillIds = ELEMENT_SKILLS[viewingElement] || [];
+  const stanceBonus = getStanceBonus(element, level);
+  const stance = STANCES[element];
+  const viewColor = ELEMENT_COLORS[element] || C.candleGold;
+  const elementSkillIds = ELEMENT_SKILLS[element] || [];
+  const slotTheme = getSlotTheme(element);
 
   // Group skill IDs by tier dynamically
   const tiers = [];
@@ -289,9 +332,9 @@ export default function SkillTreeScreen() {
 
   // Layout calculations
   const TREE_WIDTH = SCREEN_WIDTH - 40; // 20 padding on each side
-  const CARD_GAP = 14;
-  const CARD_HEIGHT = 132;
-  const ROW_GAP = 58;
+  const CARD_GAP = 12;
+  const CARD_HEIGHT = 120;
+  const ROW_GAP = 40;
   const numTiers = tiers.length;
   const TREE_HEIGHT = numTiers > 0 ? numTiers * CARD_HEIGHT + (numTiers - 1) * ROW_GAP : 0;
 
@@ -376,14 +419,16 @@ export default function SkillTreeScreen() {
           const x2 = childCoords.x, y2 = childCoords.yTop;
           const midY = y1 + (y2 - y1) / 2;
           const pathData = `M ${x1} ${y1} C ${x1} ${midY}, ${x2} ${midY}, ${x2} ${y2}`;
-          const isPathUnlocked = getStars(childSkill.unlockedBy) >= 5;
-          const strokeColor = isPathUnlocked ? viewColor : 'rgba(74, 57, 23, 0.7)';
+          const isPathUnlocked = getStars(childSkill.unlockedBy) >= 1;
+          const strokeColor = isPathUnlocked ? viewColor : '#6C5940'; // clean warm metallic bronze thread
           paths.push(
             <React.Fragment key={`${childSkill.unlockedBy}->${childId}`}>
+              {/* 1. Glow effect for active paths */}
               {isPathUnlocked && (
-                <Path d={pathData} fill="none" stroke={`${viewColor}40`} strokeWidth={6} strokeLinecap="round" />
+                <Path d={pathData} fill="none" stroke={`${viewColor}40`} strokeWidth={8} strokeLinecap="round" />
               )}
-              <Path d={pathData} fill="none" stroke={strokeColor} strokeWidth={2} strokeLinecap="round" />
+              {/* 2. Solid core line */}
+              <Path d={pathData} fill="none" stroke={strokeColor} strokeWidth={isPathUnlocked ? 2.5 : 2.0} strokeLinecap="round" />
             </React.Fragment>
           );
         }
@@ -402,7 +447,6 @@ export default function SkillTreeScreen() {
     const cardState = getCardState(skillId);
     const stars = getStars(skillId);
     const equipped = isEquipped(skillId);
-    const isOwnedElement = viewingElement === element;
 
     // 3D double borders colors depending on state:
     let outerOutlineColor = '#84735B'; // default bronze
@@ -422,27 +466,26 @@ export default function SkillTreeScreen() {
       innerBottomBorderColor = '#070A07';
       nameColor = C.textFaint;
     } else if (cardState === 'available') {
-      // available to unlock / upgrade: standard dark green theme matching skilled nodes!
       outerOutlineColor = '#84735B';
-      shadowBaseColor = '#0D2118';
-      innerFillColor = '#1B4030'; // standard moss green fill
-      innerTopBorderColor = '#4F856C'; // standard sage highlight
-      innerBottomBorderColor = '#0D2118'; // dark green shadow
-      nameColor = '#FFF3DA'; // cream text for high contrast
+      shadowBaseColor = slotTheme.shadowColor;
+      innerFillColor = slotTheme.innerFill;
+      innerTopBorderColor = slotTheme.topBorder;
+      innerBottomBorderColor = slotTheme.bottomBorder;
+      nameColor = '#FFF3DA';
     } else if (cardState === 'maxed') {
       // max level: shiny gold theme!
       outerOutlineColor = '#84735B';
       shadowBaseColor = '#4F3C1E';
-      innerFillColor = '#1E351F'; // nice emerald forest green
-      innerTopBorderColor = '#F5CF4A'; // treasureGold highlight
-      innerBottomBorderColor = '#0A150A';
-      nameColor = C.text;
+      innerFillColor = '#3E2E15'; // warm gold fill
+      innerTopBorderColor = '#F5CF4A'; // gold highlight
+      innerBottomBorderColor = '#1F140A';
+      nameColor = '#FFF3DA';
     } else { // unlocked (but not maxed) / equipped
       outerOutlineColor = '#84735B';
-      shadowBaseColor = '#4F3C1E';
-      innerFillColor = '#1B4030'; // warm moss green
-      innerTopBorderColor = '#4F856C'; // moss green highlight
-      innerBottomBorderColor = '#0D2118';
+      shadowBaseColor = slotTheme.shadowColor;
+      innerFillColor = slotTheme.innerFill;
+      innerTopBorderColor = slotTheme.topBorder;
+      innerBottomBorderColor = slotTheme.bottomBorder;
       nameColor = C.text;
     }
 
@@ -457,9 +500,8 @@ export default function SkillTreeScreen() {
         {/* 2. Main Outer Container */}
         <TouchableOpacity
           style={[styles.skillCardOuter, { borderColor: outerOutlineColor, backgroundColor: shadowBaseColor }]}
-          onPress={() => isOwnedElement && handleOpenSkill(skill)}
+          onPress={() => handleOpenSkill(skill)}
           activeOpacity={0.85}
-          disabled={!isOwnedElement}
         >
           {/* 3. Inner Container */}
           <View style={[
@@ -502,16 +544,16 @@ export default function SkillTreeScreen() {
             ) : cardState === 'available' ? (
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
                 <Text style={[styles.cardLockText, { color: '#8CAF9F' }]} numberOfLines={1}>
-                  AVAILABLE
+                  Available
                 </Text>
               </View>
             ) : (
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
                 <ItemSprite spritesheet="icons-map" frameIndex={115} displaySize={9} opacity={0.4} />
-                <Text style={styles.cardLockText} numberOfLines={1}>
+                <Text style={styles.cardLockText}>
                   {(() => {
                     const check = canUnlockElementSkill(skillId, hero);
-                    if (check.cost && hero.level < check.cost.requiredLevel) return `LV ${check.cost.requiredLevel}`;
+                    if (check.cost && hero.level < check.cost.requiredLevel) return `Unlocks at level ${check.cost.requiredLevel}`;
                     return 'LOCKED';
                   })()}
                 </Text>
@@ -526,9 +568,9 @@ export default function SkillTreeScreen() {
   // ── Selected skill modal data ──────────────────────────────────────────────
 
   const selectedCardState = targetSkill ? getCardState(targetSkill.id) : null;
-  const selectedStars     = targetSkill ? getStars(targetSkill.id) : 0;
-  const selectedEquipped  = targetSkill ? isEquipped(targetSkill.id) : false;
-  const equippedSlot      = targetSkill ? equippedSkills.indexOf(targetSkill.id) : -1;
+  const selectedStars = targetSkill ? getStars(targetSkill.id) : 0;
+  const selectedEquipped = targetSkill ? isEquipped(targetSkill.id) : false;
+  const equippedSlot = targetSkill ? equippedSkills.indexOf(targetSkill.id) : -1;
 
   const unlockCheck = targetSkill ? canUnlockElementSkill(targetSkill.id, hero) : null;
   const starUpCheck = targetSkill ? canStarUpSkill(targetSkill.id, hero) : null;
@@ -540,7 +582,7 @@ export default function SkillTreeScreen() {
 
   const relevantCheck = selectedCardState === 'available' ? unlockCheck
     : selectedCardState === 'unlocked' ? starUpCheck
-    : null;
+      : null;
   const relevantCost = relevantCheck?.cost || null;
 
   return (
@@ -590,60 +632,21 @@ export default function SkillTreeScreen() {
       {/* ── Skill Points Bar ─────────────────────────────────────────────── */}
       <View style={styles.crystalBar}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-          <Text style={{ fontFamily: 'Silkscreen-Regular', fontSize: 10, color: C.textDim }}>HERO LEVEL:</Text>
-          <Text style={{ fontFamily: 'Silkscreen-Regular', fontSize: 12, color: C.candleGold }}>{hero.level}</Text>
-        </View>
-        <View style={{ width: 2, height: 16, backgroundColor: 'rgba(74,57,23,0.3)' }} />
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-          <Text style={{ fontFamily: 'Silkscreen-Regular', fontSize: 10, color: C.textDim }}>SKILL POINTS:</Text>
-          <Text style={{ fontFamily: 'Silkscreen-Regular', fontSize: 12, color: '#3FB56E' }}>{hero.skillPoints || 0}</Text>
+          <ItemSprite spritesheet="icons-map" frameIndex={89} displaySize={16} />
+          <Text style={{ fontFamily: 'Silkscreen-Regular', fontSize: 18, color: C.textDim }}>AVAILABLE SKILL POINTS:</Text>
+          <Text style={{ fontFamily: 'Silkscreen-Regular', fontSize: 18, color: '#3FB56E' }}>{hero.skillPoints || 0}</Text>
         </View>
       </View>
-
-      {/* ── Element tabs ───────────────────────────────────────────────── */}
-      <View style={styles.tabs}>
-        {ELEMENTS.map((el) => {
-          const isOwned   = el.id === element;
-          const isViewing = el.id === viewingElement;
-          return (
-            <View key={el.id} style={styles.elementTabWrapper}>
-              <View style={styles.elementTabShadow} />
-              <TouchableOpacity
-                style={styles.elementTabOuter}
-                onPress={() => setViewingElement(el.id)}
-                activeOpacity={0.8}
-              >
-                <View
-                  style={[
-                    styles.elementTabInner,
-                    isViewing ? styles.elementTabInnerActive : styles.elementTabInnerInactive
-                  ]}
-                >
-                  <View style={{ opacity: isOwned ? 1 : 0.4, marginTop: -2 }}>
-                    <ItemSprite spritesheet="icons-1" frameIndex={el.frame} displaySize={18} />
-                  </View>
-                  <Text
-                    style={[
-                      styles.tabLabel,
-                      { color: isViewing ? '#2A1A0C' : isOwned ? C.textDim : C.textFaint }
-                    ]}
-                  >
-                    {el.label}
-                  </Text>
-                </View>
-              </TouchableOpacity>
-            </View>
-          );
-        })}
-      </View>
-
       <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {/* ── Stance card ──────────────────────────────────────────────── */}
-        {stance && viewingElement === element && (
-          <View style={[styles.stanceCard, { borderColor: `${elementColor}70` }]}>
+        {stance && (
+          <View style={[styles.stanceCard, { borderColor: `${elementColor}70`, backgroundColor: getStanceBgColor(element) }]}>
             <View style={styles.stanceLeft}>
-              <Text style={styles.stanceLabel}>INNATE · ALWAYS ACTIVE</Text>
-              <Text style={[styles.stanceName, { color: elementColor }]}>{stance.name}</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 2 }}>
+                <ItemSprite spritesheet="icons-1" frameIndex={ELEMENTS.find(e => e.id === element)?.frame} displaySize={18} />
+                <Text style={[styles.stanceName, { color: elementColor, marginBottom: 0 }]}>{stance.name}</Text>
+              </View>
+              <Text style={styles.stanceLabel}>INNATE</Text>
               <Text style={styles.stanceDesc}>{stance.description}</Text>
             </View>
             <View style={styles.stanceRight}>
@@ -676,14 +679,7 @@ export default function SkillTreeScreen() {
           </View>
         )}
 
-        {/* Placeholder notice for non-owned elements */}
-        {viewingElement !== element && (
-          <View style={styles.placeholderBanner}>
-            <Text style={styles.placeholderText}>
-              You chose {ELEMENTS.find(e => e.id === element)?.label || 'another element'}. These skills are not available in your current run.
-            </Text>
-          </View>
-        )}
+
 
         {/* ── Dynamic Skill Tree Grid ─────────────────────────────────── */}
         <View style={[styles.treeContainer, { height: TREE_HEIGHT }]}>
@@ -710,7 +706,7 @@ export default function SkillTreeScreen() {
       </ScrollView>
 
       {/* ── Pinned loadout dock (always visible) ───────────────────────── */}
-      <View style={[styles.dock, { paddingBottom: insets.bottom + 10 }]}>
+      <View style={[styles.dock, { paddingBottom: insets.bottom + 16 }]}>
         <Text style={styles.dockTitle}>★ EQUIPPED LOADOUT ★</Text>
         <View style={styles.dockRow}>
           {[0, 1].map((slotIdx) => {
@@ -720,20 +716,28 @@ export default function SkillTreeScreen() {
               <View key={slotIdx} style={styles.dockSlotWrapper}>
                 {sk ? (
                   <>
-                    <View style={styles.dockSlotShadow} />
+                    <View style={[styles.dockSlotShadow, { backgroundColor: slotTheme.shadowColor }]} />
                     <TouchableOpacity
                       style={styles.dockSlotOuter}
                       onPress={() => handleOpenSkill(sk)}
                       activeOpacity={0.85}
                     >
-                      <View style={styles.dockSlotInner}>
-                        <SkillSprite skillId={sk.id} size={30} glow glowColor={viewColor} />
+                      <View style={[
+                        styles.dockSlotInner,
+                        {
+                          backgroundColor: slotTheme.innerFill,
+                          borderTopColor: slotTheme.topBorder,
+                          borderLeftColor: slotTheme.topBorder,
+                          borderRightColor: slotTheme.topBorder,
+                          borderBottomColor: slotTheme.bottomBorder,
+                        }
+                      ]}>
+                        <SkillSprite skillId={sk.id} size={38} glow glowColor={viewColor} />
                         <View style={styles.dockSlotText}>
                           <Text style={styles.dockSlotLabel}>SLOT {slotIdx + 1}</Text>
                           <Text style={[styles.dockSlotName, { color: C.text }]} numberOfLines={1}>
                             {sk.name}
                           </Text>
-                          <Text style={styles.dockSlotType}>{sk.type === 'passive' ? 'Passive' : 'Active'}</Text>
                         </View>
                       </View>
                     </TouchableOpacity>
@@ -741,14 +745,13 @@ export default function SkillTreeScreen() {
                 ) : (
                   <View style={styles.dockSlotEmptyContainer}>
                     <View style={styles.dockEmptyIcon}>
-                      <ItemSprite spritesheet="icons-map" frameIndex={76} displaySize={20} opacity={0.4} />
+                      <ItemSprite spritesheet="icons-map" frameIndex={76} displaySize={28} opacity={0.4} />
                     </View>
                     <View style={styles.dockSlotText}>
                       <Text style={styles.dockSlotLabel}>SLOT {slotIdx + 1}</Text>
                       <Text style={[styles.dockSlotName, { color: C.textFaint }]} numberOfLines={1}>
                         Empty
                       </Text>
-                      <Text style={styles.dockSlotType}>Tap a skill to equip</Text>
                     </View>
                   </View>
                 )}
@@ -765,8 +768,9 @@ export default function SkillTreeScreen() {
         animationType="fade"
         onRequestClose={() => setSelectedSkill(null)}
       >
-        <Pressable style={styles.modalBackdrop} onPress={() => setSelectedSkill(null)}>
-          <Pressable style={styles.modalCardOuter}>
+        <View style={styles.modalContainer}>
+          <Pressable style={styles.modalBackdrop} onPress={() => setSelectedSkill(null)} />
+          <View style={styles.modalCardOuter}>
             <View style={[styles.modalCardInner, { borderColor: `${elementColor}80` }]}>
               <View style={styles.modalBevel} pointerEvents="none" />
               {targetSkill && (
@@ -804,35 +808,77 @@ export default function SkillTreeScreen() {
 
                   <Text style={styles.modalDesc}>{targetSkill.description}</Text>
 
-                  {/* Current stats */}
-                  {currentStarData && (
-                    <View style={styles.modalStatBox}>
-                      <Text style={styles.modalStatLabel}>★{selectedStars} CURRENT STATS</Text>
-                      {Object.entries(currentStarData).filter(([k]) => k !== 'atkMultiplier').map(([k, v]) => (
-                        <Text key={k} style={styles.modalStatLine}>
-                          {SKILL_STAT_LABELS[k] || k}: <Text style={styles.modalStatStrong}>{formatSkillStatValue(k, v)}</Text>
-                        </Text>
-                      ))}
-                    </View>
-                  )}
+                  {/* Unified 3-column stats box */}
+                  {(currentStarData || nextStarData) && (() => {
+                    const activeLevelData = currentStarData || nextStarData;
+                    const keys = Object.keys(activeLevelData).filter(k => k !== 'atkMultiplier');
+                    if (keys.length === 0) return null;
+                    return (
+                      <View style={[styles.modalStatBox, { borderColor: `${elementColor}55` }]}>
+                        {/* Table Layout wrapping both Headers and Bodies */}
+                        <View style={{ position: 'relative' }}>
+                          {/* Absolute Continuous Vertical dividers (drawn on top of rows) */}
+                          <View style={[styles.verticalDividerAbsolute, { left: '44.44%', top: 41.5 }]} />
+                          <View style={[styles.verticalDividerAbsolute, { left: '72.22%' }]} />
 
-                  {/* Next star preview */}
-                  {nextStarData && selectedStars < 5 && (
-                    <View style={[styles.modalStatBox, { borderColor: `${elementColor}55` }]}>
-                      <Text style={[styles.modalStatLabel, { color: elementColor }]}>★{selectedStars + 1} NEXT STAR</Text>
-                      {Object.entries(nextStarData).filter(([k]) => k !== 'atkMultiplier').map(([k, v]) => (
-                        <Text key={k} style={styles.modalStatLine}>
-                          {SKILL_STAT_LABELS[k] || k}: <Text style={styles.modalStatStrong}>{formatSkillStatValue(k, v)}</Text>
-                        </Text>
-                      ))}
-                    </View>
-                  )}
+                          {/* Table Header Row */}
+                          <View style={styles.modalStatHeader}>
+                            <Text style={styles.modalStatHeaderLeft}>
+                              CURRENT LEVEL <Text style={{ fontSize: 11 }}>★</Text>{selectedStars}
+                            </Text>
+                            <Text style={[
+                              styles.modalStatHeaderRight,
+                              { color: selectedStars === 5 ? '#F5CF4A' : elementColor }
+                            ]}>
+                              {selectedStars === 5 ? 'MAXED' : (
+                                <Text>
+                                  NEXT <Text style={{ fontSize: 11 }}>★</Text>{selectedStars + 1}
+                                </Text>
+                              )}
+                            </Text>
+                          </View>
+
+                          {/* Table Body (Row-based to support auto-wrapping and centering) */}
+                          {keys.map(k => {
+                            const curVal = currentStarData ? currentStarData[k] : undefined;
+                            const nextVal = nextStarData ? nextStarData[k] : undefined;
+                            return (
+                              <View key={k} style={styles.modalStatRow}>
+                                <View style={{ width: '44.44%', paddingRight: 8 }}>
+                                  <Text style={styles.modalStatLine} numberOfLines={3}>
+                                    {SKILL_STAT_LABELS[k] || k}
+                                  </Text>
+                                </View>
+                                <View style={{ width: '27.78%', alignItems: 'center', paddingHorizontal: 4 }}>
+                                  <Text style={styles.modalStatValCur}>
+                                    {selectedStars === 0 ? '—' : formatSkillStatValue(k, curVal)}
+                                  </Text>
+                                </View>
+                                <View style={{ width: '27.78%', alignItems: 'center', paddingHorizontal: 4 }}>
+                                  <Text style={[
+                                    styles.modalStatValNext,
+                                    { color: selectedStars === 5 ? 'rgba(255,243,218,0.3)' : '#D4A754' }
+                                  ]}>
+                                    {selectedStars === 5 ? '—' : formatSkillStatValue(k, nextVal)}
+                                  </Text>
+                                </View>
+                              </View>
+                            );
+                          })}
+                        </View>
+                      </View>
+                    );
+                  })()}
 
                   {/* Cost breakdown */}
                   {relevantCost && (
-                    <View style={styles.modalCostBox}>
+                    <View style={[styles.modalCostBox, { borderColor: `${elementColor}55` }]}>
                       <Text style={styles.modalStatLabel}>
-                        {selectedCardState === 'available' ? 'UNLOCK ★1 COST' : `★${selectedStars + 1} UPGRADE COST`}
+                        {selectedCardState === 'available' ? (
+                          <Text>UNLOCK <Text style={{ fontSize: 11 }}>★</Text>1 COST</Text>
+                        ) : (
+                          <Text><Text style={{ fontSize: 11 }}>★</Text>{selectedStars + 1} UPGRADE COST</Text>
+                        )}
                       </Text>
                       <View style={styles.modalCostLevelRow}>
                         <Text style={styles.modalCostLevelText}>Hero Level</Text>
@@ -846,10 +892,7 @@ export default function SkillTreeScreen() {
                         const enough = owned >= qty;
                         return (
                           <View style={styles.modalCostMatRow}>
-                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                              <ItemSprite spritesheet="icons-map" frameIndex={89} displaySize={14} />
-                              <Text style={styles.modalCostMatName}>Skill Points (SP)</Text>
-                            </View>
+                            <Text style={styles.modalCostMatName}>Skill Points (SP)</Text>
                             <Text style={[styles.modalCostMatValue, { color: enough ? C.good : C.bad }]}>{owned} / {qty}</Text>
                           </View>
                         );
@@ -867,12 +910,13 @@ export default function SkillTreeScreen() {
 
                   {/* Actions */}
                   <View style={styles.modalActions}>
+                    {/* Row 1: Unlock / Level Up / Status */}
                     {selectedCardState === 'available' && (
                       <GradientButton color={elementColor} label="UNLOCK ★1" onPress={handleUnlock} />
                     )}
 
                     {selectedCardState === 'unlocked' && starUpCheck?.can && (
-                      <GradientButton color={elementColor} label={`★ STAR UP → ★${selectedStars + 1}`} onPress={handleStarUp} />
+                      <GradientButton color={elementColor} label={`LEVEL UP → ★${selectedStars + 1}`} onPress={handleStarUp} />
                     )}
 
                     {selectedCardState === 'unlocked' && !starUpCheck?.can && selectedStars < 5 && (
@@ -887,54 +931,54 @@ export default function SkillTreeScreen() {
                       </View>
                     )}
 
-                    {(selectedCardState === 'unlocked' || selectedCardState === 'maxed') && targetSkill.type === 'passive' && (
+                    {/* Row 2: Equip / Unequip / Status */}
+                    {(selectedCardState === 'unlocked' || selectedCardState === 'maxed') && (
                       <View style={styles.equipSection}>
-                        <Text style={[styles.equippedLabel, { color: elementColor }]}>✓ ALWAYS ACTIVE</Text>
-                        <Text style={styles.equipPrompt}>Passive skills are always in effect once unlocked — no slot needed.</Text>
-                      </View>
-                    )}
-
-                    {(selectedCardState === 'unlocked' || selectedCardState === 'maxed') && targetSkill.type === 'active' && (
-                      <View style={styles.equipSection}>
-                        {selectedEquipped ? (
-                          <>
-                            <Text style={[styles.equippedLabel, { color: elementColor }]}>✓ EQUIPPED IN SLOT {equippedSlot + 1}</Text>
-                            <View style={styles.unequipBtnWrapper}>
-                              <View style={styles.unequipBtnShadow} />
-                              <TouchableOpacity
-                                style={styles.unequipBtnOuter}
-                                onPress={() => handleUnequip(equippedSlot)}
-                                activeOpacity={0.8}
-                              >
-                                <View style={styles.unequipBtnInner}>
-                                  <Text style={styles.unequipBtnText}>UNEQUIP</Text>
-                                </View>
-                              </TouchableOpacity>
-                            </View>
-                          </>
+                        {targetSkill.type === 'passive' ? (
+                          <View style={styles.passiveBadge}>
+                            <Text style={styles.passiveBadgeText}>ALWAYS ACTIVE</Text>
+                          </View>
                         ) : (
                           <>
-                            <Text style={styles.equipPrompt}>Assign skill to slot:</Text>
-                            <View style={styles.equipRow}>
-                              {[0, 1].map((si) => {
-                                const occupant = equippedSkills[si] ? SKILLS[equippedSkills[si]]?.name : 'Empty';
-                                return (
-                                  <View key={si} style={styles.equipSlotBtnWrapper}>
-                                    <View style={styles.equipSlotBtnShadow} />
-                                    <TouchableOpacity
-                                      style={styles.equipSlotBtnOuter}
-                                      onPress={() => handleEquip(si)}
-                                      activeOpacity={0.8}
-                                    >
-                                      <View style={styles.equipSlotBtnInner}>
-                                        <Text style={styles.equipSlotBtnText}>SLOT {si + 1}</Text>
-                                        <Text style={styles.equipSlotSub} numberOfLines={1}>({occupant})</Text>
-                                      </View>
-                                    </TouchableOpacity>
+                            {selectedEquipped ? (
+                              <View style={styles.unequipBtnWrapper}>
+                                <View style={styles.unequipBtnShadow} />
+                                <TouchableOpacity
+                                  style={styles.unequipBtnOuter}
+                                  onPress={() => handleUnequip(equippedSlot)}
+                                  activeOpacity={0.8}
+                                >
+                                  <View style={styles.unequipBtnInner}>
+                                    <Text style={styles.unequipBtnText}>UNEQUIP (SLOT {equippedSlot + 1})</Text>
                                   </View>
-                                );
-                              })}
-                            </View>
+                                </TouchableOpacity>
+                              </View>
+                            ) : (
+                              <View style={styles.equipRow}>
+                                {[0, 1].map((si) => {
+                                  const occupantId = equippedSkills[si];
+                                  const occupantName = occupantId ? SKILLS[occupantId]?.name : null;
+                                  return (
+                                    <View key={si} style={styles.equipSlotBtnWrapper}>
+                                      <View style={styles.equipSlotBtnShadow} />
+                                      <TouchableOpacity
+                                        style={styles.equipSlotBtnOuter}
+                                        onPress={() => handleEquip(si)}
+                                        activeOpacity={0.8}
+                                      >
+                                        <View style={styles.equipSlotBtnInner}>
+                                          <Text style={styles.equipSlotBtnText}>ASSIGN TO</Text>
+                                          <Text style={styles.equipSlotBtnText}>SLOT {si + 1}</Text>
+                                          {occupantName && (
+                                            <Text style={styles.equipSlotSub} numberOfLines={1}>({occupantName})</Text>
+                                          )}
+                                        </View>
+                                      </TouchableOpacity>
+                                    </View>
+                                  );
+                                })}
+                              </View>
+                            )}
                           </>
                         )}
                       </View>
@@ -943,8 +987,8 @@ export default function SkillTreeScreen() {
                 </ScrollView>
               )}
             </View>
-          </Pressable>
-        </Pressable>
+          </View>
+        </View>
       </Modal>
 
       {/* ── Auto-equip toast ──────────────────────────────────────────────── */}
@@ -993,8 +1037,8 @@ function GradientButton({ color, label, onPress }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: C.bg },
-  scroll:    { flex: 1 },
-  scrollContent: { paddingHorizontal: 20, paddingTop: 14, paddingBottom: 20 },
+  scroll: { flex: 1 },
+  scrollContent: { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 12 },
 
   /* Header */
   header: {
@@ -1062,7 +1106,7 @@ const styles = StyleSheet.create({
   },
   headerTitleText: {
     fontFamily: 'Jersey10-Regular',
-    fontSize: 28,
+    fontSize: 32,
     color: '#FFF3DA',
     textAlign: 'center',
     textShadowColor: '#000',
@@ -1074,100 +1118,42 @@ const styles = StyleSheet.create({
   /* Crystal stash bar */
   crystalBar: {
     flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center',
-    marginHorizontal: 20, marginTop: 12, paddingVertical: 8, paddingHorizontal: 8,
+    marginHorizontal: 20, marginTop: 6, paddingVertical: 6, paddingHorizontal: 8,
     backgroundColor: C.panelDeep, borderRadius: 10,
     borderWidth: 2, borderColor: 'rgba(74,57,23,0.6)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 3,
   },
   crystalChip: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 6 },
-  crystalChipIcon:  { fontSize: 13 },
-  crystalChipCount: { fontFamily: 'Silkscreen-Regular', fontSize: 11, color: C.text },
+  crystalChipIcon: { fontSize: 14 },
+  crystalChipCount: { fontFamily: 'Silkscreen-Regular', fontSize: 14, color: C.text },
 
-  /* Tabs */
-  tabs: {
-    flexDirection: 'row',
-    gap: 8,
-    marginHorizontal: 20,
-    marginTop: 12,
-    marginBottom: 16,
-  },
-  elementTabWrapper: {
-    flex: 1,
-    height: 50,
-    position: 'relative',
-  },
-  elementTabShadow: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    top: 3,
-    height: 50,
-    borderRadius: 8,
-    zIndex: 1,
-    backgroundColor: '#4F3C1E',
-  },
-  elementTabOuter: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    top: 0,
-    height: 50,
-    borderRadius: 8,
-    borderWidth: 2.2,
-    borderColor: '#84735B',
-    backgroundColor: '#4F3C1E',
-    zIndex: 2,
-  },
-  elementTabInner: {
-    flex: 1,
-    margin: 1.5,
-    borderRadius: 5,
-    borderWidth: 2.2,
-    flexDirection: 'column',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 2,
-  },
-  elementTabInnerActive: {
-    backgroundColor: '#F3E2BD',
-    borderTopColor: '#FFF3DA',
-    borderLeftColor: '#FFF3DA',
-    borderRightColor: '#FFF3DA',
-    borderBottomColor: '#B5A07A',
-    borderBottomWidth: 3.5,
-  },
-  elementTabInnerInactive: {
-    backgroundColor: '#1B4030',
-    borderTopColor: '#4F856C',
-    borderLeftColor: '#4F856C',
-    borderRightColor: '#4F856C',
-    borderBottomColor: '#0D2118',
-    borderBottomWidth: 3.5,
-  },
-  tabLabel: {
-    fontFamily: 'Silkscreen-Regular',
-    fontSize: 9,
-    letterSpacing: 0.5,
-  },
+
 
   /* Stance card */
   stanceCard: {
-    flexDirection: 'row', borderRadius: 12, borderWidth: 2, overflow: 'hidden',
-    backgroundColor: C.panel, marginBottom: 16, padding: 14, gap: 12,
+    flexDirection: 'row', borderRadius: 12, borderWidth: 2, overflow: 'visible',
+    backgroundColor: C.panel, marginBottom: 12, paddingHorizontal: 14, paddingVertical: 14, gap: 12,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 3,
   },
-  stanceLeft:  { flex: 1 },
+  stanceLeft: { flex: 1 },
   stanceRight: { alignItems: 'flex-end', justifyContent: 'center', gap: 3 },
-  stanceRightLabel: { fontFamily: 'Silkscreen-Regular', fontSize: 9, letterSpacing: 1, color: C.candleGold, marginBottom: 4 },
-  stanceLabel: { fontFamily: 'Silkscreen-Regular', fontSize: 8, letterSpacing: 1.2, color: C.textDim, marginBottom: 5 },
-  stanceName:  { fontFamily: 'Jersey10-Regular', fontSize: 17, marginBottom: 5 },
-  stanceDesc:  { fontFamily: 'Jersey10-Regular', fontSize: 12, color: 'rgba(255,243,218,0.78)', lineHeight: 16 },
-  stanceStat:  { fontFamily: 'Jersey10-Regular', fontSize: 14 },
-  stanceSubStat: { fontFamily: 'Jersey10-Regular', fontSize: 10, opacity: 0.8 },
+  stanceRightLabel: { fontFamily: 'Silkscreen-Regular', fontSize: 14, letterSpacing: 0, color: C.candleGold, marginBottom: 2 },
+  stanceName: { fontFamily: 'Jersey10-Regular', fontSize: 22, marginBottom: 2 },
+  stanceLabel: { fontFamily: 'Silkscreen-Regular', fontSize: 12, letterSpacing: 1.0, color: C.textDim, marginBottom: 5 },
+  stanceDesc: { fontFamily: 'Jersey10-Regular', fontSize: 18, color: 'rgba(255,243,218,0.78)', lineHeight: 20 },
+  stanceStat: { fontFamily: 'Jersey10-Regular', fontSize: 18 },
+  stanceSubStat: { fontFamily: 'Jersey10-Regular', fontSize: 16, opacity: 0.8 },
 
-  placeholderBanner: {
-    backgroundColor: C.panel, borderRadius: 10, padding: 12,
-    borderWidth: 2, borderColor: 'rgba(74,57,23,0.6)', marginBottom: 16,
-  },
-  placeholderText: { fontFamily: 'Jersey10-Regular', fontSize: 12, color: C.textDim, textAlign: 'center', lineHeight: 17 },
+
 
   /* Skill Tree Grid */
   treeContainer: { width: '100%', position: 'relative', marginVertical: 10 },
@@ -1229,34 +1215,34 @@ const styles = StyleSheet.create({
   },
   cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
   cardBadgeCol: { alignItems: 'flex-end', gap: 4 },
-  cardName: { fontFamily: 'Jersey10-Regular', fontSize: 14, lineHeight: 16, marginTop: 2 },
-  cardLockText: { fontFamily: 'Silkscreen-Regular', fontSize: 9, color: C.textFaint },
+  cardName: { fontFamily: 'Jersey10-Regular', fontSize: 20, lineHeight: 20, marginTop: 2 },
+  cardLockText: { fontFamily: 'Jersey10-Regular', fontSize: 16, color: C.textFaint },
   cardCostRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  cardCostLabel: { fontFamily: 'Silkscreen-Regular', fontSize: 8, color: C.textDim },
-  cardCostText: { fontFamily: 'Silkscreen-Regular', fontSize: 8, color: C.textDim },
+  cardCostLabel: { fontFamily: 'Silkscreen-Regular', fontSize: 11, color: C.textDim },
+  cardCostText: { fontFamily: 'Silkscreen-Regular', fontSize: 11, color: C.textDim },
   cardCooldownRow: { flexDirection: 'row', alignItems: 'center', gap: 3 },
-  cardCooldown: { fontFamily: 'Silkscreen-Regular', fontSize: 8, color: '#FFA07A' },
+  cardCooldown: { fontFamily: 'Silkscreen-Regular', fontSize: 11, color: '#FFA07A' },
 
-  typeBadge: { borderRadius: 5, paddingHorizontal: 5, paddingVertical: 2, borderWidth: 1, backgroundColor: 'rgba(0,0,0,0.25)' },
-  typeBadgeText: { fontFamily: 'Silkscreen-Regular', fontSize: 7, letterSpacing: 0.3 },
-  equippedBadge: { borderRadius: 4, paddingHorizontal: 4, paddingVertical: 1.5, borderWidth: 1, backgroundColor: 'rgba(0,0,0,0.3)' },
-  equippedBadgeText: { fontFamily: 'Silkscreen-Regular', fontSize: 6.5, letterSpacing: 0.3 },
+  typeBadge: { borderRadius: 5, paddingHorizontal: 6, paddingVertical: 1, borderWidth: 1, backgroundColor: 'rgba(0,0,0,0.25)' },
+  typeBadgeText: { fontFamily: 'Jersey10-Regular', fontSize: 12, letterSpacing: 0 },
+  equippedBadge: { borderRadius: 4, paddingHorizontal: 5, paddingVertical: 1, borderWidth: 1, backgroundColor: 'rgba(0,0,0,0.3)' },
+  equippedBadgeText: { fontFamily: 'Jersey10-Regular', fontSize: 12, letterSpacing: 0 },
 
   /* Pinned loadout dock */
   dock: {
-    paddingHorizontal: 16, paddingTop: 8, paddingBottom: 10,
+    paddingHorizontal: 16, paddingTop: 14, paddingBottom: 12,
     backgroundColor: C.panelDeep,
     borderTopWidth: 2, borderTopColor: 'rgba(74,57,23,0.7)',
   },
   dockTitle: {
-    fontFamily: 'Silkscreen-Regular', fontSize: 11, letterSpacing: 1.5,
-    color: C.candleGold, textAlign: 'center', marginBottom: 10,
+    fontFamily: 'Silkscreen-Regular', fontSize: 14, letterSpacing: 1.5,
+    color: C.candleGold, textAlign: 'center', marginBottom: 12,
     textShadowColor: 'rgba(0,0,0,0.6)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 2,
   },
   dockRow: { flexDirection: 'row', gap: 10 },
   dockSlotWrapper: {
     flex: 1,
-    height: 62,
+    height: 78,
     position: 'relative',
   },
   dockSlotShadow: {
@@ -1264,7 +1250,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     top: 3,
-    height: 62,
+    height: 78,
     borderRadius: 10,
     zIndex: 1,
     backgroundColor: '#4F3C1E',
@@ -1274,7 +1260,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     top: 0,
-    height: 62,
+    height: 78,
     borderRadius: 10,
     borderWidth: 2.2,
     borderColor: '#84735B',
@@ -1294,32 +1280,33 @@ const styles = StyleSheet.create({
     backgroundColor: '#1B4030',
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 8,
-    gap: 6,
+    paddingHorizontal: 12,
+    gap: 8,
   },
   dockSlotEmptyContainer: {
     flex: 1,
-    height: 62,
+    height: 78,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 8,
     borderWidth: 2,
     borderColor: 'rgba(74,57,23,0.4)',
     borderStyle: 'dashed',
     borderRadius: 10,
     backgroundColor: 'transparent',
-    paddingHorizontal: 8,
+    paddingHorizontal: 12,
   },
-  dockEmptyIcon: { width: 34, height: 34, justifyContent: 'center', alignItems: 'center', opacity: 0.8 },
+  dockEmptyIcon: { width: 42, height: 42, justifyContent: 'center', alignItems: 'center', opacity: 0.8 },
   dockSlotText: { flex: 1 },
-  dockSlotLabel: { fontFamily: 'Silkscreen-Regular', fontSize: 7.5, letterSpacing: 0.8, color: C.textFaint, marginBottom: 1 },
-  dockSlotName: { fontFamily: 'Jersey10-Regular', fontSize: 13 },
-  dockSlotType: { fontFamily: 'Jersey10-Regular', fontSize: 10, color: C.textDim, marginTop: 1 },
+  dockSlotLabel: { fontFamily: 'Silkscreen-Regular', fontSize: 12, letterSpacing: 0.8, color: C.textFaint, marginBottom: 1 },
+  dockSlotName: { fontFamily: 'Jersey10-Regular', fontSize: 18 },
+  dockSlotType: { fontFamily: 'Jersey10-Regular', fontSize: 16, color: C.textDim, marginTop: 1 },
 
   /* Modal */
-  modalBackdrop: { flex: 1, backgroundColor: 'rgba(24, 14, 6, 0.8)', justifyContent: 'center', alignItems: 'center', padding: 20 },
+  modalContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 20 },
+  modalBackdrop: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(24, 14, 6, 0.8)' },
   modalCardOuter: {
-    width: '100%', maxWidth: 360, borderRadius: 12, padding: 8,
+    width: '100%', borderRadius: 12, padding: 8,
     borderWidth: 3, borderColor: '#3E2E15', backgroundColor: '#4A3917',
   },
   modalCardInner: { borderRadius: 9, borderWidth: 2.5, backgroundColor: C.plaqueBg, overflow: 'hidden', position: 'relative' },
@@ -1334,14 +1321,14 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255, 250, 228, 0.08)',
     zIndex: 1,
   },
-  modalInner: { padding: 20 },
+  modalInner: { paddingHorizontal: 20, paddingVertical: 20 },
   modalCloseBtn: {
     position: 'absolute',
     top: 10,
     right: 14,
-    width: 26,
-    height: 26,
-    borderRadius: 13,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     backgroundColor: '#3E2E15',
     borderColor: '#84735B',
     borderWidth: 2,
@@ -1349,50 +1336,109 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     zIndex: 20,
   },
-  modalCloseText: { fontFamily: 'Silkscreen-Regular', fontSize: 10, color: '#FFF3DA', fontWeight: 'bold' },
+  modalCloseText: { fontFamily: 'Silkscreen-Regular', fontSize: 12, color: '#FFF3DA', fontWeight: 'bold' },
 
   modalTitleRow: { flexDirection: 'row', gap: 12, marginBottom: 12, marginTop: 4, alignItems: 'flex-start' },
   modalTitleRight: { flex: 1 },
-  modalSkillName: { fontFamily: 'Jersey10-Regular', fontSize: 20, color: C.text, marginBottom: 6 },
+  modalSkillName: { fontFamily: 'Jersey10-Regular', fontSize: 26, color: C.text, marginBottom: 6 },
   modalBadges: { flexDirection: 'row', gap: 8, alignItems: 'center', flexWrap: 'wrap', marginBottom: 6 },
-  modalTier: { fontFamily: 'Silkscreen-Regular', fontSize: 9, color: C.textDim },
-  modalCD: { fontFamily: 'Silkscreen-Regular', fontSize: 9, color: '#FFA07A' },
+  modalTier: { fontFamily: 'Silkscreen-Regular', fontSize: 12, color: C.textDim },
+  modalCD: { fontFamily: 'Silkscreen-Regular', fontSize: 12, color: '#FFA07A' },
 
-  modalDesc: { fontFamily: 'Jersey10-Regular', fontSize: 13, color: 'rgba(255,243,218,0.82)', lineHeight: 18, marginBottom: 14 },
+  modalDesc: { fontFamily: 'Jersey10-Regular', fontSize: 18, color: 'rgba(255,243,218,0.82)', lineHeight: 22, marginBottom: 14 },
 
   modalStatBox: {
-    backgroundColor: C.panelDeep, borderRadius: 10, padding: 10, marginBottom: 10,
+    backgroundColor: 'rgba(0,0,0,0.25)', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 14, marginBottom: 12,
     borderWidth: 2, borderColor: 'rgba(74,57,23,0.6)',
   },
-  modalStatLabel: { fontFamily: 'Silkscreen-Regular', fontSize: 8.5, color: C.textDim, letterSpacing: 1, marginBottom: 6 },
-  modalStatLine: { fontFamily: 'Jersey10-Regular', fontSize: 12, color: 'rgba(255,243,218,0.78)', marginBottom: 2 },
-  modalStatStrong: { fontFamily: 'Jersey10-Regular', color: C.text },
+  modalStatLabel: {
+    fontFamily: 'Jersey10-Regular',
+    fontSize: 18,
+    color: C.candleGold,
+    letterSpacing: 1,
+    marginBottom: 6,
+  },
+  modalStatHeader: {
+    flexDirection: 'row',
+    height: 36,
+    alignItems: 'center',
+    borderBottomWidth: 1.5,
+    borderBottomColor: 'rgba(255, 243, 218, 0.15)',
+    marginBottom: 4,
+  },
+  modalStatHeaderLeft: {
+    width: '72.22%',
+    fontFamily: 'Jersey10-Regular',
+    fontSize: 18,
+    color: C.textDim,
+  },
+  modalStatHeaderRight: {
+    width: '27.78%',
+    fontFamily: 'Jersey10-Regular',
+    fontSize: 18,
+    textAlign: 'center',
+  },
+  modalStatRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255, 243, 218, 0.05)',
+  },
+  modalStatLine: {
+    fontFamily: 'Jersey10-Regular',
+    fontSize: 18,
+    color: 'rgba(255,243,218,0.78)',
+  },
+  modalStatValCur: {
+    fontFamily: 'Jersey10-Regular',
+    fontSize: 18,
+    color: C.text,
+  },
+  modalStatValNext: {
+    fontFamily: 'Jersey10-Regular',
+    fontSize: 18,
+  },
+  verticalDivider: {
+    width: 1.5,
+    alignSelf: 'stretch',
+    backgroundColor: 'rgba(255, 243, 218, 0.12)',
+    marginHorizontal: 8,
+  },
+  verticalDividerAbsolute: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    width: 1.5,
+    backgroundColor: 'rgba(255, 243, 218, 0.12)',
+    zIndex: 10,
+  },
 
   modalCostBox: {
-    backgroundColor: C.panelDeep, borderRadius: 10, padding: 10, marginBottom: 12,
+    backgroundColor: 'rgba(0,0,0,0.25)', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 14, marginBottom: 12,
     borderWidth: 2, borderColor: 'rgba(74,57,23,0.6)',
   },
   modalCostLevelRow: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    paddingVertical: 4, borderBottomWidth: 1, borderBottomColor: 'rgba(74,57,23,0.5)', marginBottom: 4,
+    paddingVertical: 4, borderBottomWidth: 1, borderBottomColor: 'rgba(255, 243, 218, 0.08)', marginBottom: 4,
   },
-  modalCostLevelText: { fontFamily: 'Jersey10-Regular', fontSize: 12, color: 'rgba(255,243,218,0.72)' },
-  modalCostLevelValue: { fontFamily: 'Jersey10-Regular', fontSize: 12 },
+  modalCostLevelText: { fontFamily: 'Jersey10-Regular', fontSize: 18, color: 'rgba(255,243,218,0.72)' },
+  modalCostLevelValue: { fontFamily: 'Jersey10-Regular', fontSize: 18 },
   modalCostMatRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 3 },
-  modalCostMatName: { fontFamily: 'Jersey10-Regular', fontSize: 12, color: 'rgba(255,243,218,0.82)' },
-  modalCostMatValue: { fontFamily: 'Jersey10-Regular', fontSize: 12 },
+  modalCostMatName: { fontFamily: 'Jersey10-Regular', fontSize: 18, color: 'rgba(255,243,218,0.82)' },
+  modalCostMatValue: { fontFamily: 'Jersey10-Regular', fontSize: 18 },
 
   modalInfoBox: {
     backgroundColor: 'rgba(255,100,0,0.08)', borderRadius: 8, padding: 10, marginBottom: 12,
     borderWidth: 1, borderColor: 'rgba(255,100,0,0.25)',
   },
-  modalInfoText: { fontFamily: 'Jersey10-Regular', fontSize: 12, color: '#FFA07A' },
+  modalInfoText: { fontFamily: 'Jersey10-Regular', fontSize: 18, color: '#FFA07A' },
 
-  modalActions: { gap: 10, marginTop: 6 },
+  modalActions: { gap: 10, marginTop: 10 },
 
   primaryBtnWrapper: {
     width: '100%',
-    height: 46,
+    height: 54,
     position: 'relative',
   },
   primaryBtnShadow: {
@@ -1400,7 +1446,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     top: 3,
-    height: 46,
+    height: 54,
     borderRadius: 8,
     zIndex: 1,
     backgroundColor: '#0D2118',
@@ -1410,7 +1456,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     top: 0,
-    height: 46,
+    height: 54,
     borderRadius: 8,
     borderWidth: 2.2,
     borderColor: '#84735B',
@@ -1432,7 +1478,7 @@ const styles = StyleSheet.create({
   },
   primaryBtnText: {
     fontFamily: 'Silkscreen-Regular',
-    fontSize: 10,
+    fontSize: 12,
     color: '#FFF3DA',
     textShadowColor: 'rgba(0, 0, 0, 0.6)',
     textShadowOffset: { width: 1, height: 1 },
@@ -1441,7 +1487,7 @@ const styles = StyleSheet.create({
   },
 
   disabledBtn: {
-    height: 44,
+    height: 52,
     borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
@@ -1450,14 +1496,52 @@ const styles = StyleSheet.create({
     backgroundColor: '#0F2417',
     opacity: 0.6,
   },
-  disabledBtnText: { fontFamily: 'Silkscreen-Regular', fontSize: 9, color: C.textDim, textTransform: 'uppercase' },
+  disabledBtnText: { fontFamily: 'Silkscreen-Regular', fontSize: 12, color: C.textDim, textTransform: 'uppercase' },
 
-  equipSection: { gap: 8 },
-  equippedLabel: { fontFamily: 'Silkscreen-Regular', fontSize: 10, textAlign: 'center', letterSpacing: 0.5 },
+  equipSection: {},
+  equippedLabel: { fontFamily: 'Silkscreen-Regular', fontSize: 12, textAlign: 'center', letterSpacing: 0.5 },
+
+  modalActionsRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 12,
+    alignItems: 'flex-end',
+  },
+  modalActionCol: {
+    flex: 1,
+  },
+  passiveBadge: {
+    height: 54,
+    borderRadius: 8,
+    borderWidth: 2,
+    borderColor: 'rgba(255, 243, 218, 0.15)',
+    backgroundColor: 'rgba(255, 243, 218, 0.04)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  passiveBadgeText: {
+    fontFamily: 'Silkscreen-Regular',
+    fontSize: 11,
+    color: C.textDim,
+  },
+  slotAssignBtn: {
+    height: 24,
+    borderRadius: 6,
+    borderWidth: 1.5,
+    borderColor: '#84735B',
+    backgroundColor: '#2A1A0C',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  slotAssignBtnText: {
+    fontFamily: 'Jersey10-Regular',
+    fontSize: 15,
+    color: '#FFF3DA',
+  },
 
   unequipBtnWrapper: {
     width: '100%',
-    height: 40,
+    height: 54,
     position: 'relative',
   },
   unequipBtnShadow: {
@@ -1465,7 +1549,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     top: 2.5,
-    height: 40,
+    height: 54,
     borderRadius: 8,
     zIndex: 1,
     backgroundColor: '#4F3C1E',
@@ -1475,7 +1559,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     top: 0,
-    height: 40,
+    height: 54,
     borderRadius: 8,
     borderWidth: 2,
     borderColor: '#84735B',
@@ -1498,19 +1582,19 @@ const styles = StyleSheet.create({
   },
   unequipBtnText: {
     fontFamily: 'Silkscreen-Regular',
-    fontSize: 9,
+    fontSize: 12,
     color: '#FFF3DA',
     textShadowColor: 'rgba(0, 0, 0, 0.4)',
     textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 1,
   },
 
-  equipPrompt: { fontFamily: 'Jersey10-Regular', fontSize: 13, color: C.textDim, textAlign: 'center', marginVertical: 4 },
-  equipRow: { flexDirection: 'row', gap: 10, marginTop: 4 },
+  equipPrompt: { fontFamily: 'Jersey10-Regular', fontSize: 16, color: C.textDim, textAlign: 'center', marginVertical: 4 },
+  equipRow: { flexDirection: 'row', gap: 12, marginTop: 6 },
 
   equipSlotBtnWrapper: {
     flex: 1,
-    height: 52,
+    height: 58,
     position: 'relative',
   },
   equipSlotBtnShadow: {
@@ -1518,7 +1602,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     top: 3,
-    height: 52,
+    height: 58,
     borderRadius: 8,
     zIndex: 1,
     backgroundColor: '#4F3C1E',
@@ -1528,7 +1612,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     top: 0,
-    height: 52,
+    height: 58,
     borderRadius: 8,
     borderWidth: 2,
     borderColor: '#84735B',
@@ -1552,11 +1636,11 @@ const styles = StyleSheet.create({
   },
   equipSlotBtnText: {
     fontFamily: 'Silkscreen-Regular',
-    fontSize: 9,
+    fontSize: 12,
     color: '#FFF3DA',
     textShadowColor: 'rgba(0, 0, 0, 0.5)',
     textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 1,
   },
-  equipSlotSub: { fontFamily: 'Jersey10-Regular', fontSize: 11, color: '#A8B8A0' },
+  equipSlotSub: { fontFamily: 'Jersey10-Regular', fontSize: 14, color: '#A8B8A0' },
 });
