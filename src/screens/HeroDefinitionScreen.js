@@ -27,8 +27,10 @@ import Svg, { Path, G, Rect, Circle, Defs, RadialGradient, Stop } from 'react-na
 import theme from '../constants/theme';
 import ItemSprite from '../components/ItemSprite';
 import { useGame } from '../state/gameState';
+import { SKILLS, SKILL_SPRITE_FRAMES } from '../data/skills';
 
-const { width: W } = Dimensions.get('window');
+const { width: W, height: H } = Dimensions.get('window');
+const BANNER_ASPECT_RATIO = H < 700 ? 2.6 : (H < 780 ? 1.9 : 1.15);
 const PLAQUE_WIDTH = Math.min(W - 80, 320);
 const SLIDE_WIDTH = W - 40; // Full screen width minus screen padding (20 on each side)
 
@@ -76,6 +78,69 @@ const ELEMENTS = [
   },
 ];
 
+const ELEMENT_TO_STARTING_SKILL = {
+  fire: 'fire_slash',
+  water: 'tidal_strike',
+  earth: 'boulder_slash',
+  wind: 'dual_slash',
+};
+
+const SKILL_STAT_LABELS = {
+  damageMultiplier: 'Base Damage',
+  agiScaling: 'Bonus Attack from Agility',
+  burnDamage: 'Burn Damage / Turn',
+  burnDuration: 'Burn Duration',
+  burnTickBonus: 'Burn Damage Bonus',
+  spreadPercent: 'Splash Damage',
+  spreadBurnChance: 'Splash Burn Chance',
+  counterBurnDamage: 'Counter Damage / Turn',
+  counterBurnDuration: 'Counter Duration',
+  guardDuration: 'Guard Duration',
+  damageReduction: 'Damage Reduction',
+  healPercent: 'Heal Amount',
+  healDuration: 'Heal Duration',
+  bonusHealPercent: 'Bonus Healing',
+  stunChance: 'Stun Chance',
+  stunDuration: 'Stun Duration',
+  dodgeChance: 'Dodge Bonus',
+  critChance: 'Crit Chance Bonus',
+  critDamage: 'Crit Damage Bonus',
+  cooldownReduction: 'Cooldown Reduction',
+};
+
+function formatSkillStatValue(key, val) {
+  if (val === undefined || val === null) return '—';
+  if (key === 'damageMultiplier') return `${Math.round(val * 100)}% ATK`;
+  if (key === 'damageReduction') return `-${Math.round(val * 100)}%`;
+  if (key === 'spreadPercent') return `${Math.round(val * 100)}%`;
+  if (key === 'spreadBurnChance') return `${Math.round(val * 100)}%`;
+  if (key === 'burnAtkPercent') return `${Math.round(val * 100)}% ATK`;
+  if (key === 'healPercent') return `${Math.round(val * 100)}% Max HP`;
+  if (key === 'bonusHealPercent') return `+${Math.round(val * 100)}%`;
+  if (key === 'stunChance') return `${Math.round(val * 100)}%`;
+  if (key === 'dodgeChance') return `+${Math.round(val * 100)}%`;
+  if (key === 'critChance') return `+${Math.round(val * 100)}%`;
+  if (key === 'critDamage') return `+${Math.round(val * 100)}%`;
+  if (key.toLowerCase().includes('percent') || key.toLowerCase().includes('scaling')) {
+    if (val < 1.0) return `+${Math.round(val * 100)}%`;
+  }
+  return val.toString();
+}
+
+// Simplified SkillSprite helper for onboarding
+function SkillSprite({ skillId, size = 24 }) {
+  const frame = SKILL_SPRITE_FRAMES[skillId];
+  return (
+    <View style={{ width: size, height: size, justifyContent: 'center', alignItems: 'center' }}>
+      {frame !== undefined ? (
+        <ItemSprite spritesheet="skill-icons-1" frameIndex={frame} displaySize={size} />
+      ) : (
+        <Text style={{ fontSize: size * 0.7 }}>✨</Text>
+      )}
+    </View>
+  );
+}
+
 export default function HeroDefinitionScreen({ navigation }) {
   const { dispatch } = useGame();
   const [heroName, setHeroName] = useState('Mochi');
@@ -85,6 +150,8 @@ export default function HeroDefinitionScreen({ navigation }) {
   // Modals state
   const [confirmModalVisible, setConfirmModalVisible] = useState(false);
   const [infoModal, setInfoModal] = useState(null); // { title: string, desc: string }
+  const [showSkillModal, setShowSkillModal] = useState(false);
+  const [showInnateModal, setShowInnateModal] = useState(false);
   const [cardLayout, setCardLayout] = useState({ width: 0, height: 0 });
   const [confirmModalLayout, setConfirmModalLayout] = useState({ width: 0, height: 0 });
   const [helpModalLayout, setHelpModalLayout] = useState({ width: 0, height: 0 });
@@ -149,7 +216,7 @@ export default function HeroDefinitionScreen({ navigation }) {
           </TouchableOpacity>
 
           {/* Banner Boxed with Border Outline + Plaque Title Overlay */}
-          <View style={styles.bannerOuter}>
+          <View style={[styles.bannerOuter, { aspectRatio: BANNER_ASPECT_RATIO }]}>
             <View style={styles.bannerContainer}>
               <ExpoImage
                 source={require('../../assets/sprites/banners/onboarding-banner.png')}
@@ -229,7 +296,7 @@ export default function HeroDefinitionScreen({ navigation }) {
                     style={styles.infoTag}
                     onPress={() => setInfoModal({
                       title: 'ELEMENTAL AFFINITY',
-                      desc: 'Every recruit carries an elemental affinity (Fire, Water, Earth, Wind). It determines your starting stats, passive bonuses, and the skill tree you will upgrade. Choose wisely!',
+                      desc: 'Every recruit carries an elemental affinity (Fire, Water, Earth or Wind). It determines your innate trait and starting skill. Choose wisely!\nYou will still be able to access and upgrade skills from other elements.',
                     })}
                     hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                     activeOpacity={0.6}
@@ -271,13 +338,13 @@ export default function HeroDefinitionScreen({ navigation }) {
                               styles.elementBtnInner,
                               isSelected
                                 ? {
-                                    backgroundColor: `${el.color}25`,
-                                    borderTopColor: el.color,
-                                    borderLeftColor: el.color,
-                                    borderRightColor: el.color,
-                                    borderBottomColor: `${el.color}60`,
-                                    borderBottomWidth: 3.5,
-                                  }
+                                  backgroundColor: `${el.color}25`,
+                                  borderTopColor: el.color,
+                                  borderLeftColor: el.color,
+                                  borderRightColor: el.color,
+                                  borderBottomColor: `${el.color}60`,
+                                  borderBottomWidth: 3.5,
+                                }
                                 : styles.elementBtnInnerUnselected,
                             ]}
                           >
@@ -338,23 +405,60 @@ export default function HeroDefinitionScreen({ navigation }) {
                     {selectedElDef.tagline}
                   </Text>
 
-                  {/* Innate Trait Styled Box */}
-                  <View style={[styles.innateBox, { borderColor: selectedElDef.borderColor, backgroundColor: `${selectedElDef.color}10` }]}>
-                    <Text style={styles.innateBoxText}>
-                      <Text style={[styles.innateBoxLabel, { color: selectedElDef.color }]}>
-                        INNATE TRAIT:{' '}
-                      </Text>
-                      <Text style={styles.innateBoxValue}>
-                        {selectedElDef.power}
-                      </Text>
-                    </Text>
+                  {/* Two columns: Innate on left, Starting Skill on right */}
+                  <View style={styles.twoColRow}>
+                    {/* Left Column: Innate */}
+                    <View style={[styles.innateBoxHalf, { borderColor: selectedElDef.borderColor, backgroundColor: `${selectedElDef.color}10` }]}>
+                      {/* ? button on the top right */}
+                      <TouchableOpacity
+                        style={styles.infoQuestionBtn}
+                        onPress={() => setShowInnateModal(true)}
+                        activeOpacity={0.7}
+                      >
+                        <Text style={styles.infoQuestionText}>?</Text>
+                      </TouchableOpacity>
+
+                      <Text style={[styles.columnLabel, { color: selectedElDef.color }]}>INNATE TRAIT</Text>
+                      <Text style={styles.innateValueText}>{selectedElDef.power}</Text>
+                    </View>
+
+                    {/* Right Column: Starting Skill */}
+                    <View style={[styles.skillBoxHalf, { borderColor: selectedElDef.borderColor, backgroundColor: `${selectedElDef.color}10` }]}>
+                      {/* ? button on the top right */}
+                      <TouchableOpacity
+                        style={styles.infoQuestionBtn}
+                        onPress={() => setShowSkillModal(true)}
+                        activeOpacity={0.7}
+                      >
+                        <Text style={styles.infoQuestionText}>?</Text>
+                      </TouchableOpacity>
+
+                      <Text style={[styles.columnLabel, { color: selectedElDef.color }]}>STARTING SKILL</Text>
+
+                      {/* Skill display inside card: icon + name */}
+                      {(() => {
+                        const skillId = ELEMENT_TO_STARTING_SKILL[selectedElDef.id];
+                        const skill = SKILLS[skillId];
+                        return (
+                          <View style={styles.skillCardContent}>
+                            <SkillSprite skillId={skillId} size={22} />
+                            <Text style={styles.skillNameText} numberOfLines={1}>
+                              {skill?.name || ''}
+                            </Text>
+                          </View>
+                        );
+                      })()}
+                    </View>
                   </View>
                 </View>
               </View>
             </ScrollView>
           </View>
 
-          {/* Fixed Action Button at the Bottom */}
+        </ScrollView>
+
+        {/* Fixed Action Button Footer at the Bottom */}
+        <View style={styles.footer}>
           <View style={styles.confirmBtnWrapper}>
             <View style={styles.confirmBtnShadow} />
             <TouchableOpacity
@@ -372,7 +476,7 @@ export default function HeroDefinitionScreen({ navigation }) {
           <Text style={styles.confirmSubtext}>
             {activeSlide === 0 ? 'Step 1 of 2: Character Name' : 'Step 2 of 2: Affinity Path'}
           </Text>
-        </ScrollView>
+        </View>
       </View>
 
       {/* CONFIRMATION MODAL */}
@@ -435,7 +539,7 @@ export default function HeroDefinitionScreen({ navigation }) {
                   </Text>
                 </View>
 
-                 <View style={styles.modalButtonRow}>
+                <View style={styles.modalButtonRow}>
                   {/* Cancel Button */}
                   <View style={[styles.modalBtnWrapper, { marginRight: 10 }]}>
                     <View style={styles.modalBtnShadow} />
@@ -544,6 +648,175 @@ export default function HeroDefinitionScreen({ navigation }) {
           </View>
         </TouchableWithoutFeedback>
       </Modal>
+
+      {/* STARTING SKILL INFO MODAL */}
+      <Modal
+        transparent
+        visible={showSkillModal}
+        animationType="fade"
+        onRequestClose={() => setShowSkillModal(false)}
+      >
+        <TouchableWithoutFeedback onPress={() => setShowSkillModal(false)}>
+          <View style={styles.modalOverlay}>
+            <TouchableWithoutFeedback>
+              <View
+                style={[styles.modalContent, { borderColor: selectedElDef.borderColor }]}
+              >
+                {/* Close X button in top right */}
+                <TouchableOpacity
+                  style={styles.modalSkillCloseIconBtn}
+                  onPress={() => setShowSkillModal(false)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.modalSkillCloseIconText}>✕</Text>
+                </TouchableOpacity>
+
+                {(() => {
+                  const skillId = ELEMENT_TO_STARTING_SKILL[selectedElDef.id];
+                  const skill = SKILLS[skillId];
+                  if (!skill) return null;
+
+                  return (
+                    <>
+                      {/* Header: Skill Icon + Name */}
+                      <View style={styles.modalSkillHeader}>
+                        <SkillSprite skillId={skillId} size={42} />
+                        <View style={styles.modalSkillTitleCol}>
+                          <Text style={[styles.modalSkillNameText, { color: selectedElDef.color }]}>{skill.name}</Text>
+                          <View style={styles.modalSkillBadges}>
+                            <View style={[styles.typeBadge, { borderColor: 'rgba(240, 138, 74, 0.4)' }]}>
+                              <Text style={styles.typeBadgeText}>ACTIVE</Text>
+                            </View>
+                            {skill.cooldown > 0 && (
+                              <View style={styles.cooldownBadgeRow}>
+                                <ItemSprite spritesheet="icons-map" frameIndex={86} displaySize={11} />
+                                <Text style={styles.modalSkillCooldown}>{skill.cooldown}-TURN CD</Text>
+                              </View>
+                            )}
+                          </View>
+                        </View>
+                      </View>
+
+                      {/* Description */}
+                      <Text style={styles.modalSkillDescText}>{skill.description}</Text>
+
+                      {/* Stats Preview */}
+                      {skill.stars?.[1] && (
+                        <View style={[styles.modalSkillStatsBox, { borderColor: 'rgba(255, 243, 218, 0.15)' }]}>
+                          <Text style={styles.modalSkillStatsTitle}>★1 INITIAL STATS</Text>
+                          {Object.entries(skill.stars[1]).map(([k, v]) => (
+                            <View key={k} style={styles.modalSkillStatRow}>
+                              <Text style={styles.modalSkillStatLabel}>{SKILL_STAT_LABELS[k] || k}:</Text>
+                              <Text style={styles.modalSkillStatValue}>{formatSkillStatValue(k, v)}</Text>
+                            </View>
+                          ))}
+                        </View>
+                      )}
+                    </>
+                  );
+                })()}
+
+                <TouchableOpacity
+                  style={[styles.modalSkillOkBtn, { backgroundColor: selectedElDef.color }]}
+                  onPress={() => setShowSkillModal(false)}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.modalSkillOkBtnText}>GOT IT</Text>
+                </TouchableOpacity>
+              </View>
+            </TouchableWithoutFeedback>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
+
+      {/* INNATE TRAIT INFO MODAL */}
+      <Modal
+        transparent
+        visible={showInnateModal}
+        animationType="fade"
+        onRequestClose={() => setShowInnateModal(false)}
+      >
+        <TouchableWithoutFeedback onPress={() => setShowInnateModal(false)}>
+          <View style={styles.modalOverlay}>
+            <TouchableWithoutFeedback>
+              <View
+                style={[styles.modalContent, { borderColor: selectedElDef.borderColor }]}
+              >
+                {/* Close X button in top right */}
+                <TouchableOpacity
+                  style={styles.modalSkillCloseIconBtn}
+                  onPress={() => setShowInnateModal(false)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.modalSkillCloseIconText}>✕</Text>
+                </TouchableOpacity>
+
+                {/* Header: Innate Sprite + Title */}
+                <View style={styles.modalSkillHeader}>
+                  <ItemSprite spritesheet="icons-1" frameIndex={selectedElDef.spriteFrame} displaySize={38} />
+                  <View style={styles.modalSkillTitleCol}>
+                    <Text style={[styles.modalSkillNameText, { color: selectedElDef.color }]}>{selectedElDef.name} INNATE</Text>
+                    <View style={styles.modalSkillBadges}>
+                      <View style={[styles.typeBadge, { borderColor: 'rgba(92, 196, 184, 0.4)', backgroundColor: 'rgba(0,0,0,0.25)' }]}>
+                        <Text style={[styles.typeBadgeText, { color: '#5CC489' }]}>INNATE TRAIT</Text>
+                      </View>
+                    </View>
+                  </View>
+                </View>
+
+                {/* Description */}
+                <Text style={styles.modalSkillDescText}>
+                  {selectedElDef.id === 'fire' && "FIRE INNATE: Increases base Attack power by +1% per hero level."}
+                  {selectedElDef.id === 'water' && "WATER INNATE: Increases base Maximum HP by +1% per hero level."}
+                  {selectedElDef.id === 'earth' && "EARTH INNATE: Grants +1 Defense per hero level."}
+                  {selectedElDef.id === 'wind' && "WIND INNATE: Grants +1 Agility per hero level."}
+                </Text>
+
+                {/* Core Stats Guide */}
+                <View style={[styles.modalSkillStatsBox, { borderColor: 'rgba(255, 243, 218, 0.15)' }]}>
+                  <Text style={styles.modalSkillStatsTitle}>CORE STATS GUIDE</Text>
+
+                  <View style={{ marginBottom: 10 }}>
+                    <Text style={{ fontFamily: 'Silkscreen-Regular', fontSize: 10, color: '#F9D99A', marginBottom: 2 }}>STRENGTH (STR)</Text>
+                    <Text style={{ fontFamily: 'Jersey10-Regular', fontSize: 15, color: 'rgba(255, 243, 218, 0.8)', lineHeight: 17 }}>
+                      +1 Attack per point. Increases raw physical damage.
+                    </Text>
+                  </View>
+
+                  <View style={{ marginBottom: 10 }}>
+                    <Text style={{ fontFamily: 'Silkscreen-Regular', fontSize: 10, color: '#06B6D4', marginBottom: 2 }}>AGILITY (AGI)</Text>
+                    <Text style={{ fontFamily: 'Jersey10-Regular', fontSize: 15, color: 'rgba(255, 243, 218, 0.8)', lineHeight: 17 }}>
+                      +0.5% Crit Rate & +0.5% Dodge Rate per point. Helps land critical hits and dodge enemy attacks.
+                    </Text>
+                  </View>
+
+                  <View style={{ marginBottom: 10 }}>
+                    <Text style={{ fontFamily: 'Silkscreen-Regular', fontSize: 10, color: '#5CC489', marginBottom: 2 }}>VITALITY (VIT)</Text>
+                    <Text style={{ fontFamily: 'Jersey10-Regular', fontSize: 15, color: 'rgba(255, 243, 218, 0.8)', lineHeight: 17 }}>
+                      +5 Max HP & +0.5% Status Resistance per point. Boosts total health and resilience.
+                    </Text>
+                  </View>
+
+                  <View>
+                    <Text style={{ fontFamily: 'Silkscreen-Regular', fontSize: 10, color: '#D4A754', marginBottom: 2 }}>DEFENSE (DEF)</Text>
+                    <Text style={{ fontFamily: 'Jersey10-Regular', fontSize: 15, color: 'rgba(255, 243, 218, 0.8)', lineHeight: 17 }}>
+                      Reduces incoming damage from enemy attacks.
+                    </Text>
+                  </View>
+                </View>
+
+                <TouchableOpacity
+                  style={[styles.modalSkillOkBtn, { backgroundColor: selectedElDef.color }]}
+                  onPress={() => setShowInnateModal(false)}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.modalSkillOkBtnText}>GOT IT</Text>
+                </TouchableOpacity>
+              </View>
+            </TouchableWithoutFeedback>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -560,8 +833,16 @@ const styles = StyleSheet.create({
   scroll: {
     paddingTop: 16,
     paddingHorizontal: 20,
-    paddingBottom: 70,
+    paddingBottom: 16,
     flexGrow: 1,
+  },
+  footer: {
+    paddingHorizontal: 20,
+    paddingTop: 10,
+    paddingBottom: 16,
+    backgroundColor: '#133131',
+    borderTopWidth: 1.5,
+    borderTopColor: 'rgba(255, 243, 218, 0.08)',
   },
   backBtn: {
     alignSelf: 'flex-start',
@@ -611,7 +892,6 @@ const styles = StyleSheet.create({
   /* Banner frame */
   bannerOuter: {
     width: '100%',
-    aspectRatio: 1,
     position: 'relative',
     marginBottom: 16,
   },
@@ -724,7 +1004,7 @@ const styles = StyleSheet.create({
   },
   elementBtnWrapper: {
     width: (SLIDE_WIDTH - 30) / 4,
-    aspectRatio: 1,
+    height: 60,
     position: 'relative',
   },
   elementBtnShadow: {
@@ -772,8 +1052,8 @@ const styles = StyleSheet.create({
   },
   elementBtnText: {
     fontFamily: 'Silkscreen-Regular',
-    fontSize: 11,
-    marginTop: 3,
+    fontSize: 12,
+    marginTop: 0,
     textAlign: 'center',
     letterSpacing: 0,
   },
@@ -797,13 +1077,13 @@ const styles = StyleSheet.create({
     alignSelf: 'stretch',
   },
   innateBoxText: {
-    fontSize: 15,
-    lineHeight: 18,
+    fontSize: 16,
+    lineHeight: 16,
   },
   innateBoxLabel: {
     fontFamily: 'Silkscreen-Regular',
-    fontSize: 10,
-    letterSpacing: 0.5,
+    fontSize: 16,
+    letterSpacing: 0,
   },
   innateBoxValue: {
     fontFamily: 'Jersey10-Regular',
@@ -812,8 +1092,10 @@ const styles = StyleSheet.create({
   },
   detailTaglineText: {
     fontFamily: 'Jersey10-Regular',
-    fontSize: 20,
-    lineHeight: 24,
+    fontSize: 18,
+    lineHeight: 18,
+    letterSpacing: 1,
+    paddingHorizontal: 5,
     color: '#FFF3DA',
     textShadowColor: 'rgba(0, 0, 0, 0.9)',
     textShadowOffset: { width: 0, height: 1 },
@@ -1049,5 +1331,185 @@ const styles = StyleSheet.create({
     fontFamily: 'Silkscreen-Regular',
     fontSize: 12,
     color: '#E8A73A',
+  },
+
+  /* Two-column layout in Element Affinity Card */
+  twoColRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 10,
+    alignSelf: 'stretch',
+  },
+  innateBoxHalf: {
+    width: '48.5%',
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+    borderWidth: 2,
+    justifyContent: 'center',
+  },
+  skillBoxHalf: {
+    width: '48.5%',
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+    borderWidth: 2,
+    justifyContent: 'center',
+    position: 'relative',
+  },
+  columnLabel: {
+    fontFamily: 'Silkscreen-Regular',
+    fontSize: 12,
+    letterSpacing: 0,
+    marginBottom: 6,
+  },
+  innateValueText: {
+    fontFamily: 'Jersey10-Regular',
+    fontSize: 20,
+    color: '#FFF3DA',
+    lineHeight: 22,
+  },
+  infoQuestionBtn: {
+    position: 'absolute',
+    top: 6,
+    right: 8,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    borderWidth: 1.5,
+    borderColor: '#E8A73A',
+    backgroundColor: 'rgba(0, 0, 0, 0.35)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 10,
+  },
+  infoQuestionText: {
+    fontFamily: 'Jersey10-Regular',
+    fontSize: 14,
+    lineHeight: 14,
+    color: '#E8A73A',
+    fontStyle: 'italic',
+    fontWeight: 'bold',
+  },
+  skillCardContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 4,
+  },
+  skillNameText: {
+    fontFamily: 'Jersey10-Regular',
+    fontSize: 20,
+    color: '#FFF3DA',
+    flex: 1,
+    lineHeight: 22,
+  },
+
+  /* Starting Skill Detail Modal inside Onboarding */
+  modalSkillCloseIconBtn: {
+    position: 'absolute',
+    top: 14,
+    right: 14,
+    padding: 6,
+    zIndex: 10,
+  },
+  modalSkillCloseIconText: {
+    fontFamily: 'Silkscreen-Regular',
+    fontSize: 14,
+    color: 'rgba(255,243,218,0.5)',
+  },
+  modalSkillHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 14,
+    marginTop: 10,
+  },
+  modalSkillTitleCol: {
+    flex: 1,
+  },
+  modalSkillNameText: {
+    fontFamily: 'PressStart2P-Regular',
+    fontSize: 11,
+    textTransform: 'uppercase',
+    marginBottom: 6,
+    lineHeight: 14,
+  },
+  modalSkillBadges: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  typeBadge: {
+    borderRadius: 5,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderWidth: 1.5,
+    borderColor: 'rgba(240, 138, 74, 0.4)',
+    backgroundColor: 'rgba(0,0,0,0.25)',
+  },
+  typeBadgeText: {
+    fontFamily: 'Silkscreen-Regular',
+    fontSize: 8,
+    color: '#F08A4A',
+  },
+  cooldownBadgeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  modalSkillCooldown: {
+    fontFamily: 'Silkscreen-Regular',
+    fontSize: 8,
+    color: '#FFA07A',
+  },
+  modalSkillDescText: {
+    fontFamily: 'Jersey10-Regular',
+    fontSize: 17,
+    color: 'rgba(255,243,218,0.8)',
+    lineHeight: 20,
+    marginBottom: 16,
+  },
+  modalSkillStatsBox: {
+    backgroundColor: 'rgba(0,0,0,0.22)',
+    borderWidth: 1.5,
+    borderRadius: 8,
+    padding: 10,
+    marginBottom: 18,
+  },
+  modalSkillStatsTitle: {
+    fontFamily: 'Silkscreen-Regular',
+    fontSize: 9,
+    color: 'rgba(255,243,218,0.45)',
+    marginBottom: 8,
+  },
+  modalSkillStatRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 4,
+  },
+  modalSkillStatLabel: {
+    fontFamily: 'Jersey10-Regular',
+    fontSize: 16,
+    color: 'rgba(255,243,218,0.6)',
+  },
+  modalSkillStatValue: {
+    fontFamily: 'Jersey10-Regular',
+    fontSize: 16,
+    color: '#FFF3DA',
+  },
+  modalSkillOkBtn: {
+    borderRadius: 8,
+    height: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderBottomWidth: 3.5,
+    borderBottomColor: 'rgba(0,0,0,0.35)',
+    marginTop: 4,
+  },
+  modalSkillOkBtnText: {
+    fontFamily: 'Silkscreen-Regular',
+    fontSize: 12,
+    color: '#FFF3DA',
   },
 });

@@ -77,50 +77,50 @@ export default function LoreIntroScreen({ navigation, route }) {
   };
 
   return (
-    <View style={styles.root}>
+    <SafeAreaView style={styles.root} edges={['top', 'bottom', 'left', 'right']}>
       <StatusBar barStyle="light-content" backgroundColor="#000" />
 
-      <SafeAreaView style={styles.safe} edges={['top', 'bottom', 'left', 'right']}>
-        <Animated.View style={[styles.content, { opacity: fadeAnim }]}>
-          {/* Boxed Banner Image with Pretty Outline + Lore Content Overlay */}
-          <View style={styles.boxedLoreContainer}>
-            {/* Background Image */}
-            <ExpoImage
-              source={BG_SOURCE}
-              style={StyleSheet.absoluteFillObject}
-              contentFit="cover"
-            />
-            {/* Dark overlay tint for readability */}
-            <View style={[StyleSheet.absoluteFillObject, { backgroundColor: 'rgba(0, 0, 0, 0.58)' }]} />
+      <Animated.View style={[styles.content, { opacity: fadeAnim }]}>
+        {/* Boxed Banner Image with Pretty Outline + Lore Content Overlay */}
+        <View style={styles.boxedLoreContainer}>
+          {/* Background Image */}
+          <ExpoImage
+            source={BG_SOURCE}
+            style={StyleSheet.absoluteFillObject}
+            contentFit="cover"
+          />
+          {/* Dark overlay tint for readability */}
+          <View style={[StyleSheet.absoluteFillObject, { backgroundColor: 'rgba(0, 0, 0, 0.58)' }]} />
 
-            {/* Title plaque inside the image box */}
-            <View style={[styles.titlePlaqueOuter, { marginTop: 8, marginBottom: 16 }]}>
-              <View style={styles.titlePlaqueInner}>
-                <Text style={styles.titlePlaqueText}>
-                  WELCOME TO THE{"\n"}MEOW EXPEDITIONS
-                </Text>
-              </View>
-              <View style={styles.topTagOverlay}>
-                <View style={styles.topTag}>
-                  <Text style={styles.topTagText}>★ A NEW ADVENTURE BEGINS ★</Text>
-                </View>
+          {/* Title plaque inside the image box */}
+          <View style={[styles.titlePlaqueOuter, { marginTop: 8, marginBottom: 16 }]}>
+            <View style={styles.titlePlaqueInner}>
+              <Text style={styles.titlePlaqueText}>
+                WELCOME TO THE{"\n"}MEOW EXPEDITIONS
+              </Text>
+            </View>
+            <View style={styles.topTagOverlay}>
+              <View style={styles.topTag}>
+                <Text style={styles.topTagText}>★ A NEW ADVENTURE BEGINS ★</Text>
               </View>
             </View>
-
-            {/* Scrollable Lore Text */}
-            <ScrollView
-              showsVerticalScrollIndicator={false}
-              contentContainerStyle={styles.loreScrollContent}
-            >
-              {LORE_PARAGRAPHS.map((p, i) => (
-                <View key={i} style={styles.loreRow}>
-                  <Text style={styles.loreText}>{p}</Text>
-                </View>
-              ))}
-            </ScrollView>
           </View>
 
-          {/* Continue button outside the image box */}
+          {/* Scrollable Lore Text */}
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.loreScrollContent}
+          >
+            {LORE_PARAGRAPHS.map((p, i) => (
+              <View key={i} style={styles.loreRow}>
+                <Text style={styles.loreText}>{p}</Text>
+              </View>
+            ))}
+          </ScrollView>
+        </View>
+
+        {/* Locked Bottom Footer for Continue Button */}
+        <View style={styles.footer}>
           <Animated.View style={{ width: '100%' }}>
             <Animated.View
               style={[
@@ -146,9 +146,12 @@ export default function LoreIntroScreen({ navigation, route }) {
               </TouchableOpacity>
             </Animated.View>
           </Animated.View>
-        </Animated.View>
-      </SafeAreaView>
-    </View>
+          <Text style={styles.confirmSubtext}>
+            Press Continue to begin your adventure
+          </Text>
+        </View>
+      </Animated.View>
+    </SafeAreaView>
   );
 }
 
@@ -157,14 +160,8 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#133131',
   },
-  safe: {
-    flex: 1,
-  },
   content: {
     flex: 1,
-    paddingHorizontal: 20,
-    paddingTop: 12,
-    paddingBottom: 16,
   },
 
   /* Boxed container wrapping both banner background and lore text overlay */
@@ -177,6 +174,8 @@ const styles = StyleSheet.create({
     position: 'relative',
     paddingHorizontal: 18,
     paddingVertical: 18,
+    marginHorizontal: 20,
+    marginTop: 12,
     marginBottom: 16,
   },
   loreScrollContent: {
@@ -247,8 +246,8 @@ const styles = StyleSheet.create({
   },
   titlePlaqueText: {
     fontFamily: 'PressStart2P-Regular',
-    fontSize: 15,
-    lineHeight: 24,
+    fontSize: 16,
+    lineHeight: 26,
     color: '#FFF3DA',
     textAlign: 'center',
     textShadowColor: '#000',
@@ -260,7 +259,8 @@ const styles = StyleSheet.create({
     width: '100%',
     height: 52,
     position: 'relative',
-    marginTop: 8,
+    marginTop: 6,
+    marginBottom: 8,
   },
   btnShadow: {
     position: 'absolute',
@@ -304,5 +304,19 @@ const styles = StyleSheet.create({
     color: '#2A1A0C',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
+  },
+  footer: {
+    paddingHorizontal: 20,
+    paddingTop: 10,
+    paddingBottom: 16,
+    backgroundColor: '#133131',
+    borderTopWidth: 1.5,
+    borderTopColor: 'rgba(255, 243, 218, 0.08)',
+  },
+  confirmSubtext: {
+    fontFamily: 'Silkscreen-Regular',
+    fontSize: 10,
+    color: 'rgba(255, 243, 218, 0.45)',
+    textAlign: 'center',
   },
 });

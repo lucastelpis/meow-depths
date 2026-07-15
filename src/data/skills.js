@@ -465,7 +465,6 @@ export function hasMaterials(materials, cost) {
 export function canUnlockElementSkill(skillId, hero) {
   const skill = SKILLS[skillId];
   if (!skill) return { can: false, reason: 'Unknown skill.' };
-  if (skill.element !== hero.element) return { can: false, reason: 'Wrong element.' };
   if (hero.unlockedSkills[skillId]) return { can: false, reason: 'Already unlocked.' };
 
   const cost = getSkillUpgradeCost(skill, 1);
@@ -497,7 +496,6 @@ export function canUnlockElementSkill(skillId, hero) {
 export function canStarUpSkill(skillId, hero) {
   const skill = SKILLS[skillId];
   if (!skill) return { can: false, reason: 'Unknown skill.' };
-  if (skill.element !== hero.element) return { can: false, reason: 'Wrong element.' };
   const entry = hero.unlockedSkills[skillId];
   if (!entry) return { can: false, reason: 'Skill not unlocked.' };
   if (entry.stars >= 5) return { can: false, reason: 'Already at max star.' };

@@ -383,7 +383,7 @@ export default function ProfileScreen() {
     if (!hero.element) return '';
     const bonus = getStanceBonus(hero.element.toLowerCase(), hero.level);
     if (hero.element.toLowerCase() === 'fire') {
-      return `+${Math.round((bonus.atkPercent || 0) * 100)}% ATK (Burn Damage +${bonus.burnTickBonus || 0})`;
+      return `+${Math.round((bonus.atkPercent || 0) * 100)}% ATK`;
     }
     if (hero.element.toLowerCase() === 'water') {
       return `+${Math.round((bonus.maxHpPercent || 0) * 100)}% Max HP`;

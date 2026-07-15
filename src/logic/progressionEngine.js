@@ -33,10 +33,9 @@ import { GEAR, SET_BONUSES } from '../data/gear';
 export const STANCES = {
   fire: {
     name: 'Fire Stance',
-    description: '+1% ATK per level. Burn ticks deal more damage.',
+    description: '+1% ATK per level.',
     getBonus: (level) => ({
       atkPercent: level * 0.01,
-      burnTickBonus: 1 + Math.floor(level / 5),
     }),
   },
   water: {

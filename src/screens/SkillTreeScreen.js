@@ -129,6 +129,30 @@ function Stars({ count, max = 5, color = C.candleGold, size = 12 }) {
   );
 }
 
+// Render text with star symbols sized smaller
+function renderTextWithStars(text, style) {
+  if (!text) return null;
+  if (!text.includes('★')) {
+    return <Text style={style}>{text}</Text>;
+  }
+  const parts = text.split('★');
+  return (
+    <Text style={style}>
+      {parts.map((part, index) => {
+        if (index === parts.length - 1) {
+          return <React.Fragment key={index}>{part}</React.Fragment>;
+        }
+        return (
+          <React.Fragment key={index}>
+            {part}
+            <Text style={{ fontSize: 11 }}>★</Text>
+          </React.Fragment>
+        );
+      })}
+    </Text>
+  );
+}
+
 // ─── Stat Labels & Formatters ──────────────────────────────────────────────────
 
 export const SKILL_STAT_LABELS = {
@@ -288,6 +312,13 @@ export default function SkillTreeScreen() {
 
   const [selectedSkill, setSelectedSkill] = useState(null);
   const [activeSkill, setActiveSkill] = useState(null);
+  const [selectedElement, setSelectedElement] = useState(hero.element || 'fire');
+
+  useEffect(() => {
+    if (hero.element) {
+      setSelectedElement(hero.element);
+    }
+  }, [hero.element]);
 
   // Auto-equip notification toast (shown when unlocking an active skill fills a
   // free combat slot — mirrors the UNLOCK_SKILL reducer's auto-equip rule).
@@ -315,12 +346,21 @@ export default function SkillTreeScreen() {
   }, []);
 
   const targetSkill = selectedSkill || activeSkill;
-  const elementColor = ELEMENT_COLORS[element] || C.candleGold;
+
+  // Colors and data depending on the selected skill tree view:
+  const viewColor = ELEMENT_COLORS[selectedElement] || C.candleGold;
+  const elementSkillIds = ELEMENT_SKILLS[selectedElement] || [];
+  const slotTheme = getSlotTheme(selectedElement);
+
+  // Stance Card parameters (always tied to hero's starting core affinity element)
+  const heroElementColor = ELEMENT_COLORS[element] || C.candleGold;
   const stanceBonus = getStanceBonus(element, level);
   const stance = STANCES[element];
-  const viewColor = ELEMENT_COLORS[element] || C.candleGold;
-  const elementSkillIds = ELEMENT_SKILLS[element] || [];
-  const slotTheme = getSlotTheme(element);
+
+  // Dynamic theme color for the inspected skill's element in detail modal / toast
+  const elementColor = targetSkill
+    ? (ELEMENT_COLORS[targetSkill.element] || C.candleGold)
+    : viewColor;
 
   // Group skill IDs by tier dynamically
   const tiers = [];
@@ -640,11 +680,11 @@ export default function SkillTreeScreen() {
       <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {/* ── Stance card ──────────────────────────────────────────────── */}
         {stance && (
-          <View style={[styles.stanceCard, { borderColor: `${elementColor}70`, backgroundColor: getStanceBgColor(element) }]}>
+          <View style={[styles.stanceCard, { borderColor: `${heroElementColor}70`, backgroundColor: getStanceBgColor(element) }]}>
             <View style={styles.stanceLeft}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 2 }}>
                 <ItemSprite spritesheet="icons-1" frameIndex={ELEMENTS.find(e => e.id === element)?.frame} displaySize={18} />
-                <Text style={[styles.stanceName, { color: elementColor, marginBottom: 0 }]}>{stance.name}</Text>
+                <Text style={[styles.stanceName, { color: heroElementColor, marginBottom: 0 }]}>{stance.name.replace('Stance', 'Affinity')}</Text>
               </View>
               <Text style={styles.stanceLabel}>INNATE</Text>
               <Text style={styles.stanceDesc}>{stance.description}</Text>
@@ -652,32 +692,103 @@ export default function SkillTreeScreen() {
             <View style={styles.stanceRight}>
               <Text style={styles.stanceRightLabel}>CURRENT BONUS</Text>
               {stanceBonus.atkPercent !== undefined && (
-                <Text style={[styles.stanceStat, { color: elementColor }]}>+{Math.round(stanceBonus.atkPercent * 100)}% ATK</Text>
+                <Text style={[styles.stanceStat, { color: heroElementColor }]}>+{Math.round(stanceBonus.atkPercent * 100)}% ATK</Text>
               )}
               {stanceBonus.burnTickBonus !== undefined && (
-                <Text style={[styles.stanceStat, { color: elementColor }]}>+{stanceBonus.burnTickBonus} burn/tick</Text>
+                <Text style={[styles.stanceStat, { color: heroElementColor }]}>+{stanceBonus.burnTickBonus} burn/tick</Text>
               )}
               {stanceBonus.maxHpPercent !== undefined && (
                 <>
-                  <Text style={[styles.stanceStat, { color: elementColor }]}>+{Math.round(stanceBonus.maxHpPercent * 100)}% max HP</Text>
-                  <Text style={[styles.stanceSubStat, { color: elementColor }]}>(currently +{Math.floor((hero.maxHp || 50) * stanceBonus.maxHpPercent)} HP)</Text>
+                  <Text style={[styles.stanceStat, { color: heroElementColor }]}>+{Math.round(stanceBonus.maxHpPercent * 100)}% max HP</Text>
+                  <Text style={[styles.stanceSubStat, { color: heroElementColor }]}>(currently +{Math.floor((hero.maxHp || 50) * stanceBonus.maxHpPercent)} HP)</Text>
                 </>
               )}
               {stanceBonus.defBonus !== undefined && (
                 <>
-                  <Text style={[styles.stanceStat, { color: elementColor }]}>+{stanceBonus.defBonus} DEF</Text>
-                  <Text style={[styles.stanceSubStat, { color: elementColor }]}>(+1 DEF / level)</Text>
+                  <Text style={[styles.stanceStat, { color: heroElementColor }]}>+{stanceBonus.defBonus} DEF</Text>
+                  <Text style={[styles.stanceSubStat, { color: heroElementColor }]}>(+1 DEF / level)</Text>
                 </>
               )}
               {stanceBonus.agiBonus !== undefined && (
                 <>
-                  <Text style={[styles.stanceStat, { color: elementColor }]}>+{stanceBonus.agiBonus} AGI</Text>
-                  <Text style={[styles.stanceSubStat, { color: elementColor }]}>+{(stanceBonus.agiBonus * 0.5).toFixed(1)}% crit · dodge</Text>
+                  <Text style={[styles.stanceStat, { color: heroElementColor }]}>+{stanceBonus.agiBonus} AGI</Text>
+                  <Text style={[styles.stanceSubStat, { color: heroElementColor }]}>+{(stanceBonus.agiBonus * 0.5).toFixed(1)}% crit · dodge</Text>
                 </>
               )}
             </View>
           </View>
         )}
+
+        {/* ── Element Selector Buttons ─────────────────────────────────────── */}
+        <View style={styles.elementSelectorRow}>
+          {ELEMENTS.map((el) => {
+            const isSelected = selectedElement === el.id;
+            const elColor = el.color;
+
+            return (
+              <View key={el.id} style={styles.elementTabWrapper}>
+                {/* 3D Under Shadow */}
+                <View style={[
+                  styles.elementTabShadow,
+                  isSelected 
+                    ? { backgroundColor: '#1E1E20' } // selected shadow
+                    : { backgroundColor: '#0D2118' } // unselected shadow
+                ]} />
+
+                {/* Outer Outline */}
+                <TouchableOpacity
+                  activeOpacity={0.8}
+                  onPress={() => setSelectedElement(el.id)}
+                  style={[
+                    styles.elementTabOuter,
+                    isSelected
+                      ? { borderColor: elColor, backgroundColor: '#1E1E20' }
+                      : { borderColor: '#84735B', backgroundColor: '#142C1C' }
+                  ]}
+                >
+                  {/* Inner Bevel & Highlights */}
+                  <View style={[
+                    styles.elementTabInner,
+                    isSelected
+                      ? {
+                          backgroundColor: `${elColor}25`,
+                          borderTopColor: elColor,
+                          borderLeftColor: elColor,
+                          borderRightColor: elColor,
+                          borderBottomColor: `${elColor}60`,
+                          borderBottomWidth: 3,
+                        }
+                      : {
+                          backgroundColor: '#142C1C',
+                          borderTopColor: 'rgba(255, 243, 218, 0.15)',
+                          borderLeftColor: 'rgba(255, 243, 218, 0.15)',
+                          borderRightColor: 'rgba(255, 243, 218, 0.15)',
+                          borderBottomColor: 'rgba(0, 0, 0, 0.35)',
+                          borderBottomWidth: 3,
+                        }
+                  ]}>
+                    {/* Icon Sprite */}
+                    <ItemSprite
+                      spritesheet="icons-1"
+                      frameIndex={el.frame}
+                      displaySize={26}
+                    />
+
+                    {/* Label */}
+                    <Text style={[
+                      styles.elementTabText,
+                      isSelected
+                        ? { color: elColor }
+                        : { color: 'rgba(255, 243, 218, 0.4)' }
+                    ]}>
+                      {el.label}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              </View>
+            );
+          })}
+        </View>
 
 
 
@@ -712,11 +823,14 @@ export default function SkillTreeScreen() {
           {[0, 1].map((slotIdx) => {
             const skillId = equippedSkills[slotIdx];
             const sk = skillId ? SKILLS[skillId] : null;
+            const activeSlotTheme = sk ? getSlotTheme(sk.element) : getSlotTheme(element);
+            const activeGlowColor = sk ? (ELEMENT_COLORS[sk.element] || viewColor) : viewColor;
+
             return (
               <View key={slotIdx} style={styles.dockSlotWrapper}>
                 {sk ? (
                   <>
-                    <View style={[styles.dockSlotShadow, { backgroundColor: slotTheme.shadowColor }]} />
+                    <View style={[styles.dockSlotShadow, { backgroundColor: activeSlotTheme.shadowColor }]} />
                     <TouchableOpacity
                       style={styles.dockSlotOuter}
                       onPress={() => handleOpenSkill(sk)}
@@ -725,14 +839,14 @@ export default function SkillTreeScreen() {
                       <View style={[
                         styles.dockSlotInner,
                         {
-                          backgroundColor: slotTheme.innerFill,
-                          borderTopColor: slotTheme.topBorder,
-                          borderLeftColor: slotTheme.topBorder,
-                          borderRightColor: slotTheme.topBorder,
-                          borderBottomColor: slotTheme.bottomBorder,
+                          backgroundColor: activeSlotTheme.innerFill,
+                          borderTopColor: activeSlotTheme.topBorder,
+                          borderLeftColor: activeSlotTheme.topBorder,
+                          borderRightColor: activeSlotTheme.topBorder,
+                          borderBottomColor: activeSlotTheme.bottomBorder,
                         }
                       ]}>
-                        <SkillSprite skillId={sk.id} size={38} glow glowColor={viewColor} />
+                        <SkillSprite skillId={sk.id} size={38} glow glowColor={activeGlowColor} />
                         <View style={styles.dockSlotText}>
                           <Text style={styles.dockSlotLabel}>SLOT {slotIdx + 1}</Text>
                           <Text style={[styles.dockSlotName, { color: C.text }]} numberOfLines={1}>
@@ -904,7 +1018,7 @@ export default function SkillTreeScreen() {
                   {selectedCardState === 'locked' && unlockCheck && (
                     <View style={[styles.modalInfoBox, { flexDirection: 'row', alignItems: 'center', gap: 6 }]}>
                       <ItemSprite spritesheet="icons-map" frameIndex={115} displaySize={14} />
-                      <Text style={[styles.modalInfoText, { flex: 1 }]}>{unlockCheck.reason}</Text>
+                      {renderTextWithStars(unlockCheck.reason, [styles.modalInfoText, { flex: 1 }])}
                     </View>
                   )}
 
@@ -921,7 +1035,7 @@ export default function SkillTreeScreen() {
 
                     {selectedCardState === 'unlocked' && !starUpCheck?.can && selectedStars < 5 && (
                       <View style={styles.disabledBtn}>
-                        <Text style={styles.disabledBtnText}>{starUpCheck?.reason}</Text>
+                        {renderTextWithStars(starUpCheck?.reason, styles.disabledBtnText)}
                       </View>
                     )}
 
@@ -1643,4 +1757,52 @@ const styles = StyleSheet.create({
     textShadowRadius: 1,
   },
   equipSlotSub: { fontFamily: 'Jersey10-Regular', fontSize: 14, color: '#A8B8A0' },
+  
+  /* Element Tab Selector Styles */
+  elementSelectorRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 10,
+    marginTop: 8,
+    marginBottom: 16,
+  },
+  elementTabWrapper: {
+    width: (SCREEN_WIDTH - 40 - 3 * 10) / 4,
+    aspectRatio: 1.05,
+    position: 'relative',
+  },
+  elementTabShadow: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 3,
+    bottom: -3,
+    borderRadius: 8,
+    zIndex: 1,
+  },
+  elementTabOuter: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
+    borderRadius: 8,
+    borderWidth: 2.0,
+    zIndex: 2,
+  },
+  elementTabInner: {
+    flex: 1,
+    margin: 1.5,
+    borderRadius: 5,
+    borderWidth: 2,
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 2,
+  },
+  elementTabText: {
+    fontFamily: 'Silkscreen-Regular',
+    fontSize: 11,
+    marginTop: 2,
+    textAlign: 'center',
+  },
 });
