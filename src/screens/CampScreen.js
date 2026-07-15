@@ -194,6 +194,7 @@ export default function CampScreen({ navigation }) {
   const [nowTs, setNowTs] = React.useState(Date.now());
   const [expandedQuestId, setExpandedQuestId] = React.useState(null);
   const [celebrationQuest, setCelebrationQuest] = React.useState(null);
+  const [infoModal, setInfoModal] = React.useState(null); // { title: string, desc: string }
 
   // Mochi's banner thought — re-rolled from the unlocked pool each time the hub
   // gains focus, so the hero "says" something new on every visit.
@@ -344,13 +345,85 @@ export default function CampScreen({ navigation }) {
     return base;
   };
 
+  const getItemInfo = (itemId) => {
+    const normalized = itemId.toLowerCase();
+    if (normalized === 'gold') {
+      return {
+        title: 'GOLD',
+        desc: 'Shiny gold coins. Used to purchase gear, consumables, and all kinds of stuff.',
+      };
+    }
+    if (normalized === 'potion') {
+      return { title: 'HEALTH POTION', desc: 'Restore 50 HP.' };
+    }
+    if (normalized === 'super_potion') {
+      return { title: 'SUPER POTION', desc: 'Restore 100 HP.' };
+    }
+    if (normalized === 'mega_potion') {
+      return { title: 'MEGA POTION', desc: 'Restore 150 HP.' };
+    }
+    if (normalized === 'ultra_potion') {
+      return { title: 'ULTRA POTION', desc: 'Restore 200 HP.' };
+    }
+    if (normalized === 'black_shard') {
+      return { title: 'BLACK SHARD', desc: 'A fragmented piece of black crystal. Dropped by Sewer monsters. Used for crafting basic gear.' };
+    }
+    if (normalized === 'black_crystal_small') {
+      return { title: 'SMALL BLACK CRYSTAL', desc: 'A low-purity black crystal. Used for crafting early-game equipment.' };
+    }
+    if (normalized === 'black_crystal_big') {
+      return { title: 'BIG BLACK CRYSTAL', desc: 'A dense black crystal. Used for forging high-quality Sewer equipment.' };
+    }
+    if (normalized === 'black_crystal_core') {
+      return { title: 'BLACK CRYSTAL CORE', desc: 'A powerful, concentrated core of black crystal energy. Required for legendary Sewer gear.' };
+    }
+    if (normalized === 'green_shard') {
+      return { title: 'GREEN SHARD', desc: 'A shard of glowing green crystal. Dropped by Garden monsters. Used for crafting mid-game gear.' };
+    }
+    if (normalized === 'green_crystal_small') {
+      return { title: 'SMALL GREEN CRYSTAL', desc: 'A low-purity green crystal. Used for crafting mid-game equipment.' };
+    }
+    if (normalized === 'green_crystal_big') {
+      return { title: 'BIG GREEN CRYSTAL', desc: 'A dense green crystal. Used for forging high-quality Garden equipment.' };
+    }
+    if (normalized === 'green_crystal_core') {
+      return { title: 'GREEN CRYSTAL CORE', desc: 'A powerful, concentrated core of green crystal energy. Required for legendary Garden gear.' };
+    }
+    if (normalized === 'yellow_shard') {
+      return { title: 'YELLOW SHARD', desc: 'A shard of glowing yellow crystal. Dropped by Docks monsters. Used for crafting late-game gear.' };
+    }
+    if (normalized === 'yellow_crystal_small') {
+      return { title: 'SMALL YELLOW CRYSTAL', desc: 'A low-purity yellow crystal. Used for crafting late-game equipment.' };
+    }
+    if (normalized === 'yellow_crystal_big') {
+      return { title: 'BIG YELLOW CRYSTAL', desc: 'A dense yellow crystal. Used for forging high-quality Docks equipment.' };
+    }
+    if (normalized === 'yellow_crystal_core') {
+      return { title: 'YELLOW CRYSTAL CORE', desc: 'A powerful, concentrated core of yellow crystal energy. Required for legendary Docks gear.' };
+    }
+    const displayName = normalized
+      .split('_')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
+    return { title: displayName.toUpperCase(), desc: 'A rare quest reward item.' };
+  };
+
   const renderRewardChip = (type, key, qty) => {
     const lowerKey = key.toLowerCase();
+    const info = getItemInfo(key);
+
+    const handlePressInfo = () => {
+      setInfoModal(info);
+    };
+
     if (lowerKey === 'gold') {
       return (
         <View key={key} style={styles.rewardMiniChip}>
-          <ItemSprite spritesheet="icons-1" frameIndex={11} displaySize={14} />
-          <Text style={styles.rewardMiniText}>{qty}G</Text>
+          <TouchableOpacity style={styles.infoTagSmall} onPress={handlePressInfo} activeOpacity={0.7}>
+            <Text style={styles.infoTagText}>?</Text>
+          </TouchableOpacity>
+          <ItemSprite spritesheet="icons-1" frameIndex={11} displaySize={36} />
+          <Text style={styles.rewardMiniText}>{qty} G</Text>
         </View>
       );
     } else if (type === 'consumables') {
@@ -360,16 +433,22 @@ export default function CampScreen({ navigation }) {
       else if (lowerKey === 'ultra_potion') frame = 3;
       return (
         <View key={key} style={styles.rewardMiniChip}>
-          <ItemSprite spritesheet="consumables-1" frameIndex={frame} displaySize={14} />
-          <Text style={styles.rewardMiniText}>x{qty}</Text>
+          <TouchableOpacity style={styles.infoTagSmall} onPress={handlePressInfo} activeOpacity={0.7}>
+            <Text style={styles.infoTagText}>?</Text>
+          </TouchableOpacity>
+          <ItemSprite spritesheet="consumables-1" frameIndex={frame} displaySize={36} />
+          <Text style={styles.rewardMiniText}><Text style={{ fontSize: 11 }}>x</Text>{qty}</Text>
         </View>
       );
     } else if (type === 'materials') {
       const frame = getCrystalFrame(lowerKey);
       return (
         <View key={key} style={styles.rewardMiniChip}>
-          <ItemSprite spritesheet="crystals-1" frameIndex={frame} displaySize={14} />
-          <Text style={styles.rewardMiniText}>x{qty}</Text>
+          <TouchableOpacity style={styles.infoTagSmall} onPress={handlePressInfo} activeOpacity={0.7}>
+            <Text style={styles.infoTagText}>?</Text>
+          </TouchableOpacity>
+          <ItemSprite spritesheet="crystals-1" frameIndex={frame} displaySize={36} />
+          <Text style={styles.rewardMiniText}><Text style={{ fontSize: 11 }}>x</Text>{qty}</Text>
         </View>
       );
     }
@@ -431,26 +510,18 @@ export default function CampScreen({ navigation }) {
 
           {/* Mochi's thought balloon — random phrase from the unlocked pool (1% chance to appear) */}
           {mochiThought && <MochiSpeechBubble text={mochiThought.text} />}
-
           <View style={styles.bannerOverlayContent}>
-            {/* Centered Plaque Title */}
-            <View style={styles.bannerTitleOuterBorder}>
-              <View style={styles.bannerTitleInnerBorder}>
-                <Text style={styles.bannerTitleText}>MEOW EXPEDITIONS</Text>
-              </View>
-            </View>
-
             {/* Tags Stack */}
             <View style={styles.bannerTagsRow}>
               {/* Tag 1: Gold */}
               <View style={styles.bannerTag}>
-                <ItemSprite spritesheet="icons-1" frameIndex={11} displaySize={20} />
+                <ItemSprite spritesheet="icons-1" frameIndex={11} displaySize={26} />
                 <Text style={styles.bannerTagText}>{hero.gold} G</Text>
               </View>
 
               {/* Tag 2: Level */}
               <View style={styles.bannerTag}>
-                <ItemSprite spritesheet="icons-1" frameIndex={ELEMENT_SPRITES[hero.element] || 33} displaySize={20} />
+                <ItemSprite spritesheet="icons-1" frameIndex={ELEMENT_SPRITES[hero.element] || 33} displaySize={26} />
                 <Text style={styles.bannerTagText}>LV {hero.level}</Text>
               </View>
 
@@ -462,7 +533,7 @@ export default function CampScreen({ navigation }) {
                     onPress={() => navigation.navigate('Profile', { initialTab: 'stats' })}
                     activeOpacity={0.7}
                   >
-                    <ItemSprite spritesheet="icons-map" frameIndex={29} displaySize={20} />
+                    <ItemSprite spritesheet="icons-map" frameIndex={29} displaySize={26} />
                   </TouchableOpacity>
 
                   <View style={styles.bannerTagBadge}>
@@ -479,7 +550,7 @@ export default function CampScreen({ navigation }) {
                     onPress={() => navigation.navigate('SkillTree')}
                     activeOpacity={0.7}
                   >
-                    <ItemSprite spritesheet="icons-map" frameIndex={95} displaySize={18} />
+                    <ItemSprite spritesheet="icons-map" frameIndex={95} displaySize={24} />
                   </TouchableOpacity>
 
                   <View style={styles.bannerTagBadge}>
@@ -496,7 +567,7 @@ export default function CampScreen({ navigation }) {
                     onPress={() => navigation.navigate('Journal', { initialTab: 'notes' })}
                     activeOpacity={0.7}
                   >
-                    <ItemSprite spritesheet="icons-map" frameIndex={58} displaySize={18} />
+                    <ItemSprite spritesheet="icons-map" frameIndex={58} displaySize={24} />
                   </TouchableOpacity>
 
                   <View style={styles.bannerTagBadge}>
@@ -540,13 +611,13 @@ export default function CampScreen({ navigation }) {
                   styles.dailyRewardTitle,
                   allDailiesClaimed() ? styles.dailyRewardTitleClaimed : styles.dailyRewardTitleActive
                 ]}>
-                  DAILY MISSIONS
+                  DAILY TASKS
                 </Text>
                 <Text style={[
                   styles.dailyRewardSub,
                   allDailiesClaimed() ? styles.dailyRewardSubClaimed : styles.dailyRewardSubActive
                 ]}>
-                  {`TASKS: ${completedCount}/3 COMPLETE`}
+                  {`${completedCount}/3 COMPLETE`}
                 </Text>
               </View>
             </Animated.View>
@@ -823,7 +894,11 @@ export default function CampScreen({ navigation }) {
                                 {quest.progress}/{quest.target}
                               </Text>
                             )}
-                            <Text style={styles.chevronIcon}>{isExpanded ? '▲' : '▼'}</Text>
+                            <View style={styles.chevronShadow}>
+                              <View style={styles.chevronBadge}>
+                                <Text style={styles.chevronText}>{isExpanded ? '▲' : '▼'}</Text>
+                              </View>
+                            </View>
                           </View>
                         </TouchableOpacity>
 
@@ -890,7 +965,7 @@ export default function CampScreen({ navigation }) {
             <View style={styles.drTopWrap} pointerEvents="none">
               <View style={styles.drTopOuter}>
                 <View style={styles.drTopInner}>
-                  <Text style={styles.drTopText}>DAILY QUESTS</Text>
+                  <Text style={styles.drTopText}>DAILY TASKS</Text>
                 </View>
               </View>
             </View>
@@ -941,6 +1016,26 @@ export default function CampScreen({ navigation }) {
                 </View>
               </View>
             </View>
+          )}
+          {/* ITEM INFO OVERLAY */}
+          {infoModal && (
+            <TouchableOpacity
+              style={[StyleSheet.absoluteFillObject, styles.infoModalOverlay, { zIndex: 110 }]}
+              activeOpacity={1}
+              onPress={() => setInfoModal(null)}
+            >
+              <View style={styles.infoModalContent}>
+                <Text style={styles.infoModalTitle}>{infoModal.title}</Text>
+                <Text style={styles.infoModalDesc}>{infoModal.desc}</Text>
+                <TouchableOpacity
+                  style={styles.infoCloseBtn}
+                  onPress={() => setInfoModal(null)}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.infoCloseBtnText}>CLOSE</Text>
+                </TouchableOpacity>
+              </View>
+            </TouchableOpacity>
           )}
         </View>
       </Modal>
@@ -1423,7 +1518,7 @@ const styles = StyleSheet.create({
   },
   bannerTitleText: {
     fontFamily: 'PressStart2P-Regular',
-    fontSize: 22,
+    fontSize: 26,
     lineHeight: 30,
     color: '#FFF3DA',
     textAlign: 'center',
@@ -1445,13 +1540,13 @@ const styles = StyleSheet.create({
     borderColor: '#4A3917',
     borderWidth: 2,
     borderRadius: 8,
-    paddingVertical: 4,
-    paddingHorizontal: 5,
-    gap: 3,
+    paddingVertical: 5,
+    paddingHorizontal: 8,
+    gap: 6,
   },
   bannerTagText: {
     fontFamily: 'Jersey10-Regular',
-    fontSize: 20,
+    fontSize: 26,
     letterSpacing: 0.5,
     color: '#2A1A0C',
   },
@@ -1465,17 +1560,17 @@ const styles = StyleSheet.create({
   bannerTagClickableInner: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 4,
-    paddingHorizontal: 5,
-    gap: 3,
+    paddingVertical: 5,
+    paddingHorizontal: 8,
+    gap: 6,
   },
   bannerTagBadge: {
     position: 'absolute',
-    top: -6,
-    right: -6,
-    width: 16,
-    height: 16,
-    borderRadius: 7,
+    top: -8,
+    right: -8,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
     backgroundColor: '#D8483F', // damageRed (retro red)
     borderColor: '#b98c33ff',
     borderWidth: 1.5,
@@ -1485,11 +1580,11 @@ const styles = StyleSheet.create({
   },
   bannerTagBadgeText: {
     fontFamily: 'PressStart2P-Regular',
-    fontSize: 10,
+    fontSize: 12,
     color: '#FFF3DA',
     fontWeight: 'bold',
     textAlign: 'center',
-    lineHeight: 10,
+    lineHeight: 12,
     marginTop: -1,
   },
 
@@ -1950,11 +2045,31 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#3A2210',
   },
-  chevronIcon: {
-    fontSize: 10,
-    color: '#3A2210',
-    width: 12,
-    textAlign: 'center',
+  chevronShadow: {
+    width: 24,
+    height: 24,
+    borderRadius: 5,
+    backgroundColor: '#0D2118',
+    position: 'relative',
+  },
+  chevronBadge: {
+    position: 'absolute',
+    left: 0,
+    top: -2.5,
+    width: 24,
+    height: 24,
+    borderRadius: 5,
+    borderWidth: 1.5,
+    borderColor: '#4F856C',
+    backgroundColor: '#1B4030',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  chevronText: {
+    fontFamily: 'Silkscreen-Regular',
+    fontSize: 9,
+    fontWeight: 'bold',
+    color: '#FFF3DA',
   },
   headerClaimBtnWrapper: {
     width: 56,
@@ -2015,20 +2130,20 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   progressBarBg: {
-    height: 20,
+    height: 24,
     backgroundColor: '#3A2210',
-    borderRadius: 7,
+    borderRadius: 12,
     overflow: 'hidden',
     marginTop: 4,
     marginBottom: 6,
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: '#C9A86A',
     position: 'relative',
   },
   progressBarFill: {
     height: '100%',
     backgroundColor: '#1c823eff',
-    borderRadius: 6,
+    borderRadius: 10,
   },
   progressBarTextWrapper: {
     ...StyleSheet.absoluteFillObject,
@@ -2037,21 +2152,22 @@ const styles = StyleSheet.create({
   },
   progressBarText: {
     fontFamily: 'Silkscreen-Regular',
-    fontSize: 12,
+    fontSize: 14,
     color: '#FFF3DA',
     textShadowColor: '#3A2210',
     textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 1,
   },
   questRewardsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginBottom: 2,
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+    gap: 8,
+    marginBottom: 12,
+    marginTop: 4,
   },
   rewardsLabel: {
     fontFamily: 'Silkscreen-Regular',
-    fontSize: 12,
+    fontSize: 13,
     color: '#9A7A4A',
   },
   rewardsList: {
@@ -2060,20 +2176,88 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   rewardMiniChip: {
-    flexDirection: 'row',
+    width: 84,
+    height: 84,
     alignItems: 'center',
-    backgroundColor: '#ECD8A6',
+    justifyContent: 'center',
+    backgroundColor: '#3A2210',
     borderColor: '#C9A86A',
-    borderWidth: 1,
-    borderRadius: 4,
-    paddingHorizontal: 4,
-    paddingVertical: 2,
-    gap: 2,
+    borderWidth: 1.5,
+    borderRadius: 8,
+    gap: 4,
+    position: 'relative',
   },
   rewardMiniText: {
     fontFamily: 'Silkscreen-Regular',
+    fontSize: 14,
+    color: '#FFF3DA',
+    textAlign: 'center',
+  },
+  infoTagSmall: {
+    position: 'absolute',
+    top: 4,
+    right: 4,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#C9A86A',
+    backgroundColor: '#4F3C1E',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10,
+  },
+  infoTagText: {
+    fontFamily: 'Silkscreen-Regular',
+    fontSize: 11,
+    fontWeight: 'bold',
+    color: '#FFF3DA',
+  },
+  infoModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(24, 14, 6, 0.78)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
+  infoModalContent: {
+    width: '100%',
+    maxWidth: 320,
+    backgroundColor: '#1E1E22',
+    borderColor: theme.COLORS.panelBorderGoldStrong,
+    borderWidth: 2,
+    borderRadius: 12,
+    padding: 16,
+    alignItems: 'center',
+  },
+  infoModalTitle: {
+    fontFamily: 'Silkscreen-Regular',
+    fontSize: 18,
+    color: '#FBBF24',
+    textAlign: 'center',
+    marginBottom: 10,
+    textTransform: 'uppercase',
+  },
+  infoModalDesc: {
+    fontFamily: 'Jersey10-Regular',
+    fontSize: 20,
+    lineHeight: 24,
+    color: '#FFF3DA',
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+  infoCloseBtn: {
+    backgroundColor: '#3A2210',
+    borderColor: '#84735B',
+    borderWidth: 1.5,
+    borderRadius: 6,
+    paddingVertical: 8,
+    paddingHorizontal: 20,
+  },
+  infoCloseBtnText: {
+    fontFamily: 'Silkscreen-Regular',
     fontSize: 12,
-    color: '#3A2210',
+    color: '#FFF3DA',
   },
   claimBtnWrapper: {
     width: '100%',

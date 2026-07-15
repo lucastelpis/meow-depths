@@ -4,7 +4,7 @@
  * Displays hero card, attributes, and 8-slot equipment grid.
  */
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import {
   View,
   Text,
@@ -15,6 +15,7 @@ import {
   Pressable,
   Alert,
   Dimensions,
+  Animated,
 } from 'react-native';
 import { Image as ExpoImage } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -31,6 +32,13 @@ import { GEAR, CONSUMABLES, MATERIALS, getGearForSlot } from '../data/gear';
 import ItemSprite from '../components/ItemSprite';
 
 const HERO_AVATAR_DISPLAY_SIZE = 80;
+
+const ELEMENT_SPRITES = {
+  fire: 33,
+  wind: 34,
+  water: 35,
+  earth: 36,
+};
 
 // Placeholder item-icon shown for any equipped gear until per-item sprites exist
 const GEAR_ICON_PLACEHOLDER = require('../../assets/sprites/Tiny Swords (Free Pack)/UI Elements/UI Elements/Icons/Icon_05.png');
@@ -165,19 +173,19 @@ const STAT_INFO = {
     title: 'Attack',
     color: theme.COLORS.candleGold,
     desc: 'The base power of Your hits, before the enemy\'s defence is applied.',
-    effects: ['Strength (+1 per point)', 'Gear', 'Fire stance (+ATK%)'],
+    effects: ['Strength (+1 per point)', 'Gear', 'Fire affinity (+ATK%)'],
   },
   def: {
     title: 'Defence',
     color: theme.COLORS.candleGold,
     desc: 'Reduces incoming damage.',
-    effects: ['Earth stance (+1 DEF/level)', 'Gear'],
+    effects: ['Earth affinity (+1 DEF/level)', 'Gear'],
   },
   maxHp: {
     title: 'Max HP',
     color: theme.COLORS.candleGold,
     desc: 'Your total health. If it reaches 0 during an expedition, the run ends and you lose any hoarded items.',
-    effects: ['Vitality (+5 per point)', 'Gear', 'Water stance (+HP%)'],
+    effects: ['Vitality (+5 per point)', 'Gear', 'Water affinity (+HP%)'],
   },
   bagSlots: {
     title: 'Bag Slots',
@@ -189,7 +197,7 @@ const STAT_INFO = {
     title: 'Crit Rate',
     color: theme.COLORS.candleGold,
     desc: 'Chance for an attack to land as a critical hit for bonus damage.',
-    effects: ['Agility (+0.5% per point)', 'Gear', 'Wind stance'],
+    effects: ['Agility (+0.5% per point)', 'Gear', 'Wind affinity'],
   },
   critDmg: {
     title: 'Crit Damage',
@@ -201,7 +209,7 @@ const STAT_INFO = {
     title: 'Dodge Rate',
     color: theme.COLORS.candleGold,
     desc: 'Chance to avoid an incoming attack entirely, taking no damage.',
-    effects: ['Agility (+0.5% per point)', 'Gear', 'Wind stance', 'Skills'],
+    effects: ['Agility (+0.5% per point)', 'Gear', 'Wind affinity', 'Skills'],
   },
   statusRes: {
     title: 'Status Resistance',
@@ -240,6 +248,11 @@ export default function ProfileScreen() {
   const initialTab = route.params?.initialTab || 'stats';
   const [activeTab, setActiveTab] = useState(initialTab);
   const [gearSubTab, setGearSubTab] = useState('equipped');
+
+  // Cozy scrollbar slider values
+  const [contentHeight, setContentHeight] = useState(1);
+  const [visibleHeight, setVisibleHeight] = useState(1);
+  const scrollY = useRef(new Animated.Value(0)).current;
 
   const [selectedSlot, setSelectedSlot] = useState(null);
   const [modalData, setModalData] = useState({
@@ -392,7 +405,7 @@ export default function ProfileScreen() {
       return `+${bonus.defBonus || 0} DEF`;
     }
     if (hero.element.toLowerCase() === 'wind') {
-      return `+${bonus.agiBonus || 0} Agility (+${((bonus.agiBonus || 0) * 0.5).toFixed(1)}% Crit/Dodge)`;
+      return `+${bonus.agiBonus || 0} Agility`;
     }
     return '';
   }, [hero.element, hero.level]);
@@ -573,717 +586,796 @@ export default function ProfileScreen() {
         <View style={styles.headerSpacer} />
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        {/* ── Section 1: Hero Card ── */}
-        <View style={[styles.heroCard, theme.SHADOWS.cardShadow]}>
-          <View style={StyleSheet.absoluteFill}>
-            <Svg width="100%" height="100%">
-              <Defs>
-                <LinearGradient id="heroCardGrad" x1="0" y1="0" x2="0" y2="1">
-                  <Stop offset="0%" stopColor="#102719" stopOpacity="1" />
-                  <Stop offset="100%" stopColor="#0A160F" stopOpacity="1" />
-                </LinearGradient>
-                <RadialGradient id="heroAvatarGlow" cx="22%" cy="50%" rx="35%" ry="60%">
-                  <Stop offset="0%" stopColor="#4FB286" stopOpacity="0.15" />
-                  <Stop offset="100%" stopColor="#4FB286" stopOpacity="0" />
-                </RadialGradient>
-              </Defs>
-              <Rect width="100%" height="100%" fill="url(#heroCardGrad)" rx={20} />
-              <Rect width="100%" height="100%" fill="url(#heroAvatarGlow)" rx={20} />
-            </Svg>
-          </View>
-
-          <View style={styles.cardBorderOverlay}>
-            <Svg width="100%" height="100%">
-              <Rect x="6" y="6" width="96%" height="91%" rx={14} fill="none" stroke="rgba(212, 167, 84, 0.08)" strokeWidth="1" />
-            </Svg>
-          </View>
-
-          {/* Gold chip */}
-          <View style={styles.goldChip}>
-            <ItemSprite spritesheet="icons-1" frameIndex={11} displaySize={14} />
-            <Text style={[styles.goldChipText, { marginLeft: 4 }]}>{hero.gold} G</Text>
-          </View>
-
-          {/* Avatar & level badge */}
-          <View style={styles.avatarContainer}>
-            <View style={styles.avatarCircle}>
-              <ExpoImage
-                source={require('../../assets/sprites/units/hero/hero_idle1.png')}
-                style={{ width: 110, height: 110 }}
-                contentFit="contain"
-              />
+      <View style={{ flex: 1, flexDirection: 'row' }}>
+        <ScrollView
+          style={{ flex: 1 }}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          scrollEventThrottle={16}
+          onScroll={Animated.event(
+            [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+            { useNativeDriver: false }
+          )}
+          onContentSizeChange={(w, h) => setContentHeight(h)}
+          onLayout={(e) => setVisibleHeight(e.nativeEvent.layout.height)}
+        >
+          {/* ── Section 1: Hero Card ── */}
+          <View style={[styles.heroCard, theme.SHADOWS.cardShadow]}>
+            <View style={StyleSheet.absoluteFill}>
+              <Svg width="100%" height="100%">
+                <Defs>
+                  <LinearGradient id="heroCardGrad" x1="0" y1="0" x2="0" y2="1">
+                    <Stop offset="0%" stopColor="#102719" stopOpacity="1" />
+                    <Stop offset="100%" stopColor="#0A160F" stopOpacity="1" />
+                  </LinearGradient>
+                  <RadialGradient id="heroAvatarGlow" cx="20%" cy="70%" rx="35%" ry="60%">
+                    <Stop offset="0%" stopColor="#4FB286" stopOpacity="0.15" />
+                    <Stop offset="100%" stopColor="#4FB286" stopOpacity="0" />
+                  </RadialGradient>
+                </Defs>
+                <Rect width="100%" height="100%" fill="url(#heroCardGrad)" rx={20} />
+                <Rect width="100%" height="100%" fill="url(#heroAvatarGlow)" rx={20} />
+              </Svg>
             </View>
-            <View style={styles.levelBadge}>
-              <Text style={styles.levelBadgeText}>{hero.level}</Text>
+
+            <View style={styles.cardBorderOverlay}>
+              <Svg width="100%" height="100%">
+                <Rect x="6" y="6" width="96%" height="91%" rx={14} fill="none" stroke="rgba(212, 167, 84, 0.08)" strokeWidth="1" />
+              </Svg>
             </View>
-          </View>
 
-          {/* Identity & HP */}
-          <View style={styles.heroDetails}>
-            <Text style={styles.heroName}>{hero.name}</Text>
-            <View style={styles.gaugesStack}>
-              <ResourceBar
-                variant="heroHp"
-                label="HP"
-                current={hero.hp}
-                max={effectiveStats.maxHp}
-              />
-              <ResourceBar
-                variant="xp"
-                label="XP"
-                current={xpIntoLevel}
-                max={xpNeeded}
-              />
-            </View>
-          </View>
-        </View>
-
-        {/* ── Section 2: Tab Bar Switcher ── */}
-        <View style={styles.tabContainer}>
-          {TABS.map(({ key, spritesheet, frameIndex, label }) => {
-            const isActive = activeTab === key;
-            return (
-              <View key={key} style={styles.tabWrapper}>
-                <View style={styles.tabShadow} />
-                <TouchableOpacity
-                  style={styles.tabOuter}
-                  activeOpacity={0.8}
-                  onPress={() => {
-                    setActiveTab(key);
-                    setTempStrAlloc(0);
-                    setTempAgiAlloc(0);
-                    setTempVitAlloc(0);
-                  }}
-                >
-                  <View style={[styles.tabInner, isActive ? styles.tabInnerActive : styles.tabInnerInactive]}>
-                    <ItemSprite
-                      spritesheet={spritesheet || "icons-1"}
-                      frameIndex={frameIndex}
-                      displaySize={16}
-                      opacity={isActive ? 1.0 : 0.75}
-                    />
-                    <Text style={[styles.tabLabel, isActive ? styles.tabLabelActive : styles.tabLabelInactive]}>
-                      {label}
-                    </Text>
-                  </View>
-                </TouchableOpacity>
-              </View>
-            );
-          })}
-        </View>
-
-        {/* ── Tab Contents ── */}
-        {activeTab === 'stats' && (
-          <View style={styles.tabContent}>
-            {/* Stat Points Available Banner */}
-            {(hero.statPoints || 0) > 0 && (
-              <View style={styles.pointsBadge}>
-                <Text style={styles.pointsBadgeText}>
-                  Stat Points Available: <Text style={styles.pointsBadgeNumber}>{remainingPoints}</Text>
-                </Text>
-              </View>
-            )}
-
-            {/* Core Attributes Grid */}
-            <Text style={styles.sectionTitle}>Attributes</Text>
-            <View style={styles.attributeGrid}>
-              {/* Strength Card */}
-              <View style={[styles.attributeCard, { borderColor: 'rgba(212, 167, 84, 0.25)' }]}>
-                <TouchableOpacity
-                  style={styles.infoTag}
-                  onPress={() => setInfoStat('str')}
-                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                  activeOpacity={0.6}
-                >
-                  <Text style={styles.infoTagText}>?</Text>
-                </TouchableOpacity>
-                <View style={styles.attrHeader}>
-                  <ItemSprite spritesheet="icons-map" frameIndex={109} displaySize={18} />
-                  <Text style={styles.attrLabel} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75}>STRENGTH</Text>
+            {/* First Line: Name & tags in top right */}
+            <View style={styles.heroHeaderRow}>
+              <Text style={styles.heroName} numberOfLines={1} ellipsizeMode="tail">{hero.name}</Text>
+              <View style={styles.heroTagsRow}>
+                {/* Gold tag */}
+                <View style={styles.bannerTag}>
+                  <ItemSprite spritesheet="icons-1" frameIndex={11} displaySize={20} />
+                  <Text style={styles.bannerTagText}>{hero.gold} G</Text>
                 </View>
-                <Text style={styles.attrValue}>{previewStr}</Text>
-                {showControls && (
-                  <View style={styles.allocRow}>
-                    <View style={styles.allocBtnWrapper}>
-                      <View style={[styles.allocBtnShadow, tempStrAlloc === 0 && styles.allocBtnShadowDisabled]} />
-                      <TouchableOpacity
-                        style={[styles.allocBtnOuter, tempStrAlloc === 0 && styles.allocBtnOuterDisabled]}
-                        onPress={() => adjustStat('str', -1)}
-                        disabled={tempStrAlloc === 0}
-                        activeOpacity={0.8}
-                      >
-                        <View style={[styles.allocBtnInner, tempStrAlloc === 0 && styles.allocBtnInnerDisabled]}>
-                          <Text style={[styles.allocBtnText, tempStrAlloc === 0 && styles.allocBtnTextDisabled]}>-</Text>
-                        </View>
-                      </TouchableOpacity>
-                    </View>
-                    <Text style={styles.allocNumber}>{tempStrAlloc}</Text>
-                    <View style={styles.allocBtnWrapper}>
-                      <View style={[styles.allocBtnShadow, remainingPoints === 0 && styles.allocBtnShadowDisabled]} />
-                      <TouchableOpacity
-                        style={[styles.allocBtnOuter, remainingPoints === 0 && styles.allocBtnOuterDisabled]}
-                        onPress={() => adjustStat('str', 1)}
-                        disabled={remainingPoints === 0}
-                        activeOpacity={0.8}
-                      >
-                        <View style={[styles.allocBtnInner, remainingPoints === 0 && styles.allocBtnInnerDisabled]}>
-                          <Text style={[styles.allocBtnText, remainingPoints === 0 && styles.allocBtnTextDisabled]}>+</Text>
-                        </View>
-                      </TouchableOpacity>
-                    </View>
-                  </View>
-                )}
-              </View>
 
-              {/* Agility Card */}
-              <View style={[styles.attributeCard, { borderColor: 'rgba(6, 182, 212, 0.25)' }]}>
-                <TouchableOpacity
-                  style={styles.infoTag}
-                  onPress={() => setInfoStat('agi')}
-                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                  activeOpacity={0.6}
-                >
-                  <Text style={styles.infoTagText}>?</Text>
-                </TouchableOpacity>
-                <View style={styles.attrHeader}>
-                  <ItemSprite spritesheet="icons-map" frameIndex={94} displaySize={18} />
-                  <Text style={styles.attrLabel} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75}>AGILITY</Text>
+                {/* Level tag */}
+                <View style={styles.bannerTag}>
+                  <ItemSprite spritesheet="icons-1" frameIndex={ELEMENT_SPRITES[hero.element.toLowerCase()] || 33} displaySize={20} />
+                  <Text style={styles.bannerTagText}>LV {hero.level}</Text>
                 </View>
-                <Text style={styles.attrValue}>{previewAgi}</Text>
-                {showControls && (
-                  <View style={styles.allocRow}>
-                    <View style={styles.allocBtnWrapper}>
-                      <View style={[styles.allocBtnShadow, tempAgiAlloc === 0 && styles.allocBtnShadowDisabled]} />
-                      <TouchableOpacity
-                        style={[styles.allocBtnOuter, tempAgiAlloc === 0 && styles.allocBtnOuterDisabled]}
-                        onPress={() => adjustStat('agi', -1)}
-                        disabled={tempAgiAlloc === 0}
-                        activeOpacity={0.8}
-                      >
-                        <View style={[styles.allocBtnInner, tempAgiAlloc === 0 && styles.allocBtnInnerDisabled]}>
-                          <Text style={[styles.allocBtnText, tempAgiAlloc === 0 && styles.allocBtnTextDisabled]}>-</Text>
-                        </View>
-                      </TouchableOpacity>
-                    </View>
-                    <Text style={styles.allocNumber}>{tempAgiAlloc}</Text>
-                    <View style={styles.allocBtnWrapper}>
-                      <View style={[styles.allocBtnShadow, remainingPoints === 0 && styles.allocBtnShadowDisabled]} />
-                      <TouchableOpacity
-                        style={[styles.allocBtnOuter, remainingPoints === 0 && styles.allocBtnOuterDisabled]}
-                        onPress={() => adjustStat('agi', 1)}
-                        disabled={remainingPoints === 0}
-                        activeOpacity={0.8}
-                      >
-                        <View style={[styles.allocBtnInner, remainingPoints === 0 && styles.allocBtnInnerDisabled]}>
-                          <Text style={[styles.allocBtnText, remainingPoints === 0 && styles.allocBtnTextDisabled]}>+</Text>
-                        </View>
-                      </TouchableOpacity>
-                    </View>
-                  </View>
-                )}
-              </View>
-
-              {/* Vitality Card */}
-              <View style={[styles.attributeCard, { borderColor: 'rgba(92, 196, 137, 0.25)' }]}>
-                <TouchableOpacity
-                  style={styles.infoTag}
-                  onPress={() => setInfoStat('vit')}
-                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                  activeOpacity={0.6}
-                >
-                  <Text style={styles.infoTagText}>?</Text>
-                </TouchableOpacity>
-                <View style={styles.attrHeader}>
-                  <ItemSprite spritesheet="icons-map" frameIndex={135} displaySize={18} />
-                  <Text style={styles.attrLabel} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75}>VITALITY</Text>
-                </View>
-                <Text style={styles.attrValue}>{previewVit}</Text>
-                {showControls && (
-                  <View style={styles.allocRow}>
-                    <View style={styles.allocBtnWrapper}>
-                      <View style={[styles.allocBtnShadow, tempVitAlloc === 0 && styles.allocBtnShadowDisabled]} />
-                      <TouchableOpacity
-                        style={[styles.allocBtnOuter, tempVitAlloc === 0 && styles.allocBtnOuterDisabled]}
-                        onPress={() => adjustStat('vit', -1)}
-                        disabled={tempVitAlloc === 0}
-                        activeOpacity={0.8}
-                      >
-                        <View style={[styles.allocBtnInner, tempVitAlloc === 0 && styles.allocBtnInnerDisabled]}>
-                          <Text style={[styles.allocBtnText, tempVitAlloc === 0 && styles.allocBtnTextDisabled]}>-</Text>
-                        </View>
-                      </TouchableOpacity>
-                    </View>
-                    <Text style={styles.allocNumber}>{tempVitAlloc}</Text>
-                    <View style={styles.allocBtnWrapper}>
-                      <View style={[styles.allocBtnShadow, remainingPoints === 0 && styles.allocBtnShadowDisabled]} />
-                      <TouchableOpacity
-                        style={[styles.allocBtnOuter, remainingPoints === 0 && styles.allocBtnOuterDisabled]}
-                        onPress={() => adjustStat('vit', 1)}
-                        disabled={remainingPoints === 0}
-                        activeOpacity={0.8}
-                      >
-                        <View style={[styles.allocBtnInner, remainingPoints === 0 && styles.allocBtnInnerDisabled]}>
-                          <Text style={[styles.allocBtnText, remainingPoints === 0 && styles.allocBtnTextDisabled]}>+</Text>
-                        </View>
-                      </TouchableOpacity>
-                    </View>
-                  </View>
-                )}
               </View>
             </View>
 
-            {/* Allocation Save/Cancel Row */}
-            {showControls && totalAllocated > 0 && (
-              <View style={styles.saveRow}>
-                {/* Reset Points (Crimson 3D Button) */}
-                <View style={styles.cancelBtnWrapper}>
-                  <View style={styles.cancelBtnShadow} />
+            {/* Second Line: Avatar and bars stack */}
+            <View style={styles.heroBodyRow}>
+              <View style={styles.avatarCircle}>
+                <ExpoImage
+                  source={require('../../assets/sprites/units/hero/hero_idle1.png')}
+                  style={{ width: 140, height: 140 }}
+                  contentFit="contain"
+                />
+              </View>
+
+              <View style={styles.gaugesContainer}>
+                <ResourceBar
+                  variant="heroHp"
+                  label="HP"
+                  current={hero.hp}
+                  max={effectiveStats.maxHp}
+                  barHeight={24}
+                  fontSize={19}
+                />
+                <ResourceBar
+                  variant="xp"
+                  label="XP"
+                  current={xpIntoLevel}
+                  max={xpNeeded}
+                  barHeight={24}
+                  fontSize={19}
+                />
+              </View>
+            </View>
+          </View>
+
+          {/* ── Section 2: Tab Bar Switcher ── */}
+          <View style={styles.tabContainer}>
+            {TABS.map(({ key, spritesheet, frameIndex, label }) => {
+              const isActive = activeTab === key;
+              return (
+                <View key={key} style={styles.tabWrapper}>
+                  <View style={styles.tabShadow} />
                   <TouchableOpacity
-                    style={styles.cancelBtnOuter}
-                    onPress={handleCancelAlloc}
+                    style={styles.tabOuter}
                     activeOpacity={0.8}
+                    onPress={() => {
+                      setActiveTab(key);
+                      setTempStrAlloc(0);
+                      setTempAgiAlloc(0);
+                      setTempVitAlloc(0);
+                    }}
                   >
-                    <View style={styles.cancelBtnInner}>
-                      <Text style={styles.cancelBtnText}>Reset Points</Text>
+                    <View style={[styles.tabInner, isActive ? styles.tabInnerActive : styles.tabInnerInactive]}>
+                      <ItemSprite
+                        spritesheet={spritesheet || "icons-1"}
+                        frameIndex={frameIndex}
+                        displaySize={16}
+                        opacity={isActive ? 1.0 : 0.75}
+                      />
+                      <Text style={[styles.tabLabel, isActive ? styles.tabLabelActive : styles.tabLabelInactive]}>
+                        {label}
+                      </Text>
                     </View>
                   </TouchableOpacity>
                 </View>
+              );
+            })}
+          </View>
 
-                {/* Apply Stats (Earthy Green 3D Button) */}
-                <View style={styles.saveBtnWrapper}>
-                  <View style={styles.saveBtnShadow} />
-                  <TouchableOpacity
-                    style={styles.saveBtnOuter}
-                    onPress={handleSaveAlloc}
-                    activeOpacity={0.8}
-                  >
-                    <View style={styles.saveBtnInner}>
-                      <Text style={styles.saveBtnText}>Apply Stats</Text>
-                    </View>
-                  </TouchableOpacity>
+          {/* ── Tab Contents ── */}
+          {activeTab === 'stats' && (
+            <View style={styles.tabContent}>
+              {/* Stat Points Available Banner */}
+              {(hero.statPoints || 0) > 0 && (
+                <View style={styles.pointsBadge}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                    <ItemSprite spritesheet="icons-map" frameIndex={29} displaySize={18} />
+                    <Text style={styles.pointsBadgeText}>AVAILABLE STAT POINTS: </Text>
+                    <Text style={styles.pointsBadgeNumber}>{remainingPoints}</Text>
+                  </View>
                 </View>
-              </View>
-            )}
+              )}
 
-            {/* Effective Combat Stats */}
-            <Text style={styles.sectionTitle}>Combat Statistics</Text>
-            <View style={styles.statsRow}>
-              <StatBox
-                label="ATTACK"
-                infoKey="atk"
-                onInfo={setInfoStat}
-                value={previewEffectiveStats.attack}
-                bonus={previewEffectiveStats.attack - previewBaseStats.attack}
-                highlighted={previewEffectiveStats.attack !== effectiveStats.attack}
-                pendingDelta={previewEffectiveStats.attack - effectiveStats.attack}
-              />
-              <StatBox
-                label="DEFENCE"
-                infoKey="def"
-                onInfo={setInfoStat}
-                value={previewEffectiveStats.defence}
-                bonus={previewEffectiveStats.defence - previewBaseStats.defence}
-                highlighted={previewEffectiveStats.defence !== effectiveStats.defence}
-                pendingDelta={previewEffectiveStats.defence - effectiveStats.defence}
-              />
-              <StatBox
-                label="MAX HP"
-                infoKey="maxHp"
-                onInfo={setInfoStat}
-                value={previewEffectiveStats.maxHp}
-                bonus={previewEffectiveStats.maxHp - previewBaseStats.maxHp}
-                highlighted={previewEffectiveStats.maxHp !== effectiveStats.maxHp}
-                pendingDelta={previewEffectiveStats.maxHp - effectiveStats.maxHp}
-              />
-              <StatBox
-                label="BAG SLOTS"
-                infoKey="bagSlots"
-                onInfo={setInfoStat}
-                value={previewEffectiveStats.bagSlots}
-                bonus={previewEffectiveStats.bagSlots - previewBaseStats.bagSlots}
-                highlighted={previewEffectiveStats.bagSlots !== effectiveStats.bagSlots}
-                pendingDelta={previewEffectiveStats.bagSlots - effectiveStats.bagSlots}
-              />
-            </View>
+              {/* Core Attributes List */}
+              <Text style={[styles.sectionTitle, { fontSize: 24, marginBottom: 12 }]}>Attributes</Text>
+              <View style={styles.attributeList}>
+                {/* Strength Row */}
+                <View style={[styles.attributeRow, { borderColor: 'rgba(212, 167, 84, 0.35)', position: 'relative' }]}>
+                  <TouchableOpacity
+                    style={styles.attrInfoBtn}
+                    onPress={() => setInfoStat('str')}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    activeOpacity={0.6}
+                  >
+                    <Text style={styles.attrInfoBtnText}>?</Text>
+                  </TouchableOpacity>
 
-            <View style={styles.statsRow}>
-              <StatBox
-                label="CRIT RATE"
-                infoKey="critRate"
-                onInfo={setInfoStat}
-                value={pct(previewEffectiveStats.critChance)}
-                bonus={previewEffectiveStats.critChance - previewBaseStats.critChance}
-                isPercent
-                highlighted={previewEffectiveStats.critChance !== effectiveStats.critChance}
-                pendingDelta={previewEffectiveStats.critChance - effectiveStats.critChance}
-              />
-              <StatBox
-                label="CRIT DMG"
-                infoKey="critDmg"
-                onInfo={setInfoStat}
-                value="150%"
-                highlighted={false}
-                pendingDelta={0}
-              />
-              <StatBox
-                label="DODGE RATE"
-                infoKey="dodge"
-                onInfo={setInfoStat}
-                value={pct(previewEffectiveStats.dodge)}
-                bonus={previewEffectiveStats.dodge - previewBaseStats.dodge}
-                isPercent
-                highlighted={previewEffectiveStats.dodge !== effectiveStats.dodge}
-                pendingDelta={previewEffectiveStats.dodge - effectiveStats.dodge}
-              />
-              <StatBox
-                label="STATUS RES"
-                infoKey="statusRes"
-                onInfo={setInfoStat}
-                value={pct(previewEffectiveStats.passives.statusResistChance)}
-                bonus={previewEffectiveStats.passives.statusResistChance - (previewVit * 0.005)}
-                isPercent
-                highlighted={previewEffectiveStats.passives.statusResistChance !== effectiveStats.passives.statusResistChance}
-                pendingDelta={previewEffectiveStats.passives.statusResistChance - effectiveStats.passives.statusResistChance}
-              />
-            </View>
-
-            {/* Stance Card */}
-            {stance && (
-              <View style={styles.stanceSection}>
-                <View style={styles.stanceCard}>
-                  <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
-                    <Defs>
-                      <LinearGradient id="stanceGrad" x1="0" y1="0" x2="0" y2="1">
-                        <Stop offset="0%" stopColor="#102719" stopOpacity="1" />
-                        <Stop offset="100%" stopColor="#0A160F" stopOpacity="1" />
-                      </LinearGradient>
-                    </Defs>
-                    <Rect width="100%" height="100%" fill="url(#stanceGrad)" />
-                  </Svg>
-                  <View style={styles.stanceCardInner}>
-                    <View style={styles.stanceRow}>
-                      <View style={styles.stanceLeft}>
-                        <View style={styles.stanceEmojiWrapper}>
-                          {stanceSprite ? (
-                            <ItemSprite
-                              spritesheet={stanceSprite.spritesheet}
-                              frameIndex={stanceSprite.frameIndex}
-                              displaySize={22}
-                            />
-                          ) : (
-                            <ItemSprite spritesheet="icons-map" frameIndex={52} displaySize={22} />
-                          )}
-                        </View>
-                        <Text style={styles.stanceName}>{elementDisplayName} Stance</Text>
-                      </View>
-                      <View style={styles.stanceRight}>
-                        <Text style={styles.stanceBonusVal}>{stanceBonusText}</Text>
-                      </View>
+                  <View style={styles.attrRowLeft}>
+                    <View style={styles.attrIconCircle}>
+                      <ItemSprite spritesheet="icons-map" frameIndex={109} displaySize={28} />
                     </View>
+                    <Text style={styles.attrLabel}>STRENGTH</Text>
+                  </View>
+                  <View style={styles.attrRowValueContainer}>
+                    <Text style={[styles.attrValue, tempStrAlloc > 0 && { color: '#5CC489' }]}>{previewStr}</Text>
+                  </View>
+                  <View style={styles.attrRowControlsContainer}>
+                    {showControls ? (
+                      <View style={styles.allocRow}>
+                        <View style={styles.allocBtnWrapper}>
+                          <View style={[styles.allocBtnShadow, tempStrAlloc === 0 && styles.allocBtnShadowDisabled]} />
+                          <TouchableOpacity
+                            style={[styles.allocBtnOuter, tempStrAlloc === 0 && styles.allocBtnOuterDisabled]}
+                            onPress={() => adjustStat('str', -1)}
+                            disabled={tempStrAlloc === 0}
+                            activeOpacity={0.8}
+                          >
+                            <View style={[styles.allocBtnInner, tempStrAlloc === 0 && styles.allocBtnInnerDisabled]}>
+                              <Text style={[styles.allocBtnText, tempStrAlloc === 0 && styles.allocBtnTextDisabled]}>-</Text>
+                            </View>
+                          </TouchableOpacity>
+                        </View>
+                        <Text style={styles.allocNumber}>{tempStrAlloc}</Text>
+                        <View style={styles.allocBtnWrapper}>
+                          <View style={[styles.allocBtnShadow, remainingPoints === 0 && styles.allocBtnShadowDisabled]} />
+                          <TouchableOpacity
+                            style={[styles.allocBtnOuter, remainingPoints === 0 && styles.allocBtnOuterDisabled]}
+                            onPress={() => adjustStat('str', 1)}
+                            disabled={remainingPoints === 0}
+                            activeOpacity={0.8}
+                          >
+                            <View style={[styles.allocBtnInner, remainingPoints === 0 && styles.allocBtnInnerDisabled]}>
+                              <Text style={[styles.allocBtnText, remainingPoints === 0 && styles.allocBtnTextDisabled]}>+</Text>
+                            </View>
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+                    ) : (
+                      <View style={styles.allocRowSpacer} />
+                    )}
+                  </View>
+                </View>
+
+                {/* Agility Row */}
+                <View style={[styles.attributeRow, { borderColor: 'rgba(6, 182, 212, 0.35)', position: 'relative' }]}>
+                  <TouchableOpacity
+                    style={styles.attrInfoBtn}
+                    onPress={() => setInfoStat('agi')}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    activeOpacity={0.6}
+                  >
+                    <Text style={styles.attrInfoBtnText}>?</Text>
+                  </TouchableOpacity>
+
+                  <View style={styles.attrRowLeft}>
+                    <View style={styles.attrIconCircle}>
+                      <ItemSprite spritesheet="icons-map" frameIndex={94} displaySize={28} />
+                    </View>
+                    <Text style={styles.attrLabel}>AGILITY</Text>
+                  </View>
+                  <View style={styles.attrRowValueContainer}>
+                    <Text style={[styles.attrValue, tempAgiAlloc > 0 && { color: '#5CC489' }]}>{previewAgi}</Text>
+                  </View>
+                  <View style={styles.attrRowControlsContainer}>
+                    {showControls ? (
+                      <View style={styles.allocRow}>
+                        <View style={styles.allocBtnWrapper}>
+                          <View style={[styles.allocBtnShadow, tempAgiAlloc === 0 && styles.allocBtnShadowDisabled]} />
+                          <TouchableOpacity
+                            style={[styles.allocBtnOuter, tempAgiAlloc === 0 && styles.allocBtnOuterDisabled]}
+                            onPress={() => adjustStat('agi', -1)}
+                            disabled={tempAgiAlloc === 0}
+                            activeOpacity={0.8}
+                          >
+                            <View style={[styles.allocBtnInner, tempAgiAlloc === 0 && styles.allocBtnInnerDisabled]}>
+                              <Text style={[styles.allocBtnText, tempAgiAlloc === 0 && styles.allocBtnTextDisabled]}>-</Text>
+                            </View>
+                          </TouchableOpacity>
+                        </View>
+                        <Text style={styles.allocNumber}>{tempAgiAlloc}</Text>
+                        <View style={styles.allocBtnWrapper}>
+                          <View style={[styles.allocBtnShadow, remainingPoints === 0 && styles.allocBtnShadowDisabled]} />
+                          <TouchableOpacity
+                            style={[styles.allocBtnOuter, remainingPoints === 0 && styles.allocBtnOuterDisabled]}
+                            onPress={() => adjustStat('agi', 1)}
+                            disabled={remainingPoints === 0}
+                            activeOpacity={0.8}
+                          >
+                            <View style={[styles.allocBtnInner, remainingPoints === 0 && styles.allocBtnInnerDisabled]}>
+                              <Text style={[styles.allocBtnText, remainingPoints === 0 && styles.allocBtnTextDisabled]}>+</Text>
+                            </View>
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+                    ) : (
+                      <View style={styles.allocRowSpacer} />
+                    )}
+                  </View>
+                </View>
+
+                {/* Vitality Row */}
+                <View style={[styles.attributeRow, { borderColor: 'rgba(92, 196, 137, 0.35)', position: 'relative' }]}>
+                  <TouchableOpacity
+                    style={styles.attrInfoBtn}
+                    onPress={() => setInfoStat('vit')}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    activeOpacity={0.6}
+                  >
+                    <Text style={styles.attrInfoBtnText}>?</Text>
+                  </TouchableOpacity>
+
+                  <View style={styles.attrRowLeft}>
+                    <View style={styles.attrIconCircle}>
+                      <ItemSprite spritesheet="icons-map" frameIndex={135} displaySize={28} />
+                    </View>
+                    <Text style={styles.attrLabel}>VITALITY</Text>
+                  </View>
+                  <View style={styles.attrRowValueContainer}>
+                    <Text style={[styles.attrValue, tempVitAlloc > 0 && { color: '#5CC489' }]}>{previewVit}</Text>
+                  </View>
+                  <View style={styles.attrRowControlsContainer}>
+                    {showControls ? (
+                      <View style={styles.allocRow}>
+                        <View style={styles.allocBtnWrapper}>
+                          <View style={[styles.allocBtnShadow, tempVitAlloc === 0 && styles.allocBtnShadowDisabled]} />
+                          <TouchableOpacity
+                            style={[styles.allocBtnOuter, tempVitAlloc === 0 && styles.allocBtnOuterDisabled]}
+                            onPress={() => adjustStat('vit', -1)}
+                            disabled={tempVitAlloc === 0}
+                            activeOpacity={0.8}
+                          >
+                            <View style={[styles.allocBtnInner, tempVitAlloc === 0 && styles.allocBtnInnerDisabled]}>
+                              <Text style={[styles.allocBtnText, tempVitAlloc === 0 && styles.allocBtnTextDisabled]}>-</Text>
+                            </View>
+                          </TouchableOpacity>
+                        </View>
+                        <Text style={styles.allocNumber}>{tempVitAlloc}</Text>
+                        <View style={styles.allocBtnWrapper}>
+                          <View style={[styles.allocBtnShadow, remainingPoints === 0 && styles.allocBtnShadowDisabled]} />
+                          <TouchableOpacity
+                            style={[styles.allocBtnOuter, remainingPoints === 0 && styles.allocBtnOuterDisabled]}
+                            onPress={() => adjustStat('vit', 1)}
+                            disabled={remainingPoints === 0}
+                            activeOpacity={0.8}
+                          >
+                            <View style={[styles.allocBtnInner, remainingPoints === 0 && styles.allocBtnInnerDisabled]}>
+                              <Text style={[styles.allocBtnText, remainingPoints === 0 && styles.allocBtnTextDisabled]}>+</Text>
+                            </View>
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+                    ) : (
+                      <View style={styles.allocRowSpacer} />
+                    )}
                   </View>
                 </View>
               </View>
-            )}
-          </View>
-        )}
 
-        {activeTab === 'equipment' && (
-          <View style={styles.tabContent}>
-            {/* Gear Subtabs */}
-            <View style={styles.subTabBar}>
-              <TouchableOpacity
-                style={[styles.subTab, gearSubTab === 'equipped' ? styles.subTabActive : styles.subTabInactive]}
-                onPress={() => setGearSubTab('equipped')}
-                activeOpacity={0.8}
-              >
-                <Text style={[styles.subTabText, gearSubTab === 'equipped' ? styles.subTabTextActive : styles.subTabTextInactive]}>
-                  Equipped
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.subTab, gearSubTab === 'owned' ? styles.subTabActive : styles.subTabInactive]}
-                onPress={() => setGearSubTab('owned')}
-                activeOpacity={0.8}
-              >
-                <Text style={[styles.subTabText, gearSubTab === 'owned' ? styles.subTabTextActive : styles.subTabTextInactive]}>
-                  Owned
-                </Text>
-              </TouchableOpacity>
-            </View>
+              {/* Allocation Save/Cancel Row */}
+              {showControls && totalAllocated > 0 && (
+                <View style={styles.saveRow}>
+                  {/* Reset Points (Crimson 3D Button) */}
+                  <View style={styles.cancelBtnWrapper}>
+                    <View style={styles.cancelBtnShadow} />
+                    <TouchableOpacity
+                      style={styles.cancelBtnOuter}
+                      onPress={handleCancelAlloc}
+                      activeOpacity={0.8}
+                    >
+                      <View style={styles.cancelBtnInner}>
+                        <Text style={styles.cancelBtnText}>Reset Points</Text>
+                      </View>
+                    </TouchableOpacity>
+                  </View>
 
-            {gearSubTab === 'equipped' && (
-              <View>
-                {/* Active Set Bonuses */}
-                {activeSets.length > 0 && (
-                  <View style={styles.statsSection}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 }}>
-                      <ItemSprite spritesheet="icons-map" frameIndex={140} displaySize={16} />
-                      <Text style={[styles.subSectionTitle, { marginBottom: 0 }]}>Active Set Bonuses</Text>
-                    </View>
-                    {activeSets.map((set) => (
-                      <View key={set.name} style={styles.setBonusCard}>
-                        <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
-                          <Defs>
-                            <LinearGradient id={`setGrad_${set.name}`} x1="0" y1="0" x2="1" y2="0">
-                              <Stop offset="0%" stopColor="#102418" />
-                              <Stop offset="100%" stopColor="#060F0A" />
-                            </LinearGradient>
-                          </Defs>
-                          <Rect width="100%" height="100%" fill={`url(#setGrad_${set.name})`} rx={12} />
-                          <Rect x="1" y="1" width="99%" height="98%" rx={11} fill="none"
-                            stroke="rgba(212,167,84,0.25)" strokeWidth={1} />
-                        </Svg>
-                        <View style={styles.setBonusInner}>
-                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 2 }}>
-                            <ItemSprite spritesheet="icons-map" frameIndex={95} displaySize={14} />
-                            <Text style={[styles.setBonusName, { marginBottom: 0 }]}>{set.name}</Text>
+                  {/* Apply Stats (Earthy Green 3D Button) */}
+                  <View style={styles.saveBtnWrapper}>
+                    <View style={styles.saveBtnShadow} />
+                    <TouchableOpacity
+                      style={styles.saveBtnOuter}
+                      onPress={handleSaveAlloc}
+                      activeOpacity={0.8}
+                    >
+                      <View style={styles.saveBtnInner}>
+                        <Text style={styles.saveBtnText}>Apply Stats</Text>
+                      </View>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              )}
+
+              {/* Effective Combat Stats */}
+              <Text style={[styles.sectionTitle, { fontSize: 24, marginTop: 18, marginBottom: 12 }]}>Combat Statistics</Text>
+
+              <View style={styles.statsRow}>
+                <StatBox
+                  label="ATTACK"
+                  infoKey="atk"
+                  onInfo={setInfoStat}
+                  value={previewEffectiveStats.attack}
+                  bonus={previewEffectiveStats.attack - previewBaseStats.attack}
+                  highlighted={previewEffectiveStats.attack !== effectiveStats.attack}
+                  pendingDelta={previewEffectiveStats.attack - effectiveStats.attack}
+                />
+                <StatBox
+                  label="DEFENCE"
+                  infoKey="def"
+                  onInfo={setInfoStat}
+                  value={previewEffectiveStats.defence}
+                  bonus={previewEffectiveStats.defence - previewBaseStats.defence}
+                  highlighted={previewEffectiveStats.defence !== effectiveStats.defence}
+                  pendingDelta={previewEffectiveStats.defence - effectiveStats.defence}
+                />
+              </View>
+
+              <View style={styles.statsRow}>
+                <StatBox
+                  label="MAX HP"
+                  infoKey="maxHp"
+                  onInfo={setInfoStat}
+                  value={previewEffectiveStats.maxHp}
+                  bonus={previewEffectiveStats.maxHp - previewBaseStats.maxHp}
+                  highlighted={previewEffectiveStats.maxHp !== effectiveStats.maxHp}
+                  pendingDelta={previewEffectiveStats.maxHp - effectiveStats.maxHp}
+                />
+                <StatBox
+                  label="BAG SLOTS"
+                  infoKey="bagSlots"
+                  onInfo={setInfoStat}
+                  value={previewEffectiveStats.bagSlots}
+                  bonus={previewEffectiveStats.bagSlots - previewBaseStats.bagSlots}
+                  highlighted={previewEffectiveStats.bagSlots !== effectiveStats.bagSlots}
+                  pendingDelta={previewEffectiveStats.bagSlots - effectiveStats.bagSlots}
+                />
+              </View>
+
+              <View style={styles.statsRow}>
+                <StatBox
+                  label="CRIT RATE"
+                  infoKey="critRate"
+                  onInfo={setInfoStat}
+                  value={pct(previewEffectiveStats.critChance)}
+                  bonus={previewEffectiveStats.critChance - previewBaseStats.critChance}
+                  isPercent
+                  highlighted={previewEffectiveStats.critChance !== effectiveStats.critChance}
+                  pendingDelta={previewEffectiveStats.critChance - effectiveStats.critChance}
+                />
+                <StatBox
+                  label="CRIT DMG"
+                  infoKey="critDmg"
+                  onInfo={setInfoStat}
+                  value="150%"
+                  highlighted={false}
+                  pendingDelta={0}
+                />
+              </View>
+
+              <View style={styles.statsRow}>
+                <StatBox
+                  label="DODGE RATE"
+                  infoKey="dodge"
+                  onInfo={setInfoStat}
+                  value={pct(previewEffectiveStats.dodge)}
+                  bonus={previewEffectiveStats.dodge - previewBaseStats.dodge}
+                  isPercent
+                  highlighted={previewEffectiveStats.dodge !== effectiveStats.dodge}
+                  pendingDelta={previewEffectiveStats.dodge - effectiveStats.dodge}
+                />
+                <StatBox
+                  label="STATUS RES"
+                  infoKey="statusRes"
+                  onInfo={setInfoStat}
+                  value={pct(previewEffectiveStats.passives.statusResistChance)}
+                  bonus={previewEffectiveStats.passives.statusResistChance - (previewVit * 0.005)}
+                  isPercent
+                  highlighted={previewEffectiveStats.passives.statusResistChance !== effectiveStats.passives.statusResistChance}
+                  pendingDelta={previewEffectiveStats.passives.statusResistChance - effectiveStats.passives.statusResistChance}
+                />
+              </View>
+
+              {/* Stance Card */}
+              {stance && (
+                <View style={styles.stanceSection}>
+                  <View style={styles.stanceCard}>
+                    <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
+                      <Defs>
+                        <LinearGradient id="stanceGrad" x1="0" y1="0" x2="0" y2="1">
+                          <Stop offset="0%" stopColor="#102719" stopOpacity="1" />
+                          <Stop offset="100%" stopColor="#0A160F" stopOpacity="1" />
+                        </LinearGradient>
+                      </Defs>
+                      <Rect width="100%" height="100%" fill="url(#stanceGrad)" />
+                    </Svg>
+                    <View style={styles.stanceCardInner}>
+                      <View style={styles.stanceRow}>
+                        <View style={styles.stanceLeft}>
+                          <View style={styles.stanceEmojiWrapper}>
+                            {stanceSprite ? (
+                              <ItemSprite
+                                spritesheet={stanceSprite.spritesheet}
+                                frameIndex={stanceSprite.frameIndex}
+                                displaySize={22}
+                              />
+                            ) : (
+                              <ItemSprite spritesheet="icons-map" frameIndex={52} displaySize={22} />
+                            )}
                           </View>
-                          <Text style={styles.setBonusDesc}>{set.bonus}</Text>
+                          <Text style={styles.stanceName}>{elementDisplayName} Affinity</Text>
                         </View>
+                        <View style={styles.stanceRight}>
+                          <Text style={styles.stanceBonusVal}>{stanceBonusText}</Text>
+                        </View>
+                      </View>
+                    </View>
+                  </View>
+                </View>
+              )}
+            </View>
+          )}
+
+          {activeTab === 'equipment' && (
+            <View style={styles.tabContent}>
+              {/* Gear Subtabs */}
+              <View style={styles.subTabBar}>
+                <TouchableOpacity
+                  style={[styles.subTab, gearSubTab === 'equipped' ? styles.subTabActive : styles.subTabInactive]}
+                  onPress={() => setGearSubTab('equipped')}
+                  activeOpacity={0.8}
+                >
+                  <Text style={[styles.subTabText, gearSubTab === 'equipped' ? styles.subTabTextActive : styles.subTabTextInactive]}>
+                    Equipped
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.subTab, gearSubTab === 'owned' ? styles.subTabActive : styles.subTabInactive]}
+                  onPress={() => setGearSubTab('owned')}
+                  activeOpacity={0.8}
+                >
+                  <Text style={[styles.subTabText, gearSubTab === 'owned' ? styles.subTabTextActive : styles.subTabTextInactive]}>
+                    Owned
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              {gearSubTab === 'equipped' && (
+                <View>
+                  {/* Active Set Bonuses */}
+                  {activeSets.length > 0 && (
+                    <View style={styles.statsSection}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+                        <ItemSprite spritesheet="icons-map" frameIndex={140} displaySize={16} />
+                        <Text style={[styles.subSectionTitle, { marginBottom: 0 }]}>Active Set Bonuses</Text>
+                      </View>
+                      {activeSets.map((set) => (
+                        <View key={set.name} style={styles.setBonusCard}>
+                          <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
+                            <Defs>
+                              <LinearGradient id={`setGrad_${set.name}`} x1="0" y1="0" x2="1" y2="0">
+                                <Stop offset="0%" stopColor="#102418" />
+                                <Stop offset="100%" stopColor="#060F0A" />
+                              </LinearGradient>
+                            </Defs>
+                            <Rect width="100%" height="100%" fill={`url(#setGrad_${set.name})`} rx={12} />
+                            <Rect x="1" y="1" width="99%" height="98%" rx={11} fill="none"
+                              stroke="rgba(212,167,84,0.25)" strokeWidth={1} />
+                          </Svg>
+                          <View style={styles.setBonusInner}>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 2 }}>
+                              <ItemSprite spritesheet="icons-map" frameIndex={95} displaySize={14} />
+                              <Text style={[styles.setBonusName, { marginBottom: 0 }]}>{set.name}</Text>
+                            </View>
+                            <Text style={styles.setBonusDesc}>{set.bonus}</Text>
+                          </View>
+                        </View>
+                      ))}
+                    </View>
+                  )}
+
+                  {/* Equipment Grid */}
+                  <View style={styles.equipmentGrid}>
+                    {SLOT_ROWS.map((row, rowIdx) => (
+                      <View key={rowIdx} style={styles.slotRow}>
+                        {row.map((slotKey) => {
+                          const slotConfig = SLOT_CONFIG.find((s) => s.key === slotKey);
+                          const gearId = hero.gear?.[slotKey];
+                          const gearDef = gearId ? GEAR[gearId] : null;
+                          const isEmpty = !gearDef;
+                          const isWeapon = slotKey === 'weapon';
+
+                          return (
+                            <View key={slotKey} style={styles.slotCardWrapper}>
+                              {/* 1. 3D Under-Shadow */}
+                              <View style={[
+                                styles.slotCardShadow,
+                                isEmpty ? styles.slotCardShadowEmpty : styles.slotCardShadowEquipped,
+                              ]} />
+
+                              {/* 2. Main Outer Container */}
+                              <TouchableOpacity
+                                style={[
+                                  styles.slotCardOuter,
+                                  isEmpty ? styles.slotCardOuterEmpty : styles.slotCardOuterEquipped,
+                                ]}
+                                onPress={() => handleOpenSlot(slotKey)}
+                                activeOpacity={0.8}
+                              >
+                                {/* 3. Inner Container (with bevel borders and background) */}
+                                <View style={[
+                                  styles.slotCardInner,
+                                  isEmpty ? styles.slotCardInnerEmpty : styles.slotCardInnerEquipped,
+                                ]}>
+                                  <View style={styles.slotCardInfo}>
+                                    <Text style={[
+                                      styles.slotLabel,
+                                      isEmpty ? styles.slotLabelEmpty : styles.slotLabelEquipped,
+                                    ]}>{slotConfig.label}</Text>
+                                    <Text
+                                      style={isEmpty ? styles.slotEmptyText : styles.slotItemName}
+                                      numberOfLines={2}
+                                    >
+                                      {isEmpty ? 'Empty' : gearDef.name}
+                                    </Text>
+                                  </View>
+
+                                  <View style={[
+                                    styles.slotIconBox,
+                                    isEmpty ? styles.slotIconBoxEmpty : styles.slotIconBoxEquipped,
+                                  ]}>
+                                    {isEmpty ? (
+                                      isWeapon ? (
+                                        <SpriteFrame
+                                          source={WEAPONS_SHEET}
+                                          frameIndex={0}
+                                          frameSize={WEAPONS_FRAME_SIZE}
+                                          totalFrames={WEAPONS_FRAMES}
+                                          displaySize={36}
+                                          opacity={0.18}
+                                        />
+                                      ) : SLOT_EMPTY_FRAME[slotKey] !== undefined && (
+                                        <SpriteFrame
+                                          source={EQUIPMENT_LEATHER_SHEET}
+                                          frameIndex={SLOT_EMPTY_FRAME[slotKey]}
+                                          frameSize={EQUIPMENT_LEATHER_FRAME_SIZE}
+                                          totalFrames={EQUIPMENT_LEATHER_FRAMES}
+                                          displaySize={36}
+                                          opacity={0.18}
+                                        />
+                                      )
+                                    ) : (
+                                      gearDef.spritesheet ? (
+                                        <ItemSprite
+                                          spritesheet={gearDef.spritesheet}
+                                          frameIndex={gearDef.frameIndex}
+                                          displaySize={36}
+                                        />
+                                      ) : (
+                                        <ExpoImage
+                                          source={GEAR_ICON_PLACEHOLDER}
+                                          style={styles.slotIconImage}
+                                          contentFit="contain"
+                                        />
+                                      )
+                                    )}
+                                  </View>
+                                </View>
+                              </TouchableOpacity>
+                            </View>
+                          );
+                        })}
                       </View>
                     ))}
                   </View>
-                )}
+                </View>
+              )}
 
-                {/* Equipment Grid */}
-                <View style={styles.equipmentGrid}>
-                  {SLOT_ROWS.map((row, rowIdx) => (
-                    <View key={rowIdx} style={styles.slotRow}>
-                      {row.map((slotKey) => {
-                        const slotConfig = SLOT_CONFIG.find((s) => s.key === slotKey);
-                        const gearId = hero.gear?.[slotKey];
-                        const gearDef = gearId ? GEAR[gearId] : null;
-                        const isEmpty = !gearDef;
-                        const isWeapon = slotKey === 'weapon';
-
-                        return (
-                          <View key={slotKey} style={styles.slotCardWrapper}>
-                            {/* 1. 3D Under-Shadow */}
-                            <View style={[
-                              styles.slotCardShadow,
-                              isEmpty ? styles.slotCardShadowEmpty : styles.slotCardShadowEquipped,
-                            ]} />
-
-                            {/* 2. Main Outer Container */}
+              {gearSubTab === 'owned' && (
+                <View>
+                  {(hero.inventory?.craftedGear || []).length === 0 ? (
+                    <View style={styles.emptyBox}>
+                      <View style={{ marginBottom: 8 }}>
+                        <ItemSprite spritesheet="icons-map" frameIndex={69} displaySize={36} />
+                      </View>
+                      <Text style={styles.emptyTitle}>No Gear Owned</Text>
+                      <Text style={styles.emptyDesc}>Visit the Shop to buy equipment with Gold.</Text>
+                    </View>
+                  ) : (
+                    <View style={styles.gridContainer}>
+                      {[...(hero.inventory?.craftedGear || [])]
+                        .map(gearId => ({ id: gearId, ...GEAR[gearId] }))
+                        .filter(item => !!item.name)
+                        .sort((a, b) => {
+                          if (a.zone !== b.zone) {
+                            return a.zone - b.zone;
+                          }
+                          return (a.goldCost || 0) - (b.goldCost || 0);
+                        })
+                        .map((gearDef) => {
+                          const gearId = gearDef.id;
+                          const isEquipped = Object.values(hero.gear).includes(gearId);
+                          return (
                             <TouchableOpacity
+                              key={gearId}
                               style={[
-                                styles.slotCardOuter,
-                                isEmpty ? styles.slotCardOuterEmpty : styles.slotCardOuterEquipped,
+                                styles.gridCard,
+                                { width: itemWidth, height: itemWidth },
+                                isEquipped && styles.gridCardGearEquipped,
                               ]}
-                              onPress={() => handleOpenSlot(slotKey)}
+                              onPress={() => handleOpenSlot(gearDef.type)}
                               activeOpacity={0.8}
                             >
-                              {/* 3. Inner Container (with bevel borders and background) */}
-                              <View style={[
-                                styles.slotCardInner,
-                                isEmpty ? styles.slotCardInnerEmpty : styles.slotCardInnerEquipped,
-                              ]}>
-                                <View style={styles.slotCardInfo}>
-                                  <Text style={[
-                                    styles.slotLabel,
-                                    isEmpty ? styles.slotLabelEmpty : styles.slotLabelEquipped,
-                                  ]}>{slotConfig.label}</Text>
-                                  <Text
-                                    style={isEmpty ? styles.slotEmptyText : styles.slotItemName}
-                                    numberOfLines={2}
-                                  >
-                                    {isEmpty ? 'Empty' : gearDef.name}
-                                  </Text>
-                                  <Text style={[
-                                    styles.slotItemStats,
-                                    isEmpty ? styles.slotItemStatsEmpty : styles.slotItemStatsEquipped,
-                                  ]} numberOfLines={1}>
-                                    {isEmpty ? ' ' : (statSummary(gearDef) || ' ')}
-                                  </Text>
-                                </View>
-
-                                <View style={[
-                                  styles.slotIconBox,
-                                  isEmpty ? styles.slotIconBoxEmpty : styles.slotIconBoxEquipped,
-                                ]}>
-                                  {isEmpty ? (
-                                    isWeapon ? (
-                                      <SpriteFrame
-                                        source={WEAPONS_SHEET}
-                                        frameIndex={0}
-                                        frameSize={WEAPONS_FRAME_SIZE}
-                                        totalFrames={WEAPONS_FRAMES}
-                                        displaySize={36}
-                                        opacity={0.18}
-                                      />
-                                    ) : SLOT_EMPTY_FRAME[slotKey] !== undefined && (
-                                      <SpriteFrame
-                                        source={EQUIPMENT_LEATHER_SHEET}
-                                        frameIndex={SLOT_EMPTY_FRAME[slotKey]}
-                                        frameSize={EQUIPMENT_LEATHER_FRAME_SIZE}
-                                        totalFrames={EQUIPMENT_LEATHER_FRAMES}
-                                        displaySize={36}
-                                        opacity={0.18}
-                                      />
-                                    )
+                              <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
+                                <Rect width="100%" height="100%" fill="rgba(255,255,255,0.015)" rx={14} />
+                                <Rect x="1" y="1" width="98%" height="98%" rx={13} fill="none"
+                                  stroke={isEquipped ? 'rgba(212,167,84,0.4)' : 'rgba(255,255,255,0.04)'} strokeWidth={isEquipped ? 1.5 : 1} />
+                              </Svg>
+                              <View style={styles.gridCardInner}>
+                                <Text style={styles.gridName} numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.8}>{gearDef.name}</Text>
+                                <View style={styles.gridIconWrap}>
+                                  {gearDef.spritesheet ? (
+                                    <ItemSprite
+                                      spritesheet={gearDef.spritesheet}
+                                      frameIndex={gearDef.frameIndex}
+                                      displaySize={42}
+                                    />
                                   ) : (
-                                    gearDef.spritesheet ? (
-                                      <ItemSprite
-                                        spritesheet={gearDef.spritesheet}
-                                        frameIndex={gearDef.frameIndex}
-                                        displaySize={36}
-                                      />
-                                    ) : (
-                                      <ExpoImage
-                                        source={GEAR_ICON_PLACEHOLDER}
-                                        style={styles.slotIconImage}
-                                        contentFit="contain"
-                                      />
-                                    )
+                                    <ItemSprite spritesheet="icons-map" frameIndex={17} displaySize={42} />
+                                  )}
+                                </View>
+                                <View style={styles.gridTagSlot}>
+                                  {isEquipped ? (
+                                    <View style={[styles.gridTagBadge, styles.gridEquippedBadge]}>
+                                      <Text style={[styles.gridTagText, styles.gridEquippedText]}>EQUIPPED</Text>
+                                    </View>
+                                  ) : (
+                                    <View style={[styles.gridTagBadge, styles.gridSlotBadge]}>
+                                      <Text style={styles.gridTagText}>{gearDef.type.toUpperCase()}</Text>
+                                    </View>
                                   )}
                                 </View>
                               </View>
                             </TouchableOpacity>
-                          </View>
-                        );
-                      })}
+                          );
+                        })}
                     </View>
-                  ))}
+                  )}
                 </View>
-              </View>
-            )}
+              )}
+            </View>
+          )}
 
-            {gearSubTab === 'owned' && (
-              <View>
-                {(hero.inventory?.craftedGear || []).length === 0 ? (
-                  <View style={styles.emptyBox}>
-                    <View style={{ marginBottom: 8 }}>
-                      <ItemSprite spritesheet="icons-map" frameIndex={69} displaySize={36} />
+          {activeTab === 'bag' && (
+            <View style={styles.tabContent}>
+              {/* Supplies Section */}
+              <Text style={styles.sectionTitle}>Supplies</Text>
+              {(() => {
+                const items = (hero.inventory?.consumables || []).filter(c => c.quantity > 0);
+                if (items.length === 0) {
+                  return (
+                    <View style={styles.emptyBox}>
+                      <View style={{ marginBottom: 8 }}>
+                        <ItemSprite spritesheet="consumables-1" frameIndex={0} displaySize={36} />
+                      </View>
+                      <Text style={styles.emptyTitle}>Bag Empty</Text>
+                      <Text style={styles.emptyDesc}>Visit the Shop to stock up on potions and supplies.</Text>
                     </View>
-                    <Text style={styles.emptyTitle}>No Gear Owned</Text>
-                    <Text style={styles.emptyDesc}>Visit the Shop to buy equipment with Gold.</Text>
-                  </View>
-                ) : (
+                  );
+                }
+                return (
                   <View style={styles.gridContainer}>
-                    {[...(hero.inventory?.craftedGear || [])]
-                      .map(gearId => ({ id: gearId, ...GEAR[gearId] }))
-                      .filter(item => !!item.name)
-                      .sort((a, b) => {
-                        if (a.zone !== b.zone) {
-                          return a.zone - b.zone;
-                        }
-                        return (a.goldCost || 0) - (b.goldCost || 0);
-                      })
-                      .map((gearDef) => {
-                        const gearId = gearDef.id;
-                        const isEquipped = Object.values(hero.gear).includes(gearId);
-                        return (
-                          <TouchableOpacity
-                            key={gearId}
-                            style={[
-                              styles.gridCard,
-                              { width: itemWidth, height: itemWidth },
-                              isEquipped && styles.gridCardGearEquipped,
-                            ]}
-                            onPress={() => handleOpenSlot(gearDef.type)}
-                            activeOpacity={0.8}
-                          >
-                            <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
-                              <Rect width="100%" height="100%" fill="rgba(255,255,255,0.015)" rx={14} />
-                              <Rect x="1" y="1" width="98%" height="98%" rx={13} fill="none"
-                                stroke={isEquipped ? 'rgba(212,167,84,0.4)' : 'rgba(255,255,255,0.04)'} strokeWidth={isEquipped ? 1.5 : 1} />
-                            </Svg>
-                            <View style={styles.gridCardInner}>
-                              <Text style={styles.gridName} numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.8}>{gearDef.name}</Text>
-                              <View style={styles.gridIconWrap}>
-                                {gearDef.spritesheet ? (
-                                  <ItemSprite
-                                    spritesheet={gearDef.spritesheet}
-                                    frameIndex={gearDef.frameIndex}
-                                    displaySize={42}
-                                  />
-                                ) : (
-                                  <ItemSprite spritesheet="icons-map" frameIndex={17} displaySize={42} />
-                                )}
-                              </View>
-                              <View style={styles.gridTagSlot}>
-                                {isEquipped ? (
-                                  <View style={[styles.gridTagBadge, styles.gridEquippedBadge]}>
-                                    <Text style={[styles.gridTagText, styles.gridEquippedText]}>EQUIPPED</Text>
-                                  </View>
-                                ) : (
-                                  <View style={[styles.gridTagBadge, styles.gridSlotBadge]}>
-                                    <Text style={styles.gridTagText}>{gearDef.type.toUpperCase()}</Text>
-                                  </View>
-                                )}
+                    {items.map((entry) => {
+                      const def = CONSUMABLES.find(c => c.id === entry.id);
+                      const iconSize = def?.spritesheet === 'icons-1' ? 48 : 42;
+                      return (
+                        <TouchableOpacity
+                          key={entry.id}
+                          style={[styles.gridCard, { width: itemWidth, height: itemWidth }]}
+                          onPress={() => handleOpenDetails(entry, 'consumable')}
+                          activeOpacity={0.8}
+                        >
+                          <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
+                            <Rect width="100%" height="100%" fill="rgba(255,255,255,0.015)" rx={14} />
+                            <Rect x="1" y="1" width="98%" height="98%" rx={13} fill="none"
+                              stroke="rgba(255,255,255,0.04)" strokeWidth={1} />
+                          </Svg>
+                          <View style={styles.gridCardInner}>
+                            <Text style={styles.gridName} numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.8}>{def?.name || entry.id}</Text>
+                            <View style={styles.gridIconWrap}>
+                              {def?.spritesheet ? (
+                                <ItemSprite spritesheet={def.spritesheet} frameIndex={def.frameIndex} displaySize={iconSize} />
+                              ) : (
+                                <ItemSprite spritesheet="consumables-1" frameIndex={0} displaySize={iconSize} />
+                              )}
+                            </View>
+                            <View style={styles.gridTagSlot}>
+                              <View style={[styles.gridTagBadge, styles.gridQtyBadge]}>
+                                <Text style={[styles.gridTagText, styles.gridQtyText]}>×{entry.quantity}</Text>
                               </View>
                             </View>
-                          </TouchableOpacity>
-                        );
-                      })}
-                  </View>
-                )}
-              </View>
-            )}
-          </View>
-        )}
-
-        {activeTab === 'bag' && (
-          <View style={styles.tabContent}>
-            {/* Supplies Section */}
-            <Text style={styles.sectionTitle}>Supplies</Text>
-            {(() => {
-              const items = (hero.inventory?.consumables || []).filter(c => c.quantity > 0);
-              if (items.length === 0) {
-                return (
-                  <View style={styles.emptyBox}>
-                    <View style={{ marginBottom: 8 }}>
-                      <ItemSprite spritesheet="consumables-1" frameIndex={0} displaySize={36} />
-                    </View>
-                    <Text style={styles.emptyTitle}>Bag Empty</Text>
-                    <Text style={styles.emptyDesc}>Visit the Shop to stock up on potions and supplies.</Text>
+                          </View>
+                        </TouchableOpacity>
+                      );
+                    })}
                   </View>
                 );
-              }
-              return (
-                <View style={styles.gridContainer}>
-                  {items.map((entry) => {
-                    const def = CONSUMABLES.find(c => c.id === entry.id);
-                    const iconSize = def?.spritesheet === 'icons-1' ? 48 : 42;
-                    return (
-                      <TouchableOpacity
-                        key={entry.id}
-                        style={[styles.gridCard, { width: itemWidth, height: itemWidth }]}
-                        onPress={() => handleOpenDetails(entry, 'consumable')}
-                        activeOpacity={0.8}
-                      >
-                        <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
-                          <Rect width="100%" height="100%" fill="rgba(255,255,255,0.015)" rx={14} />
-                          <Rect x="1" y="1" width="98%" height="98%" rx={13} fill="none"
-                            stroke="rgba(255,255,255,0.04)" strokeWidth={1} />
-                        </Svg>
-                        <View style={styles.gridCardInner}>
-                          <Text style={styles.gridName} numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.8}>{def?.name || entry.id}</Text>
-                          <View style={styles.gridIconWrap}>
-                            {def?.spritesheet ? (
-                              <ItemSprite spritesheet={def.spritesheet} frameIndex={def.frameIndex} displaySize={iconSize} />
-                            ) : (
-                              <ItemSprite spritesheet="consumables-1" frameIndex={0} displaySize={iconSize} />
-                            )}
-                          </View>
-                          <View style={styles.gridTagSlot}>
-                            <View style={[styles.gridTagBadge, styles.gridQtyBadge]}>
-                              <Text style={[styles.gridTagText, styles.gridQtyText]}>×{entry.quantity}</Text>
-                            </View>
-                          </View>
-                        </View>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </View>
-              );
-            })()}
+              })()}
 
 
+            </View>
+          )}
+        </ScrollView>
+
+        {/* Dedicated Scrollbar Space Column on the Right */}
+        <View style={styles.scrollColumn}>
+          <View style={styles.scrollColumnTrack}>
+            {contentHeight > visibleHeight && (
+              <Animated.View
+                style={[
+                  styles.scrollColumnThumb,
+                  {
+                    height: Math.max(35, (visibleHeight / contentHeight) * (visibleHeight - 24)),
+                    transform: [
+                      {
+                        translateY: scrollY.interpolate({
+                          inputRange: [0, Math.max(1, contentHeight - visibleHeight)],
+                          outputRange: [0, (visibleHeight - 24) - Math.max(35, (visibleHeight / contentHeight) * (visibleHeight - 24))],
+                          extrapolate: 'clamp',
+                        }),
+                      },
+                    ],
+                  },
+                ]}
+              >
+                <View style={styles.scrollColumnThumbBevel} />
+              </Animated.View>
+            )}
           </View>
-        )}
-      </ScrollView>
+        </View>
+      </View>
 
       {/* ── Equipment Slot Popup ── */}
       <Modal
@@ -1372,9 +1464,18 @@ export default function ProfileScreen() {
                   <Text style={styles.emptyStateText}>
                     No {modalData.slotConfig?.label} gear owned yet. Visit the Shop to find gear for this slot!
                   </Text>
-                  <TouchableOpacity style={styles.shopBtn} onPress={handleGoToShop} activeOpacity={0.8}>
-                    <Text style={styles.shopBtnText}>Go to Shop →</Text>
-                  </TouchableOpacity>
+                  <View style={styles.shopBtnWrapper}>
+                    <View style={styles.shopBtnShadow} />
+                    <TouchableOpacity
+                      style={styles.shopBtnOuter}
+                      onPress={handleGoToShop}
+                      activeOpacity={0.8}
+                    >
+                      <View style={styles.shopBtnInner}>
+                        <Text style={styles.shopBtnText}>Go to Shop →</Text>
+                      </View>
+                    </TouchableOpacity>
+                  </View>
                 </View>
               )}
 
@@ -1482,18 +1583,18 @@ export default function ProfileScreen() {
                       {/* Header */}
                       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
                         <View style={{ flex: 1, gap: 2 }}>
-                          <Text style={{ fontFamily: 'Jersey10-Regular', fontSize: 24, color: '#FFF3DA' }}>{title}</Text>
+                          <Text style={{ fontFamily: 'Jersey10-Regular', fontSize: 30, color: '#FFF3DA' }}>{title}</Text>
                           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                             {itemType !== 'consumable' && (
                               <View style={{ backgroundColor: rarity.bg, paddingHorizontal: 6, paddingVertical: 1, borderRadius: 4, borderWidth: 1, borderColor: rarity.color + '40' }}>
-                                <Text style={{ fontFamily: 'Silkscreen-Regular', fontSize: 8, color: rarity.color }}>{rarity.label}</Text>
+                                <Text style={{ fontFamily: 'Silkscreen-Regular', fontSize: 12, color: rarity.color }}>{rarity.label}</Text>
                               </View>
                             )}
-                            <Text style={{ fontSize: 12, color: categoryColor, fontWeight: 'bold' }}>{category.toUpperCase()}</Text>
+                            <Text style={{ fontSize: 16, color: categoryColor, fontWeight: 'bold' }}>{category.toUpperCase()}</Text>
                           </View>
                         </View>
                         <TouchableOpacity onPress={() => setModalVisible(false)} activeOpacity={0.7} style={{ width: 24, height: 24, alignItems: 'center', justifyContent: 'center' }}>
-                          <Text style={{ fontFamily: 'Jersey10-Regular', fontSize: 20, color: 'rgba(255, 243, 218, 0.6)' }}>✕</Text>
+                          <Text style={{ fontFamily: 'Jersey10-Regular', fontSize: 26, color: 'rgba(255, 243, 218, 0.6)' }}>✕</Text>
                         </TouchableOpacity>
                       </View>
 
@@ -1520,7 +1621,7 @@ export default function ProfileScreen() {
                             <ItemSprite spritesheet="icons-map" frameIndex={17} displaySize={48} />
                           )}
                         </View>
-                        <Text style={{ fontFamily: 'Silkscreen-Regular', fontSize: 9, color: '#94A3B8', marginTop: 4 }}>
+                        <Text style={{ fontFamily: 'Silkscreen-Regular', fontSize: 13, color: '#94A3B8', marginTop: 4 }}>
                           {statusText.toUpperCase()}
                         </Text>
                       </View>
@@ -1535,7 +1636,7 @@ export default function ProfileScreen() {
                           padding: 12,
                           marginBottom: 18,
                         }}>
-                          <Text style={{ fontSize: 13, color: '#F3E2BD', fontStyle: 'italic', lineHeight: 18, textAlign: 'center' }}>
+                          <Text style={{ fontSize: 18, color: '#F3E2BD', fontStyle: 'italic', lineHeight: 22, textAlign: 'center' }}>
                             "{lore}"
                           </Text>
                         </View>
@@ -1665,12 +1766,14 @@ function StatBox({ label, value, bonus, isPercent, variant, flex = 1, highlighte
           highlighted && { color: '#5CC489' }
         ]}>{value}</Text>
         {showPending && (
-          <Text style={{ fontFamily: 'Jersey10-Regular', fontSize: 12, color: '#5CC489' }}>
+          <Text style={{ fontFamily: 'Jersey10-Regular', fontSize: 18, color: '#5CC489' }}>
             ({pendingText})
           </Text>
         )}
       </View>
-      <Text style={styles.statBonus}>{showBonus ? bonusText : ' '}</Text>
+      <Text style={styles.statBonus} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75}>
+        {showBonus ? `${bonusText} from gear` : ' '}
+      </Text>
     </View>
   );
 }
@@ -1745,7 +1848,7 @@ const styles = StyleSheet.create({
   },
   tabLabel: {
     fontFamily: 'Silkscreen-Regular',
-    fontSize: 10,
+    fontSize: 14,
     fontWeight: 'normal',
     letterSpacing: 0,
   },
@@ -1786,7 +1889,7 @@ const styles = StyleSheet.create({
   },
   subTabText: {
     fontFamily: 'Silkscreen-Regular',
-    fontSize: 9,
+    fontSize: 14,
     fontWeight: 'normal',
     textTransform: 'uppercase',
   },
@@ -1798,23 +1901,34 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   pointsBadge: {
-    backgroundColor: 'rgba(212, 167, 84, 0.08)',
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: 'rgba(212, 167, 84, 0.2)',
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-    marginBottom: 16,
+    flexDirection: 'row',
+    justifyContent: 'center',
     alignItems: 'center',
+    marginHorizontal: 4,
+    marginTop: 6,
+    marginBottom: 16,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    backgroundColor: '#0A160F',
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: 'rgba(74,57,23,0.6)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 3,
   },
   pointsBadgeText: {
-    fontFamily: 'Jersey10-Regular',
-    fontSize: 13,
-    color: 'rgba(255, 255, 255, 0.8)',
+    fontFamily: 'Silkscreen-Regular',
+    fontSize: 16,
+    color: '#8CAF9F',
     fontWeight: 'normal',
   },
   pointsBadgeNumber: {
-    color: '#D4A754',
+    fontFamily: 'Silkscreen-Regular',
+    fontSize: 18,
+    color: '#3FB56E',
     fontWeight: 'bold',
   },
   attributeGrid: {
@@ -1844,11 +1958,11 @@ const styles = StyleSheet.create({
   },
   attrEmoji: {
     fontFamily: 'System',
-    fontSize: 16,
+    fontSize: 20,
   },
   attrLabel: {
     fontFamily: 'Silkscreen-Regular',
-    fontSize: 8,
+    fontSize: 16,
     fontWeight: 'normal',
     letterSpacing: 0.2,
     textTransform: 'uppercase',
@@ -1856,7 +1970,7 @@ const styles = StyleSheet.create({
   },
   attrValue: {
     fontFamily: 'Jersey10-Regular',
-    fontSize: 26,
+    fontSize: 32,
     fontWeight: 'normal',
     color: '#FFF3DA', // bright gold/yellow-white
     marginVertical: 0,
@@ -1864,7 +1978,7 @@ const styles = StyleSheet.create({
   },
   attrSubtext: {
     fontFamily: 'Jersey10-Regular',
-    fontSize: 13,
+    fontSize: 18,
     fontWeight: 'normal',
     color: '#CFE0EE', // ghostWhite calculations text
     textAlign: 'left',
@@ -1926,6 +2040,11 @@ const styles = StyleSheet.create({
   },
   allocBtnInnerDisabled: {
     borderWidth: 0,
+    borderTopWidth: 0,
+    borderLeftWidth: 0,
+    borderRightWidth: 0,
+    borderBottomWidth: 0,
+    borderColor: 'transparent',
     backgroundColor: 'rgba(255, 255, 255, 0.02)',
   },
   allocBtnText: {
@@ -1941,7 +2060,7 @@ const styles = StyleSheet.create({
   allocNumber: {
     fontFamily: 'Jersey10-Regular',
     color: '#FFF3DA',
-    fontSize: 18,
+    fontSize: 24,
     fontWeight: 'normal',
     minWidth: 16,
     textAlign: 'center',
@@ -2061,7 +2180,7 @@ const styles = StyleSheet.create({
   },
   confirmBtnText: {
     fontFamily: 'Jersey10-Regular',
-    fontSize: 14,
+    fontSize: 18,
     fontWeight: 'normal',
     color: '#1A1200',
     zIndex: 2,
@@ -2109,13 +2228,13 @@ const styles = StyleSheet.create({
   },
   stanceName: {
     fontFamily: 'Jersey10-Regular',
-    fontSize: 18,
+    fontSize: 22,
     fontWeight: 'normal',
     color: '#F8FAFC',
   },
   stanceBonusVal: {
     fontFamily: 'Jersey10-Regular',
-    fontSize: 16,
+    fontSize: 20,
     color: '#5CC489',
     textAlign: 'right',
   },
@@ -2125,7 +2244,7 @@ const styles = StyleSheet.create({
   subSectionTitle: {
     fontFamily: 'Jersey10-Regular',
     fontWeight: 'normal',
-    fontSize: 13,
+    fontSize: 18,
     color: '#D4A754',
     letterSpacing: 1,
     textTransform: 'uppercase',
@@ -2142,14 +2261,14 @@ const styles = StyleSheet.create({
   },
   setBonusName: {
     fontFamily: 'Jersey10-Regular',
-    fontSize: 13,
+    fontSize: 18,
     fontWeight: 'normal',
     color: '#F8FAFC',
     marginBottom: 2,
   },
   setBonusDesc: {
     fontFamily: 'Silkscreen-Regular',
-    fontSize: 10,
+    fontSize: 14,
     color: '#94A3B8',
   },
   header: {
@@ -2217,7 +2336,7 @@ const styles = StyleSheet.create({
   },
   headerTitleText: {
     fontFamily: 'Jersey10-Regular',
-    fontSize: 28,
+    fontSize: 34,
     color: '#FFF3DA',
     textAlign: 'center',
     textShadowColor: '#000',
@@ -2231,9 +2350,8 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
   },
   heroCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 18,
+    flexDirection: 'column',
+    paddingVertical: 16,
     paddingHorizontal: 16,
     borderRadius: 20,
     position: 'relative',
@@ -2244,102 +2362,198 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     pointerEvents: 'none',
   },
-  goldChip: {
-    position: 'absolute',
-    top: 12,
-    right: 12,
-    backgroundColor: 'rgba(251, 191, 36, 0.08)',
-    borderColor: 'rgba(251, 191, 36, 0.2)',
-    borderWidth: 1,
-    borderRadius: 12,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+  heroHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+    width: '100%',
+  },
+  heroName: {
+    fontFamily: 'Jersey10-Regular',
+    fontSize: 28,
+    lineHeight: 28,
+    color: theme.COLORS.ghostWhite,
+    flex: 1,
+    marginRight: 8,
+  },
+  heroTagsRow: {
+    flexDirection: 'row',
+    gap: 6,
+    alignItems: 'center',
+  },
+  bannerTag: {
     flexDirection: 'row',
     alignItems: 'center',
+    backgroundColor: '#F3E2BD',
+    borderColor: '#4A3917',
+    borderWidth: 1.5,
+    borderRadius: 6,
+    paddingVertical: 3,
+    paddingHorizontal: 6,
+    gap: 4,
   },
-  goldChipText: {
-    fontFamily: 'Silkscreen-Regular',
-    fontWeight: 'normal',
-    fontSize: 11,
-    color: '#FBBF24',
+  bannerTagText: {
+    fontFamily: 'Jersey10-Regular',
+    fontSize: 20,
+    letterSpacing: 0.5,
+    color: '#2A1A0C',
   },
-  avatarContainer: {
-    position: 'relative',
-    width: 74,
-    height: 74,
-    justifyContent: 'center',
+  heroBodyRow: {
+    flexDirection: 'row',
     alignItems: 'center',
+    width: '100%',
   },
   avatarCircle: {
-    width: 74,
-    height: 74,
-    borderRadius: 37,
+    width: 96,
+    height: 96,
+    borderRadius: 48,
     borderWidth: 1.5,
     borderColor: '#D4A754',
     backgroundColor: 'rgba(0, 0, 0, 0.25)',
     justifyContent: 'center',
     alignItems: 'center',
     overflow: 'hidden',
+    paddingBottom: 8,
   },
-  levelBadge: {
-    position: 'absolute',
-    bottom: -2,
-    right: -2,
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    backgroundColor: '#D4A754',
-    borderWidth: 1.5,
-    borderColor: '#133131',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  levelBadgeText: {
-    fontFamily: 'Jersey10-Regular',
-    color: '#1A1200',
-    fontWeight: 'normal',
-    fontSize: 15,
-    textAlign: 'center',
-  },
-  heroDetails: {
+  gaugesContainer: {
     flex: 1,
     marginLeft: 14,
-    justifyContent: 'center',
+    gap: 8,
   },
-  heroName: {
-    ...theme.FONTS.display,
-    fontSize: 18,
-    color: theme.COLORS.ghostWhite,
-    marginBottom: 8,
-  },
-  gaugesStack: {
-    gap: theme.SPACING.tight,
+  heroGaugesTagsRow: {
+    flexDirection: 'row',
+    gap: 8,
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    marginTop: 2,
   },
   sectionTitle: {
     fontFamily: 'Jersey10-Regular',
     fontWeight: 'normal',
-    fontSize: 13,
+    fontSize: 24,
     color: theme.COLORS.parchment,
     marginBottom: 6,
     marginTop: 0,
   },
   statsRow: {
     flexDirection: 'row',
-    gap: 4,
+    gap: 8,
     marginBottom: 8,
+  },
+  attributeList: {
+    gap: 8,
+    marginBottom: 16,
+  },
+  attributeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: 'rgba(16, 44, 28, 0.45)',
+    borderRadius: 12,
+    borderWidth: 1.5,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    minHeight: 56,
+  },
+  attrRowLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    flex: 3.5,
+  },
+  attrIconCircle: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    borderWidth: 1.5,
+    borderColor: '#C9A86A',
+    backgroundColor: '#0D2118',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  attrRowValueContainer: {
+    flex: 1.2,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  attrRowControlsContainer: {
+    flex: 2.8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  attrInfoBtn: {
+    position: 'absolute',
+    top: 4,
+    right: 4,
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#D4A754',
+    backgroundColor: 'rgba(0,0,0,0.35)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 10,
+  },
+  attrInfoBtnText: {
+    fontFamily: 'Jersey10-Regular',
+    fontSize: 12,
+    lineHeight: 12,
+    color: '#D4A754',
+    fontWeight: 'bold',
+  },
+  scrollColumn: {
+    width: 24,
+    backgroundColor: '#102B2B',
+    borderWidth: 2,
+    borderColor: 'rgba(212, 167, 84, 0.4)',
+    borderRadius: 8,
+    marginRight: 8,
+    marginVertical: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  scrollColumnTrack: {
+    flex: 1,
+    width: 12,
+    marginVertical: 6,
+    backgroundColor: 'rgba(0, 0, 0, 0.45)',
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: 'rgba(74, 57, 23, 0.3)',
+    position: 'relative',
+    overflow: 'hidden',
+    alignItems: 'center',
+  },
+  scrollColumnThumb: {
+    width: 8,
+    borderRadius: 4,
+    backgroundColor: '#4A3917',
+    padding: 1,
+  },
+  scrollColumnThumbBevel: {
+    flex: 1,
+    borderRadius: 3,
+    backgroundColor: '#D4A754',
+    borderWidth: 1,
+    borderTopColor: '#FFE5A3',
+    borderLeftColor: '#FFE5A3',
+    borderRightColor: '#9B783E',
+    borderBottomColor: '#8D6922',
   },
   statBox: {
     flex: 1,
     borderRadius: 10,
-    minHeight: 46,
-    paddingVertical: 5,
-    paddingLeft: 10,
+    minHeight: 60,
+    paddingVertical: 8,
+    paddingLeft: 12,
     paddingRight: 4,
     alignItems: 'flex-start',
     justifyContent: 'center',
-    backgroundColor: 'rgba(16, 44, 28, 0.55)', // slightly darker green panel bg
+    backgroundColor: 'rgba(16, 44, 28, 0.55)',
     borderWidth: 1.5,
-    borderColor: 'rgba(92, 196, 137, 0.3)', // more visible border
+    borderColor: 'rgba(92, 196, 137, 0.3)',
   },
   statBoxAttribute: {
     backgroundColor: 'rgba(92,196,137,0.12)',
@@ -2347,26 +2561,26 @@ const styles = StyleSheet.create({
   },
   statLabel: {
     fontFamily: 'Silkscreen-Regular',
-    fontSize: 8,
+    fontSize: 16,
     fontWeight: 'normal',
-    color: '#CFE0EE', // ghostWhite for high readability
+    color: '#CFE0EE',
     letterSpacing: 0.3,
     maxWidth: '100%',
   },
   statValue: {
     fontFamily: 'Jersey10-Regular',
-    fontSize: 16,
+    fontSize: 26,
     fontWeight: 'normal',
-    color: '#FBBF24', // bright gold value
+    color: '#FBBF24',
     letterSpacing: 0.2,
   },
   statValueAttribute: {
-    color: '#5CC489', // bright mint green
+    color: '#5CC489',
   },
   statBonus: {
     fontFamily: 'Jersey10-Regular',
-    fontSize: 11,
-    lineHeight: 11,
+    fontSize: 20,
+    lineHeight: 20,
     fontWeight: 'normal',
     letterSpacing: 0.5,
     color: '#5CC489',
@@ -2376,9 +2590,9 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 5,
     right: 5,
-    width: 16,
-    height: 16,
-    borderRadius: 8,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: theme.COLORS.panelBorderGoldStrong,
     backgroundColor: 'rgba(0,0,0,0.35)',
@@ -2388,11 +2602,11 @@ const styles = StyleSheet.create({
   },
   infoTagSmall: {
     position: 'absolute',
-    top: 2,
-    right: 2,
-    width: 14,
-    height: 14,
-    borderRadius: 7,
+    top: 4,
+    right: 4,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
     borderWidth: 1,
     borderColor: theme.COLORS.panelBorderGoldStrong,
     backgroundColor: 'rgba(0,0,0,0.35)',
@@ -2402,8 +2616,8 @@ const styles = StyleSheet.create({
   },
   infoTagText: {
     fontFamily: 'Jersey10-Regular',
-    fontSize: 12,
-    lineHeight: 13,
+    fontSize: 18,
+    lineHeight: 18,
     color: theme.COLORS.candleGold,
     fontStyle: 'italic',
     fontWeight: 'bold',
@@ -2428,14 +2642,14 @@ const styles = StyleSheet.create({
   },
   infoModalTitle: {
     fontFamily: 'Silkscreen-Regular',
-    fontSize: 16,
+    fontSize: 22,
     letterSpacing: 0.5,
     marginBottom: 8,
   },
   infoModalDesc: {
     fontFamily: 'Jersey10-Regular',
-    fontSize: 14,
-    lineHeight: 19,
+    fontSize: 18,
+    lineHeight: 23,
     color: theme.COLORS.parchment,
     marginBottom: 14,
   },
@@ -2450,15 +2664,15 @@ const styles = StyleSheet.create({
   },
   infoEffectBullet: {
     fontFamily: 'Jersey10-Regular',
-    fontSize: 14,
+    fontSize: 18,
     color: theme.COLORS.candleGold,
-    lineHeight: 18,
+    lineHeight: 22,
   },
   infoEffectText: {
     flex: 1,
     fontFamily: 'Jersey10-Regular',
-    fontSize: 13,
-    lineHeight: 18,
+    fontSize: 18,
+    lineHeight: 22,
     color: '#C9D6C0',
   },
   infoCloseBtn: {
@@ -2472,7 +2686,7 @@ const styles = StyleSheet.create({
   },
   infoCloseBtnText: {
     fontFamily: 'Silkscreen-Regular',
-    fontSize: 12,
+    fontSize: 16,
     color: theme.COLORS.candleGold,
   },
   equipmentGrid: {
@@ -2551,14 +2765,15 @@ const styles = StyleSheet.create({
   },
   slotCardInfo: {
     flex: 1,
-    justifyContent: 'space-between',
+    justifyContent: 'center',
+    gap: 4,
     height: '100%',
   },
   slotLabel: {
     fontFamily: 'Silkscreen-Regular',
-    fontSize: 9,
+    fontSize: 14,
     fontWeight: 'normal',
-    letterSpacing: 0.5,
+    letterSpacing: 1,
     textAlign: 'left',
   },
   slotLabelEmpty: {
@@ -2568,16 +2783,16 @@ const styles = StyleSheet.create({
     color: '#6B5A3E', // Muted dark gold-brown
   },
   slotItemName: {
-    fontFamily: 'Silkscreen-Regular',
-    fontSize: 10,
-    lineHeight: 14,
+    fontFamily: 'Jersey10-Regular',
+    fontSize: 22,
+    lineHeight: 22,
     fontWeight: 'bold',
     color: '#2A1A0C', // Dark text on parchment
     textAlign: 'left',
   },
   slotItemStats: {
     fontFamily: 'Silkscreen-Regular',
-    fontSize: 9,
+    fontSize: 13,
     fontWeight: 'normal',
     textAlign: 'left',
   },
@@ -2588,11 +2803,11 @@ const styles = StyleSheet.create({
     color: '#1D7044', // Dark green on parchment for readability
   },
   slotEmptyText: {
-    fontFamily: 'Silkscreen-Regular',
-    fontSize: 10,
+    fontFamily: 'Jersey10-Regular',
+    fontSize: 22,
     fontStyle: 'italic',
     color: '#FFF3DA',
-    opacity: 0.45,
+    opacity: 0.40,
     textAlign: 'left',
   },
   slotIconBox: {
@@ -2648,7 +2863,8 @@ const styles = StyleSheet.create({
   },
   modalTitle: {
     fontFamily: 'Jersey10-Regular',
-    fontSize: 17,
+    fontSize: 28,
+    lineHeight: 28,
     color: '#FFF3DA',
     flex: 1,
     marginRight: 8,
@@ -2656,7 +2872,8 @@ const styles = StyleSheet.create({
   modalCloseText: {
     fontFamily: 'Jersey10-Regular',
     color: 'rgba(255, 243, 218, 0.6)',
-    fontSize: 16,
+    fontSize: 28,
+    lineHeight: 28,
   },
   modalList: {
     maxHeight: 400,
@@ -2682,17 +2899,17 @@ const styles = StyleSheet.create({
   compareItemName: {
     fontFamily: 'Jersey10-Regular',
     fontWeight: 'normal',
-    fontSize: 14,
+    fontSize: 18,
     color: theme.COLORS.parchment,
   },
   compareItemStats: {
     fontFamily: 'Silkscreen-Regular',
-    fontSize: 11,
+    fontSize: 15,
     color: '#E8A73A',
   },
   compareItemDesc: {
     fontFamily: 'Silkscreen-Regular',
-    fontSize: 11,
+    fontSize: 15,
     color: '#94A3B8', // readable blue-grey
     marginTop: 2,
   },
@@ -2706,7 +2923,7 @@ const styles = StyleSheet.create({
   },
   equippedBadgeText: {
     fontFamily: 'Silkscreen-Regular',
-    fontSize: 9,
+    fontSize: 13,
     fontWeight: 'normal',
     color: '#D4A754',
     letterSpacing: 0.5,
@@ -2719,7 +2936,7 @@ const styles = StyleSheet.create({
   },
   deltaText: {
     fontFamily: 'Silkscreen-Regular',
-    fontSize: 11,
+    fontSize: 15,
     fontWeight: 'normal',
   },
   emptyStateBody: {
@@ -2733,25 +2950,59 @@ const styles = StyleSheet.create({
   },
   emptyStateText: {
     fontFamily: 'Jersey10-Regular',
-    fontSize: 13,
+    fontSize: 24,
     color: theme.COLORS.parchment,
     textAlign: 'center',
-    lineHeight: 18,
+    lineHeight: 24,
   },
-  shopBtn: {
-    backgroundColor: 'rgba(212,167,84,0.14)',
-    borderWidth: 1,
-    borderColor: 'rgba(212,167,84,0.4)',
-    borderRadius: 12,
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    marginTop: 4,
+  shopBtnWrapper: {
+    width: '100%',
+    height: 42,
+    position: 'relative',
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  shopBtnShadow: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 3,
+    height: 42,
+    borderRadius: 8,
+    zIndex: 1,
+    backgroundColor: '#0D2118',
+  },
+  shopBtnOuter: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    height: 42,
+    borderRadius: 8,
+    borderWidth: 2.2,
+    borderColor: '#84735B',
+    backgroundColor: '#0D2118',
+    zIndex: 2,
+  },
+  shopBtnInner: {
+    flex: 1,
+    margin: 1.5,
+    borderRadius: 5,
+    borderWidth: 2.2,
+    borderTopColor: '#4F856C',
+    borderLeftColor: '#4F856C',
+    borderRightColor: '#4F856C',
+    borderBottomColor: '#0D2118',
+    borderBottomWidth: 3.5,
+    backgroundColor: '#1B4030',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   shopBtnText: {
     fontFamily: 'Jersey10-Regular',
-    fontWeight: 'normal',
-    fontSize: 13,
-    color: theme.COLORS.candleGold,
+    fontSize: 20,
+    color: '#FFF3DA',
+    textTransform: 'uppercase',
   },
   unequipBtnWrapper: {
     width: '100%',
@@ -2798,7 +3049,7 @@ const styles = StyleSheet.create({
   unequipBtnText: {
     fontFamily: 'Jersey10-Regular',
     fontWeight: 'normal',
-    fontSize: 16,
+    fontSize: 18,
     color: '#FFF3DA',
     textTransform: 'uppercase',
   },
@@ -2840,11 +3091,11 @@ const styles = StyleSheet.create({
   },
   gridName: {
     fontFamily: 'Jersey10-Regular',
-    fontSize: 14,
+    fontSize: 18,
     color: '#F3E2BD',
     textAlign: 'center',
-    lineHeight: 14,
-    height: 28,
+    lineHeight: 18,
+    height: 36,
     width: '100%',
   },
   gridTagSlot: {
@@ -2860,7 +3111,7 @@ const styles = StyleSheet.create({
   },
   gridTagText: {
     fontFamily: 'Jersey10-Regular',
-    fontSize: 11,
+    fontSize: 15,
     letterSpacing: 0.3,
     color: '#F3E2BD',
   },
@@ -2871,7 +3122,7 @@ const styles = StyleSheet.create({
   },
   gridQtyText: {
     fontFamily: 'Jersey10-Regular',
-    fontSize: 12,
+    fontSize: 16,
     color: '#D4A754',
     fontWeight: 'bold',
   },
@@ -2904,12 +3155,12 @@ const styles = StyleSheet.create({
   },
   emptyTitle: {
     fontFamily: 'Jersey10-Regular',
-    fontSize: 20,
+    fontSize: 24,
     color: '#FFF3DA',
     marginBottom: 4,
   },
   emptyDesc: {
-    fontSize: 12,
+    fontSize: 16,
     color: '#F3E2BD',
     textAlign: 'center',
   },
@@ -2929,7 +3180,7 @@ const styles = StyleSheet.create({
   },
   primaryActionText: {
     fontFamily: 'Jersey10-Regular',
-    fontSize: 16,
+    fontSize: 20,
     color: '#FFF3DA',
     fontWeight: 'bold',
   },
@@ -2944,7 +3195,7 @@ const styles = StyleSheet.create({
   },
   secondaryActionText: {
     fontFamily: 'Jersey10-Regular',
-    fontSize: 16,
+    fontSize: 20,
     color: '#CFE0EE',
   },
   rarityBadge: {
@@ -2955,7 +3206,7 @@ const styles = StyleSheet.create({
   },
   rarityText: {
     fontFamily: 'Silkscreen-Regular',
-    fontSize: 8,
+    fontSize: 12,
     fontWeight: 'normal',
     letterSpacing: 0.8,
   },

@@ -1004,7 +1004,7 @@ const styles = StyleSheet.create({
   },
   tabLabelText: {
     fontFamily: 'Silkscreen-Regular',
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: 'normal',
     letterSpacing: 0,
     textTransform: 'uppercase',

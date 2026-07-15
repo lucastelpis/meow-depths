@@ -36,6 +36,8 @@ export default function SpriteFrame({
   frameIndex = 0,
   displaySize = 80,
   style,
+  rowIndex = 0,
+  totalRows = 1,
 }) {
   // Scale factor so the frame occupies exactly displaySize × displaySize dp
   const scale = displaySize / frameSize;
@@ -56,11 +58,11 @@ export default function SpriteFrame({
         style={{
           // Stretch the full sheet to the scaled dimensions
           width: frameSize * totalFrames * scale,
-          height: displaySize,
+          height: frameSize * totalRows * scale,
           // Shift left so the chosen frame aligns with the left edge of the clip window
           position: 'absolute',
           left: -(frameIndex * displaySize),
-          top: 0,
+          top: -(rowIndex * displaySize),
         }}
         contentFit="fill"
       />

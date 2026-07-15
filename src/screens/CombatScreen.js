@@ -953,21 +953,23 @@ export default function CombatScreen() {
 
     // Play hero attack animation (auto-returns to idle via onComplete)
     setHeroAnim('attack');
+    const attackFps = HERO_SPRITE.attack?.fps || 6;
+    setHeroAnimFps(attackFps);
 
     // Calculate animation length
     const attackFrames = HERO_SPRITE.attack?.frames || 4;
-    const animDuration = Math.round((attackFrames / 10) * 1000);
+    const animDuration = Math.round((attackFrames / attackFps) * 1000);
 
     triggerHeroAttackLunge(animDuration);
     SoundManager.playSfx('hero-attack');
 
     // Execute the attack
     const result = executeAttack(heroState, target, heroState);
+    addLog(result.log);
+
     if (result.damage > 0) {
       triggerEnemyRecoil(target.uid, animDuration);
       if (result.isCrit) {
-        // Fire crit popup directly and mark UID so the HP-watcher skips it.
-        // Clamp to remaining HP so a killing blow doesn't over-report.
         pendingCritUids.current.add(target.uid);
         triggerDamagePopup(target.uid, displayDamage(result.damage, target.hp), false, false, true);
       }
@@ -975,7 +977,6 @@ export default function CombatScreen() {
     if (result.isDodged) {
       triggerDamagePopup(target.uid, 0, false, true);
     }
-    addLog(result.log);
 
     // Apply damage + effects to enemy
     let updatedEnemies = enemies.map((e, i) => {
@@ -1001,7 +1002,10 @@ export default function CombatScreen() {
     updateEnemiesAndDyingEnemies(updatedEnemies, attackDeadRes.dead);
 
     // Wait for the attack animation to finish
-    await delay(animDuration + 200);
+    await delay(animDuration);
+
+    setHeroAnim('idle');
+    await delay(100);
 
     // Check for victory
     if (updatedEnemies.length === 0) {
@@ -1092,6 +1096,8 @@ export default function CombatScreen() {
     // Only set standard animation if this isn't a sequential multi-hit skill (handled inside loop)
     if (skillId !== 'dual_slash') {
       setHeroAnim(skillId);
+      const animData = HERO_SPRITE[skillId] || HERO_SPRITE.attack;
+      setHeroAnimFps(animData.fps || 6);
       SoundManager.playSfx('hero-attack');
     }
 
@@ -1228,10 +1234,12 @@ export default function CombatScreen() {
 
       if (result.hits && result.hits.length > 0) {
         const hitDuration = 350; // Snappy speed for each hit
-        setHeroAnimFps(16); // play animation faster
+        const animData = HERO_SPRITE['dual_slash'] || HERO_SPRITE.attack;
+        const hitFps = animData.fps || 8;
+        setHeroAnimFps(hitFps); // play animation at its specific speed
 
-        const hitFrames = HERO_SPRITE['dual_slash']?.frames || 8;
-        const finalHitDuration = Math.round((hitFrames / 16) * 1000);
+        const hitFrames = animData.frames || 4;
+        const finalHitDuration = Math.round((hitFrames / hitFps) * 1000);
 
         for (let hitIdx = 0; hitIdx < result.hits.length; hitIdx++) {
           const hit = result.hits[hitIdx];
@@ -1334,17 +1342,19 @@ export default function CombatScreen() {
     // Remove dead enemies
     const skillDeadRes = processDeadEnemies(updatedEnemies);
     updatedEnemies = skillDeadRes.alive;
-    updateEnemiesAndDyingEnemies(updatedEnemies, skillDeadRes.dead);
 
     if (!isMultiHit) {
       // Calculate animation length
       const animData = HERO_SPRITE[skillId] || HERO_SPRITE.attack;
-      const animDuration = Math.round((animData.frames / 10) * 1000);
+      const skillFps = animData.fps || 6;
+      const animDuration = Math.round((animData.frames / skillFps) * 1000);
 
       // Trigger hero lunge if the skill is targeted
       if (isTargeted) {
         triggerHeroAttackLunge(animDuration);
       }
+
+      updateEnemiesAndDyingEnemies(updatedEnemies, skillDeadRes.dead);
 
       // Trigger enemy damage recoil for any enemy whose HP decreased
       [...updatedEnemies, ...skillDeadRes.dead].forEach(e => {
@@ -1355,7 +1365,12 @@ export default function CombatScreen() {
       });
 
       // Wait for the skill animation to finish
-      await delay(animDuration + 200);
+      await delay(animDuration);
+
+      setHeroAnim('idle');
+      await delay(100);
+    } else {
+      updateEnemiesAndDyingEnemies(updatedEnemies, skillDeadRes.dead);
     }
 
     // Check for victory
@@ -2745,6 +2760,8 @@ export default function CombatScreen() {
                     source={HERO_SPRITE.idle.source}
                     frameSize={HERO_SPRITE.idle.frameSize}
                     totalFrames={HERO_SPRITE.idle.frames}
+                    rowIndex={HERO_SPRITE.idle.rowIndex}
+                    totalRows={HERO_SPRITE.idle.totalRows}
                     fps={8}
                     loop={true}
                     active={isIdle}
@@ -2759,6 +2776,8 @@ export default function CombatScreen() {
                     source={HERO_SPRITE.guard.source}
                     frameSize={HERO_SPRITE.guard.frameSize}
                     totalFrames={HERO_SPRITE.guard.frames}
+                    rowIndex={HERO_SPRITE.guard.rowIndex}
+                    totalRows={HERO_SPRITE.guard.totalRows}
                     fps={8}
                     loop={true}
                     active={isGuard}
@@ -2769,14 +2788,16 @@ export default function CombatScreen() {
                     tintOpacity={heroDamageOpacity}
                   />
                   <AnimatedSprite
-                    key={`hero_sprite_attack_${heroAnim}`}
+                    key="hero_sprite_attack"
                     source={HERO_SPRITE.attack.source}
                     frameSize={HERO_SPRITE.attack.frameSize}
                     totalFrames={HERO_SPRITE.attack.frames}
+                    rowIndex={HERO_SPRITE.attack.rowIndex}
+                    totalRows={HERO_SPRITE.attack.totalRows}
                     fps={heroAnimFps}
                     loop={false}
                     active={isAttack}
-                    onComplete={isAttack && !heroAnim.includes('_hit') ? () => setHeroAnim('idle') : undefined}
+                    onComplete={undefined}
                     displaySize={HERO_DISPLAY_SIZE}
                     pointerEvents={isAttack ? 'auto' : 'none'}
                     style={[styles.heroCardSprite, { position: 'absolute', opacity: isAttack ? 1 : 0 }]}
@@ -2790,10 +2811,12 @@ export default function CombatScreen() {
                       source={skillDef.source}
                       frameSize={skillDef.frameSize}
                       totalFrames={skillDef.frames}
+                      rowIndex={skillDef.rowIndex}
+                      totalRows={skillDef.totalRows}
                       fps={heroAnimFps}
                       loop={false}
                       active={true}
-                      onComplete={!heroAnim.includes('_hit') ? () => setHeroAnim('idle') : undefined}
+                      onComplete={undefined}
                       displaySize={HERO_DISPLAY_SIZE}
                       pointerEvents="auto"
                       style={[styles.heroCardSprite, { position: 'absolute' }]}

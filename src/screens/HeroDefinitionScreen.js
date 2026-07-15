@@ -279,7 +279,7 @@ export default function HeroDefinitionScreen({ navigation }) {
                     onChangeText={setHeroName}
                     placeholder="Mochi"
                     placeholderTextColor="rgba(255, 243, 218, 0.4)"
-                    maxLength={14}
+                    maxLength={10}
                     selectTextOnFocus
                     textAlign="center"
                     cursorColor="#E8A73A"

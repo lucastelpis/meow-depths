@@ -457,7 +457,7 @@ const styles = StyleSheet.create({
   },
   tabLabel: {
     fontFamily: 'Silkscreen-Regular',
-    fontSize: 10,
+    fontSize: 14,
     fontWeight: 'normal',
     textTransform: 'uppercase',
   },
@@ -470,7 +470,15 @@ const styles = StyleSheet.create({
 
   scroll: { padding: 16, paddingBottom: 40 },
 
-  emptyText: { ...theme.FONTS.body, fontSize: 12, color: 'rgba(207,224,238,0.35)', fontStyle: 'italic' },
+  emptyText: {
+    fontFamily: 'Jersey10-Regular',
+    fontSize: 22,
+    lineHeight: 22,
+    color: 'rgba(207,224,238,0.35)',
+    fontStyle: 'italic',
+    textAlign: 'center',
+    marginVertical: 40,
+  },
 
   // Creature card
   card: {
@@ -491,18 +499,19 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   cardHeadInfo: { flex: 1, marginLeft: 12, justifyContent: 'center' },
-  cardNameRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 3 },
-  cardName: { fontFamily: 'Jersey10-Regular', fontSize: 16, color: theme.COLORS.ghostWhite, flexShrink: 1 },
-  bossTag: { borderWidth: 1, borderRadius: 5, paddingHorizontal: 5, paddingVertical: 1 },
-  bossTagText: { ...theme.FONTS.label, fontSize: 8 },
-  cardRegion: { ...theme.FONTS.label, fontSize: 8, color: 'rgba(207,224,238,0.4)', marginTop: 3 },
-  dropRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 7 },
-  dropLabel: { ...theme.FONTS.label, fontSize: 8, color: 'rgba(207,224,238,0.4)', marginRight: 2 },
+  cardNameRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 },
+  cardName: { fontFamily: 'Jersey10-Regular', fontSize: 24, color: theme.COLORS.ghostWhite, flexShrink: 1 },
+  bossTag: { borderWidth: 1, borderRadius: 5, paddingHorizontal: 6, paddingVertical: 2 },
+  bossTagText: { fontFamily: 'Silkscreen-Regular', fontSize: 11, color: '#FFF3DA' },
+  cardRegion: { fontFamily: 'Jersey10-Regular', fontSize: 16, color: 'rgba(207,224,238,0.4)', marginTop: 3 },
+  dropRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 8 },
+  dropLabel: { fontFamily: 'Jersey10-Regular', fontSize: 16, color: 'rgba(207,224,238,0.4)', marginRight: 2 },
   cardLore: {
-    ...theme.FONTS.body,
-    fontSize: 12,
+    fontFamily: 'Jersey10-Regular',
+    fontSize: 20,
+    lineHeight: 20,
     color: 'rgba(207,224,238,0.7)',
-    marginTop: 10,
+    marginTop: 12,
     fontStyle: 'italic',
   },
 
@@ -522,7 +531,7 @@ const styles = StyleSheet.create({
     borderColor: theme.COLORS.panelBorderGold,
     backgroundColor: theme.COLORS.panelGreen,
   },
-  regionTabText: { fontFamily: 'Jersey10-Regular', fontSize: 12, color: 'rgba(207,224,238,0.55)' },
+  regionTabText: { fontFamily: 'Jersey10-Regular', fontSize: 18, color: 'rgba(207,224,238,0.55)' },
 
   // Note rows
   noteRow: {
@@ -535,9 +544,9 @@ const styles = StyleSheet.create({
     padding: 12,
     marginBottom: 10,
   },
-  noteTitle: { fontFamily: 'Jersey10-Regular', fontSize: 14, color: theme.COLORS.warmGlow },
-  noteSub: { ...theme.FONTS.small, fontSize: 9, color: 'rgba(207,224,238,0.4)', marginTop: 2 },
-  noteChevron: { fontSize: 22, color: theme.COLORS.candleGold, marginLeft: 6 },
+  noteTitle: { fontFamily: 'Jersey10-Regular', fontSize: 22, color: theme.COLORS.warmGlow },
+  noteSub: { fontFamily: 'Jersey10-Regular', fontSize: 16, color: 'rgba(207,224,238,0.4)', marginTop: 2 },
+  noteChevron: { fontSize: 26, color: theme.COLORS.candleGold, marginLeft: 6 },
   noteBadge: {
     position: 'absolute',
     top: -6,
@@ -596,11 +605,11 @@ const styles = StyleSheet.create({
     flexDirection: 'column',
     flexShrink: 1,
   },
-  readerClose: { position: 'absolute', top: 8, right: 10, zIndex: 5 },
-  readerCloseText: { fontSize: 18, color: '#6E4524', fontWeight: 'bold' },
-  readerTitle: { fontFamily: 'Jersey10-Regular', fontSize: 18, color: '#4A3417', marginBottom: 6, paddingRight: 20 },
-  readerContext: { ...theme.FONTS.body, fontSize: 11, color: '#7A5C30', fontStyle: 'italic' },
+  readerClose: { position: 'absolute', top: 12, right: 14, zIndex: 5 },
+  readerCloseText: { fontSize: 24, color: '#6E4524', fontWeight: 'bold' },
+  readerTitle: { fontFamily: 'Jersey10-Regular', fontSize: 26, lineHeight: 26, color: '#4A3417', marginBottom: 6, paddingRight: 24 },
+  readerContext: { fontFamily: 'Jersey10-Regular', fontSize: 18, color: '#7A5C30', fontStyle: 'italic' },
   readerDivider: { height: 1, backgroundColor: '#C9A86A', marginVertical: 12 },
   readerScroll: { maxHeight: SCREEN_HEIGHT * 0.65, flexShrink: 1 },
-  readerBody: { ...theme.FONTS.body, fontSize: 13, lineHeight: 21, color: '#3A2C16' },
+  readerBody: { fontFamily: 'Jersey10-Regular', fontSize: 20, lineHeight: 24, color: '#3A2C16' },
 });

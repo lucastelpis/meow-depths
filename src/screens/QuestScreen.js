@@ -34,6 +34,7 @@ export default function QuestScreen({ navigation }) {
   const [nowTs, setNowTs] = useState(Date.now());
   const [celebrationQuest, setCelebrationQuest] = useState(null);
   const [expandedQuestId, setExpandedQuestId] = useState(null);
+  const [infoModal, setInfoModal] = useState(null); // { title: string, desc: string }
 
   // Reset expanded quest state when tab changes
   useEffect(() => {
@@ -98,7 +99,7 @@ export default function QuestScreen({ navigation }) {
     let base = 0;
     if (itemId.includes('green')) base = 4;
     else if (itemId.includes('yellow')) base = 8;
-    
+
     if (itemId.includes('shard')) return base + 0;
     if (itemId.includes('small')) return base + 1;
     if (itemId.includes('big')) return base + 2;
@@ -106,13 +107,85 @@ export default function QuestScreen({ navigation }) {
     return base;
   };
 
+  const getItemInfo = (itemId) => {
+    const normalized = itemId.toLowerCase();
+    if (normalized === 'gold') {
+      return {
+        title: 'GOLD',
+        desc: 'Shiny gold coins. Used to purchase gear, consumables, and all kinds of stuff.',
+      };
+    }
+    if (normalized === 'potion') {
+      return { title: 'HEALTH POTION', desc: 'Restore 50 HP.' };
+    }
+    if (normalized === 'super_potion') {
+      return { title: 'SUPER POTION', desc: 'Restore 100 HP.' };
+    }
+    if (normalized === 'mega_potion') {
+      return { title: 'MEGA POTION', desc: 'Restore 150 HP.' };
+    }
+    if (normalized === 'ultra_potion') {
+      return { title: 'ULTRA POTION', desc: 'Restore 200 HP.' };
+    }
+    if (normalized === 'black_shard') {
+      return { title: 'BLACK SHARD', desc: 'A fragmented piece of black crystal. Dropped by Sewer monsters. Used for crafting basic gear.' };
+    }
+    if (normalized === 'black_crystal_small') {
+      return { title: 'SMALL BLACK CRYSTAL', desc: 'A low-purity black crystal. Used for crafting early-game equipment.' };
+    }
+    if (normalized === 'black_crystal_big') {
+      return { title: 'BIG BLACK CRYSTAL', desc: 'A dense black crystal. Used for forging high-quality Sewer equipment.' };
+    }
+    if (normalized === 'black_crystal_core') {
+      return { title: 'BLACK CRYSTAL CORE', desc: 'A powerful, concentrated core of black crystal energy. Required for legendary Sewer gear.' };
+    }
+    if (normalized === 'green_shard') {
+      return { title: 'GREEN SHARD', desc: 'A shard of glowing green crystal. Dropped by Garden monsters. Used for crafting mid-game gear.' };
+    }
+    if (normalized === 'green_crystal_small') {
+      return { title: 'SMALL GREEN CRYSTAL', desc: 'A low-purity green crystal. Used for crafting mid-game equipment.' };
+    }
+    if (normalized === 'green_crystal_big') {
+      return { title: 'BIG GREEN CRYSTAL', desc: 'A dense green crystal. Used for forging high-quality Garden equipment.' };
+    }
+    if (normalized === 'green_crystal_core') {
+      return { title: 'GREEN CRYSTAL CORE', desc: 'A powerful, concentrated core of green crystal energy. Required for legendary Garden gear.' };
+    }
+    if (normalized === 'yellow_shard') {
+      return { title: 'YELLOW SHARD', desc: 'A shard of glowing yellow crystal. Dropped by Docks monsters. Used for crafting late-game gear.' };
+    }
+    if (normalized === 'yellow_crystal_small') {
+      return { title: 'SMALL YELLOW CRYSTAL', desc: 'A low-purity yellow crystal. Used for crafting late-game equipment.' };
+    }
+    if (normalized === 'yellow_crystal_big') {
+      return { title: 'BIG YELLOW CRYSTAL', desc: 'A dense yellow crystal. Used for forging high-quality Docks equipment.' };
+    }
+    if (normalized === 'yellow_crystal_core') {
+      return { title: 'YELLOW CRYSTAL CORE', desc: 'A powerful, concentrated core of yellow crystal energy. Required for legendary Docks gear.' };
+    }
+    const displayName = normalized
+      .split('_')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
+    return { title: displayName.toUpperCase(), desc: 'A rare quest reward item.' };
+  };
+
   const renderRewardChip = (type, key, qty) => {
     const lowerKey = key.toLowerCase();
+    const info = getItemInfo(key);
+
+    const handlePressInfo = () => {
+      setInfoModal(info);
+    };
+
     if (lowerKey === 'gold') {
       return (
         <View key={key} style={styles.rewardMiniChip}>
-          <ItemSprite spritesheet="icons-1" frameIndex={11} displaySize={14} />
-          <Text style={styles.rewardMiniText}>{qty}G</Text>
+          <TouchableOpacity style={styles.infoTagSmall} onPress={handlePressInfo} activeOpacity={0.7}>
+            <Text style={styles.infoTagText}>?</Text>
+          </TouchableOpacity>
+          <ItemSprite spritesheet="icons-1" frameIndex={11} displaySize={36} />
+          <Text style={styles.rewardMiniText}>{qty} G</Text>
         </View>
       );
     } else if (type === 'consumables') {
@@ -122,16 +195,22 @@ export default function QuestScreen({ navigation }) {
       else if (lowerKey === 'ultra_potion') frame = 3;
       return (
         <View key={key} style={styles.rewardMiniChip}>
-          <ItemSprite spritesheet="consumables-1" frameIndex={frame} displaySize={14} />
-          <Text style={styles.rewardMiniText}>x{qty}</Text>
+          <TouchableOpacity style={styles.infoTagSmall} onPress={handlePressInfo} activeOpacity={0.7}>
+            <Text style={styles.infoTagText}>?</Text>
+          </TouchableOpacity>
+          <ItemSprite spritesheet="consumables-1" frameIndex={frame} displaySize={36} />
+          <Text style={styles.rewardMiniText}><Text style={{ fontSize: 11 }}>x</Text>{qty}</Text>
         </View>
       );
     } else if (type === 'materials') {
       const frame = getCrystalFrame(lowerKey);
       return (
         <View key={key} style={styles.rewardMiniChip}>
-          <ItemSprite spritesheet="crystals-1" frameIndex={frame} displaySize={14} />
-          <Text style={styles.rewardMiniText}>x{qty}</Text>
+          <TouchableOpacity style={styles.infoTagSmall} onPress={handlePressInfo} activeOpacity={0.7}>
+            <Text style={styles.infoTagText}>?</Text>
+          </TouchableOpacity>
+          <ItemSprite spritesheet="crystals-1" frameIndex={frame} displaySize={36} />
+          <Text style={styles.rewardMiniText}><Text style={{ fontSize: 11 }}>x</Text>{qty}</Text>
         </View>
       );
     }
@@ -145,7 +224,7 @@ export default function QuestScreen({ navigation }) {
     if (normalized === 'super_potion') return 'Super Potion';
     if (normalized === 'mega_potion') return 'Mega Potion';
     if (normalized === 'ultra_potion') return 'Ultra Potion';
-    
+
     return normalized
       .split('_')
       .map(word => word.charAt(0).toUpperCase() + word.slice(1))
@@ -156,7 +235,7 @@ export default function QuestScreen({ navigation }) {
     const lowerKey = key.toLowerCase();
     let sprite = null;
     const displayName = getItemName(key);
-    
+
     if (lowerKey === 'gold') {
       sprite = <ItemSprite spritesheet="icons-1" frameIndex={11} displaySize={32} />;
     } else if (type === 'consumables') {
@@ -173,7 +252,9 @@ export default function QuestScreen({ navigation }) {
     return (
       <View key={key} style={styles.drChip}>
         {sprite}
-        <Text style={styles.drChipQty}>{lowerKey === 'gold' ? `${qty}G` : `x${qty}`}</Text>
+        <Text style={styles.drChipQty}>
+          {lowerKey === 'gold' ? `${qty} G` : <Text><Text style={{ fontSize: 10 }}>x</Text>{qty}</Text>}
+        </Text>
         <Text style={styles.drChipLabel}>{displayName}</Text>
       </View>
     );
@@ -186,63 +267,49 @@ export default function QuestScreen({ navigation }) {
 
     return (
       <View key={quest.id} style={styles.questRow}>
-        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-          <TouchableOpacity
-            activeOpacity={0.7}
-            onPress={() => setExpandedQuestId(isExpanded ? null : quest.id)}
-            style={{ flex: 1 }}
-          >
-            <View style={styles.questTitleRow}>
-              <Text style={styles.questTitle}>{quest.title}</Text>
-              {!isCompleted || isClaimed || isExpanded ? (
+        <TouchableOpacity
+          activeOpacity={0.7}
+          onPress={() => setExpandedQuestId(isExpanded ? null : quest.id)}
+          style={{ width: '100%' }}
+        >
+          <View style={styles.questTitleRow}>
+            <Text style={styles.questTitle} numberOfLines={1}>{quest.title}</Text>
+            <View style={styles.chevronShadow}>
+              <View style={styles.chevronBadge}>
                 <Text style={styles.chevronText}>{isExpanded ? '▲' : '▼'}</Text>
-              ) : null}
-            </View>
-            
-            {/* Visual progress bar */}
-            <View style={styles.progressBarBg}>
-              <View 
-                style={[
-                  styles.progressBarFill, 
-                  { width: `${Math.min(100, (quest.progress / quest.target) * 100)}%` }
-                ]} 
-              />
-              <View style={styles.progressBarTextWrapper}>
-                <Text style={styles.progressBarText}>
-                  Progress: {quest.progress} / {quest.target}
-                </Text>
               </View>
             </View>
-          </TouchableOpacity>
+          </View>
 
-          {isCompleted && !isClaimed && !isExpanded && (
-            <View style={styles.headerClaimBtnWrapper}>
-              <TouchableOpacity
-                style={styles.headerClaimBtnOuter}
-                activeOpacity={0.8}
-                onPress={() => setCelebrationQuest(quest)}
-              >
-                <View style={styles.headerClaimBtnInner}>
-                  <Text style={styles.headerClaimBtnText}>CLAIM</Text>
-                </View>
-              </TouchableOpacity>
+          {/* Visual progress bar */}
+          <View style={styles.progressBarBg}>
+            <View
+              style={[
+                styles.progressBarFill,
+                { width: `${Math.min(100, (quest.progress / quest.target) * 100)}%` }
+              ]}
+            />
+            <View style={styles.progressBarTextWrapper}>
+              <Text style={styles.progressBarText}>
+                Progress: {quest.progress} / {quest.target}
+              </Text>
             </View>
-          )}
-        </View>
+          </View>
+        </TouchableOpacity>
 
         {isExpanded && (
           <View style={styles.expandedContent}>
             <Text style={styles.questDesc}>{quest.desc}</Text>
-            
+
             {/* Rewards Preview */}
             <View style={styles.questRewardsRow}>
               <Text style={styles.rewardsLabel}>Rewards:</Text>
               <View style={styles.rewardsList}>
                 {quest.rewards.gold > 0 && renderRewardChip('gold', 'gold', quest.rewards.gold)}
-                {quest.rewards.consumables && Object.entries(quest.rewards.consumables).map(([id, qty]) => 
+                {quest.rewards.consumables && Object.entries(quest.rewards.consumables).map(([id, qty]) =>
                   renderRewardChip('consumables', id, qty)
                 )}
-                {quest.rewards.materials && Object.entries(quest.rewards.materials).map(([id, qty]) => 
+                {quest.rewards.materials && Object.entries(quest.rewards.materials).map(([id, qty]) =>
                   renderRewardChip('materials', id, qty)
                 )}
               </View>
@@ -253,24 +320,27 @@ export default function QuestScreen({ navigation }) {
               <View style={styles.claimBtn}>
                 <Text style={styles.claimBtnText}>CLAIMED</Text>
               </View>
-            ) : isCompleted ? (
-              <View style={styles.claimBtnWrapper}>
-                <View style={styles.claimBtnShadow} />
-                <TouchableOpacity
-                  style={styles.claimBtnOuter}
-                  activeOpacity={0.8}
-                  onPress={() => setCelebrationQuest(quest)}
-                >
-                  <View style={styles.claimBtnInner}>
-                    <Text style={styles.claimBtnTextActive}>CLAIM REWARD</Text>
-                  </View>
-                </TouchableOpacity>
-              </View>
-            ) : (
+            ) : !isCompleted ? (
               <View style={styles.claimBtn}>
                 <Text style={styles.claimBtnText}>IN PROGRESS</Text>
               </View>
-            )}
+            ) : null}
+          </View>
+        )}
+
+        {/* Uncollapsed/Collapsed Claim Reward Button at the bottom */}
+        {isCompleted && !isClaimed && (
+          <View style={[styles.claimBtnWrapper, { marginTop: isExpanded ? 10 : 8 }]}>
+            <View style={styles.claimBtnShadow} />
+            <TouchableOpacity
+              style={styles.claimBtnOuter}
+              activeOpacity={0.8}
+              onPress={() => setCelebrationQuest(quest)}
+            >
+              <View style={styles.claimBtnInner}>
+                <Text style={styles.claimBtnTextActive}>CLAIM REWARD</Text>
+              </View>
+            </TouchableOpacity>
           </View>
         )}
       </View>
@@ -313,8 +383,8 @@ export default function QuestScreen({ navigation }) {
       {/* Top Tabs */}
       <View style={styles.tabBar}>
         {[
-          { key: 'dailies', label: 'Daily Quests' },
-          { key: 'campaign', label: 'Campaign' },
+          { key: 'dailies', label: 'Daily Tasks', frameIndex: 26 },
+          { key: 'campaign', label: 'Campaign', frameIndex: 38 },
         ].map((t) => {
           const isActive = tab === t.key;
           return (
@@ -326,7 +396,13 @@ export default function QuestScreen({ navigation }) {
                 onPress={() => setTab(t.key)}
               >
                 <View style={[styles.tabInner, isActive ? styles.tabInnerActive : styles.tabInnerInactive]}>
-                  <Text style={[styles.tabText, isActive && styles.tabTextActive]}>{t.label}</Text>
+                  <ItemSprite
+                    spritesheet="icons-map"
+                    frameIndex={t.frameIndex}
+                    displaySize={16}
+                    opacity={isActive ? 1.0 : 0.65}
+                  />
+                  <Text style={[styles.tabText, isActive ? styles.tabTextActive : styles.tabTextInactive]}>{t.label}</Text>
                 </View>
               </TouchableOpacity>
             </View>
@@ -369,7 +445,7 @@ export default function QuestScreen({ navigation }) {
             </View>
 
             {sortedDailies.length === 0 ? (
-              <Text style={styles.emptyText}>No daily quests active.</Text>
+              <Text style={styles.emptyText}>No daily tasks active.</Text>
             ) : (
               sortedDailies.map((quest) => renderQuestRow(quest))
             )}
@@ -411,7 +487,7 @@ export default function QuestScreen({ navigation }) {
           <View style={[styles.drFrame, theme.SHADOWS.cardShadow]}>
             <View style={styles.drParchment}>
               <View style={styles.drBevel} pointerEvents="none" />
-              
+
               {/* Header Banner */}
               <View style={styles.drTopWrap} pointerEvents="none">
                 <View style={styles.drTopOuter}>
@@ -422,14 +498,14 @@ export default function QuestScreen({ navigation }) {
               </View>
 
               <Text style={styles.drSubtitle}>{celebrationQuest?.title}</Text>
-              
+
               {/* Grid of rewards */}
               <View style={styles.drRewards}>
                 {celebrationQuest?.rewards?.gold > 0 && renderCelebrationRewardChip('gold', 'gold', celebrationQuest.rewards.gold)}
-                {celebrationQuest?.rewards?.consumables && Object.entries(celebrationQuest.rewards.consumables).map(([id, qty]) => 
+                {celebrationQuest?.rewards?.consumables && Object.entries(celebrationQuest.rewards.consumables).map(([id, qty]) =>
                   renderCelebrationRewardChip('consumables', id, qty)
                 )}
-                {celebrationQuest?.rewards?.materials && Object.entries(celebrationQuest.rewards.materials).map(([id, qty]) => 
+                {celebrationQuest?.rewards?.materials && Object.entries(celebrationQuest.rewards.materials).map(([id, qty]) =>
                   renderCelebrationRewardChip('materials', id, qty)
                 )}
               </View>
@@ -452,6 +528,33 @@ export default function QuestScreen({ navigation }) {
             </View>
           </View>
         </View>
+      </Modal>
+
+      {/* ITEM INFO MODAL */}
+      <Modal
+        transparent
+        visible={!!infoModal}
+        animationType="fade"
+        onRequestClose={() => setInfoModal(null)}
+        statusBarTranslucent
+      >
+        <TouchableOpacity
+          style={styles.infoModalOverlay}
+          activeOpacity={1}
+          onPress={() => setInfoModal(null)}
+        >
+          <View style={styles.infoModalContent}>
+            <Text style={styles.infoModalTitle}>{infoModal?.title}</Text>
+            <Text style={styles.infoModalDesc}>{infoModal?.desc}</Text>
+            <TouchableOpacity
+              style={styles.infoCloseBtn}
+              onPress={() => setInfoModal(null)}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.infoCloseBtnText}>CLOSE</Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
       </Modal>
     </View>
   );
@@ -541,12 +644,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     paddingHorizontal: 16,
     paddingTop: 12,
-    gap: 10,
+    gap: 8,
     marginBottom: 6,
   },
   tabWrapper: {
     flex: 1,
-    height: 44,
+    height: 42,
     position: 'relative',
   },
   tabShadow: {
@@ -554,21 +657,21 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     top: 3,
-    height: 44,
+    height: 42,
     borderRadius: 8,
     zIndex: 1,
-    backgroundColor: '#4F3C1E',
+    backgroundColor: '#0D2118',
   },
   tabOuter: {
     position: 'absolute',
     left: 0,
     right: 0,
     top: 0,
-    height: 44,
+    height: 42,
     borderRadius: 8,
     borderWidth: 2.2,
     borderColor: '#84735B',
-    backgroundColor: '#4F3C1E',
+    backgroundColor: '#0D2118',
     zIndex: 2,
   },
   tabInner: {
@@ -599,14 +702,16 @@ const styles = StyleSheet.create({
   },
   tabText: {
     fontFamily: 'Silkscreen-Regular',
-    fontSize: 10,
+    fontSize: 14,
+    letterSpacing: 0,
     fontWeight: 'normal',
-    color: '#FFF3DA',
-    opacity: 0.75,
     textTransform: 'uppercase',
   },
   tabTextActive: {
     color: '#2A1A0C',
+  },
+  tabTextInactive: {
+    color: '#8CAF9F',
   },
   scroll: {
     padding: 16,
@@ -626,12 +731,13 @@ const styles = StyleSheet.create({
   },
   countdownLabel: {
     fontFamily: 'Silkscreen-Regular',
-    fontSize: 10,
-    color: 'rgba(207,224,238,0.55)',
+    fontSize: 14,
+    style: 'bold',
+    color: 'rgba(207,224,238,0.75)',
   },
   countdownValue: {
     fontFamily: 'PressStart2P-Regular',
-    fontSize: 10,
+    fontSize: 12,
     color: theme.COLORS.candleGold,
   },
   emptyText: {
@@ -656,11 +762,31 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 4,
   },
+  chevronShadow: {
+    width: 24,
+    height: 24,
+    borderRadius: 5,
+    backgroundColor: '#0D2118',
+    position: 'relative',
+  },
+  chevronBadge: {
+    position: 'absolute',
+    left: 0,
+    top: -2.5,
+    width: 24,
+    height: 24,
+    borderRadius: 5,
+    borderWidth: 1.5,
+    borderColor: '#4F856C',
+    backgroundColor: '#1B4030',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   chevronText: {
     fontFamily: 'Silkscreen-Regular',
-    fontSize: 10,
-    color: theme.COLORS.warmGlow,
-    opacity: 0.8,
+    fontSize: 9,
+    fontWeight: 'bold',
+    color: '#FFF3DA',
   },
   expandedContent: {
     marginTop: 10,
@@ -670,7 +796,7 @@ const styles = StyleSheet.create({
   },
   questTitle: {
     fontFamily: 'Silkscreen-Regular',
-    fontSize: 12,
+    fontSize: 16,
     color: theme.COLORS.warmGlow,
     fontWeight: 'bold',
     flex: 1,
@@ -678,24 +804,26 @@ const styles = StyleSheet.create({
   },
   questDesc: {
     fontFamily: 'Jersey10-Regular',
-    fontSize: 14,
+    fontSize: 22,
+    lineHeight: 22,
     color: 'rgba(207,224,238,0.7)',
+    marginBottom: 8,
   },
   progressBarBg: {
-    height: 14,
-    backgroundColor: 'rgba(0, 0, 0, 0.3)',
-    borderRadius: 7,
+    height: 24,
+    backgroundColor: '#3A2210',
+    borderRadius: 12,
     overflow: 'hidden',
     marginTop: 8,
     marginBottom: 4,
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: theme.COLORS.panelBorderGoldStrong,
     position: 'relative',
   },
   progressBarFill: {
     height: '100%',
-    backgroundColor: theme.COLORS.candleGold,
-    borderRadius: 6,
+    backgroundColor: '#1c823eff',
+    borderRadius: 10,
   },
   progressBarTextWrapper: {
     ...StyleSheet.absoluteFillObject,
@@ -704,22 +832,22 @@ const styles = StyleSheet.create({
   },
   progressBarText: {
     fontFamily: 'Silkscreen-Regular',
-    fontSize: 8,
+    fontSize: 14,
     color: '#FFF3DA',
     textShadowColor: 'rgba(0, 0, 0, 0.8)',
     textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 1,
   },
   questRewardsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+    gap: 8,
     marginBottom: 12,
     marginTop: 4,
   },
   rewardsLabel: {
     fontFamily: 'Silkscreen-Regular',
-    fontSize: 9,
+    fontSize: 13,
     color: 'rgba(207,224,238,0.5)',
   },
   rewardsList: {
@@ -728,20 +856,88 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   rewardMiniChip: {
-    flexDirection: 'row',
+    width: 84,
+    height: 84,
     alignItems: 'center',
-    backgroundColor: 'rgba(232, 167, 58, 0.08)',
-    borderColor: theme.COLORS.panelBorderGoldStrong,
-    borderWidth: 1,
-    borderRadius: 4,
-    paddingHorizontal: 5,
-    paddingVertical: 2,
-    gap: 3,
+    justifyContent: 'center',
+    backgroundColor: '#0D2118',
+    borderColor: '#C9A86A',
+    borderWidth: 1.5,
+    borderRadius: 8,
+    gap: 4,
+    position: 'relative',
   },
   rewardMiniText: {
     fontFamily: 'Silkscreen-Regular',
-    fontSize: 8,
+    fontSize: 14,
     color: theme.COLORS.warmGlow,
+    textAlign: 'center',
+  },
+  infoTagSmall: {
+    position: 'absolute',
+    top: 4,
+    right: 4,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#4F856C',
+    backgroundColor: '#1B4030',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10,
+  },
+  infoTagText: {
+    fontFamily: 'Silkscreen-Regular',
+    fontSize: 11,
+    fontWeight: 'bold',
+    color: '#FFF3DA',
+  },
+  infoModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(24, 14, 6, 0.78)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
+  infoModalContent: {
+    width: '100%',
+    maxWidth: 320,
+    backgroundColor: '#1E1E22',
+    borderColor: theme.COLORS.panelBorderGoldStrong,
+    borderWidth: 2,
+    borderRadius: 12,
+    padding: 16,
+    alignItems: 'center',
+  },
+  infoModalTitle: {
+    fontFamily: 'Silkscreen-Regular',
+    fontSize: 18,
+    color: '#FBBF24',
+    textAlign: 'center',
+    marginBottom: 10,
+    textTransform: 'uppercase',
+  },
+  infoModalDesc: {
+    fontFamily: 'Jersey10-Regular',
+    fontSize: 20,
+    lineHeight: 24,
+    color: '#FFF3DA',
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+  infoCloseBtn: {
+    backgroundColor: '#3A2210',
+    borderColor: '#84735B',
+    borderWidth: 1.5,
+    borderRadius: 6,
+    paddingVertical: 8,
+    paddingHorizontal: 20,
+  },
+  infoCloseBtnText: {
+    fontFamily: 'Silkscreen-Regular',
+    fontSize: 12,
+    color: '#FFF3DA',
   },
   claimBtnWrapper: {
     width: '100%',
@@ -787,7 +983,7 @@ const styles = StyleSheet.create({
   },
   claimBtnTextActive: {
     fontFamily: 'Silkscreen-Regular',
-    fontSize: 10,
+    fontSize: 14,
     color: '#FFF3DA',
     textTransform: 'uppercase',
   },
@@ -805,20 +1001,20 @@ const styles = StyleSheet.create({
   },
   claimBtnText: {
     fontFamily: 'Silkscreen-Regular',
-    fontSize: 10,
+    fontSize: 14,
     color: '#8A9384',
     textTransform: 'uppercase',
   },
   subTabBar: {
     flexDirection: 'row',
-    marginHorizontal: 16,
-    marginTop: 12,
-    marginBottom: 6,
     backgroundColor: '#0D2118',
     borderColor: '#3E2E15',
     borderWidth: 2,
     borderRadius: 8,
     padding: 3,
+    marginHorizontal: 32,
+    marginTop: 8,
+    marginBottom: 16,
   },
   subTab: {
     flex: 1,
@@ -837,7 +1033,7 @@ const styles = StyleSheet.create({
   },
   subTabText: {
     fontFamily: 'Silkscreen-Regular',
-    fontSize: 9,
+    fontSize: 14,
     fontWeight: 'normal',
     textTransform: 'uppercase',
   },
@@ -1001,33 +1197,5 @@ const styles = StyleSheet.create({
     textShadowColor: '#4A2A10',
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 1,
-  },
-  headerClaimBtnWrapper: {
-    width: 66,
-    height: 28,
-    borderRadius: 6,
-    borderWidth: 1.5,
-    borderColor: '#84735B',
-    backgroundColor: '#4F3C1E',
-    padding: 2,
-    marginLeft: 12,
-  },
-  headerClaimBtnOuter: {
-    flex: 1,
-  },
-  headerClaimBtnInner: {
-    flex: 1,
-    borderRadius: 3,
-    borderWidth: 1,
-    borderColor: '#4F856C',
-    backgroundColor: '#1B4030',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  headerClaimBtnText: {
-    fontFamily: 'Silkscreen-Regular',
-    fontSize: 8,
-    color: '#FFF3DA',
-    textAlign: 'center',
   },
 });

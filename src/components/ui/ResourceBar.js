@@ -9,6 +9,8 @@ export default function ResourceBar({
   label,
   style,
   hideText = false,
+  barHeight,
+  fontSize,
 }) {
   const animatedWidth = useRef(new Animated.Value(0)).current;
   const flashAnim = useRef(new Animated.Value(0)).current;
@@ -40,7 +42,7 @@ export default function ResourceBar({
   let barConfig = {
     fillColor: theme.COLORS.healthGreen,
     trackColor: '#0D2618',
-    height: 13,
+    height: barHeight || 13,
     radius: 5,
     showText: true,
   };
@@ -49,7 +51,7 @@ export default function ResourceBar({
     barConfig = {
       fillColor: theme.COLORS.damageRed,
       trackColor: '#241016',
-      height: 9,
+      height: barHeight || 9,
       radius: 4,
       showText: true,
     };
@@ -57,7 +59,7 @@ export default function ResourceBar({
     barConfig = {
       fillColor: theme.COLORS.candleGold,
       trackColor: '#2A2010',
-      height: 13,
+      height: barHeight || 13,
       radius: 5,
       showText: true,
     };
@@ -79,7 +81,11 @@ export default function ResourceBar({
 
   return (
     <View style={[styles.container, style]}>
-      {label && <Text style={styles.label}>{label}</Text>}
+      {label && (
+        <Text style={[styles.label, fontSize !== undefined && { fontSize, lineHeight: fontSize }]}>
+          {label}
+        </Text>
+      )}
       <View
         style={[
           styles.track,
@@ -105,15 +111,18 @@ export default function ResourceBar({
         </Animated.View>
 
         {barConfig.showText && !hideText && (
-          <Text
-            numberOfLines={1}
-            style={[
-              styles.valueTextOverlay,
-              variant === 'enemyHp' && styles.valueTextSmallOverlay,
-            ]}
-          >
-            {current}/{max}
-          </Text>
+          <View style={[StyleSheet.absoluteFill, { justifyContent: 'center', alignItems: 'center' }]}>
+            <Text
+              numberOfLines={1}
+              style={[
+                styles.valueTextOverlay,
+                variant === 'enemyHp' && styles.valueTextSmallOverlay,
+                fontSize !== undefined && { fontSize, lineHeight: fontSize },
+              ]}
+            >
+              {current}/{max}
+            </Text>
+          </View>
         )}
       </View>
     </View>
@@ -129,7 +138,7 @@ const styles = StyleSheet.create({
   label: {
     ...theme.FONTS.label,
     color: theme.COLORS.ghostWhite,
-    width: 24, // Fixed width for alignment
+    width: 32, // Increase width to prevent splitting of 18px text
   },
   track: {
     flex: 1,
@@ -150,20 +159,15 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.15)',
   },
   valueTextOverlay: {
-    ...StyleSheet.absoluteFillObject,
     fontFamily: 'Jersey10-Regular',
     fontSize: 13,
     letterSpacing: 0.5,
     color: '#FFFFFF',
-    textAlign: 'center',
-    textAlignVertical: 'center',
-    lineHeight: 13,
     textShadowColor: 'rgba(0, 0, 0, 0.75)',
     textShadowOffset: { width: 0.5, height: 0.5 },
     textShadowRadius: 1,
   },
   valueTextSmallOverlay: {
     fontSize: 9,
-    lineHeight: 9,
   },
 });

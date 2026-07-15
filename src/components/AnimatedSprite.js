@@ -44,6 +44,8 @@ export default function AnimatedSprite({
   tintOpacity = 0,
   startFrame  = 0,
   endFrame,
+  rowIndex    = 0,
+  totalRows   = 1,
 }) {
   const finalTotalFrames = totalFrames || frames || 1;
   const actualEndFrame = endFrame !== undefined ? endFrame : finalTotalFrames - 1;
@@ -53,24 +55,34 @@ export default function AnimatedSprite({
   const frameRef            = useRef(0);
   const intervalRef         = useRef(null);
 
-  // Synchronously reset frame state to 0 if source, finalTotalFrames, startFrame, or actualEndFrame changes to prevent out-of-bounds flashes
+  // Synchronously reset frame state to 0 if source, finalTotalFrames, startFrame, actualEndFrame, or active state changes to prevent flashes
   const [prevSource, setPrevSource] = useState(source);
   const [prevTotalFrames, setPrevTotalFrames] = useState(finalTotalFrames);
   const [prevStartFrame, setPrevStartFrame] = useState(startFrame);
   const [prevEndFrame, setPrevEndFrame] = useState(actualEndFrame);
+  const [prevRowIndex, setPrevRowIndex] = useState(rowIndex);
+  const [prevActive, setPrevActive] = useState(active);
 
   if (
     source !== prevSource ||
     finalTotalFrames !== prevTotalFrames ||
     startFrame !== prevStartFrame ||
-    actualEndFrame !== prevEndFrame
+    actualEndFrame !== prevEndFrame ||
+    rowIndex !== prevRowIndex ||
+    (active && !prevActive) // Only reset to frame 0 when transitioning from inactive to active
   ) {
     setPrevSource(source);
     setPrevTotalFrames(finalTotalFrames);
     setPrevStartFrame(startFrame);
     setPrevEndFrame(actualEndFrame);
+    setPrevRowIndex(rowIndex);
+    setPrevActive(active);
     setFrame(0);
     frameRef.current = 0;
+  }
+
+  if (active !== prevActive) {
+    setPrevActive(active);
   }
 
   // Keep onComplete ref current so effect doesn't need it as a dependency
@@ -78,10 +90,6 @@ export default function AnimatedSprite({
   onCompleteRef.current     = onComplete;
 
   useEffect(() => {
-    // Reset to frame 0 whenever the animation sheet changes or becomes active
-    frameRef.current = 0;
-    setFrame(0);
-
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
       intervalRef.current = null;
@@ -118,15 +126,13 @@ export default function AnimatedSprite({
         intervalRef.current = null;
       }
     };
-  }, [source, frameSize, finalTotalFrames, startFrame, actualEndFrame, animationFramesCount, fps, loop, active]);
+  }, [source, frameSize, finalTotalFrames, startFrame, actualEndFrame, rowIndex, animationFramesCount, fps, loop, active]);
 
   const scale = displaySize / frameSize;
-  const isRangeChanged =
-    source !== prevSource ||
-    finalTotalFrames !== prevTotalFrames ||
-    startFrame !== prevStartFrame ||
-    actualEndFrame !== prevEndFrame;
-  const currentFrameOffset = isRangeChanged ? 0 : (animationFramesCount > 0 ? Math.min(frame, animationFramesCount - 1) : 0);
+  // Use frameRef.current (synchronously updated) instead of frame state
+  // (async setState) to avoid a one-frame flash of a stale frame when
+  // transitioning between active/inactive states.
+  const currentFrameOffset = animationFramesCount > 0 ? Math.min(frameRef.current, animationFramesCount - 1) : 0;
   const currentFrame = startFrame + currentFrameOffset;
 
   return (
@@ -150,10 +156,10 @@ export default function AnimatedSprite({
         style={{
           // Stretch the full sheet to scale, then shift left to expose current frame
           width:    frameSize * finalTotalFrames * scale,
-          height:   displaySize,
+          height:   frameSize * totalRows * scale,
           position: 'absolute',
           left:     -(currentFrame * displaySize),
-          top:      0,
+          top:      -(rowIndex * displaySize),
         }}
         contentFit="fill"
       />
@@ -163,10 +169,10 @@ export default function AnimatedSprite({
           transition={0}
           style={{
             width:    frameSize * finalTotalFrames * scale,
-            height:   displaySize,
+            height:   frameSize * totalRows * scale,
             position: 'absolute',
             left:     -(currentFrame * displaySize),
-            top:      0,
+            top:      -(rowIndex * displaySize),
             tintColor: tintColor,
             opacity: tintOpacity,
           }}
