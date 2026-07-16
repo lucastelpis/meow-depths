@@ -294,26 +294,29 @@ export default function JournalScreen({ navigation, route }) {
 
       {/* ── NOTE READER MODAL (parchment) ────────────────────────── */}
       <Modal visible={!!openNote} transparent animationType="fade" onRequestClose={() => setOpenNote(null)} statusBarTranslucent>
-        <Pressable style={styles.readerOverlay} onPress={() => setOpenNote(null)}>
-          <Pressable style={[styles.readerFrame, theme.SHADOWS.cardShadow]} onPress={() => {}}>
+        <View style={styles.readerOverlay}>
+          {/* Backdrop sibling to capture clicks outside the frame without intercepting ScrollView touches */}
+          <Pressable style={StyleSheet.absoluteFillObject} onPress={() => setOpenNote(null)} />
+
+          <View style={[styles.readerFrame, theme.SHADOWS.cardShadow]}>
             <View style={styles.readerParchment}>
               <TouchableOpacity style={styles.readerClose} onPress={() => setOpenNote(null)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
                 <Text style={styles.readerCloseText}>✕</Text>
               </TouchableOpacity>
 
               {openNote && (
-                <>
+                <View style={{ flex: 1, width: '100%' }}>
                   <Text style={styles.readerTitle}>{openNote.title}</Text>
                   <Text style={styles.readerContext}>{openNote.context}</Text>
                   <View style={styles.readerDivider} />
-                  <ScrollView style={styles.readerScroll} showsVerticalScrollIndicator={false}>
+                  <ScrollView style={styles.readerScroll} showsVerticalScrollIndicator={true}>
                     <Text style={styles.readerBody}>{openNote.body}</Text>
                   </ScrollView>
-                </>
+                </View>
               )}
             </View>
-          </Pressable>
-        </Pressable>
+          </View>
+        </View>
       </Modal>
     </View>
   );
@@ -583,7 +586,7 @@ const styles = StyleSheet.create({
   readerFrame: {
     width: '100%',
     maxWidth: SCREEN_WIDTH - 16,
-    maxHeight: '90%',
+    height: '70%',
     backgroundColor: '#6E4524',
     borderColor: '#3A2210',
     borderWidth: 3,
@@ -600,16 +603,15 @@ const styles = StyleSheet.create({
     paddingTop: 22,
     paddingBottom: 18,
     paddingHorizontal: 18,
-    maxHeight: '100%',
+    flex: 1,
     display: 'flex',
     flexDirection: 'column',
-    flexShrink: 1,
   },
   readerClose: { position: 'absolute', top: 12, right: 14, zIndex: 5 },
   readerCloseText: { fontSize: 24, color: '#6E4524', fontWeight: 'bold' },
   readerTitle: { fontFamily: 'Jersey10-Regular', fontSize: 26, lineHeight: 26, color: '#4A3417', marginBottom: 6, paddingRight: 24 },
   readerContext: { fontFamily: 'Jersey10-Regular', fontSize: 18, color: '#7A5C30', fontStyle: 'italic' },
   readerDivider: { height: 1, backgroundColor: '#C9A86A', marginVertical: 12 },
-  readerScroll: { maxHeight: SCREEN_HEIGHT * 0.65, flexShrink: 1 },
+  readerScroll: { flex: 1, width: '100%', paddingRight: 10 },
   readerBody: { fontFamily: 'Jersey10-Regular', fontSize: 20, lineHeight: 24, color: '#3A2C16' },
 });

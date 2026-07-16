@@ -2100,32 +2100,6 @@ export default function CombatScreen() {
         <Rect width="100%" height="100%" fill="url(#combatGlow)" />
       </Svg>
 
-      {/* ── Info bar: encounter type · dungeon · floor + turn ── */}
-      <View style={styles.infoBar}>
-        <View style={styles.infoBarLeft}>
-          <View style={styles.encounterTypeRow}>
-            {roomType === 'boss' && (
-              <ItemSprite spritesheet="icons-map" frameIndex={34} displaySize={16} />
-            )}
-            {roomType === 'ambush' && (
-              <ItemSprite spritesheet="icons-map" frameIndex={92} displaySize={16} />
-            )}
-            {roomType !== 'boss' && roomType !== 'ambush' && (
-              <ItemSprite spritesheet="icons-1" frameIndex={10} displaySize={16} />
-            )}
-            <Text style={styles.encounterTypeLabel}>
-              {roomType === 'boss' ? 'BOSS BATTLE' : roomType === 'ambush' ? 'AMBUSH!' : 'COMBAT'}
-            </Text>
-          </View>
-          <Text style={styles.infoBarSub} numberOfLines={1}>
-            {zone?.name || 'Unknown Depths'} · Zone {floorNumber}
-          </Text>
-        </View>
-        <View style={styles.turnPill}>
-          <Text style={styles.turnPillText}>Turn {turnCount + 1}</Text>
-        </View>
-      </View>
-
       {/* ══ Battlefield arena ════════════════════════════════════════ */}
       <View style={styles.battlefield}>
         {/* Background image (same for all zones for now) */}
@@ -2135,6 +2109,32 @@ export default function CombatScreen() {
           contentFit="fill"
           transition={0}
         />
+
+        {/* ── Info bar: encounter type · dungeon · floor + turn ── */}
+        <View style={styles.infoBar}>
+          <View style={styles.infoBarLeft}>
+            <View style={styles.encounterTypeRow}>
+              {roomType === 'boss' && (
+                <ItemSprite spritesheet="icons-map" frameIndex={34} displaySize={16} />
+              )}
+              {roomType === 'ambush' && (
+                <ItemSprite spritesheet="icons-map" frameIndex={92} displaySize={16} />
+              )}
+              {roomType !== 'boss' && roomType !== 'ambush' && (
+                <ItemSprite spritesheet="icons-1" frameIndex={10} displaySize={16} />
+              )}
+              <Text style={styles.encounterTypeLabel}>
+                {roomType === 'boss' ? 'BOSS BATTLE' : roomType === 'ambush' ? 'AMBUSH!' : 'COMBAT'}
+              </Text>
+            </View>
+            <Text style={styles.infoBarSub} numberOfLines={1}>
+              {zone?.name || 'Unknown Depths'} · Zone {floorNumber}
+            </Text>
+          </View>
+          <View style={styles.turnPill}>
+            <Text style={styles.turnPillText}>Turn {turnCount + 1}</Text>
+          </View>
+        </View>
 
         {/* ── Stage: hero left, enemies right ── */}
         <View style={styles.stage}>
@@ -2205,11 +2205,11 @@ export default function CombatScreen() {
                       borderRightColor: '#4F856C',
                       borderBottomColor: '#0D2118',
                     }]}>
-                      <View style={styles.actionBtnSprite}>
-                        <ItemSprite spritesheet="icons-1" frameIndex={10} displaySize={26} />
+                      <View style={styles.actionBtnBgIcon}>
+                        <ItemSprite spritesheet="icons-1" frameIndex={10} displaySize={48} />
                       </View>
-                      <Text style={[styles.actionBtnTitle, { color: '#FFF3DA', fontSize: 10.5 }]}>ATTACK</Text>
-                      <Text style={[styles.actionBtnSub, { fontSize: 8.5, color: '#FFF3DA', opacity: 0.85 }]}>Basic</Text>
+                      <Text style={[styles.actionBtnTitle, { color: '#FFF3DA' }]}>ATTACK</Text>
+                      <Text style={[styles.actionBtnSub, { color: '#FFF3DA', opacity: 0.85 }]}>Basic</Text>
                     </View>
                   </TouchableOpacity>
                 </View>
@@ -2830,9 +2830,9 @@ export default function CombatScreen() {
           </Animated.View>
 
           {/* Info block locked to bottom inside the sprite container */}
-          <View style={[styles.enemyInfoBottom, { position: 'absolute', bottom: 15, left: 0, right: 0 }]}>
+          <View style={[styles.enemyInfoBottom, { position: 'absolute', bottom: 1.5, left: 0, right: 0 }]}>
             <View style={[styles.charHpBar, { width: '55%' }]}>
-              <ResourceBar variant="heroHp" current={heroState.hp} max={heroState.maxHp} />
+              <ResourceBar variant="heroHp" current={heroState.hp} max={heroState.maxHp} barHeight={17} fontSize={14} />
             </View>
             <Text style={styles.charName} numberOfLines={1}>{heroState.name || 'Mochi'}</Text>
           </View>
@@ -2994,17 +2994,14 @@ export default function CombatScreen() {
                   padding: 1.5,
                 }
               ]}>
-                <ResourceBar variant="enemyHp" current={enemy.hp} max={enemy.maxHp} />
+                <ResourceBar variant="enemyHp" current={enemy.hp} max={enemy.maxHp} barHeight={13} fontSize={13} />
               </Animated.View>
               <Text style={styles.charName} numberOfLines={1}>
-                {enemy.name}
+                {enemy.name}{' '}
+                <Text style={[styles.starText, enemy.isBoss && styles.starTextBoss]}>
+                  {enemy.isBoss ? '5' : (enemy.stars || 1)}★
+                </Text>
               </Text>
-              {/* Stars Row - positioned below the HP bar */}
-              <View style={[styles.starsRow, { marginTop: 0, marginBottom: 0 }]}>
-                {Array.from({ length: enemy.isBoss ? 5 : (enemy.stars || 1) }).map((_, i) => (
-                  <Text key={i} style={[styles.starText, enemy.isBoss && styles.starTextBoss, { fontSize: 6, marginHorizontal: 0.5 }]}>★</Text>
-                ))}
-              </View>
             </View>
 
             {popups
@@ -3050,8 +3047,8 @@ export default function CombatScreen() {
       return (
         <View key={slotIndex} style={styles.actionBtnEmptyWrapper}>
           <View style={[styles.actionBtn, styles.actionBtnEmpty, { flex: 1 }]}>
-            <View style={[styles.actionBtnSprite, { opacity: 0.22 }]}>
-              <ItemSprite spritesheet="icons-map" frameIndex={76} displaySize={24} />
+            <View style={[styles.actionBtnBgIcon, { opacity: 0.12 }]}>
+              <ItemSprite spritesheet="icons-map" frameIndex={76} displaySize={44} />
             </View>
             <Text style={[styles.actionBtnTitle, { color: '#5A5A5A' }]}>{`SKILL ${slotIndex + 1}`}</Text>
             <Text style={styles.actionBtnSub}>{subText}</Text>
@@ -3109,21 +3106,21 @@ export default function CombatScreen() {
               </TouchableOpacity>
             )}
             {skillFrame != null ? (
-              <View style={[styles.actionBtnSprite, isDisabled && !isPassive && { opacity: 0.85 }]}>
-                <ItemSprite spritesheet="skill-icons-1" frameIndex={skillFrame} displaySize={26} />
+              <View style={[styles.actionBtnBgIcon, isDisabled && !isPassive && { opacity: 0.12 }]}>
+                <ItemSprite spritesheet="skill-icons-1" frameIndex={skillFrame} displaySize={48} />
               </View>
             ) : (
-              <Text style={styles.actionBtnIcon}>{icon}</Text>
+              <View style={[styles.actionBtnBgIcon, { opacity: 0.22 }]}>
+                <Text style={{ fontSize: 32 }}>{icon}</Text>
+              </View>
             )}
             <Text
-              style={[styles.actionBtnTitle, { color: titleColor, fontSize: 10.5 }]}
-              numberOfLines={1}
-              adjustsFontSizeToFit
-              minimumScaleFactor={0.7}
+              style={[styles.actionBtnTitle, { color: titleColor }]}
+              numberOfLines={2}
             >
               {skillDef.name.toUpperCase()}
             </Text>
-            <Text style={[styles.actionBtnSub, { fontSize: 8.5, color: '#FFF3DA', opacity: 0.85 }]}>{subText}</Text>
+            <Text style={[styles.actionBtnSub, { color: '#FFF3DA', opacity: 0.85 }]}>{subText}</Text>
           </View>
         </TouchableOpacity>
       </View>
@@ -3139,8 +3136,8 @@ export default function CombatScreen() {
       return (
         <View style={styles.actionBtnEmptyWrapper}>
           <View style={[styles.actionBtn, styles.actionBtnEmpty, { flex: 1 }]}>
-            <View style={[styles.actionBtnSprite, { opacity: 0.3 }]}>
-              <ItemSprite spritesheet="icons-1" frameIndex={4} displaySize={24} />
+            <View style={[styles.actionBtnBgIcon, { opacity: 0.12 }]}>
+              <ItemSprite spritesheet="icons-1" frameIndex={4} displaySize={44} />
             </View>
             <Text style={[styles.actionBtnTitle, { color: '#5A5A5A' }]}>PASSIVES</Text>
             <Text style={styles.actionBtnSub}>none</Text>
@@ -3175,29 +3172,26 @@ export default function CombatScreen() {
             borderRightColor: innerTopColor,
             borderBottomColor: innerBottomColor,
           }]}>
-            <View style={styles.passiveIconRow}>
-              {activePassives.slice(0, 2).map((id) => {
-                const frame = SKILL_SPRITE_FRAMES[id];
-                return (
-                  <View key={id} style={styles.passiveIconSmall}>
-                    {frame != null ? (
-                      <ItemSprite spritesheet="skill-icons-1" frameIndex={frame} displaySize={22} />
-                    ) : (
-                      <Text style={{ fontSize: 18 }}>{SKILLS[id]?.icon || '✨'}</Text>
-                    )}
-                  </View>
-                );
-              })}
-            </View>
+            {(() => {
+              const firstPassiveId = activePassives[0];
+              const frame = firstPassiveId ? SKILL_SPRITE_FRAMES[firstPassiveId] : null;
+              return frame != null ? (
+                <View style={styles.actionBtnBgIcon}>
+                  <ItemSprite spritesheet="skill-icons-1" frameIndex={frame} displaySize={48} />
+                </View>
+              ) : (
+                <View style={styles.actionBtnBgIcon}>
+                  <ItemSprite spritesheet="icons-1" frameIndex={4} displaySize={48} />
+                </View>
+              );
+            })()}
             <Text
-              style={[styles.actionBtnTitle, { color: '#FFF3DA', fontSize: 10.5 }]}
-              numberOfLines={1}
-              adjustsFontSizeToFit
-              minimumScaleFactor={0.7}
+              style={[styles.actionBtnTitle, { color: '#FFF3DA' }]}
+              numberOfLines={2}
             >
               PASSIVES
             </Text>
-            <Text style={[styles.actionBtnSub, { fontSize: 8.5 }]}>{`${count} active`}</Text>
+            <Text style={styles.actionBtnSub}>{`${count} active`}</Text>
           </View>
         </TouchableOpacity>
       </View>
@@ -3582,14 +3576,19 @@ const styles = StyleSheet.create({
     height: '100%',
   },
 
-  /* ── Info bar (above the battlefield container) ─────────────── */
+  /* ── Info bar (inside the battlefield container) ─────────────── */
   infoBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginHorizontal: 14,
-    marginTop: 8,
-    paddingVertical: 4,
-    gap: 10,
+    marginHorizontal: 10,
+    marginTop: 10,
+    marginBottom: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    backgroundColor: 'rgba(0, 0, 0, 0.65)',
+    borderWidth: 1,
+    borderColor: 'rgba(212, 167, 84, 0.35)',
+    borderRadius: theme.BORDER_RADIUS.card,
     zIndex: 2,
   },
   infoBarLeft: {
@@ -3665,23 +3664,19 @@ const styles = StyleSheet.create({
   },
   charName: {
     fontFamily: 'Jersey10-Regular',
-    fontSize: 10,
-    lineHeight: 11,
+    fontSize: 14,
+    lineHeight: 14,
     color: theme.COLORS.parchment,
     textAlign: 'center',
   },
   charHpBar: {
     width: '80%',
   },
-  starsRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    marginBottom: 3,
-  },
   starText: {
+    fontFamily: 'PressStart2P-Regular',
     color: '#A0AEC0',
-    fontSize: 6,
-    lineHeight: 7,
+    fontSize: 8,
+    lineHeight: 10,
   },
   starTextBoss: {
     color: '#F5CF4A',
@@ -3941,6 +3936,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  actionBtnBgIcon: {
+    position: 'absolute',
+    alignItems: 'center',
+    justifyContent: 'center',
+    opacity: 0.22,
+    zIndex: 1,
+  },
   infoTag: {
     position: 'absolute',
     top: 3,
@@ -3966,16 +3968,28 @@ const styles = StyleSheet.create({
   },
   actionBtnTitle: {
     ...theme.FONTS.label,
-    fontSize: 11,
-    letterSpacing: 1,
+    fontFamily: 'PressStart2P-Regular',
+    fontSize: 9,
+    letterSpacing: 0,
+    lineHeight: 12,
     fontWeight: '800',
+    paddingTop: 10,
+    zIndex: 2,
+    textAlign: 'center',
+    textShadowColor: '#000000',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 1,
   },
   actionBtnSub: {
     ...theme.FONTS.small,
-    fontSize: 9,
+    fontSize: 8,
     color: 'rgba(243,226,189,0.4)',
     letterSpacing: 0.3,
     textAlign: 'center',
+    zIndex: 2,
+    textShadowColor: '#000000',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 1,
   },
   enemyTurnBox: {
     height: 118,

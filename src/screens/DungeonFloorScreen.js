@@ -667,10 +667,10 @@ export default function DungeonFloorScreen() {
                                 <ItemSprite
                                   spritesheet={def.spritesheet}
                                   frameIndex={def.frameIndex}
-                                  displaySize={50}
+                                  displaySize={30}
                                 />
                               ) : (
-                                <Text style={{ fontSize: 22 }}>🧪</Text>
+                                <Text style={{ fontSize: 18 }}>🧪</Text>
                               )}
                             </View>
                             <View style={{ flex: 1 }}>
@@ -1402,13 +1402,13 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: '#4D4455',
     borderRadius: 8,
-    padding: 8,
-    gap: 8,
-    marginBottom: 6,
+    padding: 5,
+    gap: 6,
+    marginBottom: 5,
   },
   supplyIconContainer: {
-    width: 50,
-    height: 50,
+    width: 36,
+    height: 36,
     borderRadius: 6,
     backgroundColor: 'rgba(255,255,255,0.03)',
     alignItems: 'center',
@@ -1416,12 +1416,12 @@ const styles = StyleSheet.create({
   },
   supplyName: {
     fontFamily: 'Jersey10-Regular',
-    fontSize: 26,
+    fontSize: 20,
     color: '#EAD9BA',
   },
   supplyOwned: {
     fontFamily: 'Silkscreen-Regular',
-    fontSize: 14,
+    fontSize: 10,
     color: '#FFE39B',
   },
   supplyControls: {
