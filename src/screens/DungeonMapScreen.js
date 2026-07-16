@@ -188,7 +188,7 @@ const renderCellSVG = (zoneId, tile, isPlayerHere, isFog) => {
   let bgEnd = '#030305';
   let elementColor = 'rgba(255, 255, 255, 0.05)';
   let accentColor = '#D4A754';
-  
+
   if (zoneId === 'zone1') {
     // Soggy Ruins — design system sewerBlack palette
     bgStart = isFog ? '#060B06' : '#0B170B';
@@ -221,7 +221,7 @@ const renderCellSVG = (zoneId, tile, isPlayerHere, isFog) => {
         </LinearGradient>
       </Defs>
       <Rect width="80" height="80" fill={`url(#${gradId})`} />
-      
+
       {/* Zone-Specific Background Artwork */}
       {zoneId === 'zone1' && (
         <G stroke={elementColor} strokeWidth="1" fill="none">
@@ -232,7 +232,7 @@ const renderCellSVG = (zoneId, tile, isPlayerHere, isFog) => {
           <Line x1="20" y1="0" x2="20" y2="80" strokeDasharray="3,3" />
           <Line x1="40" y1="0" x2="40" y2="80" strokeDasharray="3,3" />
           <Line x1="60" y1="0" x2="60" y2="80" strokeDasharray="3,3" />
-          
+
           {/* Subtle pipe outline in one of the corners for revealed tiles */}
           {!isFog && (
             <G stroke={accentColor} strokeWidth="1.2" opacity="0.3">
@@ -249,7 +249,7 @@ const renderCellSVG = (zoneId, tile, isPlayerHere, isFog) => {
           {/* Winding organic forest roots/spores */}
           <Path d="M -10 40 Q 20 20 40 50 T 90 40" stroke={elementColor} strokeWidth="1.5" />
           <Path d="M 40 -10 Q 50 30 30 50 T 40 90" stroke={elementColor} strokeWidth="1" />
-          
+
           {!isFog && (
             <G opacity="0.35">
               {/* Spores or tiny flower outline */}
@@ -269,13 +269,13 @@ const renderCellSVG = (zoneId, tile, isPlayerHere, isFog) => {
           <Line x1="0" y1="32" x2="80" y2="32" />
           <Line x1="0" y1="48" x2="80" y2="48" />
           <Line x1="0" y1="64" x2="80" y2="64" />
-          
+
           {/* Vertical wood grain lines */}
           <Line x1="30" y1="0" x2="30" y2="16" strokeDasharray="2,2" />
           <Line x1="55" y1="16" x2="55" y2="32" strokeDasharray="2,2" />
           <Line x1="20" y1="32" x2="20" y2="48" strokeDasharray="2,2" />
           <Line x1="65" y1="48" x2="65" y2="64" strokeDasharray="2,2" />
-          
+
           {!isFog && (
             <G stroke={accentColor} strokeWidth="1" opacity="0.3">
               {/* Subtle water ripple waves */}
@@ -540,7 +540,7 @@ export default function DungeonMapScreen({ navigation }) {
     } else if (type === 'rest') {
       const randBuff = BUFF_POOL[Math.floor(Math.random() * BUFF_POOL.length)];
       const value = randBuff.getValue(hero);
-      
+
       setModalData({
         buffId: randBuff.id,
         buffLabel: randBuff.label,
@@ -564,10 +564,10 @@ export default function DungeonMapScreen({ navigation }) {
     } else if (type === 'gamble') {
       const roll = Math.random();
       if (roll < 0.33) {
-        const pct = Math.floor(Math.random() * 41) + 20; 
+        const pct = Math.floor(Math.random() * 41) + 20;
         const dmg = Math.floor(effectiveStats.maxHp * (pct / 100));
         const newHp = Math.max(0, hero.hp - dmg);
-        
+
         dispatch({ type: 'TAKE_DAMAGE', payload: { amount: dmg } });
 
         const flavor = TRAP_FLAVORS[Math.floor(Math.random() * TRAP_FLAVORS.length)];
@@ -731,19 +731,19 @@ export default function DungeonMapScreen({ navigation }) {
     const CLEARED_COLOR = '#5CC489'; // buffMint
 
     // Star badge config for combat tiles
-    const STAR_COLORS = { 
+    const STAR_COLORS = {
       1: '#4ade80', // Green (Very Easy)
       2: '#5A9FE0', // Blue (Easy)
       3: '#F5CF4A', // Yellow (Normal)
       4: '#f97316', // Orange (Hard)
       5: '#ef4444'  // Red (Nightmare)
     };
-    const STAR_LABELS = { 
-      1: '★☆☆☆☆', 
-      2: '★★☆☆☆', 
-      3: '★★★☆☆', 
-      4: '★★★★☆', 
-      5: '★★★★★' 
+    const STAR_LABELS = {
+      1: '★☆☆☆☆',
+      2: '★★☆☆☆',
+      3: '★★★☆☆',
+      4: '★★★★☆',
+      5: '★★★★★'
     };
 
     if (tile.type === 'start') {
@@ -962,9 +962,9 @@ export default function DungeonMapScreen({ navigation }) {
     return (
       <View
         key={`${x}_${y}`}
-        style={{ 
-          width: cellWidth, 
-          height: cellWidth, 
+        style={{
+          width: cellWidth,
+          height: cellWidth,
           position: 'relative',
           zIndex: adjacent ? 10 : 1,
           elevation: adjacent ? 6 : 5
@@ -988,16 +988,16 @@ export default function DungeonMapScreen({ navigation }) {
           <View style={[styles.cellInner, innerStyle, isPlayerHere && styles.currentCellInner]}>
             {/* Render zone-specific background SVG */}
             {renderCellSVG(currentRun.zoneId, tile, isPlayerHere, isFog)}
-     
+
             <View style={styles.cellContent}>
               {renderCellSprite()}
               <Text style={[styles.cellLabel, { color: isPlayerHere ? '#FFF3DA' : labelColor }]} numberOfLines={1}>
                 {isPlayerHere ? "Here" : label}
               </Text>
-              
+
               {/* Star badge for combat tiles (only when revealed and not cleared) */}
               {tile.type === 'combat' && !isFog && !tile.cleared && tile.battleRating && !isPlayerHere && (
-                <Text 
+                <Text
                   style={[styles.starBadge, { color: STAR_COLORS[tile.battleRating] }]}
                   numberOfLines={1}
                   adjustsFontSizeToFit={true}
@@ -1115,816 +1115,816 @@ export default function DungeonMapScreen({ navigation }) {
         {/* Slight Dark Overlay for contrast */}
         <View style={[StyleSheet.absoluteFillObject, { backgroundColor: 'rgba(7, 7, 10, 0.65)' }]} />
 
-      {/* ── HUD card ─────────────────────────────────────────────── */}
-      <View style={styles.hud}>
-        {/* Zone-tinted gradient background */}
-        <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
-          <Defs>
-            <LinearGradient id="hudBg" x1="0" y1="0" x2="0" y2="1">
-              <Stop offset="0%" stopColor={zTheme.accent} stopOpacity="0.14" />
-              <Stop offset="100%" stopColor="#000000" stopOpacity="0.42" />
-            </LinearGradient>
-          </Defs>
-          <Rect width="100%" height="100%" fill="rgba(0,0,0,0.52)" rx={14} />
-          <Rect width="100%" height="100%" fill="url(#hudBg)" rx={14} />
-          {/* inner border */}
-          <Rect x="1" y="1" width="99%" height="98%" rx={13} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="1" />
-        </Svg>
+        {/* ── HUD card ─────────────────────────────────────────────── */}
+        <View style={styles.hud}>
+          {/* Zone-tinted gradient background */}
+          <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
+            <Defs>
+              <LinearGradient id="hudBg" x1="0" y1="0" x2="0" y2="1">
+                <Stop offset="0%" stopColor={zTheme.accent} stopOpacity="0.14" />
+                <Stop offset="100%" stopColor="#000000" stopOpacity="0.42" />
+              </LinearGradient>
+            </Defs>
+            <Rect width="100%" height="100%" fill="rgba(0,0,0,0.52)" rx={14} />
+            <Rect width="100%" height="100%" fill="url(#hudBg)" rx={14} />
+            {/* inner border */}
+            <Rect x="1" y="1" width="99%" height="98%" rx={13} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="1" />
+          </Svg>
 
-        <View style={styles.hudInner}>
-          {/* ── Zone Brand and Progress ── */}
-          <View style={styles.hudHeaderRow}>
-            <View style={styles.zoneMetaBlock}>
-              <Text style={styles.zoneTitle}>{zone.name}</Text>
-              <Text style={[styles.floorLabel, { color: zTheme.accent }]}>
-                Zone {currentRun.floorNumber || 1} of {zone.floorCount || 10}
-              </Text>
-            </View>
-            <View style={[styles.roomsBadge, {
-              borderColor: zTheme.accent + '33',
-              backgroundColor: zTheme.accent + '12',
-            }]}>
-              <ItemSprite spritesheet="icons-map" frameIndex={52} displaySize={13} />
-              <Text style={[styles.roomsBadgeText, { color: zTheme.accent }]}>
-                {currentRun.roomsCleared}/{currentRun.totalRooms}
-              </Text>
-            </View>
-          </View>
-
-          {/* Subtle Horizontal Divider */}
-          <View style={styles.hudDivider} />
-
-          {/* ── Loot Stats (Gold & XP) ── */}
-          <View style={styles.lootStatsRow}>
-            <View style={[styles.lootStatChip, styles.lootStatChipGold]}>
-              <ItemSprite spritesheet="icons-1" frameIndex={11} displaySize={18} />
-              <View>
-                <Text style={styles.lootStatLabel}>Gold Collected</Text>
-                <Text style={styles.lootStatValueGold}>{currentRun.lootCollected.gold} G</Text>
+          <View style={styles.hudInner}>
+            {/* ── Zone Brand and Progress ── */}
+            <View style={styles.hudHeaderRow}>
+              <View style={styles.zoneMetaBlock}>
+                <Text style={styles.zoneTitle}>{zone.name}</Text>
+                <Text style={[styles.floorLabel, { color: zTheme.accent }]}>
+                  Zone {currentRun.floorNumber || 1} of {zone.floorCount || 10}
+                </Text>
+              </View>
+              <View style={[styles.roomsBadge, {
+                borderColor: zTheme.accent + '33',
+                backgroundColor: zTheme.accent + '12',
+              }]}>
+                <ItemSprite spritesheet="icons-map" frameIndex={52} displaySize={13} />
+                <Text style={[styles.roomsBadgeText, { color: zTheme.accent }]}>
+                  {currentRun.roomsCleared}/{currentRun.totalRooms}
+                </Text>
               </View>
             </View>
-            
-            <View style={[styles.lootStatChip, styles.lootStatChipXp]}>
-              <ItemSprite spritesheet="icons-map" frameIndex={146} displaySize={18} />
-              <View>
-                <Text style={styles.lootStatLabel}>XP Acquired</Text>
-                <Text style={styles.lootStatValueXp}>{currentRun.lootCollected.xp || 0} XP</Text>
+
+            {/* Subtle Horizontal Divider */}
+            <View style={styles.hudDivider} />
+
+            {/* ── Loot Stats (Gold & XP) ── */}
+            <View style={styles.lootStatsRow}>
+              <View style={[styles.lootStatChip, styles.lootStatChipGold]}>
+                <ItemSprite spritesheet="icons-1" frameIndex={11} displaySize={18} />
+                <View>
+                  <Text style={styles.lootStatLabel}>Gold Collected</Text>
+                  <Text style={styles.lootStatValueGold}>{currentRun.lootCollected.gold} G</Text>
+                </View>
+              </View>
+
+              <View style={[styles.lootStatChip, styles.lootStatChipXp]}>
+                <ItemSprite spritesheet="icons-map" frameIndex={146} displaySize={18} />
+                <View>
+                  <Text style={styles.lootStatLabel}>XP Acquired</Text>
+                  <Text style={styles.lootStatValueXp}>{currentRun.lootCollected.xp || 0} XP</Text>
+                </View>
               </View>
             </View>
+
+            {/* ── Hero Status Row (Level, HP, XP) ── */}
+            <View style={styles.heroStatusRow}>
+              <View style={styles.levelBadge}>
+                <Text style={styles.levelLabel}>LV</Text>
+                <Text style={styles.levelValue}>{hero.level}</Text>
+              </View>
+              <View style={styles.gaugesContainer}>
+                <ResourceBar
+                  variant="heroHp"
+                  label="HP"
+                  current={hero.hp}
+                  max={effectiveStats.maxHp}
+                />
+                <ResourceBar
+                  variant="xp"
+                  label="XP"
+                  current={xpIntoLevel}
+                  max={xpNeeded}
+                />
+              </View>
+            </View>
+
+            {/* ── Run buffs (horizontal scroll) ── */}
+            {Object.values(currentRun.runBuffs).some((val) => val > 0) && (
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.buffsRow}
+              >
+                <Text style={styles.buffsTitle}>Buffs</Text>
+                {currentRun.runBuffs.attackBonus > 0 && (
+                  <View style={styles.buffBadge}>
+                    <ItemSprite spritesheet="icons-map" frameIndex={92} displaySize={12} />
+                    <Text style={styles.buffBadgeText}>ATK +{currentRun.runBuffs.attackBonus}</Text>
+                  </View>
+                )}
+                {currentRun.runBuffs.critBonus > 0 && (
+                  <View style={styles.buffBadge}>
+                    <ItemSprite spritesheet="icons-map" frameIndex={47} displaySize={12} />
+                    <Text style={styles.buffBadgeText}>CRIT +{Math.round(currentRun.runBuffs.critBonus * 100)}%</Text>
+                  </View>
+                )}
+                {currentRun.runBuffs.dodgeBonus > 0 && (
+                  <View style={styles.buffBadge}>
+                    <ItemSprite spritesheet="icons-map" frameIndex={94} displaySize={12} />
+                    <Text style={styles.buffBadgeText}>DODGE +{Math.round(currentRun.runBuffs.dodgeBonus * 100)}%</Text>
+                  </View>
+                )}
+                {currentRun.runBuffs.defenceBonus > 0 && (
+                  <View style={styles.buffBadge}>
+                    <ItemSprite spritesheet="icons-map" frameIndex={62} displaySize={12} />
+                    <Text style={styles.buffBadgeText}>DEF +{currentRun.runBuffs.defenceBonus}</Text>
+                  </View>
+                )}
+                {currentRun.runBuffs.maxHpBonus > 0 && (
+                  <View style={styles.buffBadge}>
+                    <ItemSprite spritesheet="icons-map" frameIndex={135} displaySize={12} />
+                    <Text style={styles.buffBadgeText}>HP +{currentRun.runBuffs.maxHpBonus}</Text>
+                  </View>
+                )}
+              </ScrollView>
+            )}
           </View>
 
-          {/* ── Hero Status Row (Level, HP, XP) ── */}
-          <View style={styles.heroStatusRow}>
-            <View style={styles.levelBadge}>
-              <Text style={styles.levelLabel}>LV</Text>
-              <Text style={styles.levelValue}>{hero.level}</Text>
-            </View>
-            <View style={styles.gaugesContainer}>
-              <ResourceBar
-                variant="heroHp"
-                label="HP"
-                current={hero.hp}
-                max={effectiveStats.maxHp}
-              />
-              <ResourceBar
-                variant="xp"
-                label="XP"
-                current={xpIntoLevel}
-                max={xpNeeded}
-              />
-            </View>
+          {/* Zone accent bottom line */}
+          <View style={[styles.hudAccentLine, { backgroundColor: zTheme.accent }]} />
+        </View>
+
+        {/* ── Grid Center ────────────────────────────────────────────── */}
+        <View style={styles.gridSection}>
+          {renderGrid()}
+        </View>
+
+        {/* ── Action Buttons Row ────────────────────────────────────────── */}
+        <View style={styles.actionButtonsRow}>
+          <View style={{ flex: 1 }}>
+            <Button
+              title="Bag"
+              icon={<ItemSprite spritesheet="icons-map" frameIndex={99} displaySize={24} />}
+              variant="secondary"
+              onPress={() => setActiveModal('bag')}
+              style={{ width: '100%' }}
+            />
           </View>
-
-          {/* ── Run buffs (horizontal scroll) ── */}
-          {Object.values(currentRun.runBuffs).some((val) => val > 0) && (
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.buffsRow}
-            >
-              <Text style={styles.buffsTitle}>Buffs</Text>
-              {currentRun.runBuffs.attackBonus > 0 && (
-                <View style={styles.buffBadge}>
-                  <ItemSprite spritesheet="icons-map" frameIndex={92} displaySize={12} />
-                  <Text style={styles.buffBadgeText}>ATK +{currentRun.runBuffs.attackBonus}</Text>
-                </View>
-              )}
-              {currentRun.runBuffs.critBonus > 0 && (
-                <View style={styles.buffBadge}>
-                  <ItemSprite spritesheet="icons-map" frameIndex={47} displaySize={12} />
-                  <Text style={styles.buffBadgeText}>CRIT +{Math.round(currentRun.runBuffs.critBonus * 100)}%</Text>
-                </View>
-              )}
-              {currentRun.runBuffs.dodgeBonus > 0 && (
-                <View style={styles.buffBadge}>
-                  <ItemSprite spritesheet="icons-map" frameIndex={94} displaySize={12} />
-                  <Text style={styles.buffBadgeText}>DODGE +{Math.round(currentRun.runBuffs.dodgeBonus * 100)}%</Text>
-                </View>
-              )}
-              {currentRun.runBuffs.defenceBonus > 0 && (
-                <View style={styles.buffBadge}>
-                  <ItemSprite spritesheet="icons-map" frameIndex={62} displaySize={12} />
-                  <Text style={styles.buffBadgeText}>DEF +{currentRun.runBuffs.defenceBonus}</Text>
-                </View>
-              )}
-              {currentRun.runBuffs.maxHpBonus > 0 && (
-                <View style={styles.buffBadge}>
-                  <ItemSprite spritesheet="icons-map" frameIndex={135} displaySize={12} />
-                  <Text style={styles.buffBadgeText}>HP +{currentRun.runBuffs.maxHpBonus}</Text>
-                </View>
-              )}
-            </ScrollView>
-          )}
+          <View style={{ flex: 1, position: 'relative', overflow: 'visible' }}>
+            <Button
+              title="Quests"
+              icon={<ItemSprite spritesheet="icons-map" frameIndex={73} displaySize={24} />}
+              variant="secondary"
+              onPress={() => setActiveModal('quests')}
+              style={{ width: '100%' }}
+            />
+            {hasClaimableQuestReward && (
+              <View style={styles.questBadge}>
+                <Text style={styles.questBadgeText}>!</Text>
+              </View>
+            )}
+          </View>
+          <View style={{ flex: 1 }}>
+            <Button
+              title="Flee"
+              icon={<ItemSprite spritesheet="icons-map" frameIndex={127} displaySize={24} />}
+              variant="flee"
+              onPress={() => setActiveModal('flee')}
+              style={{ width: '100%' }}
+            />
+          </View>
         </View>
 
-        {/* Zone accent bottom line */}
-        <View style={[styles.hudAccentLine, { backgroundColor: zTheme.accent }]} />
-      </View>
-
-      {/* ── Grid Center ────────────────────────────────────────────── */}
-      <View style={styles.gridSection}>
-        {renderGrid()}
-      </View>
-
-      {/* ── Action Buttons Row ────────────────────────────────────────── */}
-      <View style={styles.actionButtonsRow}>
-        <View style={{ flex: 1 }}>
-          <Button
-            title="Bag"
-            icon={<ItemSprite spritesheet="icons-map" frameIndex={99} displaySize={24} />}
-            variant="secondary"
-            onPress={() => setActiveModal('bag')}
-            style={{ width: '100%' }}
-          />
+        {/* ── Footer Info ────────────────────────────────────────────── */}
+        <View style={styles.footer}>
+          <Text style={styles.footerText}>
+            Tap adjacent sites to explore. Cleared sites can be re-entered to navigate.
+          </Text>
         </View>
-        <View style={{ flex: 1, position: 'relative', overflow: 'visible' }}>
-          <Button
-            title="Quests"
-            icon={<ItemSprite spritesheet="icons-map" frameIndex={73} displaySize={24} />}
-            variant="secondary"
-            onPress={() => setActiveModal('quests')}
-            style={{ width: '100%' }}
-          />
-          {hasClaimableQuestReward && (
-            <View style={styles.questBadge}>
-              <Text style={styles.questBadgeText}>!</Text>
-            </View>
-          )}
-        </View>
-        <View style={{ flex: 1 }}>
-          <Button
-            title="Flee"
-            icon={<ItemSprite spritesheet="icons-map" frameIndex={127} displaySize={24} />}
-            variant="flee"
-            onPress={() => setActiveModal('flee')}
-            style={{ width: '100%' }}
-          />
-        </View>
-      </View>
 
-      {/* ── Footer Info ────────────────────────────────────────────── */}
-      <View style={styles.footer}>
-        <Text style={styles.footerText}>
-          Tap adjacent sites to explore. Cleared sites can be re-entered to navigate.
-        </Text>
-      </View>
-
-      {/* ════════════════════════════════════════════════════════════════
+        {/* ════════════════════════════════════════════════════════════════
           1. REST ROOM CHOICE MODAL
       ════════════════════════════════════════════════════════════════ */}
-      <Modal visible={activeModal === 'rest'} transparent animationType="fade">
-        <View style={styles.cozyOverlay}>
-          <View style={[styles.cozyFrame, theme.SHADOWS.cardShadow]}>
-            <View style={styles.cozyParchment}>
-              <View style={styles.cozyBevel} pointerEvents="none" />
-              
+        <Modal visible={activeModal === 'rest'} transparent animationType="fade">
+          <View style={styles.cozyOverlay}>
+            <View style={[styles.cozyFrame, theme.SHADOWS.cardShadow]}>
+              <View style={styles.cozyParchment}>
+                <View style={styles.cozyBevel} pointerEvents="none" />
 
 
-              <Text style={styles.cozySubtitle}>
-                You found a quiet corner. Take a moment to prepare for the depths ahead.
-              </Text>
 
-              <View style={styles.modalChoiceContainer}>
-                <TouchableOpacity
-                  style={styles.cozyChoiceCard}
-                  onPress={() => handleChooseRestOption('heal')}
-                  activeOpacity={0.8}
-                >
-                  <ItemSprite spritesheet="icons-map" frameIndex={3} displaySize={32} />
-                  <Text style={styles.cozyChoiceCardText}>Restore Health</Text>
-                  <Text style={styles.cozyChoiceCardDesc}>
-                    Recover your full health (+{effectiveStats.maxHp} HP)
-                  </Text>
-                </TouchableOpacity>
+                <Text style={styles.cozySubtitle}>
+                  You found a quiet corner. Take a moment to prepare for the depths ahead.
+                </Text>
 
-                <TouchableOpacity
-                  style={styles.cozyChoiceCard}
-                  onPress={() => handleChooseRestOption('buff')}
-                  activeOpacity={0.8}
-                >
-                  <ItemSprite spritesheet="icons-1" frameIndex={4} displaySize={32} />
-                  <Text style={styles.cozyChoiceCardText}>Receive Buff</Text>
-                  <Text style={styles.cozyChoiceCardDesc}>
-                    Skip heal & obtain: {modalData?.buffLabel}
-                  </Text>
-                </TouchableOpacity>
+                <View style={styles.modalChoiceContainer}>
+                  <TouchableOpacity
+                    style={styles.cozyChoiceCard}
+                    onPress={() => handleChooseRestOption('heal')}
+                    activeOpacity={0.8}
+                  >
+                    <ItemSprite spritesheet="icons-map" frameIndex={3} displaySize={32} />
+                    <Text style={styles.cozyChoiceCardText}>Restore Health</Text>
+                    <Text style={styles.cozyChoiceCardDesc}>
+                      Recover your full health (+{effectiveStats.maxHp} HP)
+                    </Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={styles.cozyChoiceCard}
+                    onPress={() => handleChooseRestOption('buff')}
+                    activeOpacity={0.8}
+                  >
+                    <ItemSprite spritesheet="icons-1" frameIndex={4} displaySize={32} />
+                    <Text style={styles.cozyChoiceCardText}>Receive Buff</Text>
+                    <Text style={styles.cozyChoiceCardDesc}>
+                      Skip heal & obtain: {modalData?.buffLabel}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
               </View>
-            </View>
 
-            <View style={styles.cozyTopWrap} pointerEvents="none">
-              <View style={styles.cozyTopOuter}>
-                <View style={styles.cozyTopInner}>
-                  <Text style={styles.cozyTopText}>CAMPFIRE REST</Text>
+              <View style={styles.cozyTopWrap} pointerEvents="none">
+                <View style={styles.cozyTopOuter}>
+                  <View style={styles.cozyTopInner}>
+                    <Text style={styles.cozyTopText}>CAMPFIRE REST</Text>
+                  </View>
                 </View>
               </View>
             </View>
           </View>
-        </View>
-      </Modal>
+        </Modal>
 
-      {/* ════════════════════════════════════════════════════════════════
+        {/* ════════════════════════════════════════════════════════════════
           2. TREASURE ROOM MODAL
       ════════════════════════════════════════════════════════════════ */}
-      <Modal visible={activeModal === 'treasure'} transparent animationType="fade">
-        <View style={styles.cozyOverlay}>
-          <View style={[styles.cozyFrame, theme.SHADOWS.cardShadow]}>
-            <View style={styles.cozyParchment}>
-              <View style={styles.cozyBevel} pointerEvents="none" />
+        <Modal visible={activeModal === 'treasure'} transparent animationType="fade">
+          <View style={styles.cozyOverlay}>
+            <View style={[styles.cozyFrame, theme.SHADOWS.cardShadow]}>
+              <View style={styles.cozyParchment}>
+                <View style={styles.cozyBevel} pointerEvents="none" />
 
-              <Text style={styles.cozySubtitle}>
-                An unlocked chest lies open in the corner of this chamber.
-              </Text>
-
-
-              {renderLootItems(modalData?.materials, modalData?.consumables, modalData?.gold)}
+                <Text style={styles.cozySubtitle}>
+                  An unlocked chest lies open in the corner of this chamber.
+                </Text>
 
 
-              <TouchableOpacity activeOpacity={0.85} onPress={handleCloseTreasure} style={styles.cozyButton}>
-                <View style={styles.cozyButtonInner}>
-                  <Text style={styles.cozyButtonText}>Claim Rewards</Text>
-                </View>
-              </TouchableOpacity>
-            </View>
+                {renderLootItems(modalData?.materials, modalData?.consumables, modalData?.gold)}
 
-            <View style={styles.cozyTopWrap} pointerEvents="none">
-              <View style={styles.cozyTopOuter}>
-                <View style={styles.cozyTopInner}>
-                  <Text style={styles.cozyTopText}>TREASURE CHEST</Text>
+
+                <TouchableOpacity activeOpacity={0.85} onPress={handleCloseTreasure} style={styles.cozyButton}>
+                  <View style={styles.cozyButtonInner}>
+                    <Text style={styles.cozyButtonText}>Claim Rewards</Text>
+                  </View>
+                </TouchableOpacity>
+              </View>
+
+              <View style={styles.cozyTopWrap} pointerEvents="none">
+                <View style={styles.cozyTopOuter}>
+                  <View style={styles.cozyTopInner}>
+                    <Text style={styles.cozyTopText}>TREASURE CHEST</Text>
+                  </View>
                 </View>
               </View>
             </View>
           </View>
-        </View>
-      </Modal>
+        </Modal>
 
-      {/* ════════════════════════════════════════════════════════════════
+        {/* ════════════════════════════════════════════════════════════════
           3. GAMBLE (???) ROOM MODAL
       ════════════════════════════════════════════════════════════════ */}
-      <Modal visible={activeModal === 'gamble'} transparent animationType="fade">
-        <View style={styles.cozyOverlay}>
-          <View style={[styles.cozyFrame, theme.SHADOWS.cardShadow]}>
-            <View style={styles.cozyParchment}>
-              <View style={styles.cozyBevel} pointerEvents="none" />
-              
-              {modalData?.outcome === 'trap' && (
-                <View style={styles.outcomeContent}>
-                  <Text style={[styles.outcomeTitle, { color: '#9E1B1B' }]}>IT'S A TRAP!</Text>
-                  <Text style={[styles.outcomeFlavor, { color: '#4A2E14' }]}>"{modalData.flavor}"</Text>
-                  <Text style={styles.trapDamageText}>
-                    {hero.name || 'Mochi'} lost {modalData.pct}% max HP (-{modalData.damage} HP)
-                  </Text>
-                  <Text style={[styles.outcomeSubText, { color: '#3E2723' }]}>
-                    {modalData.survived
-                      ? "You pull yourself out of the mechanism, bruised but still standing."
-                      : "The trap proved fatal..."}
-                  </Text>
-                </View>
-              )}
+        <Modal visible={activeModal === 'gamble'} transparent animationType="fade">
+          <View style={styles.cozyOverlay}>
+            <View style={[styles.cozyFrame, theme.SHADOWS.cardShadow]}>
+              <View style={styles.cozyParchment}>
+                <View style={styles.cozyBevel} pointerEvents="none" />
 
-              {modalData?.outcome === 'treasure' && (
-                <View style={styles.outcomeContent}>
-                  <Text style={[styles.outcomeTitle, { color: '#B45309' }]}>Jackpot!</Text>
-                  <Text style={[styles.outcomeFlavor, { color: '#4A2E14' }]}>"{modalData.flavor}"</Text>
-                  <Text style={{ color: '#5C3F22', fontFamily: 'Silkscreen-Regular', fontSize: 9, textAlign: 'center', marginBottom: 8 }}>
-                    Double Treasure Jackpot!
-                  </Text>
-                  {renderLootItems(modalData.materials, modalData.consumables, modalData.gold)}
-
-                </View>
-              )}
-
-              {modalData?.outcome === 'ambush' && (
-                <View style={styles.outcomeContent}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginBottom: 8 }}>
-                    <ItemSprite spritesheet="icons-map" frameIndex={92} displaySize={18} />
-                    <Text style={[styles.outcomeTitle, { color: '#831843', marginBottom: 0 }]}>Ambush!</Text>
+                {modalData?.outcome === 'trap' && (
+                  <View style={styles.outcomeContent}>
+                    <Text style={[styles.outcomeTitle, { color: '#9E1B1B' }]}>IT'S A TRAP!</Text>
+                    <Text style={[styles.outcomeFlavor, { color: '#4A2E14' }]}>"{modalData.flavor}"</Text>
+                    <Text style={styles.trapDamageText}>
+                      {hero.name || 'Mochi'} lost {modalData.pct}% max HP (-{modalData.damage} HP)
+                    </Text>
+                    <Text style={[styles.outcomeSubText, { color: '#3E2723' }]}>
+                      {modalData.survived
+                        ? "You pull yourself out of the mechanism, bruised but still standing."
+                        : "The trap proved fatal..."}
+                    </Text>
                   </View>
-                  <Text style={[styles.outcomeSubText, { color: '#3E2723', marginBottom: 6 }]}>
-                    A shadow leaps from the dark. You are ambushed by monsters!
-                  </Text>
-                  <Text style={[styles.ambushWarningText, { color: '#9E1B1B', fontFamily: 'Silkscreen-Regular', fontSize: 10 }]}>
-                    Prepare for a challenging fight!
-                  </Text>
-                </View>
-              )}
+                )}
 
-              <TouchableOpacity
-                activeOpacity={0.85}
-                onPress={handleCloseGamble}
-                style={
-                  modalData?.outcome === 'trap' && !modalData.survived
-                    ? styles.cozyButtonDanger
-                    : styles.cozyButton
-                }
-              >
-                <View
+                {modalData?.outcome === 'treasure' && (
+                  <View style={styles.outcomeContent}>
+                    <Text style={[styles.outcomeTitle, { color: '#B45309' }]}>Jackpot!</Text>
+                    <Text style={[styles.outcomeFlavor, { color: '#4A2E14' }]}>"{modalData.flavor}"</Text>
+                    <Text style={{ color: '#5C3F22', fontFamily: 'Silkscreen-Regular', fontSize: 9, textAlign: 'center', marginBottom: 8 }}>
+                      Double Treasure Jackpot!
+                    </Text>
+                    {renderLootItems(modalData.materials, modalData.consumables, modalData.gold)}
+
+                  </View>
+                )}
+
+                {modalData?.outcome === 'ambush' && (
+                  <View style={styles.outcomeContent}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginBottom: 8 }}>
+                      <ItemSprite spritesheet="icons-map" frameIndex={92} displaySize={18} />
+                      <Text style={[styles.outcomeTitle, { color: '#831843', marginBottom: 0 }]}>Ambush!</Text>
+                    </View>
+                    <Text style={[styles.outcomeSubText, { color: '#3E2723', marginBottom: 6 }]}>
+                      A shadow leaps from the dark. You are ambushed by monsters!
+                    </Text>
+                    <Text style={[styles.ambushWarningText, { color: '#9E1B1B', fontFamily: 'Silkscreen-Regular', fontSize: 10 }]}>
+                      Prepare for a challenging fight!
+                    </Text>
+                  </View>
+                )}
+
+                <TouchableOpacity
+                  activeOpacity={0.85}
+                  onPress={handleCloseGamble}
                   style={
                     modalData?.outcome === 'trap' && !modalData.survived
-                      ? styles.cozyButtonDangerInner
-                      : styles.cozyButtonInner
+                      ? styles.cozyButtonDanger
+                      : styles.cozyButton
                   }
                 >
-                  <Text style={styles.cozyButtonText}>
-                    {modalData?.outcome === 'ambush' ? 'Prepare for Battle' : 'Continue'}
-                  </Text>
-                </View>
-              </TouchableOpacity>
+                  <View
+                    style={
+                      modalData?.outcome === 'trap' && !modalData.survived
+                        ? styles.cozyButtonDangerInner
+                        : styles.cozyButtonInner
+                    }
+                  >
+                    <Text style={styles.cozyButtonText}>
+                      {modalData?.outcome === 'ambush' ? 'Prepare for Battle' : 'Continue'}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              </View>
+
+
             </View>
-
-
           </View>
-        </View>
-      </Modal>
+        </Modal>
 
-      {/* ════════════════════════════════════════════════════════════════
+        {/* ════════════════════════════════════════════════════════════════
           4. RUN DEFEAT / DEATH OVERLAY
       ════════════════════════════════════════════════════════════════ */}
-      <Modal visible={activeModal === 'death'} transparent animationType="fade">
-        <View style={styles.cozyOverlay}>
-          <View style={[styles.cozyFrame, theme.SHADOWS.cardShadow]}>
-            <View style={styles.cozyParchment}>
-              <View style={styles.cozyBevel} pointerEvents="none" />
+        <Modal visible={activeModal === 'death'} transparent animationType="fade">
+          <View style={styles.cozyOverlay}>
+            <View style={[styles.cozyFrame, theme.SHADOWS.cardShadow]}>
+              <View style={styles.cozyParchment}>
+                <View style={styles.cozyBevel} pointerEvents="none" />
 
-              <Text style={styles.cozySubtitle}>
-                {hero.name || 'Mochi'} fell to the dangers of the region and was forced to retreat.
-              </Text>
+                <Text style={styles.cozySubtitle}>
+                  {hero.name || 'Mochi'} fell to the dangers of the region and was forced to retreat.
+                </Text>
 
-              <View style={styles.cozyWellDanger}>
-                <Text style={styles.lostLootTitle}>Loot Lost in the Depths:</Text>
-                {currentRun.lootCollected.gold === 0 &&
-                Object.keys(currentRun.lootCollected.materials).length === 0 &&
-                Object.keys(currentRun.lootCollected.consumables || {}).length === 0 &&
-                (currentRun.lootCollected.xp || 0) === 0 ? (
-                  <Text style={styles.noLostLootText}>No materials, gold, XP, or consumables were collected this run.</Text>
-                ) : (
-                  renderLootItems(
-                    currentRun.lootCollected.materials,
-                    currentRun.lootCollected.consumables,
-                    currentRun.lootCollected.gold,
-                    currentRun.lootCollected.xp,
-                    true
-                  )
-                )}
+                <View style={styles.cozyWellDanger}>
+                  <Text style={styles.lostLootTitle}>Loot Lost in the Depths:</Text>
+                  {currentRun.lootCollected.gold === 0 &&
+                    Object.keys(currentRun.lootCollected.materials).length === 0 &&
+                    Object.keys(currentRun.lootCollected.consumables || {}).length === 0 &&
+                    (currentRun.lootCollected.xp || 0) === 0 ? (
+                    <Text style={styles.noLostLootText}>No materials, gold, XP, or consumables were collected this run.</Text>
+                  ) : (
+                    renderLootItems(
+                      currentRun.lootCollected.materials,
+                      currentRun.lootCollected.consumables,
+                      currentRun.lootCollected.gold,
+                      currentRun.lootCollected.xp,
+                      true
+                    )
+                  )}
+                </View>
+
+                <Text style={[styles.deathRecoverMsg, { color: '#6A4A2A' }]}>
+                  {hero.name || 'Mochi'} wakes up back at camp, fully recovered but empty-handed.
+                </Text>
+
+                <TouchableOpacity activeOpacity={0.85} onPress={handleCloseDeath} style={styles.cozyButtonDanger}>
+                  <View style={styles.cozyButtonDangerInner}>
+                    <Text style={styles.cozyButtonText}>Return to Camp</Text>
+                  </View>
+                </TouchableOpacity>
               </View>
 
-              <Text style={[styles.deathRecoverMsg, { color: '#6A4A2A' }]}>
-                {hero.name || 'Mochi'} wakes up back at camp, fully recovered but empty-handed.
-              </Text>
-
-              <TouchableOpacity activeOpacity={0.85} onPress={handleCloseDeath} style={styles.cozyButtonDanger}>
-                <View style={styles.cozyButtonDangerInner}>
-                  <Text style={styles.cozyButtonText}>Return to Camp</Text>
-                </View>
-              </TouchableOpacity>
-            </View>
-
-            <View style={styles.cozyTopWrap} pointerEvents="none">
-              <View style={styles.cozyTopOuter}>
-                <View style={styles.cozyTopInner}>
-                  <Text style={styles.cozyTopText}>DEFEATED</Text>
+              <View style={styles.cozyTopWrap} pointerEvents="none">
+                <View style={styles.cozyTopOuter}>
+                  <View style={styles.cozyTopInner}>
+                    <Text style={styles.cozyTopText}>DEFEATED</Text>
+                  </View>
                 </View>
               </View>
             </View>
           </View>
-        </View>
-      </Modal>
+        </Modal>
 
-      {/* ════════════════════════════════════════════════════════════════
+        {/* ════════════════════════════════════════════════════════════════
           5. FLEE DUNGEON CONFIRMATION MODAL
       ════════════════════════════════════════════════════════════════ */}
-      <Modal visible={activeModal === 'flee'} transparent animationType="fade">
-        <View style={styles.cozyOverlay}>
-          <View style={[styles.cozyFrame, theme.SHADOWS.cardShadow]}>
-            <View style={styles.cozyParchment}>
-              <View style={styles.cozyBevel} pointerEvents="none" />
+        <Modal visible={activeModal === 'flee'} transparent animationType="fade">
+          <View style={styles.cozyOverlay}>
+            <View style={[styles.cozyFrame, theme.SHADOWS.cardShadow]}>
+              <View style={styles.cozyParchment}>
+                <View style={styles.cozyBevel} pointerEvents="none" />
 
-              <Text style={styles.cozySubtitle}>
-                Are you sure you want to escape? Fleeing ends the run early, but you keep everything you've gathered:
-              </Text>
+                <Text style={styles.cozySubtitle}>
+                  Are you sure you want to escape? Fleeing ends the run early, but you keep everything you've gathered:
+                </Text>
 
-              <Text style={[styles.fleeLootPreviewTitle, { color: '#6A4A2A', fontWeight: 'bold', marginBottom: 8, textAlign: 'center' }]}>Loot You'll Keep:</Text>
-              {currentRun.lootCollected.gold === 0 &&
-              Object.keys(currentRun.lootCollected.materials).length === 0 &&
-              Object.keys(currentRun.lootCollected.consumables || {}).length === 0 ? (
-                <Text style={[styles.noLostLootText, { textAlign: 'center', marginBottom: 12 }]}>No loot collected yet.</Text>
-              ) : (
-                <View style={[styles.bagChipsContainer, { marginBottom: 12 }]}>
-                  {currentRun.lootCollected.gold > 0 && (
-                    <View style={styles.bagItemChip}>
-                      <ItemSprite spritesheet="icons-1" frameIndex={11} displaySize={32} />
-                      <Text style={styles.bagChipQty}>{currentRun.lootCollected.gold} G</Text>
+                <Text style={[styles.fleeLootPreviewTitle, { color: '#6A4A2A', fontWeight: 'bold', marginBottom: 8, textAlign: 'center' }]}>Loot You'll Keep:</Text>
+                {currentRun.lootCollected.gold === 0 &&
+                  Object.keys(currentRun.lootCollected.materials).length === 0 &&
+                  Object.keys(currentRun.lootCollected.consumables || {}).length === 0 ? (
+                  <Text style={[styles.noLostLootText, { textAlign: 'center', marginBottom: 12 }]}>No loot collected yet.</Text>
+                ) : (
+                  <View style={[styles.bagChipsContainer, { marginBottom: 12 }]}>
+                    {currentRun.lootCollected.gold > 0 && (
+                      <View style={styles.bagItemChip}>
+                        <ItemSprite spritesheet="icons-1" frameIndex={11} displaySize={32} />
+                        <Text style={styles.bagChipQty}>{currentRun.lootCollected.gold} G</Text>
+                      </View>
+                    )}
+                    {(() => {
+                      const items = [];
+                      for (const [id, qty] of Object.entries(currentRun.lootCollected.materials || {})) {
+                        if (qty > 0) items.push({ id, keptQty: qty, isConsumable: false });
+                      }
+                      for (const [id, qty] of Object.entries(currentRun.lootCollected.consumables || {})) {
+                        if (qty > 0) items.push({ id, keptQty: qty, isConsumable: true });
+                      }
+                      if (items.length === 0) return null;
+                      return items.map(({ id, keptQty, isConsumable }) => {
+                        const def = isConsumable ? CONSUMABLES.find(c => c.id === id) : MATERIALS[id];
+                        return (
+                          <View key={id} style={styles.bagItemChip}>
+                            {def?.spritesheet && (
+                              <ItemSprite
+                                spritesheet={def.spritesheet}
+                                frameIndex={def.frameIndex}
+                                displaySize={32}
+                              />
+                            )}
+                            <Text style={styles.bagChipQty}>{keptQty}</Text>
+                          </View>
+                        );
+                      });
+                    })()}
+                  </View>
+                )}
+
+                <View style={styles.fleeBtnRow}>
+                  <TouchableOpacity activeOpacity={0.85} onPress={handleConfirmFlee} style={[styles.cozyButtonFlee, { flex: 1 }]}>
+                    <View style={styles.cozyButtonFleeInner}>
+                      <Text style={styles.cozyButtonText}>FLEE</Text>
                     </View>
-                  )}
-                  {(() => {
-                    const items = [];
-                    for (const [id, qty] of Object.entries(currentRun.lootCollected.materials || {})) {
-                      if (qty > 0) items.push({ id, keptQty: qty, isConsumable: false });
-                    }
-                    for (const [id, qty] of Object.entries(currentRun.lootCollected.consumables || {})) {
-                      if (qty > 0) items.push({ id, keptQty: qty, isConsumable: true });
-                    }
-                    if (items.length === 0) return null;
-                    return items.map(({ id, keptQty, isConsumable }) => {
-                      const def = isConsumable ? CONSUMABLES.find(c => c.id === id) : MATERIALS[id];
-                      return (
-                         <View key={id} style={styles.bagItemChip}>
-                          {def?.spritesheet && (
-                            <ItemSprite
-                              spritesheet={def.spritesheet}
-                              frameIndex={def.frameIndex}
-                              displaySize={32}
-                            />
-                          )}
-                          <Text style={styles.bagChipQty}>{keptQty}</Text>
-                        </View>
-                      );
-                    });
-                  })()}
+                  </TouchableOpacity>
+
+                  <TouchableOpacity activeOpacity={0.85} onPress={() => setActiveModal(null)} style={[styles.cozyButtonSecondary, { flex: 1 }]}>
+                    <View style={styles.cozyButtonSecondaryInner}>
+                      <Text style={styles.cozyButtonText}>STAY</Text>
+                    </View>
+                  </TouchableOpacity>
                 </View>
-              )}
-
-              <View style={styles.fleeBtnRow}>
-                <TouchableOpacity activeOpacity={0.85} onPress={handleConfirmFlee} style={[styles.cozyButtonFlee, { flex: 1 }]}>
-                  <View style={styles.cozyButtonFleeInner}>
-                    <Text style={styles.cozyButtonText}>FLEE</Text>
-                  </View>
-                </TouchableOpacity>
-
-                <TouchableOpacity activeOpacity={0.85} onPress={() => setActiveModal(null)} style={[styles.cozyButtonSecondary, { flex: 1 }]}>
-                  <View style={styles.cozyButtonSecondaryInner}>
-                    <Text style={styles.cozyButtonText}>STAY</Text>
-                  </View>
-                </TouchableOpacity>
               </View>
-            </View>
 
-            <View style={styles.cozyTopWrap} pointerEvents="none">
-              <View style={styles.cozyTopOuter}>
-                <View style={styles.cozyTopInner}>
-                  <Text style={styles.cozyTopText}>FLEE REGION</Text>
+              <View style={styles.cozyTopWrap} pointerEvents="none">
+                <View style={styles.cozyTopOuter}>
+                  <View style={styles.cozyTopInner}>
+                    <Text style={styles.cozyTopText}>FLEE REGION</Text>
+                  </View>
                 </View>
               </View>
             </View>
           </View>
-        </View>
-      </Modal>
+        </Modal>
 
-      {/* ════════════════════════════════════════════════════════════════
+        {/* ════════════════════════════════════════════════════════════════
           5b. NOTICE MODAL (themed replacement for native Alerts)
       ════════════════════════════════════════════════════════════════ */}
-      <Modal visible={!!notice} transparent animationType="fade" onRequestClose={() => setNotice(null)}>
-        <View style={styles.cozyOverlay}>
-          <View style={[styles.cozyFrame, theme.SHADOWS.cardShadow]}>
-            <View style={styles.cozyParchment}>
-              <View style={styles.cozyBevel} pointerEvents="none" />
+        <Modal visible={!!notice} transparent animationType="fade" onRequestClose={() => setNotice(null)}>
+          <View style={styles.cozyOverlay}>
+            <View style={[styles.cozyFrame, theme.SHADOWS.cardShadow]}>
+              <View style={styles.cozyParchment}>
+                <View style={styles.cozyBevel} pointerEvents="none" />
 
-              {notice?.spritesheet != null && notice?.frameIndex != null && (
-                <View style={styles.noticeIconWrap}>
-                  <ItemSprite spritesheet={notice.spritesheet} frameIndex={notice.frameIndex} displaySize={44} />
-                </View>
-              )}
+                {notice?.spritesheet != null && notice?.frameIndex != null && (
+                  <View style={styles.noticeIconWrap}>
+                    <ItemSprite spritesheet={notice.spritesheet} frameIndex={notice.frameIndex} displaySize={44} />
+                  </View>
+                )}
 
-              {!!notice?.highlight && (
-                <Text style={styles.noticeHighlight}>{notice.highlight}</Text>
-              )}
+                {!!notice?.highlight && (
+                  <Text style={styles.noticeHighlight}>{notice.highlight}</Text>
+                )}
 
-              <Text style={styles.cozySubtitle}>{notice?.message}</Text>
+                <Text style={styles.cozySubtitle}>{notice?.message}</Text>
 
-              <TouchableOpacity activeOpacity={0.85} onPress={() => setNotice(null)} style={styles.cozyButtonSecondary}>
-                <View style={styles.cozyButtonSecondaryInner}>
-                  <Text style={styles.cozyButtonText}>OK</Text>
-                </View>
-              </TouchableOpacity>
-            </View>
+                <TouchableOpacity activeOpacity={0.85} onPress={() => setNotice(null)} style={styles.cozyButtonSecondary}>
+                  <View style={styles.cozyButtonSecondaryInner}>
+                    <Text style={styles.cozyButtonText}>OK</Text>
+                  </View>
+                </TouchableOpacity>
+              </View>
 
-            <View style={styles.cozyTopWrap} pointerEvents="none">
-              <View style={styles.cozyTopOuter}>
-                <View style={styles.cozyTopInner}>
-                  <Text style={styles.cozyTopText}>{notice?.title}</Text>
+              <View style={styles.cozyTopWrap} pointerEvents="none">
+                <View style={styles.cozyTopOuter}>
+                  <View style={styles.cozyTopInner}>
+                    <Text style={styles.cozyTopText}>{notice?.title}</Text>
+                  </View>
                 </View>
               </View>
             </View>
           </View>
-        </View>
-      </Modal>
+        </Modal>
 
-      {/* ════════════════════════════════════════════════════════════════
+        {/* ════════════════════════════════════════════════════════════════
           6. FLOOR COMPLETE MODAL
       ════════════════════════════════════════════════════════════════ */}
-      <Modal visible={activeModal === 'floorComplete'} transparent animationType="fade">
-        <View style={styles.cozyOverlay}>
-          <View style={[styles.cozyFrame, theme.SHADOWS.cardShadow]}>
-            <View style={styles.cozyParchment}>
-              <View style={styles.cozyBevel} pointerEvents="none" />
+        <Modal visible={activeModal === 'floorComplete'} transparent animationType="fade">
+          <View style={styles.cozyOverlay}>
+            <View style={[styles.cozyFrame, theme.SHADOWS.cardShadow]}>
+              <View style={styles.cozyParchment}>
+                <View style={styles.cozyBevel} pointerEvents="none" />
 
-              <Text style={styles.cozySubtitle}>
-                {currentRun.floorNumber === 10
-                  ? `You have conquered the entire region. It trembles before ${hero.name || 'Mochi'}!`
-                  : 'Every room in this zone has been explored. Return to camp and prepare for the next descent.'}
-              </Text>
+                <Text style={styles.cozySubtitle}>
+                  {currentRun.floorNumber === 10
+                    ? `You have conquered the entire region. It trembles before ${hero.name || 'Mochi'}!`
+                    : 'Every room in this zone has been explored. Return to camp and prepare for the next descent.'}
+                </Text>
 
-              {(() => {
-                const clearReward = getFloorCompletionReward(currentRun.zoneId, currentRun.floorNumber);
-                return (
-                  <View style={styles.clearRewardContainer}>
-                    <Text style={styles.clearRewardHeader}>Floor Clear Bonus:</Text>
-                    <View style={styles.clearRewardChips}>
-                      <View style={styles.clearRewardChip}>
-                        <ItemSprite spritesheet="icons-1" frameIndex={11} displaySize={32} />
-                        <Text style={styles.clearRewardQty}>{clearReward.gold} G</Text>
-                      </View>
-                      <View style={styles.clearRewardChip}>
-                        <ItemSprite spritesheet="icons-map" frameIndex={146} displaySize={32} />
-                        <Text style={styles.clearRewardQty}>{clearReward.xp} XP</Text>
+                {(() => {
+                  const clearReward = getFloorCompletionReward(currentRun.zoneId, currentRun.floorNumber);
+                  return (
+                    <View style={styles.clearRewardContainer}>
+                      <Text style={styles.clearRewardHeader}>Floor Clear Bonus:</Text>
+                      <View style={styles.clearRewardChips}>
+                        <View style={styles.clearRewardChip}>
+                          <ItemSprite spritesheet="icons-1" frameIndex={11} displaySize={32} />
+                          <Text style={styles.clearRewardQty}>{clearReward.gold} G</Text>
+                        </View>
+                        <View style={styles.clearRewardChip}>
+                          <ItemSprite spritesheet="icons-map" frameIndex={146} displaySize={32} />
+                          <Text style={styles.clearRewardQty}>{clearReward.xp} XP</Text>
+                        </View>
                       </View>
                     </View>
-                  </View>
-                );
-              })()}
+                  );
+                })()}
 
-              <Text style={[styles.floorLootTitle, { color: '#8A6E44', fontWeight: 'bold', marginBottom: 8, textAlign: 'center' }]}>Loot Collected This Run:</Text>
-              {(Object.keys(currentRun.lootCollected.materials).length > 0 || Object.keys(currentRun.lootCollected.consumables || {}).length > 0 || currentRun.lootCollected.gold > 0)
-                ? renderLootItems(currentRun.lootCollected.materials, currentRun.lootCollected.consumables, currentRun.lootCollected.gold, 0, false)
-                : <Text style={[styles.noLostLootText, { textAlign: 'center', marginBottom: 12 }]}>No loot collected.</Text>
-              }
+                <Text style={[styles.floorLootTitle, { color: '#8A6E44', fontWeight: 'bold', marginBottom: 8, textAlign: 'center' }]}>Loot Collected This Run:</Text>
+                {(Object.keys(currentRun.lootCollected.materials).length > 0 || Object.keys(currentRun.lootCollected.consumables || {}).length > 0 || currentRun.lootCollected.gold > 0)
+                  ? renderLootItems(currentRun.lootCollected.materials, currentRun.lootCollected.consumables, currentRun.lootCollected.gold, 0, false)
+                  : <Text style={[styles.noLostLootText, { textAlign: 'center', marginBottom: 12 }]}>No loot collected.</Text>
+                }
 
-              {/* Field Note — awarded on first-time clear of this floor */}
-              {(() => {
-                const isFirstClear =
-                  (currentRun.floorNumber || 1) >
-                  (state.progress.floorsCleared?.[currentRun.zoneId] || 0);
-                const note = isFirstClear
-                  ? getNote(currentRun.zoneId, currentRun.floorNumber || 1)
-                  : null;
-                if (!note) return null;
-                return (
-                  <View style={styles.noteFound}>
-                    <ItemSprite
-                      spritesheet={NOTE_SPRITE.spritesheet}
-                      frameIndex={NOTE_SPRITE.frameIndex}
-                      displaySize={28}
-                    />
-                    <View style={{ flex: 1, marginLeft: 10 }}>
-                      <Text style={styles.noteFoundLabel}>Field Note Discovered</Text>
-                      <Text style={styles.noteFoundTitle}>{note.title}</Text>
+                {/* Field Note — awarded on first-time clear of this floor */}
+                {(() => {
+                  const isFirstClear =
+                    (currentRun.floorNumber || 1) >
+                    (state.progress.floorsCleared?.[currentRun.zoneId] || 0);
+                  const note = isFirstClear
+                    ? getNote(currentRun.zoneId, currentRun.floorNumber || 1)
+                    : null;
+                  if (!note) return null;
+                  return (
+                    <View style={styles.noteFound}>
+                      <ItemSprite
+                        spritesheet={NOTE_SPRITE.spritesheet}
+                        frameIndex={NOTE_SPRITE.frameIndex}
+                        displaySize={28}
+                      />
+                      <View style={{ flex: 1, marginLeft: 10 }}>
+                        <Text style={styles.noteFoundLabel}>Field Note Discovered</Text>
+                        <Text style={styles.noteFoundTitle}>{note.title}</Text>
+                      </View>
                     </View>
+                  );
+                })()}
+
+                <TouchableOpacity activeOpacity={0.85} onPress={handleFloorComplete} style={[styles.cozyButton, { marginTop: 12 }]}>
+                  <View style={styles.cozyButtonInner}>
+                    <Text style={styles.cozyButtonText}>Return to Camp</Text>
                   </View>
-                );
-              })()}
+                </TouchableOpacity>
+              </View>
 
-              <TouchableOpacity activeOpacity={0.85} onPress={handleFloorComplete} style={[styles.cozyButton, { marginTop: 12 }]}>
-                <View style={styles.cozyButtonInner}>
-                  <Text style={styles.cozyButtonText}>Return to Camp</Text>
-                </View>
-              </TouchableOpacity>
-            </View>
-
-            <View style={styles.cozyTopWrap} pointerEvents="none">
-              <View style={styles.cozyTopOuter}>
-                <View style={styles.cozyTopInner}>
-                  <Text style={styles.cozyTopText}>
-                    {currentRun.floorNumber === 10 ? 'REGION CLEARED' : `ZONE ${currentRun.floorNumber} CLEARED`}
-                  </Text>
+              <View style={styles.cozyTopWrap} pointerEvents="none">
+                <View style={styles.cozyTopOuter}>
+                  <View style={styles.cozyTopInner}>
+                    <Text style={styles.cozyTopText}>
+                      {currentRun.floorNumber === 10 ? 'REGION CLEARED' : `ZONE ${currentRun.floorNumber} CLEARED`}
+                    </Text>
+                  </View>
                 </View>
               </View>
             </View>
           </View>
-        </View>
-      </Modal>
+        </Modal>
 
-      {/* ════════════════════════════════════════════════════════════════
+        {/* ════════════════════════════════════════════════════════════════
           6b. QUEST TRACKER MODAL (READ-ONLY)
       ════════════════════════════════════════════════════════════════ */}
-      <Modal visible={activeModal === 'quests'} transparent animationType="fade">
-        <View style={styles.cozyOverlay}>
-          <View style={[styles.cozyFrame, theme.SHADOWS.cardShadow, { maxHeight: '80%' }]}>
-            <View style={styles.cozyParchment}>
-              <View style={styles.cozyBevel} pointerEvents="none" />
+        <Modal visible={activeModal === 'quests'} transparent animationType="fade">
+          <View style={styles.cozyOverlay}>
+            <View style={[styles.cozyFrame, theme.SHADOWS.cardShadow, { maxHeight: '80%' }]}>
+              <View style={styles.cozyParchment}>
+                <View style={styles.cozyBevel} pointerEvents="none" />
 
-              <ScrollView style={{ width: '100%', paddingHorizontal: 12, marginTop: 32 }} showsVerticalScrollIndicator={true} persistentScrollbar={true}>
-                <Text style={[{ color: '#6A4A2A', fontFamily: 'Jersey10-Regular', fontSize: 24, marginBottom: 8 }]}>Daily Quests</Text>
-                {(!state.progress.questsState?.dailies || state.progress.questsState.dailies.length === 0) ? (
-                  <Text style={[{ color: '#6A4A2A', fontStyle: 'italic', marginBottom: 16, fontSize: 14 }]}>No daily quests active.</Text>
-                ) : (
-                  [...state.progress.questsState.dailies]
-                    .sort((a, b) => {
+                <ScrollView style={{ width: '100%', paddingHorizontal: 12, marginTop: 32 }} showsVerticalScrollIndicator={true} persistentScrollbar={true}>
+                  <Text style={[{ color: '#6A4A2A', fontFamily: 'Jersey10-Regular', fontSize: 24, marginBottom: 8 }]}>Daily Quests</Text>
+                  {(!state.progress.questsState?.dailies || state.progress.questsState.dailies.length === 0) ? (
+                    <Text style={[{ color: '#6A4A2A', fontStyle: 'italic', marginBottom: 16, fontSize: 14 }]}>No daily quests active.</Text>
+                  ) : (
+                    [...state.progress.questsState.dailies]
+                      .sort((a, b) => {
+                        const aCompleted = a.completed;
+                        const bCompleted = b.completed;
+                        if (aCompleted && !bCompleted) return -1;
+                        if (!aCompleted && bCompleted) return 1;
+                        return 0;
+                      })
+                      .map(q => renderTrackerQuestCard(q))
+                  )}
+
+                  <View style={{ height: 16 }} />
+
+                  <Text style={[{ color: '#6A4A2A', fontFamily: 'Jersey10-Regular', fontSize: 24, marginBottom: 8 }]}>Campaign Quests</Text>
+                  {(() => {
+                    const campaign = state.progress.questsState?.campaign || [];
+                    const activeVisible = campaign.filter(q => !q.claimed && isQuestUnlocked(q, campaign, state.progress));
+                    if (activeVisible.length === 0) {
+                      return <Text style={[{ color: '#6A4A2A', fontStyle: 'italic', marginBottom: 16, fontSize: 14 }]}>No active campaign quests.</Text>;
+                    }
+                    const sortedCampaign = [...activeVisible].sort((a, b) => {
                       const aCompleted = a.completed;
                       const bCompleted = b.completed;
                       if (aCompleted && !bCompleted) return -1;
                       if (!aCompleted && bCompleted) return 1;
                       return 0;
-                    })
-                    .map(q => renderTrackerQuestCard(q))
-                )}
+                    });
+                    return sortedCampaign.map(q => renderTrackerQuestCard(q));
+                  })()}
+                </ScrollView>
 
-                <View style={{ height: 16 }} />
+                <TouchableOpacity activeOpacity={0.85} onPress={() => setActiveModal(null)} style={[styles.cozyButtonSecondary, { marginTop: 16 }]}>
+                  <View style={styles.cozyButtonSecondaryInner}>
+                    <Text style={styles.cozyButtonText}>CLOSE</Text>
+                  </View>
+                </TouchableOpacity>
+              </View>
 
-                <Text style={[{ color: '#6A4A2A', fontFamily: 'Jersey10-Regular', fontSize: 24, marginBottom: 8 }]}>Campaign Quests</Text>
-                {(() => {
-                  const campaign = state.progress.questsState?.campaign || [];
-                  const activeVisible = campaign.filter(q => !q.claimed && isQuestUnlocked(q, campaign, state.progress));
-                  if (activeVisible.length === 0) {
-                    return <Text style={[{ color: '#6A4A2A', fontStyle: 'italic', marginBottom: 16, fontSize: 14 }]}>No active campaign quests.</Text>;
-                  }
-                  const sortedCampaign = [...activeVisible].sort((a, b) => {
-                    const aCompleted = a.completed;
-                    const bCompleted = b.completed;
-                    if (aCompleted && !bCompleted) return -1;
-                    if (!aCompleted && bCompleted) return 1;
-                    return 0;
-                  });
-                  return sortedCampaign.map(q => renderTrackerQuestCard(q));
-                })()}
-              </ScrollView>
-
-              <TouchableOpacity activeOpacity={0.85} onPress={() => setActiveModal(null)} style={[styles.cozyButtonSecondary, { marginTop: 16 }]}>
-                <View style={styles.cozyButtonSecondaryInner}>
-                  <Text style={styles.cozyButtonText}>CLOSE</Text>
-                </View>
-              </TouchableOpacity>
-            </View>
-
-            <View style={styles.cozyTopWrap} pointerEvents="none">
-              <View style={styles.cozyTopOuter}>
-                <View style={styles.cozyTopInner}>
-                  <Text style={styles.cozyTopText}>QUEST TRACKER</Text>
+              <View style={styles.cozyTopWrap} pointerEvents="none">
+                <View style={styles.cozyTopOuter}>
+                  <View style={styles.cozyTopInner}>
+                    <Text style={styles.cozyTopText}>QUEST TRACKER</Text>
+                  </View>
                 </View>
               </View>
             </View>
           </View>
-        </View>
-      </Modal>
+        </Modal>
 
-      {/* ════════════════════════════════════════════════════════════════
+        {/* ════════════════════════════════════════════════════════════════
           7. RUN BAG / ITEMS MODAL
       ════════════════════════════════════════════════════════════════ */}
-      <Modal visible={activeModal === 'bag'} transparent animationType="fade">
-        <View style={styles.cozyOverlay}>
-          <View style={[styles.cozyFrame, theme.SHADOWS.cardShadow]}>
-            <View style={styles.cozyParchment}>
-              <View style={styles.cozyBevel} pointerEvents="none" />
+        <Modal visible={activeModal === 'bag'} transparent animationType="fade">
+          <View style={styles.cozyOverlay}>
+            <View style={[styles.cozyFrame, theme.SHADOWS.cardShadow]}>
+              <View style={styles.cozyParchment}>
+                <View style={styles.cozyBevel} pointerEvents="none" />
 
-              <ScrollView style={styles.modalBagScroll} showsVerticalScrollIndicator={true} persistentScrollbar={true}>
-                {/* Section 1: Packed Supplies */}
-                {(() => {
-                  const equippedStorageId = hero.gear?.storage;
-                  const equippedStorage = equippedStorageId ? GEAR[equippedStorageId] : null;
+                <ScrollView style={styles.modalBagScroll} showsVerticalScrollIndicator={true} persistentScrollbar={true}>
+                  {/* Section 1: Packed Supplies */}
+                  {(() => {
+                    const equippedStorageId = hero.gear?.storage;
+                    const equippedStorage = equippedStorageId ? GEAR[equippedStorageId] : null;
 
-                  return (
-                    <View style={{ marginBottom: 12 }}>
-                      <View style={styles.bagSectionHeaderContainer}>
-                        {equippedStorage ? (
-                          <ItemSprite
-                            spritesheet={equippedStorage.spritesheet}
-                            frameIndex={equippedStorage.frameIndex}
-                            displaySize={22}
-                          />
-                        ) : null}
-                        <Text style={[styles.bagSectionHeader, { color: '#8A6E44', marginLeft: equippedStorage ? 6 : 0 }]}>
-                          Packed Supplies
-                        </Text>
+                    return (
+                      <View style={{ marginBottom: 12 }}>
+                        <View style={styles.bagSectionHeaderContainer}>
+                          {equippedStorage ? (
+                            <ItemSprite
+                              spritesheet={equippedStorage.spritesheet}
+                              frameIndex={equippedStorage.frameIndex}
+                              displaySize={22}
+                            />
+                          ) : null}
+                          <Text style={[styles.bagSectionHeader, { color: '#8A6E44', marginLeft: equippedStorage ? 6 : 0 }]}>
+                            Packed Supplies
+                          </Text>
+                        </View>
+
+                        {!equippedStorage ? (
+                          <Text style={styles.emptyBagText}>There is no bag equipped to pack supplies.</Text>
+                        ) : runConsumablesList.length === 0 ? (
+                          <Text style={styles.emptyBagText}>No items remaining in your run bag.</Text>
+                        ) : (
+                          <View style={styles.bagChipsContainer}>
+                            {runConsumablesList.map((item) => {
+                              const consumableDef = CONSUMABLES.find(c => c.id === item.id);
+                              const isUsable = ['potion', 'super_potion', 'mega_potion', 'ultra_potion'].includes(item.id);
+
+                              return (
+                                <View key={item.id} style={styles.bagItemChip}>
+                                  <ItemSprite
+                                    spritesheet={consumableDef?.spritesheet || 'consumables-1'}
+                                    frameIndex={consumableDef?.frameIndex || 0}
+                                    displaySize={32}
+                                  />
+                                  <Text style={styles.bagChipQty}>x{item.quantity}</Text>
+                                  <Text style={styles.bagChipLabel}>{item.name}</Text>
+
+                                  {isUsable ? (
+                                    <TouchableOpacity
+                                      activeOpacity={0.85}
+                                      onPress={() => handleUseItemOnMap(item)}
+                                      style={styles.bagChipUseBtn}
+                                    >
+                                      <View style={styles.bagChipUseBtnInner}><Text style={styles.bagChipUseBtnText}>Use</Text></View>
+                                    </TouchableOpacity>
+                                  ) : (
+                                    <View style={styles.bagChipInfoBtn}>
+                                      <View style={styles.bagChipInfoBtnInner}><Text style={styles.bagChipInfoBtnText}>Info</Text></View>
+                                    </View>
+                                  )}
+                                </View>
+                              );
+                            })}
+                          </View>
+                        )}
                       </View>
+                    );
+                  })()}
 
-                      {!equippedStorage ? (
-                        <Text style={styles.emptyBagText}>There is no bag equipped to pack supplies.</Text>
-                      ) : runConsumablesList.length === 0 ? (
-                        <Text style={styles.emptyBagText}>No items remaining in your run bag.</Text>
-                      ) : (
-                        <View style={styles.bagChipsContainer}>
-                          {runConsumablesList.map((item) => {
-                            const consumableDef = CONSUMABLES.find(c => c.id === item.id);
-                            const isUsable = ['potion', 'super_potion', 'mega_potion', 'ultra_potion'].includes(item.id);
+                  <View style={[styles.bagDivider, { backgroundColor: '#C9A86A', opacity: 0.5 }]} />
 
-                            return (
-                              <View key={item.id} style={styles.bagItemChip}>
+                  {/* Section 2: Loot Collected */}
+                  <View style={{ marginBottom: 12 }}>
+                    <View style={styles.bagSectionHeaderContainer}>
+                      <ItemSprite spritesheet="icons-map" frameIndex={11} displaySize={22} />
+                      <Text style={[styles.bagSectionHeader, { color: '#8A6E44', marginLeft: 6 }]}>
+                        Loot Collected
+                      </Text>
+                    </View>
+
+                    {currentRun.lootCollected.gold === 0 &&
+                      Object.keys(currentRun.lootCollected.materials || {}).length === 0 &&
+                      Object.keys(currentRun.lootCollected.consumables || {}).length === 0 ? (
+                      <Text style={styles.emptyBagText}>No gold or items collected yet.</Text>
+                    ) : (
+                      <View style={styles.bagChipsContainer}>
+                        {currentRun.lootCollected.gold > 0 && (
+                          <View style={styles.bagItemChip}>
+                            <ItemSprite spritesheet="icons-1" frameIndex={11} displaySize={32} />
+                            <Text style={styles.bagChipQty}>{currentRun.lootCollected.gold} G</Text>
+                          </View>
+                        )}
+                        {Object.entries(currentRun.lootCollected.materials || {}).map(([id, qty]) => {
+                          if (qty <= 0) return null;
+                          const def = MATERIALS[id];
+                          return (
+                            <View key={id} style={styles.bagItemChip}>
+                              {def?.spritesheet && (
                                 <ItemSprite
-                                  spritesheet={consumableDef?.spritesheet || 'consumables-1'}
-                                  frameIndex={consumableDef?.frameIndex || 0}
+                                  spritesheet={def.spritesheet}
+                                  frameIndex={def.frameIndex}
                                   displaySize={32}
                                 />
-                                <Text style={styles.bagChipQty}>x{item.quantity}</Text>
-                                <Text style={styles.bagChipLabel}>{item.name}</Text>
-
-                                {isUsable ? (
-                                  <TouchableOpacity
-                                    activeOpacity={0.85}
-                                    onPress={() => handleUseItemOnMap(item)}
-                                    style={styles.bagChipUseBtn}
-                                  >
-                                    <View style={styles.bagChipUseBtnInner}><Text style={styles.bagChipUseBtnText}>Use</Text></View>
-                                  </TouchableOpacity>
-                                ) : (
-                                  <View style={styles.bagChipInfoBtn}>
-                                    <View style={styles.bagChipInfoBtnInner}><Text style={styles.bagChipInfoBtnText}>Info</Text></View>
-                                  </View>
-                                )}
-                              </View>
-                            );
-                          })}
-                        </View>
-                      )}
-                    </View>
-                  );
-                })()}
-
-                <View style={[styles.bagDivider, { backgroundColor: '#C9A86A', opacity: 0.5 }]} />
-
-                {/* Section 2: Loot Collected */}
-                <View style={{ marginBottom: 12 }}>
-                  <View style={styles.bagSectionHeaderContainer}>
-                    <ItemSprite spritesheet="icons-map" frameIndex={11} displaySize={22} />
-                    <Text style={[styles.bagSectionHeader, { color: '#8A6E44', marginLeft: 6 }]}>
-                      Loot Collected
-                    </Text>
+                              )}
+                              <Text style={styles.bagChipQty}>{qty}</Text>
+                            </View>
+                          );
+                        })}
+                        {Object.entries(currentRun.lootCollected.consumables || {}).map(([id, qty]) => {
+                          if (qty <= 0) return null;
+                          const def = CONSUMABLES.find(c => c.id === id);
+                          return (
+                            <View key={id} style={styles.bagItemChip}>
+                              {def?.spritesheet && (
+                                <ItemSprite
+                                  spritesheet={def.spritesheet}
+                                  frameIndex={def.frameIndex}
+                                  displaySize={32}
+                                />
+                              )}
+                              <Text style={styles.bagChipQty}>{qty}</Text>
+                            </View>
+                          );
+                        })}
+                      </View>
+                    )}
                   </View>
+                </ScrollView>
 
-                  {currentRun.lootCollected.gold === 0 &&
-                   Object.keys(currentRun.lootCollected.materials || {}).length === 0 &&
-                   Object.keys(currentRun.lootCollected.consumables || {}).length === 0 ? (
-                    <Text style={styles.emptyBagText}>No gold or items collected yet.</Text>
-                  ) : (
-                    <View style={styles.bagChipsContainer}>
-                      {currentRun.lootCollected.gold > 0 && (
-                        <View style={styles.bagItemChip}>
-                          <ItemSprite spritesheet="icons-1" frameIndex={11} displaySize={32} />
-                          <Text style={styles.bagChipQty}>{currentRun.lootCollected.gold} G</Text>
-                        </View>
-                      )}
-                      {Object.entries(currentRun.lootCollected.materials || {}).map(([id, qty]) => {
-                        if (qty <= 0) return null;
-                        const def = MATERIALS[id];
-                        return (
-                          <View key={id} style={styles.bagItemChip}>
-                            {def?.spritesheet && (
-                              <ItemSprite
-                                  spritesheet={def.spritesheet}
-                                  frameIndex={def.frameIndex}
-                                  displaySize={32}
-                                />
-                            )}
-                            <Text style={styles.bagChipQty}>{qty}</Text>
-                          </View>
-                        );
-                      })}
-                      {Object.entries(currentRun.lootCollected.consumables || {}).map(([id, qty]) => {
-                        if (qty <= 0) return null;
-                        const def = CONSUMABLES.find(c => c.id === id);
-                        return (
-                          <View key={id} style={styles.bagItemChip}>
-                            {def?.spritesheet && (
-                              <ItemSprite
-                                  spritesheet={def.spritesheet}
-                                  frameIndex={def.frameIndex}
-                                  displaySize={32}
-                                />
-                            )}
-                            <Text style={styles.bagChipQty}>{qty}</Text>
-                          </View>
-                        );
-                      })}
-                    </View>
-                  )}
-                </View>
-              </ScrollView>
+                <TouchableOpacity activeOpacity={0.85} onPress={() => setActiveModal(null)} style={styles.cozyButtonSecondary}>
+                  <View style={styles.cozyButtonSecondaryInner}>
+                    <Text style={styles.cozyButtonText}>Close Bag</Text>
+                  </View>
+                </TouchableOpacity>
+              </View>
 
-              <TouchableOpacity activeOpacity={0.85} onPress={() => setActiveModal(null)} style={styles.cozyButtonSecondary}>
-                <View style={styles.cozyButtonSecondaryInner}>
-                  <Text style={styles.cozyButtonText}>Close Bag</Text>
-                </View>
-              </TouchableOpacity>
-            </View>
-
-            <View style={styles.cozyTopWrap} pointerEvents="none">
-              <View style={styles.cozyTopOuter}>
-                <View style={styles.cozyTopInner}>
-                  <Text style={styles.cozyTopText}>RUN BAG & LOOT</Text>
+              <View style={styles.cozyTopWrap} pointerEvents="none">
+                <View style={styles.cozyTopOuter}>
+                  <View style={styles.cozyTopInner}>
+                    <Text style={styles.cozyTopText}>RUN BAG & LOOT</Text>
+                  </View>
                 </View>
               </View>
             </View>
           </View>
-        </View>
-      </Modal>
-    </SafeAreaView>
+        </Modal>
+      </SafeAreaView>
     </ScreenLoader>
   );
 }

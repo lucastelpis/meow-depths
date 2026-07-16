@@ -18,6 +18,7 @@ import {
   Modal,
   Pressable,
   Animated,
+  Alert,
 } from 'react-native';
 
 const AnimatedTouchableOpacity = Animated.createAnimatedComponent(TouchableOpacity);
@@ -164,6 +165,11 @@ export default function DungeonFloorScreen() {
 
   const [questModalVisible, setQuestModalVisible] = useState(false);
 
+  const staminaPotionCount = useMemo(() => {
+    const entry = state.hero.inventory.consumables?.find(c => c.id === 'stamina_potion');
+    return entry ? entry.quantity : 0;
+  }, [state.hero.inventory.consumables]);
+
   const [loadout, setLoadout] = useState({});
   const detailsScrollRef = React.useRef(null);
 
@@ -217,6 +223,7 @@ export default function DungeonFloorScreen() {
   };
 
   const [noConsumablesModalVisible, setNoConsumablesModalVisible] = useState(false);
+  const [noStaminaModalVisible, setNoStaminaModalVisible] = useState(false);
 
   const executeStartRun = () => {
     const carried = [];
@@ -230,6 +237,12 @@ export default function DungeonFloorScreen() {
   const handleEnter = () => {
     const status = getFloorStatus(selectedFloor, effectiveCleared);
     if (status === 'locked') return;
+
+    const currentStamina = state.hero.stamina ?? 3;
+    if (currentStamina < 1) {
+      setNoStaminaModalVisible(true);
+      return;
+    }
 
     if (totalPacked === 0) {
       setNoConsumablesModalVisible(true);
@@ -475,23 +488,6 @@ export default function DungeonFloorScreen() {
 
         {/* ── 3rd Part: Details Panel (Paging horizontal scroll: Details ⇄ Pack Supplies) ── */}
         <View style={[styles.detailsContainer, { paddingBottom: Math.max(insets.bottom, 16) }]}>
-          {hasActiveQuest && (
-            <TouchableOpacity
-              activeOpacity={0.8}
-              onPress={() => setQuestModalVisible(true)}
-              style={styles.questBadgeContainer}
-            >
-              <View style={styles.questBadgeOuter}>
-                <View style={styles.questBadgeInner}>
-                  <ItemSprite spritesheet="icons-map" frameIndex={73} displaySize={18} />
-                </View>
-              </View>
-              <View style={styles.questBadgeAlert}>
-                <Text style={styles.questBadgeAlertText}>!</Text>
-              </View>
-            </TouchableOpacity>
-          )}
-
           <View style={styles.detailsCard}>
             <ScrollView
               ref={detailsScrollRef}
@@ -521,6 +517,16 @@ export default function DungeonFloorScreen() {
                       {(selectedFloor === 10 && zoneId === 'zone1') ? '4×4' : GRID_SIZES[selectedFloor]}
                     </Text>
                   </View>
+
+                  {hasActiveQuest && (
+                    <TouchableOpacity
+                      activeOpacity={0.8}
+                      onPress={() => setQuestModalVisible(true)}
+                      style={styles.questBadgeCompact}
+                    >
+                      <Text style={styles.questBadgeTextCompact}>QUEST</Text>
+                    </TouchableOpacity>
+                  )}
                 </View>
 
                 {/* Row 2a: Rewards List */}
@@ -633,9 +639,9 @@ export default function DungeonFloorScreen() {
 
                   {/* Slot Pips Indicator */}
                   <View style={styles.slotIndicatorModal}>
-                    {Array.from({ length: maxSlots }).map((_, i) => (
+                    {/* {Array.from({ length: maxSlots }).map((_, i) => (
                       <View key={i} style={[styles.slotPip, i < totalPacked && styles.slotPipFilled]} />
-                    ))}
+                    ))} */}
                     <Text style={styles.slotText}>{totalPacked}/{maxSlots}</Text>
                   </View>
                 </View>
@@ -644,11 +650,11 @@ export default function DungeonFloorScreen() {
                 <ScrollView style={styles.inlineScroll} showsVerticalScrollIndicator={true}>
                   {maxSlots === 0 ? (
                     <Text style={styles.emptySuppliesText}>No bag slots. Equip a belt/bag in Profile loadout!</Text>
-                  ) : state.hero.inventory.consumables.filter(c => c.quantity > 0).length === 0 ? (
+                  ) : state.hero.inventory.consumables.filter(c => c.quantity > 0 && c.id !== 'stamina_potion').length === 0 ? (
                     <Text style={styles.emptySuppliesText}>No supplies owned. Purchase potions at the Shop!</Text>
                   ) : (
                     state.hero.inventory.consumables
-                      .filter(e => e.quantity > 0)
+                      .filter(e => e.quantity > 0 && e.id !== 'stamina_potion')
                       .map(entry => {
                         const def = CONSUMABLES.find(c => c.id === entry.id);
                         const packed = loadout[entry.id] || 0;
@@ -661,10 +667,10 @@ export default function DungeonFloorScreen() {
                                 <ItemSprite
                                   spritesheet={def.spritesheet}
                                   frameIndex={def.frameIndex}
-                                  displaySize={20}
+                                  displaySize={50}
                                 />
                               ) : (
-                                <Text style={{ fontSize: 16 }}>🧪</Text>
+                                <Text style={{ fontSize: 22 }}>🧪</Text>
                               )}
                             </View>
                             <View style={{ flex: 1 }}>
@@ -745,9 +751,17 @@ export default function DungeonFloorScreen() {
                           borderLeftColor: '#4F856C',
                           borderRightColor: '#4F856C',
                           borderBottomColor: '#0D2118',
+                          flexDirection: 'row',
+                          justifyContent: 'center',
+                          alignItems: 'center',
+                          gap: 6,
                         }
                       ]}>
                         <Text style={styles.wideButtonText}>START EXPEDITION</Text>
+                        <View style={styles.cozyStaminaCostTag}>
+                          <ItemSprite spritesheet="icons-map" frameIndex={134} displaySize={22} />
+                          <Text style={styles.cozyStaminaCostText}>1</Text>
+                        </View>
                       </View>
                     </TouchableOpacity>
                   </View>
@@ -921,6 +935,80 @@ export default function DungeonFloorScreen() {
                   >
                     <View style={[styles.warningBtnInner, { backgroundColor: '#590D0E', borderColor: '#A61C1C' }]}>
                       <Text style={[styles.warningBtnText, { color: '#FFF3DA' }]}>PROCEED</Text>
+                    </View>
+                  </TouchableOpacity>
+                </View>
+              </Pressable>
+            </View>
+          </Pressable>
+        </Modal>
+
+        {/* ── No Stamina Warning Modal ── */}
+        <Modal
+          visible={noStaminaModalVisible}
+          transparent={true}
+          animationType="fade"
+          onRequestClose={() => setNoStaminaModalVisible(false)}
+        >
+          <Pressable
+            style={styles.modalOverlay}
+            onPress={() => setNoStaminaModalVisible(false)}
+          >
+            <View style={styles.staminaModalContentWrapper}>
+              <Pressable style={styles.staminaModalContent} onPress={(e) => e.stopPropagation()}>
+                {/* Modal Header */}
+                <View style={styles.modalHeader}>
+                  <ItemSprite spritesheet="icons-map" frameIndex={131} displaySize={24} />
+                  <Text style={styles.staminaModalTitle}>Out of Stamina!</Text>
+                </View>
+
+                <View style={styles.modalDivider} />
+
+                {/* Warning Text */}
+                <Text style={styles.staminaModalQuestDesc}>
+                  You do not have enough Stamina to start this expedition.
+                </Text>
+
+                <View style={styles.staminaInfoBox}>
+                  <Text style={styles.staminaInfoBoxText}>
+                    • 1 charge is consumed per expedition.
+                    {"\n\n"}
+                    • Base recovery: 1 charge every 8 hours. Pauses when full (3/3).
+                    {"\n\n"}
+                    • Special items can speed up recovery.
+                  </Text>
+                </View>
+
+                {/* Action Buttons Row */}
+                <View style={{ gap: 8, marginTop: 10 }}>
+                  {staminaPotionCount > 0 && (
+                    <TouchableOpacity
+                      activeOpacity={0.8}
+                      onPress={() => {
+                        dispatch({ type: 'USE_CONSUMABLE', payload: { consumableId: 'stamina_potion' } });
+                        setNoStaminaModalVisible(false);
+                        Alert.alert('⚡ Stamina Restored!', 'You recovered 1 stamina charge.');
+                      }}
+                      style={[styles.warningBtnOuter, { borderColor: '#b98c33ff', width: '100%' }]}
+                    >
+                      <View style={[styles.warningBtnInner, { backgroundColor: '#8E5A1D', borderColor: '#b98c33ff' }]}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, justifyContent: 'center' }}>
+                          <ItemSprite spritesheet="consumables-1" frameIndex={5} displaySize={18} />
+                          <Text style={[styles.warningBtnText, { color: '#FFF3DA', fontWeight: 'bold' }]}>
+                            USE STAMINA POTION ({staminaPotionCount})
+                          </Text>
+                        </View>
+                      </View>
+                    </TouchableOpacity>
+                  )}
+
+                  <TouchableOpacity
+                    activeOpacity={0.8}
+                    onPress={() => setNoStaminaModalVisible(false)}
+                    style={[styles.warningBtnOuter, { borderColor: '#84735B', width: '100%' }]}
+                  >
+                    <View style={[styles.warningBtnInner, { backgroundColor: '#4F3C1E' }]}>
+                      <Text style={styles.warningBtnText}>OK</Text>
                     </View>
                   </TouchableOpacity>
                 </View>
@@ -1124,13 +1212,16 @@ const styles = StyleSheet.create({
     borderColor: '#84735B',
     borderRadius: 5,
     paddingHorizontal: 6,
-    paddingVertical: 2,
+    height: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
     backgroundColor: '#231F2B',
   },
   gridBadgeTextCompact: {
     fontFamily: 'Silkscreen-Regular',
     fontSize: 14,
     color: '#FFE39B',
+    lineHeight: 14,
   },
 
   innerSectionBox: {
@@ -1164,7 +1255,7 @@ const styles = StyleSheet.create({
   },
   rewardName: {
     fontFamily: 'Jersey10-Regular',
-    fontSize: 15,
+    fontSize: 22,
     color: '#EAD9BA',
     marginTop: 4,
     textAlign: 'center',
@@ -1222,8 +1313,8 @@ const styles = StyleSheet.create({
 
   /* ── Pack Supplies Card styles ── */
   backBtnHeaderWrapper: {
-    width: 60,
-    height: 26,
+    width: 70,
+    height: 30,
     position: 'relative',
   },
   backBtnHeaderShadow: {
@@ -1237,8 +1328,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#590D0E',
   },
   backBtnHeaderOuter: {
-    width: 60,
-    height: 26,
+    width: 70,
+    height: 30,
     borderRadius: 6,
     borderWidth: 1.5,
     borderColor: '#84735B',
@@ -1258,7 +1349,7 @@ const styles = StyleSheet.create({
   },
   backBtnText: {
     fontFamily: 'Silkscreen-Regular',
-    fontSize: 8.5,
+    fontSize: 12,
     color: '#EAD9BA',
     marginTop: -1,
   },
@@ -1270,7 +1361,7 @@ const styles = StyleSheet.create({
   },
   loadoutSubTitle: {
     fontFamily: 'Silkscreen-Regular',
-    fontSize: 8.5,
+    fontSize: 12,
     color: '#FFE39B',
   },
   slotIndicatorModal: {
@@ -1289,7 +1380,7 @@ const styles = StyleSheet.create({
   },
   slotText: {
     fontFamily: 'Silkscreen-Regular',
-    fontSize: 8,
+    fontSize: 16,
     color: '#EAD9BA',
     marginLeft: 4,
   },
@@ -1316,8 +1407,8 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   supplyIconContainer: {
-    width: 32,
-    height: 32,
+    width: 50,
+    height: 50,
     borderRadius: 6,
     backgroundColor: 'rgba(255,255,255,0.03)',
     alignItems: 'center',
@@ -1325,18 +1416,18 @@ const styles = StyleSheet.create({
   },
   supplyName: {
     fontFamily: 'Jersey10-Regular',
-    fontSize: 13,
+    fontSize: 26,
     color: '#EAD9BA',
   },
   supplyOwned: {
     fontFamily: 'Silkscreen-Regular',
-    fontSize: 8,
+    fontSize: 14,
     color: '#FFE39B',
   },
   supplyControls: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 10,
   },
   cntBtnWrapper: {
     width: 28,
@@ -1405,64 +1496,40 @@ const styles = StyleSheet.create({
   },
   cntBtnTextDisabled: {
     fontFamily: 'Jersey10-Regular',
-    fontSize: 16,
+    fontSize: 20,
     color: 'rgba(255,255,255,0.2)',
     marginTop: -2,
   },
   cntBtnText: {
     fontFamily: 'Jersey10-Regular',
-    fontSize: 16,
+    fontSize: 20,
     color: '#FFF3DA',
     marginTop: -2,
   },
   cntText: {
     fontFamily: 'Jersey10-Regular',
-    fontSize: 14,
+    fontSize: 22,
     color: '#EAD9BA',
-    minWidth: 14,
+    minWidth: 22,
     textAlign: 'center',
   },
-  questBadgeContainer: {
-    position: 'absolute',
-    top: -2,
-    right: 26,
-    zIndex: 50,
-  },
-  questBadgeOuter: {
-    borderWidth: 2,
-    borderColor: '#84735B',
-    borderRadius: 8,
-    backgroundColor: '#4F3C1E',
-    padding: 2,
-  },
-  questBadgeInner: {
-    borderWidth: 1.5,
-    borderColor: '#4F856C',
-    borderRadius: 5,
-    backgroundColor: '#1B4030',
-    padding: 4,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  questBadgeAlert: {
-    position: 'absolute',
-    top: -4,
-    right: -4,
-    width: 14,
-    height: 14,
-    borderRadius: 7,
-    backgroundColor: '#A61C1C',
+  questBadgeCompact: {
     borderWidth: 1,
-    borderColor: '#FFF3DA',
+    borderColor: '#F5CF4A',
+    borderRadius: 5,
+    paddingHorizontal: 6,
+    height: 24,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: '#4F3C1E',
+    marginLeft: -4,
   },
-  questBadgeAlertText: {
-    fontFamily: 'PressStart2P-Regular',
-    fontSize: 8,
+  questBadgeTextCompact: {
+    fontFamily: 'Silkscreen-Regular',
+    fontSize: 14,
     color: '#FFF3DA',
-    lineHeight: 10,
-    textAlign: 'center',
+    fontWeight: 'bold',
+    lineHeight: 14,
   },
   modalOverlay: {
     flex: 1,
@@ -1515,15 +1582,15 @@ const styles = StyleSheet.create({
   },
   modalQuestDesc: {
     fontFamily: 'Jersey10-Regular',
-    fontSize: 18,
+    fontSize: 22,
     color: '#EAD9BA',
     lineHeight: 20,
     marginBottom: 16,
   },
   modalSectionLabel: {
     fontFamily: 'Silkscreen-Regular',
-    fontSize: 8,
-    color: '#84735B',
+    fontSize: 14,
+    color: '#c9bb25ff',
     marginBottom: 6,
   },
   modalProgressSection: {
@@ -1550,7 +1617,7 @@ const styles = StyleSheet.create({
   },
   modalProgressText: {
     fontFamily: 'Silkscreen-Regular',
-    fontSize: 8,
+    fontSize: 14,
     color: '#EAD9BA',
   },
   modalRewardsSection: {
@@ -1574,7 +1641,7 @@ const styles = StyleSheet.create({
   },
   modalRewardText: {
     fontFamily: 'Jersey10-Regular',
-    fontSize: 16,
+    fontSize: 20,
     color: '#FFE39B',
   },
   modalFooter: {
@@ -1629,5 +1696,68 @@ const styles = StyleSheet.create({
     fontFamily: 'Jersey10-Regular',
     fontSize: 16,
     color: '#EAD9BA',
+  },
+  staminaModalContentWrapper: {
+    width: '92%',
+    maxWidth: 380,
+    borderWidth: 2,
+    borderColor: '#84735B',
+    borderRadius: 16,
+    backgroundColor: '#4F3C1E',
+    padding: 3,
+  },
+  staminaModalContent: {
+    borderWidth: 1.5,
+    borderColor: '#4F856C',
+    borderRadius: 12,
+    backgroundColor: '#1B4030',
+    padding: 24,
+  },
+  staminaModalTitle: {
+    fontFamily: 'Jersey10-Regular',
+    fontSize: 28,
+    color: '#FFE39B',
+    marginLeft: 8,
+  },
+  staminaModalQuestDesc: {
+    fontFamily: 'Jersey10-Regular',
+    fontSize: 20,
+    color: '#EAD9BA',
+    lineHeight: 24,
+    marginBottom: 20,
+  },
+  staminaInfoBox: {
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    borderRadius: 8,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(212, 167, 84, 0.2)',
+    marginBottom: 16,
+  },
+  staminaInfoBoxText: {
+    fontFamily: 'Jersey10-Regular',
+    fontSize: 16,
+    color: '#FFE39B',
+    lineHeight: 18,
+  },
+  cozyStaminaCostTag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#0D2118', // Deep forest shadow/black
+    borderColor: '#4F856C', // Emerald green highlight border
+    borderWidth: 1.5,
+    borderRadius: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 0.5,
+    gap: 2,
+    marginLeft: 8,
+  },
+  cozyStaminaCostText: {
+    fontFamily: 'Jersey10-Regular',
+    fontSize: 22,
+    color: '#FFE39B', // Soft gold
+    fontWeight: 'bold',
+    lineHeight: 22,
+    paddingRight: 5
   },
 });

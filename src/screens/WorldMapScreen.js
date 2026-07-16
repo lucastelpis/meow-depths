@@ -86,7 +86,7 @@ export default function WorldMapScreen({ navigation }) {
   };
 
   return (
-      <View style={[styles.container, { paddingBottom: insets.bottom }]}>
+    <View style={[styles.container, { paddingBottom: insets.bottom }]}>
       {/* Background with subtle top radial gradient glow (shared hub look) */}
       <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
         <Defs>
@@ -136,12 +136,12 @@ export default function WorldMapScreen({ navigation }) {
         showsVerticalScrollIndicator={false}
       >
         {zoneList.map((zone) => {
-          const unlocked        = isZoneUnlocked(zone);
-          const isCleared       = !!state.progress[`${zone.id}Cleared`];
-          const runsCount       = (state.progress.runsCompleted && state.progress.runsCompleted[zone.id]) || 0;
-          const floorsCleared   = (state.progress.floorsCleared && state.progress.floorsCleared[zone.id]) || 0;
-          const floorCount      = zone.floorCount || 10;
-          const nextFloor       = Math.min(floorsCleared + 1, floorCount);
+          const unlocked = isZoneUnlocked(zone);
+          const isCleared = !!state.progress[`${zone.id}Cleared`];
+          const runsCount = (state.progress.runsCompleted && state.progress.runsCompleted[zone.id]) || 0;
+          const floorsCleared = (state.progress.floorsCleared && state.progress.floorsCleared[zone.id]) || 0;
+          const floorCount = zone.floorCount || 10;
+          const nextFloor = Math.min(floorsCleared + 1, floorCount);
           const grad = ZONE_GRADIENTS[zone.id] || { start: '#171725', end: '#0B0B12', border: 'rgba(255,255,255,0.05)', accent: theme.COLORS.primary };
 
           return (
@@ -197,13 +197,13 @@ export default function WorldMapScreen({ navigation }) {
                     {renderStatusBadge(unlocked, isCleared)}
                     {unlocked && (
                       <View style={styles.runsBadge}>
-                        <ItemSprite spritesheet="icons-1" frameIndex={10} displaySize={11} />
+                        <ItemSprite spritesheet="icons-1" frameIndex={10} displaySize={18} />
                         <Text style={styles.runsBadgeText}>Runs: {runsCount}</Text>
                       </View>
                     )}
                     {unlocked && (
                       <View style={[styles.runsBadge, { borderColor: `${grad.accent}40`, backgroundColor: `${grad.accent}12` }]}>
-                        <ItemSprite spritesheet="icons-1" frameIndex={0} displaySize={11} />
+                        <ItemSprite spritesheet="icons-1" frameIndex={0} displaySize={18} />
                         <Text style={[styles.runsBadgeText, { color: grad.accent }]}>
                           Zone {isCleared ? floorCount : nextFloor}/{floorCount}
                         </Text>
@@ -255,9 +255,9 @@ export default function WorldMapScreen({ navigation }) {
 // Styles
 // =============================================================================
 const styles = StyleSheet.create({
-  container:       { flex: 1, backgroundColor: '#133131' },
+  container: { flex: 1, backgroundColor: '#133131' },
   scrollContainer: { flex: 1 },
-  scroll:          { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 40 },
+  scroll: { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 40 },
 
   // Header (shared hub style)
   header: {
@@ -335,35 +335,35 @@ const styles = StyleSheet.create({
   headerSpacer: { width: 44 },
 
   // Zone cards
-  zoneCard:         { width: '100%', borderRadius: 20, marginBottom: 24, position: 'relative', overflow: 'hidden', borderWidth: 3, borderColor: theme.COLORS.candleGold, backgroundColor: theme.COLORS.voidNavy },
-  zoneCardLocked:   { opacity: 0.35 },
-  lockOverlay:      { ...StyleSheet.absoluteFillObject, justifyContent: 'center', alignItems: 'center', zIndex: 10, backgroundColor: 'rgba(0,0,0,0.65)' },
-  lockIcon:         { fontSize: 48, opacity: 0.4 },
-  bannerImage:      { ...StyleSheet.absoluteFillObject, width: '100%', height: '100%' },
-  
-  cardBody:         { paddingHorizontal: 16, paddingTop: 14, paddingBottom: 14, flexDirection: 'column', gap: 12, zIndex: 2 },
-  topContent:       { gap: 6 },
-  
-  zoneHeader:       { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 },
-  zoneName:         { ...theme.FONTS.heading, color: '#F8FAFC', fontSize: 24 },
-  textWithShadow:   { textShadowColor: 'rgba(0, 0, 0, 0.95)', textShadowOffset: { width: 0, height: 1.5 }, textShadowRadius: 3.5 },
-  levelBadge:       { borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)', backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 },
-  levelBadgeText:   { ...theme.FONTS.tiny, color: theme.COLORS.textDim, fontWeight: 'bold', fontSize: 13 },
-  
+  zoneCard: { width: '100%', borderRadius: 20, marginBottom: 24, position: 'relative', overflow: 'hidden', borderWidth: 3, borderColor: theme.COLORS.candleGold, backgroundColor: theme.COLORS.voidNavy },
+  zoneCardLocked: { opacity: 0.35 },
+  lockOverlay: { ...StyleSheet.absoluteFillObject, justifyContent: 'center', alignItems: 'center', zIndex: 10, backgroundColor: 'rgba(0,0,0,0.65)' },
+  lockIcon: { fontSize: 48, opacity: 0.4 },
+  bannerImage: { ...StyleSheet.absoluteFillObject, width: '100%', height: '100%' },
+
+  cardBody: { paddingHorizontal: 16, paddingTop: 14, paddingBottom: 14, flexDirection: 'column', gap: 12, zIndex: 2 },
+  topContent: { gap: 6 },
+
+  zoneHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 },
+  zoneName: { ...theme.FONTS.heading, color: '#F8FAFC', fontSize: 32 },
+  textWithShadow: { textShadowColor: 'rgba(0, 0, 0, 0.95)', textShadowOffset: { width: 0, height: 1.5 }, textShadowRadius: 3.5 },
+  levelBadge: { borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)', backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 },
+  levelBadgeText: { ...theme.FONTS.tiny, color: theme.COLORS.textDim, fontWeight: 'bold', fontSize: 16, fontFamily: 'Silkscreen-Regular' },
+
   // Status & runs badge row
-  badgeRow:         { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4, flexWrap: 'wrap' },
-  statusBadge:      { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6, borderWidth: 1, flexDirection: 'row', alignItems: 'center', gap: 4 },
-  statusBadgeLocked:     { backgroundColor: 'rgba(255,255,255,0.02)', borderColor: 'rgba(255,255,255,0.06)' },
-  statusBadgeCleared:    { backgroundColor: 'rgba(16, 185, 129, 0.08)', borderColor: 'rgba(16, 185, 129, 0.22)' },
-  
-  statusBadgeTextLocked:     { ...theme.FONTS.tiny, color: theme.COLORS.textDim, fontWeight: 'bold', fontSize: 12 },
-  statusBadgeTextCleared:    { ...theme.FONTS.tiny, color: theme.COLORS.success, fontWeight: 'bold', fontSize: 12 },
-  
-  runsBadge:        { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6, borderWidth: 1, backgroundColor: 'rgba(251, 191, 36, 0.06)', borderColor: 'rgba(251, 191, 36, 0.18)', flexDirection: 'row', alignItems: 'center', gap: 4 },
-  runsBadgeText:    { ...theme.FONTS.tiny, color: theme.COLORS.gold, fontWeight: 'bold', fontSize: 12 },
-  
-  zoneDescription:  { ...theme.FONTS.body, color: '#CFE0EE', marginVertical: 2, lineHeight: 18, fontSize: 14 },
- 
+  badgeRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4, flexWrap: 'wrap' },
+  statusBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6, borderWidth: 1, flexDirection: 'row', alignItems: 'center', gap: 4 },
+  statusBadgeLocked: { backgroundColor: 'rgba(255,255,255,0.02)', borderColor: 'rgba(255,255,255,0.06)' },
+  statusBadgeCleared: { backgroundColor: 'rgba(16, 185, 129, 0.08)', borderColor: 'rgba(16, 185, 129, 0.22)' },
+
+  statusBadgeTextLocked: { ...theme.FONTS.tiny, color: theme.COLORS.textDim, fontWeight: 'bold', fontSize: 16, fontFamily: 'Silkscreen-Regular' },
+  statusBadgeTextCleared: { ...theme.FONTS.tiny, color: theme.COLORS.success, fontWeight: 'bold', fontSize: 16, fontFamily: 'Silkscreen-Regular' },
+
+  runsBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6, borderWidth: 1, backgroundColor: 'rgba(251, 191, 36, 0.06)', borderColor: 'rgba(251, 191, 36, 0.18)', flexDirection: 'row', alignItems: 'center', gap: 4 },
+  runsBadgeText: { ...theme.FONTS.tiny, color: theme.COLORS.gold, fontWeight: 'bold', fontSize: 14, fontFamily: 'Silkscreen-Regular' },
+
+  zoneDescription: { ...theme.FONTS.body, color: '#CFE0EE', marginVertical: 2, lineHeight: 18, fontSize: 22 },
+
   beginButtonWrapper: {
     width: '100%',
     height: 44,
@@ -423,7 +423,7 @@ const styles = StyleSheet.create({
     fontFamily: 'Silkscreen-Regular',
     color: '#FFF3DA',
     fontWeight: 'bold',
-    fontSize: 11,
+    fontSize: 18,
     textAlign: 'center',
     textTransform: 'uppercase',
   },

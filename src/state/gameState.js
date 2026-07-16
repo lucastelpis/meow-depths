@@ -42,6 +42,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { generateDungeonGrid } from '../logic/dungeonGenerator';
 import { ZONES, getGridSizeForFloor, getFloorCompletionReward } from '../data/zones';
 import { calculateEffectiveStats, applyHealingEfficiency, checkLevelUp } from '../logic/progressionEngine';
+import { recalculateStamina, getStaminaRegenInterval } from '../logic/staminaEngine';
 import { GEAR, CONSUMABLES } from '../data/gear';
 import { SKILLS, getSkillUpgradeCost } from '../data/skills';
 import { getInitialCampaignQuests, generateDailyQuests, syncPersistentQuests } from '../data/quests';
@@ -83,6 +84,9 @@ const initialState = {
     element: null,            // 'fire' | 'water' | 'earth' | 'wind' | null (set on first launch)
     unlockedSkills: {},       // { skillId: { stars: number } }
     equippedSkills: [null, null], // two active skill slots for combat
+    stamina: 3,
+    maxStamina: 3,
+    lastStaminaRegenTime: null,
 
     // -- Equipment & Inventory -----------------------------------------------
     gear: {
@@ -196,7 +200,8 @@ const ELEMENT_TO_STARTING_SKILL = {
 };
 
 function gameReducer(state, action) {
-  const nextState = baseGameReducer(state, action);
+  const stateWithStamina = recalculateStamina(state);
+  const nextState = baseGameReducer(stateWithStamina, action);
   return syncPersistentQuests(nextState);
 }
 
@@ -208,6 +213,9 @@ function baseGameReducer(state, action) {
     // -----------------------------------------------------------------------
     case 'SET_STATE':
       return { ...action.payload };
+
+    case 'TICK_STAMINA':
+      return state;
 
     // -----------------------------------------------------------------------
     // TOGGLE_MUTE_SOUNDS — toggle the muteSounds setting
@@ -461,6 +469,12 @@ function baseGameReducer(state, action) {
       const zone = ZONES[zoneId];
       if (!zone) return state;
 
+      const currentStamina = state.hero.stamina ?? 3;
+      if (currentStamina <= 0) return state;
+
+      const newStamina = currentStamina - 1;
+      const newLastRegen = state.hero.lastStaminaRegenTime ?? Date.now();
+
       const { gridWidth, gridHeight } = getGridSizeForFloor(floorNumber, zoneId);
       const grid = generateDungeonGrid(gridWidth, gridHeight, zoneId, floorNumber);
 
@@ -509,6 +523,8 @@ function baseGameReducer(state, action) {
         hero: {
           ...state.hero,
           hp: fullHp,
+          stamina: newStamina,
+          lastStaminaRegenTime: newLastRegen,
           inventory: {
             ...state.hero.inventory,
             consumables: updatedPermanentConsumables
@@ -923,19 +939,33 @@ function baseGameReducer(state, action) {
     // Payload: { consumableId: string }
     // -----------------------------------------------------------------------
     case 'USE_CONSUMABLE': {
+      const { consumableId } = action.payload;
       const updatedConsumables = state.hero.inventory.consumables
         .map(c => {
-          if (c.id === action.payload.consumableId) {
+          if (c.id === consumableId) {
             return { ...c, quantity: c.quantity - 1 };
           }
           return c;
         })
         .filter(c => c.quantity > 0); // remove if quantity hits 0
 
+      let newStamina = state.hero.stamina ?? 3;
+      let newLastRegen = state.hero.lastStaminaRegenTime;
+
+      if (consumableId === 'stamina_potion') {
+        const maxStamina = state.hero.maxStamina ?? 3;
+        newStamina = Math.min(maxStamina, newStamina + 1);
+        if (newStamina >= maxStamina) {
+          newLastRegen = null;
+        }
+      }
+
       return {
         ...state,
         hero: {
           ...state.hero,
+          stamina: newStamina,
+          lastStaminaRegenTime: newLastRegen,
           inventory: {
             ...state.hero.inventory,
             consumables: updatedConsumables,
@@ -1087,6 +1117,21 @@ function baseGameReducer(state, action) {
             ...state.hero.inventory,
             consumables: updatedConsumables,
           },
+        },
+      };
+    }
+
+    // -----------------------------------------------------------------------
+    // REPLENISH_STAMINA — immediately recharge stamina to max capacity
+    // -----------------------------------------------------------------------
+    case 'REPLENISH_STAMINA': {
+      const maxStamina = state.hero.maxStamina ?? 3;
+      return {
+        ...state,
+        hero: {
+          ...state.hero,
+          stamina: maxStamina,
+          lastStaminaRegenTime: null,
         },
       };
     }

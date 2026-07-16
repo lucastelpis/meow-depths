@@ -25,6 +25,7 @@ import theme from '../constants/theme';
 import { useGame } from '../state/gameState';
 import ItemSprite from '../components/ItemSprite';
 import { isQuestUnlocked } from '../data/quests';
+import { CONSUMABLES } from '../data/gear';
 
 export default function QuestScreen({ navigation }) {
   const { state, dispatch } = useGame();
@@ -115,17 +116,9 @@ export default function QuestScreen({ navigation }) {
         desc: 'Shiny gold coins. Used to purchase gear, consumables, and all kinds of stuff.',
       };
     }
-    if (normalized === 'potion') {
-      return { title: 'HEALTH POTION', desc: 'Restore 50 HP.' };
-    }
-    if (normalized === 'super_potion') {
-      return { title: 'SUPER POTION', desc: 'Restore 100 HP.' };
-    }
-    if (normalized === 'mega_potion') {
-      return { title: 'MEGA POTION', desc: 'Restore 150 HP.' };
-    }
-    if (normalized === 'ultra_potion') {
-      return { title: 'ULTRA POTION', desc: 'Restore 200 HP.' };
+    const def = CONSUMABLES.find(c => c.id === normalized);
+    if (def) {
+      return { title: def.name.toUpperCase(), desc: def.description };
     }
     if (normalized === 'black_shard') {
       return { title: 'BLACK SHARD', desc: 'A fragmented piece of black crystal. Dropped by Sewer monsters. Used for crafting basic gear.' };
@@ -189,10 +182,8 @@ export default function QuestScreen({ navigation }) {
         </View>
       );
     } else if (type === 'consumables') {
-      let frame = 0;
-      if (lowerKey === 'super_potion') frame = 1;
-      else if (lowerKey === 'mega_potion') frame = 2;
-      else if (lowerKey === 'ultra_potion') frame = 3;
+      const def = CONSUMABLES.find(c => c.id === lowerKey);
+      const frame = def ? def.frameIndex : 0;
       return (
         <View key={key} style={styles.rewardMiniChip}>
           <TouchableOpacity style={styles.infoTagSmall} onPress={handlePressInfo} activeOpacity={0.7}>
@@ -220,10 +211,8 @@ export default function QuestScreen({ navigation }) {
   const getItemName = (itemId) => {
     const normalized = itemId.toLowerCase();
     if (normalized === 'gold') return 'Gold';
-    if (normalized === 'potion') return 'Health Potion';
-    if (normalized === 'super_potion') return 'Super Potion';
-    if (normalized === 'mega_potion') return 'Mega Potion';
-    if (normalized === 'ultra_potion') return 'Ultra Potion';
+    const def = CONSUMABLES.find(c => c.id === normalized);
+    if (def) return def.name;
 
     return normalized
       .split('_')
@@ -239,10 +228,8 @@ export default function QuestScreen({ navigation }) {
     if (lowerKey === 'gold') {
       sprite = <ItemSprite spritesheet="icons-1" frameIndex={11} displaySize={32} />;
     } else if (type === 'consumables') {
-      let frame = 0;
-      if (lowerKey === 'super_potion') frame = 1;
-      else if (lowerKey === 'mega_potion') frame = 2;
-      else if (lowerKey === 'ultra_potion') frame = 3;
+      const def = CONSUMABLES.find(c => c.id === lowerKey);
+      const frame = def ? def.frameIndex : 0;
       sprite = <ItemSprite spritesheet="consumables-1" frameIndex={frame} displaySize={32} />;
     } else if (type === 'materials') {
       const frame = getCrystalFrame(lowerKey);

@@ -541,6 +541,18 @@ export default function ProfileScreen() {
     }]);
   };
 
+  const handleUseStaminaPotion = () => {
+    const currentStamina = state.hero.stamina ?? 3;
+    const maxStamina = state.hero.maxStamina ?? 3;
+    if (currentStamina >= maxStamina) {
+      Alert.alert('Full Stamina', 'Your stamina is already fully charged!');
+      return;
+    }
+    dispatch({ type: 'USE_CONSUMABLE', payload: { consumableId: 'stamina_potion' } });
+    setModalVisible(false);
+    Alert.alert('⚡ Stamina Restored!', 'You recovered 1 stamina charge.');
+  };
+
   return (
     <SafeAreaView style={styles.root}>
       {/* Ambient warm glow */}
@@ -1521,6 +1533,7 @@ export default function ProfileScreen() {
                   let lore = LORE_DESCRIPTIONS[selectedItem.id] || '';
                   let statusText = '';
                   let showOpenChestBtn = false;
+                  let showUseStaminaPotionBtn = false;
 
                   if (itemType === 'consumable') {
                     const def = CONSUMABLES.find(c => c.id === selectedItem.id);
@@ -1532,6 +1545,8 @@ export default function ProfileScreen() {
                     statusText = `Owned: ${selectedItem.quantity}`;
                     if (selectedItem.id === 'mystery_chest') {
                       showOpenChestBtn = true;
+                    } else if (selectedItem.id === 'stamina_potion') {
+                      showUseStaminaPotionBtn = true;
                     }
                   } else if (itemType === 'material') {
                     title = selectedItem.name;
@@ -1649,6 +1664,14 @@ export default function ProfileScreen() {
                             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, justifyContent: 'center' }}>
                               <ItemSprite spritesheet="icons-map" frameIndex={53} displaySize={18} />
                               <Text style={styles.primaryActionText}>Open Mystery Chest</Text>
+                            </View>
+                          </TouchableOpacity>
+                        )}
+                        {showUseStaminaPotionBtn && (
+                          <TouchableOpacity style={styles.primaryActionBtn} onPress={handleUseStaminaPotion} activeOpacity={0.85}>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, justifyContent: 'center' }}>
+                              <ItemSprite spritesheet="consumables-1" frameIndex={5} displaySize={18} />
+                              <Text style={styles.primaryActionText}>Use Stamina Potion</Text>
                             </View>
                           </TouchableOpacity>
                         )}

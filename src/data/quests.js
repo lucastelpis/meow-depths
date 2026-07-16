@@ -53,7 +53,7 @@ export function generateDailyQuests(hero, progress, dateStr) {
     claimed: false,
     rewards: {
       gold: 100 + lvl * 50,
-      consumables: { potion: 3 }
+      consumables: { potion: 3, stamina_potion: 1 }
     },
     tag: 'Daily'
   };

@@ -2003,7 +2003,7 @@ export default function CombatScreen() {
 
   const performFlee = () => {
     setShowFleeConfirmModal(false);
-    
+
     // Sync any consumables used during this fight (deducting them)
     const flatConsumables = [];
     for (const c of runConsumables) {
@@ -2011,12 +2011,12 @@ export default function CombatScreen() {
         flatConsumables.push(c.id);
       }
     }
-    
+
     dispatch({
       type: 'COMBAT_FLEE',
       payload: { hp: heroState.hp, consumables: flatConsumables },
     });
-    
+
     navigation.navigate('DungeonMap');
   };
 
@@ -2087,561 +2087,561 @@ export default function CombatScreen() {
   };
 
   return (
-      <SafeAreaView style={styles.root}>
-        {/* Background SVG gradients */}
-        <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
-          <Defs>
-            <RadialGradient id="combatGlow" cx="50%" cy="0%" rx="80%" ry="40%">
-              <Stop offset="0%" stopColor={theme.COLORS.candleGold} stopOpacity="0.10" />
-              <Stop offset="100%" stopColor={theme.COLORS.hubBg} stopOpacity="0" />
-            </RadialGradient>
-          </Defs>
-          <Rect width="100%" height="100%" fill={theme.COLORS.hubBg} />
-          <Rect width="100%" height="100%" fill="url(#combatGlow)" />
-        </Svg>
+    <SafeAreaView style={styles.root}>
+      {/* Background SVG gradients */}
+      <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
+        <Defs>
+          <RadialGradient id="combatGlow" cx="50%" cy="0%" rx="80%" ry="40%">
+            <Stop offset="0%" stopColor={theme.COLORS.candleGold} stopOpacity="0.10" />
+            <Stop offset="100%" stopColor={theme.COLORS.hubBg} stopOpacity="0" />
+          </RadialGradient>
+        </Defs>
+        <Rect width="100%" height="100%" fill={theme.COLORS.hubBg} />
+        <Rect width="100%" height="100%" fill="url(#combatGlow)" />
+      </Svg>
 
-        {/* ── Info bar: encounter type · dungeon · floor + turn ── */}
-        <View style={styles.infoBar}>
-          <View style={styles.infoBarLeft}>
-            <View style={styles.encounterTypeRow}>
-              {roomType === 'boss' && (
-                <ItemSprite spritesheet="icons-map" frameIndex={34} displaySize={16} />
-              )}
-              {roomType === 'ambush' && (
-                <ItemSprite spritesheet="icons-map" frameIndex={92} displaySize={16} />
-              )}
-              {roomType !== 'boss' && roomType !== 'ambush' && (
-                <ItemSprite spritesheet="icons-1" frameIndex={10} displaySize={16} />
-              )}
-              <Text style={styles.encounterTypeLabel}>
-                {roomType === 'boss' ? 'BOSS BATTLE' : roomType === 'ambush' ? 'AMBUSH!' : 'COMBAT'}
-              </Text>
-            </View>
-            <Text style={styles.infoBarSub} numberOfLines={1}>
-              {zone?.name || 'Unknown Depths'} · Zone {floorNumber}
+      {/* ── Info bar: encounter type · dungeon · floor + turn ── */}
+      <View style={styles.infoBar}>
+        <View style={styles.infoBarLeft}>
+          <View style={styles.encounterTypeRow}>
+            {roomType === 'boss' && (
+              <ItemSprite spritesheet="icons-map" frameIndex={34} displaySize={16} />
+            )}
+            {roomType === 'ambush' && (
+              <ItemSprite spritesheet="icons-map" frameIndex={92} displaySize={16} />
+            )}
+            {roomType !== 'boss' && roomType !== 'ambush' && (
+              <ItemSprite spritesheet="icons-1" frameIndex={10} displaySize={16} />
+            )}
+            <Text style={styles.encounterTypeLabel}>
+              {roomType === 'boss' ? 'BOSS BATTLE' : roomType === 'ambush' ? 'AMBUSH!' : 'COMBAT'}
             </Text>
           </View>
-          <View style={styles.turnPill}>
-            <Text style={styles.turnPillText}>Turn {turnCount + 1}</Text>
+          <Text style={styles.infoBarSub} numberOfLines={1}>
+            {zone?.name || 'Unknown Depths'} · Zone {floorNumber}
+          </Text>
+        </View>
+        <View style={styles.turnPill}>
+          <Text style={styles.turnPillText}>Turn {turnCount + 1}</Text>
+        </View>
+      </View>
+
+      {/* ══ Battlefield arena ════════════════════════════════════════ */}
+      <View style={styles.battlefield}>
+        {/* Background image (same for all zones for now) */}
+        <ExpoImage
+          source={require('../../assets/sprites/banners/battle_bg_1.png')}
+          style={styles.battlefieldBg}
+          contentFit="fill"
+          transition={0}
+        />
+
+        {/* ── Stage: hero left, enemies right ── */}
+        <View style={styles.stage}>
+          <View style={styles.heroSide}>
+            {renderHeroNode()}
+          </View>
+
+          <View style={styles.enemySide}>
+            {(() => {
+              const combined = [
+                ...enemies.map(e => ({ ...e, isDying: false })),
+                ...dyingEnemies.map(e => ({ ...e, isDying: true })),
+              ];
+              combined.sort((a, b) => (a.spawnIndex ?? 0) - (b.spawnIndex ?? 0));
+              const layout = getEnemyLayout(combined.length);
+
+              return combined.map((enemy, slot) => {
+                const slotStyle = layout[slot] || layout[layout.length - 1];
+                if (enemy.isDying) {
+                  return (
+                    <DyingEnemyCard
+                      key={`dying_${enemy.uid}`}
+                      enemy={enemy}
+                      slotStyle={slotStyle}
+                      popups={popups}
+                      removePopup={removePopup}
+                    />
+                  );
+                }
+                return renderEnemyNode(enemy, slotStyle);
+              });
+            })()}
           </View>
         </View>
+      </View>
 
-        {/* ══ Battlefield arena ════════════════════════════════════════ */}
-        <View style={styles.battlefield}>
-          {/* Background image (same for all zones for now) */}
-          <ExpoImage
-            source={require('../../assets/sprites/banners/battle_bg_1.png')}
-            style={styles.battlefieldBg}
-            contentFit="fill"
-            transition={0}
-          />
+      {/* ══ Lower 1/3 — Actions line (top) + Battle log (bottom) ═════ */}
+      <View style={styles.lowerContainer}>
 
-          {/* ── Stage: hero left, enemies right ── */}
-          <View style={styles.stage}>
-            <View style={styles.heroSide}>
-              {renderHeroNode()}
-            </View>
-
-            <View style={styles.enemySide}>
-              {(() => {
-                const combined = [
-                  ...enemies.map(e => ({ ...e, isDying: false })),
-                  ...dyingEnemies.map(e => ({ ...e, isDying: true })),
-                ];
-                combined.sort((a, b) => (a.spawnIndex ?? 0) - (b.spawnIndex ?? 0));
-                const layout = getEnemyLayout(combined.length);
-
-                return combined.map((enemy, slot) => {
-                  const slotStyle = layout[slot] || layout[layout.length - 1];
-                  if (enemy.isDying) {
-                    return (
-                      <DyingEnemyCard
-                        key={`dying_${enemy.uid}`}
-                        enemy={enemy}
-                        slotStyle={slotStyle}
-                        popups={popups}
-                        removePopup={removePopup}
-                      />
-                    );
-                  }
-                  return renderEnemyNode(enemy, slotStyle);
-                });
-              })()}
-            </View>
+        {/* ── Actions line: attack · skills · items, side by side ── */}
+        <View style={styles.actionsLine}>
+          <View style={styles.sectionDivider}>
+            <View style={styles.dividerLine} />
+            <Text style={[
+              styles.dividerLabel,
+              combatPhase === 'enemyTurn' && { color: theme.COLORS.damageRed },
+            ]}>
+              {combatPhase === 'playerTurn' ? 'YOUR TURN' : 'ENEMY TURN'}
+            </Text>
+            <View style={styles.dividerLine} />
           </View>
-        </View>
 
-        {/* ══ Lower 1/3 — Actions line (top) + Battle log (bottom) ═════ */}
-        <View style={styles.lowerContainer}>
+          {combatPhase === 'playerTurn' && (
+            <View style={styles.actionAreaContainer}>
+              {/* Row 1: Attack and 2 Skills, expanding to fill horizontal space */}
+              <View style={styles.actionRowSingle}>
+                <View style={styles.actionBtnWrapper}>
+                  <View style={[styles.actionBtnShadow, { backgroundColor: '#0D2118' }]} />
+                  <TouchableOpacity
+                    style={[styles.actionBtnOuter, { borderColor: '#84735B', backgroundColor: '#0D2118' }]}
+                    onPress={handleAttack}
+                    activeOpacity={0.75}
+                  >
+                    <View style={[styles.actionBtnInner, {
+                      backgroundColor: '#1B4030',
+                      borderTopColor: '#4F856C',
+                      borderLeftColor: '#4F856C',
+                      borderRightColor: '#4F856C',
+                      borderBottomColor: '#0D2118',
+                    }]}>
+                      <View style={styles.actionBtnSprite}>
+                        <ItemSprite spritesheet="icons-1" frameIndex={10} displaySize={26} />
+                      </View>
+                      <Text style={[styles.actionBtnTitle, { color: '#FFF3DA', fontSize: 10.5 }]}>ATTACK</Text>
+                      <Text style={[styles.actionBtnSub, { fontSize: 8.5, color: '#FFF3DA', opacity: 0.85 }]}>Basic</Text>
+                    </View>
+                  </TouchableOpacity>
+                </View>
 
-          {/* ── Actions line: attack · skills · items, side by side ── */}
-          <View style={styles.actionsLine}>
-            <View style={styles.sectionDivider}>
-              <View style={styles.dividerLine} />
-              <Text style={[
-                styles.dividerLabel,
-                combatPhase === 'enemyTurn' && { color: theme.COLORS.damageRed },
-              ]}>
-                {combatPhase === 'playerTurn' ? 'YOUR TURN' : 'ENEMY TURN'}
-              </Text>
-              <View style={styles.dividerLine} />
-            </View>
+                {renderSkillButton(0)}
+                {renderSkillButton(1)}
+                {renderPassivesButton()}
+              </View>
 
-            {combatPhase === 'playerTurn' && (
-              <View style={styles.actionAreaContainer}>
-                {/* Row 1: Attack and 2 Skills, expanding to fill horizontal space */}
-                <View style={styles.actionRowSingle}>
+              {/* Row 2: Flee and Items buttons, side-by-side */}
+              <View style={styles.actionRowSub}>
+                {state.currentRun.combatFleeUsed ? (
+                  <View style={[styles.actionBtnEmptyWrapper, { height: 35 }]}>
+                    <View style={[styles.actionBtn, styles.actionBtnEmpty, { flex: 1, opacity: 0.5 }]}>
+                      <View style={styles.subBtnContent}>
+                        <View style={[styles.subBtnSprite, { opacity: 0.4 }]}>
+                          <ItemSprite spritesheet="icons-map" frameIndex={127} displaySize={18} />
+                        </View>
+                        <Text style={[styles.subBtnTitle, { color: '#5A5A5A' }]}>FLED (USED)</Text>
+                      </View>
+                    </View>
+                  </View>
+                ) : (
                   <View style={styles.actionBtnWrapper}>
-                    <View style={[styles.actionBtnShadow, { backgroundColor: '#0D2118' }]} />
+                    <View style={[styles.actionBtnShadow, { backgroundColor: '#3A1E1E' }]} />
                     <TouchableOpacity
-                      style={[styles.actionBtnOuter, { borderColor: '#84735B', backgroundColor: '#0D2118' }]}
-                      onPress={handleAttack}
+                      style={[styles.actionBtnOuter, { borderColor: '#84735B', backgroundColor: '#3A1E1E' }]}
+                      onPress={() => setShowFleeConfirmModal(true)}
                       activeOpacity={0.75}
                     >
                       <View style={[styles.actionBtnInner, {
-                        backgroundColor: '#1B4030',
-                        borderTopColor: '#4F856C',
-                        borderLeftColor: '#4F856C',
-                        borderRightColor: '#4F856C',
-                        borderBottomColor: '#0D2118',
+                        backgroundColor: '#7A3F3F',
+                        borderTopColor: '#A85A5A',
+                        borderLeftColor: '#A85A5A',
+                        borderRightColor: '#A85A5A',
+                        borderBottomColor: '#3A1E1E',
                       }]}>
-                        <View style={styles.actionBtnSprite}>
-                          <ItemSprite spritesheet="icons-1" frameIndex={10} displaySize={26} />
+                        <View style={styles.subBtnContent}>
+                          <View style={styles.subBtnSprite}>
+                            <ItemSprite spritesheet="icons-map" frameIndex={127} displaySize={18} />
+                          </View>
+                          <Text style={[styles.subBtnTitle, { color: '#FFF3DA' }]}>FLEE</Text>
                         </View>
-                        <Text style={[styles.actionBtnTitle, { color: '#FFF3DA', fontSize: 10.5 }]}>ATTACK</Text>
-                        <Text style={[styles.actionBtnSub, { fontSize: 8.5, color: '#FFF3DA', opacity: 0.85 }]}>Basic</Text>
                       </View>
                     </TouchableOpacity>
                   </View>
+                )}
 
-                  {renderSkillButton(0)}
-                  {renderSkillButton(1)}
-                  {renderPassivesButton()}
-                </View>
-
-                {/* Row 2: Flee and Items buttons, side-by-side */}
-                <View style={styles.actionRowSub}>
-                  {state.currentRun.combatFleeUsed ? (
-                    <View style={[styles.actionBtnEmptyWrapper, { height: 35 }]}>
-                      <View style={[styles.actionBtn, styles.actionBtnEmpty, { flex: 1, opacity: 0.5 }]}>
-                        <View style={styles.subBtnContent}>
-                          <View style={[styles.subBtnSprite, { opacity: 0.4 }]}>
-                            <ItemSprite spritesheet="icons-map" frameIndex={127} displaySize={18} />
-                          </View>
-                          <Text style={[styles.subBtnTitle, { color: '#5A5A5A' }]}>FLED (USED)</Text>
+                {totalConsumables === 0 ? (
+                  <View style={[styles.actionBtnEmptyWrapper, { height: 35 }]}>
+                    <View style={[styles.actionBtn, styles.actionBtnEmpty, { flex: 1, opacity: 0.5 }]}>
+                      <View style={styles.subBtnContent}>
+                        <View style={[styles.subBtnSprite, { opacity: 0.4 }]}>
+                          <ItemSprite spritesheet="icons-1" frameIndex={26} displaySize={18} />
                         </View>
+                        <Text style={[styles.subBtnTitle, { color: '#5A5A5A' }]}>ITEMS (0)</Text>
                       </View>
                     </View>
-                  ) : (
-                    <View style={styles.actionBtnWrapper}>
-                      <View style={[styles.actionBtnShadow, { backgroundColor: '#3A1E1E' }]} />
-                      <TouchableOpacity
-                        style={[styles.actionBtnOuter, { borderColor: '#84735B', backgroundColor: '#3A1E1E' }]}
-                        onPress={() => setShowFleeConfirmModal(true)}
-                        activeOpacity={0.75}
-                      >
-                        <View style={[styles.actionBtnInner, {
-                          backgroundColor: '#7A3F3F',
-                          borderTopColor: '#A85A5A',
-                          borderLeftColor: '#A85A5A',
-                          borderRightColor: '#A85A5A',
-                          borderBottomColor: '#3A1E1E',
-                        }]}>
-                          <View style={styles.subBtnContent}>
-                            <View style={styles.subBtnSprite}>
-                              <ItemSprite spritesheet="icons-map" frameIndex={127} displaySize={18} />
-                            </View>
-                            <Text style={[styles.subBtnTitle, { color: '#FFF3DA' }]}>FLEE</Text>
-                          </View>
-                        </View>
-                      </TouchableOpacity>
-                    </View>
-                  )}
-
-                  {totalConsumables === 0 ? (
-                    <View style={[styles.actionBtnEmptyWrapper, { height: 35 }]}>
-                      <View style={[styles.actionBtn, styles.actionBtnEmpty, { flex: 1, opacity: 0.5 }]}>
+                  </View>
+                ) : (
+                  <View style={styles.actionBtnWrapper}>
+                    <View style={[styles.actionBtnShadow, { backgroundColor: '#543E12' }]} />
+                    <TouchableOpacity
+                      style={[styles.actionBtnOuter, { borderColor: '#84735B', backgroundColor: '#543E12' }]}
+                      onPress={() => setShowItemModal(true)}
+                      activeOpacity={0.75}
+                    >
+                      <View style={[styles.actionBtnInner, {
+                        backgroundColor: '#9E782F',
+                        borderTopColor: '#D6B570',
+                        borderLeftColor: '#D6B570',
+                        borderRightColor: '#D6B570',
+                        borderBottomColor: '#543E12',
+                      }]}>
                         <View style={styles.subBtnContent}>
-                          <View style={[styles.subBtnSprite, { opacity: 0.4 }]}>
+                          <View style={styles.subBtnSprite}>
                             <ItemSprite spritesheet="icons-1" frameIndex={26} displaySize={18} />
                           </View>
-                          <Text style={[styles.subBtnTitle, { color: '#5A5A5A' }]}>ITEMS (0)</Text>
+                          <Text style={[styles.subBtnTitle, { color: '#FFF3DA' }]}>ITEMS ({totalConsumables})</Text>
                         </View>
                       </View>
-                    </View>
-                  ) : (
-                    <View style={styles.actionBtnWrapper}>
-                      <View style={[styles.actionBtnShadow, { backgroundColor: '#543E12' }]} />
+                    </TouchableOpacity>
+                  </View>
+                )}
+              </View>
+            </View>
+          )}
+
+          {combatPhase === 'enemyTurn' && (
+            <View style={styles.enemyTurnBox}>
+              <View style={{ opacity: 0.7 }}>
+                <ItemSprite spritesheet="icons-map" frameIndex={125} displaySize={28} />
+              </View>
+              <Text style={styles.enemyTurnText}>Enemies are acting…</Text>
+            </View>
+          )}
+        </View>
+
+        {/* ── Battle log (full width) ── */}
+        <View style={styles.logLine}>
+          <View style={styles.sectionDivider}>
+            <View style={styles.dividerLine} />
+            <Text style={styles.dividerLabel}>BATTLE LOG</Text>
+            <View style={styles.dividerLine} />
+          </View>
+          <View style={styles.logContainer}>
+            <ScrollView
+              ref={scrollViewRef}
+              contentContainerStyle={styles.logContainerInner}
+              showsVerticalScrollIndicator={true}
+              onContentSizeChange={() => scrollViewRef.current?.scrollToEnd({ animated: true })}
+            >
+              {combatLog.map((msg, i) => renderLogText(msg, i))}
+            </ScrollView>
+          </View>
+        </View>
+      </View>
+
+      {/* ── Item selection modal ─────────────────────────────────────── */}
+      <Modal
+        visible={showItemModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowItemModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
+              <Defs>
+                <LinearGradient id="itemModalGrad" x1="0" y1="0" x2="0" y2="1">
+                  <Stop offset="0%" stopColor={theme.COLORS.panelGreenTop} stopOpacity="1" />
+                  <Stop offset="100%" stopColor={theme.COLORS.panelGreenBottom} stopOpacity="1" />
+                </LinearGradient>
+                <RadialGradient id="itemModalGlow" cx="50%" cy="0%" r="55%">
+                  <Stop offset="0%" stopColor={theme.COLORS.candleGold} stopOpacity="0.08" />
+                  <Stop offset="100%" stopColor={theme.COLORS.panelGreenTop} stopOpacity="0" />
+                </RadialGradient>
+              </Defs>
+              <Rect width="100%" height="100%" fill="url(#itemModalGrad)" rx={20} />
+              <Rect width="100%" height="100%" fill="url(#itemModalGlow)" rx={20} />
+              <Rect x="1" y="1" width="98%" height="98%" rx={19} fill="none" stroke="rgba(212, 167, 84, 0.18)" strokeWidth={1} />
+            </Svg>
+
+            <View style={styles.modalContentInner}>
+              {(() => {
+                const bagId = state.hero.gear?.storage;
+                const bagDef = bagId ? GEAR[bagId] : null;
+                return (
+                  <View style={styles.modalTitleRow}>
+                    <ItemSprite
+                      spritesheet={bagDef?.spritesheet || 'storages-1'}
+                      frameIndex={bagDef?.frameIndex ?? 0}
+                      displaySize={24}
+                    />
+                    <Text style={styles.modalTitle}>Supplies Bag</Text>
+                  </View>
+                );
+              })()}
+
+              <ScrollView style={styles.modalItemScroll} showsVerticalScrollIndicator={false}>
+                {runConsumables.length === 0 ? (
+                  <Text style={styles.modalEmpty}>No potions or items available.</Text>
+                ) : (
+                  runConsumables.map((entry) => {
+                    const def = CONSUMABLES.find((c) => c.id === entry.id);
+                    return (
                       <TouchableOpacity
-                        style={[styles.actionBtnOuter, { borderColor: '#84735B', backgroundColor: '#543E12' }]}
-                        onPress={() => setShowItemModal(true)}
-                        activeOpacity={0.75}
+                        key={entry.id}
+                        style={styles.modalItem}
+                        onPress={() => handleUseItem(entry)}
+                        activeOpacity={0.8}
                       >
-                        <View style={[styles.actionBtnInner, {
-                          backgroundColor: '#9E782F',
-                          borderTopColor: '#D6B570',
-                          borderLeftColor: '#D6B570',
-                          borderRightColor: '#D6B570',
-                          borderBottomColor: '#543E12',
-                        }]}>
-                          <View style={styles.subBtnContent}>
-                            <View style={styles.subBtnSprite}>
-                              <ItemSprite spritesheet="icons-1" frameIndex={26} displaySize={18} />
-                            </View>
-                            <Text style={[styles.subBtnTitle, { color: '#FFF3DA' }]}>ITEMS ({totalConsumables})</Text>
-                          </View>
+                        {/* Sprite box */}
+                        <View style={styles.modalItemIconBox}>
+                          {def?.spritesheet ? (
+                            <ItemSprite
+                              spritesheet={def.spritesheet}
+                              frameIndex={def.frameIndex}
+                              displaySize={44}
+                            />
+                          ) : null}
+                        </View>
+
+                        {/* Text section */}
+                        <View style={styles.modalItemText}>
+                          <Text style={styles.modalItemName}>
+                            {def?.name || entry.id}
+                          </Text>
+                          <Text style={styles.modalItemDesc}>
+                            {def?.description || ''}
+                          </Text>
+                        </View>
+
+                        {/* Quantity on the right */}
+                        <View style={styles.modalItemQuantityBox}>
+                          <Text style={styles.modalItemQuantityText}>
+                            <Text style={styles.modalItemQuantityLabel}>x</Text>
+                            {entry.quantity}
+                          </Text>
                         </View>
                       </TouchableOpacity>
-                    </View>
-                  )}
-                </View>
-              </View>
-            )}
-
-            {combatPhase === 'enemyTurn' && (
-              <View style={styles.enemyTurnBox}>
-                <View style={{ opacity: 0.7 }}>
-                  <ItemSprite spritesheet="icons-map" frameIndex={125} displaySize={28} />
-                </View>
-                <Text style={styles.enemyTurnText}>Enemies are acting…</Text>
-              </View>
-            )}
-          </View>
-
-          {/* ── Battle log (full width) ── */}
-          <View style={styles.logLine}>
-            <View style={styles.sectionDivider}>
-              <View style={styles.dividerLine} />
-              <Text style={styles.dividerLabel}>BATTLE LOG</Text>
-              <View style={styles.dividerLine} />
-            </View>
-            <View style={styles.logContainer}>
-              <ScrollView
-                ref={scrollViewRef}
-                contentContainerStyle={styles.logContainerInner}
-                showsVerticalScrollIndicator={true}
-                onContentSizeChange={() => scrollViewRef.current?.scrollToEnd({ animated: true })}
-              >
-                {combatLog.map((msg, i) => renderLogText(msg, i))}
+                    );
+                  })
+                )}
               </ScrollView>
+
+              <Button
+                title="Cancel"
+                variant="secondary"
+                onPress={() => setShowItemModal(false)}
+                style={{ width: '100%', marginTop: 16 }}
+              />
             </View>
           </View>
         </View>
+      </Modal>
 
-        {/* ── Item selection modal ─────────────────────────────────────── */}
-        <Modal
-          visible={showItemModal}
-          transparent
-          animationType="fade"
-          onRequestClose={() => setShowItemModal(false)}
-        >
-          <View style={styles.modalOverlay}>
-            <View style={styles.modalContent}>
-              <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
-                <Defs>
-                  <LinearGradient id="itemModalGrad" x1="0" y1="0" x2="0" y2="1">
-                    <Stop offset="0%" stopColor={theme.COLORS.panelGreenTop} stopOpacity="1" />
-                    <Stop offset="100%" stopColor={theme.COLORS.panelGreenBottom} stopOpacity="1" />
-                  </LinearGradient>
-                  <RadialGradient id="itemModalGlow" cx="50%" cy="0%" r="55%">
-                    <Stop offset="0%" stopColor={theme.COLORS.candleGold} stopOpacity="0.08" />
-                    <Stop offset="100%" stopColor={theme.COLORS.panelGreenTop} stopOpacity="0" />
-                  </RadialGradient>
-                </Defs>
-                <Rect width="100%" height="100%" fill="url(#itemModalGrad)" rx={20} />
-                <Rect width="100%" height="100%" fill="url(#itemModalGlow)" rx={20} />
-                <Rect x="1" y="1" width="98%" height="98%" rx={19} fill="none" stroke="rgba(212, 167, 84, 0.18)" strokeWidth={1} />
-              </Svg>
+      {/* ── Skill info popup ─────────────────────────────────────────── */}
+      {renderSkillInfoModal()}
 
-              <View style={styles.modalContentInner}>
-                {(() => {
-                  const bagId = state.hero.gear?.storage;
-                  const bagDef = bagId ? GEAR[bagId] : null;
-                  return (
-                    <View style={styles.modalTitleRow}>
-                      <ItemSprite
-                        spritesheet={bagDef?.spritesheet || 'storages-1'}
-                        frameIndex={bagDef?.frameIndex ?? 0}
-                        displaySize={24}
-                      />
-                      <Text style={styles.modalTitle}>Supplies Bag</Text>
-                    </View>
-                  );
-                })()}
+      {/* ── Active passives popup ────────────────────────────────────── */}
+      {renderPassivesModal()}
 
-                <ScrollView style={styles.modalItemScroll} showsVerticalScrollIndicator={false}>
-                  {runConsumables.length === 0 ? (
-                    <Text style={styles.modalEmpty}>No potions or items available.</Text>
-                  ) : (
-                    runConsumables.map((entry) => {
-                      const def = CONSUMABLES.find((c) => c.id === entry.id);
-                      return (
-                        <TouchableOpacity
-                          key={entry.id}
-                          style={styles.modalItem}
-                          onPress={() => handleUseItem(entry)}
-                          activeOpacity={0.8}
-                        >
-                          {/* Sprite box */}
-                          <View style={styles.modalItemIconBox}>
-                            {def?.spritesheet ? (
-                              <ItemSprite
-                                spritesheet={def.spritesheet}
-                                frameIndex={def.frameIndex}
-                                displaySize={44}
-                              />
-                            ) : null}
-                          </View>
+      {/* ── Flee confirmation popup ─────────────────────────────────── */}
+      <Modal
+        visible={showFleeConfirmModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowFleeConfirmModal(false)}
+      >
+        <Pressable style={styles.modalOverlay} onPress={() => setShowFleeConfirmModal(false)}>
+          <Pressable style={styles.modalContent}>
+            <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
+              <Defs>
+                <LinearGradient id="fleeInfoGrad" x1="0" y1="0" x2="0" y2="1">
+                  <Stop offset="0%" stopColor={theme.COLORS.panelGreenTop} stopOpacity="1" />
+                  <Stop offset="100%" stopColor={theme.COLORS.panelGreenBottom} stopOpacity="1" />
+                </LinearGradient>
+              </Defs>
+              <Rect width="100%" height="100%" fill="url(#fleeInfoGrad)" rx={20} />
+              <Rect x="1" y="1" width="98%" height="98%" rx={19} fill="none" stroke="rgba(212, 167, 84, 0.18)" strokeWidth={1} />
+            </Svg>
 
-                          {/* Text section */}
-                          <View style={styles.modalItemText}>
-                            <Text style={styles.modalItemName}>
-                              {def?.name || entry.id}
-                            </Text>
-                            <Text style={styles.modalItemDesc}>
-                              {def?.description || ''}
-                            </Text>
-                          </View>
+            <View style={styles.modalContentInner}>
+              <View style={styles.modalTitleRow}>
+                <ItemSprite spritesheet="icons-map" frameIndex={127} displaySize={28} />
+                <Text style={styles.modalTitle}>Flee Battle</Text>
+              </View>
 
-                          {/* Quantity on the right */}
-                          <View style={styles.modalItemQuantityBox}>
-                            <Text style={styles.modalItemQuantityText}>
-                              <Text style={styles.modalItemQuantityLabel}>x</Text>
-                              {entry.quantity}
-                            </Text>
-                          </View>
-                        </TouchableOpacity>
-                      );
-                    })
-                  )}
-                </ScrollView>
+              <Text style={styles.fleeConfirmText}>
+                Are you sure you want to flee this battle?
+              </Text>
+              <Text style={styles.fleeConfirmSubText}>
+                Can only be used once per run.
+              </Text>
 
-                <Button
-                  title="Cancel"
-                  variant="secondary"
-                  onPress={() => setShowItemModal(false)}
-                  style={{ width: '100%', marginTop: 16 }}
-                />
+              <View style={styles.fleeModalButtonsRow}>
+                <TouchableOpacity
+                  activeOpacity={0.85}
+                  onPress={() => setShowFleeConfirmModal(false)}
+                  style={[styles.fleeModalBtn, styles.fleeModalBtnCancel]}
+                >
+                  <Text style={styles.fleeModalBtnText}>CANCEL</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  activeOpacity={0.85}
+                  onPress={performFlee}
+                  style={[styles.fleeModalBtn, styles.fleeModalBtnConfirm]}
+                >
+                  <Text style={[styles.fleeModalBtnText, { color: '#DD7A86' }]}>FLEE</Text>
+                </TouchableOpacity>
               </View>
             </View>
-          </View>
-        </Modal>
+          </Pressable>
+        </Pressable>
+      </Modal>
 
-        {/* ── Skill info popup ─────────────────────────────────────────── */}
-        {renderSkillInfoModal()}
+      {/* ── Victory / Loot Overlay ───────────────────────────────────── */}
+      {combatPhase === 'loot' && lootResult && (
+        <View style={styles.cozyOverlay}>
+          <View style={[styles.cozyFrame, theme.SHADOWS.cardShadow]}>
+            <View style={styles.cozyParchment}>
+              <View style={styles.cozyBevel} pointerEvents="none" />
 
-        {/* ── Active passives popup ────────────────────────────────────── */}
-        {renderPassivesModal()}
+              <Text style={styles.cozySubtitle}>
+                You survived the encounter and secured the spoils of battle!
+              </Text>
 
-        {/* ── Flee confirmation popup ─────────────────────────────────── */}
-        <Modal
-          visible={showFleeConfirmModal}
-          transparent
-          animationType="fade"
-          onRequestClose={() => setShowFleeConfirmModal(false)}
-        >
-          <Pressable style={styles.modalOverlay} onPress={() => setShowFleeConfirmModal(false)}>
-            <Pressable style={styles.modalContent}>
-              <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
-                <Defs>
-                  <LinearGradient id="fleeInfoGrad" x1="0" y1="0" x2="0" y2="1">
-                    <Stop offset="0%" stopColor={theme.COLORS.panelGreenTop} stopOpacity="1" />
-                    <Stop offset="100%" stopColor={theme.COLORS.panelGreenBottom} stopOpacity="1" />
-                  </LinearGradient>
-                </Defs>
-                <Rect width="100%" height="100%" fill="url(#fleeInfoGrad)" rx={20} />
-                <Rect x="1" y="1" width="98%" height="98%" rx={19} fill="none" stroke="rgba(212, 167, 84, 0.18)" strokeWidth={1} />
-              </Svg>
+              {/* Loot breakdown */}
+              <View style={styles.lootChipsContainer}>
+                {lootResult.xp > 0 && (
+                  <View style={styles.lootItemChip}>
+                    <ItemSprite spritesheet="icons-map" frameIndex={146} displaySize={32} />
+                    <Text style={styles.lootChipQty}>{lootResult.xp} XP</Text>
+                    <Text style={styles.lootChipLabel}>XP</Text>
+                  </View>
+                )}
+                {lootResult.gold > 0 && (
+                  <View style={styles.lootItemChip}>
+                    <ItemSprite spritesheet="icons-1" frameIndex={11} displaySize={32} />
+                    <Text style={styles.lootChipQty}>{lootResult.gold} G</Text>
+                    <Text style={styles.lootChipLabel}>Gold</Text>
+                  </View>
+                )}
+                {Object.entries(lootResult.materials).map(([itemId, qty]) => {
+                  const def = MATERIALS[itemId];
+                  return (
+                    <View key={itemId} style={styles.lootItemChip}>
+                      {def ? (
+                        <ItemSprite spritesheet={def.spritesheet} frameIndex={def.frameIndex} displaySize={32} />
+                      ) : (
+                        <ItemSprite spritesheet="icons-1" frameIndex={10} displaySize={32} />
+                      )}
+                      <Text style={styles.lootChipQty}>{qty}</Text>
+                      <Text style={styles.lootChipLabel}>
+                        {def?.name || itemId.replace(/_/g, ' ')}
+                      </Text>
+                    </View>
+                  );
+                })}
+              </View>
 
-              <View style={styles.modalContentInner}>
-                <View style={styles.modalTitleRow}>
-                  <ItemSprite spritesheet="icons-map" frameIndex={127} displaySize={28} />
-                  <Text style={styles.modalTitle}>Flee Battle</Text>
+              {/* Level up messages */}
+              {levelUpMessages.length > 0 && (
+                <View style={styles.levelUpSection}>
+                  {levelUpMessages.map((msg, i) => (
+                    <View key={`lu_${i}`} style={styles.levelUpRow}>
+                      <ItemSprite spritesheet="icons-map" frameIndex={29} displaySize={18} />
+                      <Text style={styles.levelUpText}>{msg}</Text>
+                    </View>
+                  ))}
                 </View>
+              )}
 
-                <Text style={styles.fleeConfirmText}>
-                  Are you sure you want to flee this battle?
-                </Text>
-                <Text style={styles.fleeConfirmSubText}>
-                  Can only be used once per run.
-                </Text>
+              <TouchableOpacity activeOpacity={0.85} onPress={handleContinue} style={styles.cozyButton}>
+                <View style={styles.cozyButtonInner}>
+                  <Text style={styles.cozyButtonText}>
+                    {roomType === 'boss' ? 'Return to Camp' : 'Return to Map'}
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            </View>
 
-                <View style={styles.fleeModalButtonsRow}>
-                  <TouchableOpacity
-                    activeOpacity={0.85}
-                    onPress={() => setShowFleeConfirmModal(false)}
-                    style={[styles.fleeModalBtn, styles.fleeModalBtnCancel]}
-                  >
-                    <Text style={styles.fleeModalBtnText}>CANCEL</Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    activeOpacity={0.85}
-                    onPress={performFlee}
-                    style={[styles.fleeModalBtn, styles.fleeModalBtnConfirm]}
-                  >
-                    <Text style={[styles.fleeModalBtnText, { color: '#DD7A86' }]}>FLEE</Text>
-                  </TouchableOpacity>
+            <View style={styles.cozyTopWrap} pointerEvents="none">
+              <View style={styles.cozyTopOuter}>
+                <View style={styles.cozyTopInner}>
+                  <Text style={styles.cozyTopText}>VICTORY</Text>
                 </View>
               </View>
-            </Pressable>
-          </Pressable>
-        </Modal>
+            </View>
 
-        {/* ── Victory / Loot Overlay ───────────────────────────────────── */}
-        {combatPhase === 'loot' && lootResult && (
-          <View style={styles.cozyOverlay}>
-            <View style={[styles.cozyFrame, theme.SHADOWS.cardShadow]}>
-              <View style={styles.cozyParchment}>
-                <View style={styles.cozyBevel} pointerEvents="none" />
+          </View>
+        </View>
+      )}
 
-                <Text style={styles.cozySubtitle}>
-                  You survived the encounter and secured the spoils of battle!
-                </Text>
+      {/* ── Defeat Overlay ───────────────────────────────────────────── */}
+      {combatPhase === 'defeat' && (
+        <View style={styles.cozyOverlay}>
+          <View style={[styles.cozyFrame, theme.SHADOWS.cardShadow]}>
+            <View style={styles.cozyParchment}>
+              <View style={styles.cozyBevel} pointerEvents="none" />
 
-                {/* Loot breakdown */}
+              <Text style={styles.cozySubtitle}>
+                {heroState.name || 'Mochi'} retreats to camp, battered but alive.
+              </Text>
+
+              <Text style={styles.lostLootTitle}>Loot Lost in the Depths:</Text>
+              {state.currentRun.lootCollected.gold === 0 &&
+                Object.keys(state.currentRun.lootCollected.materials).length === 0 &&
+                (state.currentRun.lootCollected.xp || 0) === 0 ? (
+                <Text style={styles.noLostLootText}>No materials, gold, or XP were collected this run.</Text>
+              ) : (
                 <View style={styles.lootChipsContainer}>
-                  {lootResult.xp > 0 && (
+                  {state.currentRun.lootCollected.xp > 0 && (
                     <View style={styles.lootItemChip}>
-                      <ItemSprite spritesheet="icons-map" frameIndex={146} displaySize={32} />
-                      <Text style={styles.lootChipQty}>{lootResult.xp} XP</Text>
+                      <ItemSprite spritesheet="icons-map" frameIndex={146} displaySize={32} opacity={0.5} />
+                      <Text style={[styles.lootChipQty, { textDecorationLine: 'line-through', opacity: 0.6 }]}>
+                        {state.currentRun.lootCollected.xp} XP
+                      </Text>
                       <Text style={styles.lootChipLabel}>XP</Text>
                     </View>
                   )}
-                  {lootResult.gold > 0 && (
+                  {state.currentRun.lootCollected.gold > 0 && (
                     <View style={styles.lootItemChip}>
-                      <ItemSprite spritesheet="icons-1" frameIndex={11} displaySize={32} />
-                      <Text style={styles.lootChipQty}>{lootResult.gold} G</Text>
+                      <ItemSprite spritesheet="icons-1" frameIndex={11} displaySize={32} opacity={0.5} />
+                      <Text style={[styles.lootChipQty, { textDecorationLine: 'line-through', opacity: 0.6 }]}>
+                        {state.currentRun.lootCollected.gold} G
+                      </Text>
                       <Text style={styles.lootChipLabel}>Gold</Text>
                     </View>
                   )}
-                  {Object.entries(lootResult.materials).map(([itemId, qty]) => {
-                    const def = MATERIALS[itemId];
+                  {Object.entries(state.currentRun.lootCollected.materials).map(([id, qty]) => {
+                    const def = MATERIALS[id];
                     return (
-                      <View key={itemId} style={styles.lootItemChip}>
+                      <View key={id} style={styles.lootItemChip}>
                         {def ? (
-                          <ItemSprite spritesheet={def.spritesheet} frameIndex={def.frameIndex} displaySize={32} />
+                          <ItemSprite spritesheet={def.spritesheet} frameIndex={def.frameIndex} displaySize={32} opacity={0.5} />
                         ) : (
-                          <ItemSprite spritesheet="icons-1" frameIndex={10} displaySize={32} />
+                          <ItemSprite spritesheet="icons-1" frameIndex={10} displaySize={32} opacity={0.5} />
                         )}
-                        <Text style={styles.lootChipQty}>{qty}</Text>
+                        <Text style={[styles.lootChipQty, { textDecorationLine: 'line-through', opacity: 0.6 }]}>
+                          {qty}
+                        </Text>
                         <Text style={styles.lootChipLabel}>
-                          {def?.name || itemId.replace(/_/g, ' ')}
+                          {def?.name || id.replace(/_/g, ' ')}
                         </Text>
                       </View>
                     );
                   })}
                 </View>
+              )}
 
-                {/* Level up messages */}
-                {levelUpMessages.length > 0 && (
-                  <View style={styles.levelUpSection}>
-                    {levelUpMessages.map((msg, i) => (
-                      <View key={`lu_${i}`} style={styles.levelUpRow}>
-                        <ItemSprite spritesheet="icons-map" frameIndex={29} displaySize={18} />
-                        <Text style={styles.levelUpText}>{msg}</Text>
-                      </View>
-                    ))}
-                  </View>
-                )}
+              <TouchableOpacity activeOpacity={0.85} onPress={handleDefeatReturn} style={styles.cozyButtonDanger}>
+                <View style={styles.cozyButtonDangerInner}>
+                  <Text style={styles.cozyButtonText}>Return to Camp</Text>
+                </View>
+              </TouchableOpacity>
+            </View>
 
-                <TouchableOpacity activeOpacity={0.85} onPress={handleContinue} style={styles.cozyButton}>
-                  <View style={styles.cozyButtonInner}>
-                    <Text style={styles.cozyButtonText}>
-                      {roomType === 'boss' ? 'Return to Camp' : 'Return to Map'}
-                    </Text>
-                  </View>
-                </TouchableOpacity>
-              </View>
-
-              <View style={styles.cozyTopWrap} pointerEvents="none">
-                <View style={styles.cozyTopOuter}>
-                  <View style={styles.cozyTopInner}>
-                    <Text style={styles.cozyTopText}>VICTORY</Text>
-                  </View>
+            <View style={styles.cozyTopWrap} pointerEvents="none">
+              <View style={styles.cozyTopOuter}>
+                <View style={styles.cozyTopInner}>
+                  <Text style={styles.cozyTopText}>DEFEATED</Text>
                 </View>
               </View>
-
             </View>
+
           </View>
-        )}
-
-        {/* ── Defeat Overlay ───────────────────────────────────────────── */}
-        {combatPhase === 'defeat' && (
-          <View style={styles.cozyOverlay}>
-            <View style={[styles.cozyFrame, theme.SHADOWS.cardShadow]}>
-              <View style={styles.cozyParchment}>
-                <View style={styles.cozyBevel} pointerEvents="none" />
-
-                <Text style={styles.cozySubtitle}>
-                  {heroState.name || 'Mochi'} retreats to camp, battered but alive.
-                </Text>
-
-                <Text style={styles.lostLootTitle}>Loot Lost in the Depths:</Text>
-                {state.currentRun.lootCollected.gold === 0 &&
-                  Object.keys(state.currentRun.lootCollected.materials).length === 0 &&
-                  (state.currentRun.lootCollected.xp || 0) === 0 ? (
-                  <Text style={styles.noLostLootText}>No materials, gold, or XP were collected this run.</Text>
-                ) : (
-                  <View style={styles.lootChipsContainer}>
-                    {state.currentRun.lootCollected.xp > 0 && (
-                      <View style={styles.lootItemChip}>
-                        <ItemSprite spritesheet="icons-map" frameIndex={146} displaySize={32} opacity={0.5} />
-                        <Text style={[styles.lootChipQty, { textDecorationLine: 'line-through', opacity: 0.6 }]}>
-                          {state.currentRun.lootCollected.xp} XP
-                        </Text>
-                        <Text style={styles.lootChipLabel}>XP</Text>
-                      </View>
-                    )}
-                    {state.currentRun.lootCollected.gold > 0 && (
-                      <View style={styles.lootItemChip}>
-                        <ItemSprite spritesheet="icons-1" frameIndex={11} displaySize={32} opacity={0.5} />
-                        <Text style={[styles.lootChipQty, { textDecorationLine: 'line-through', opacity: 0.6 }]}>
-                          {state.currentRun.lootCollected.gold} G
-                        </Text>
-                        <Text style={styles.lootChipLabel}>Gold</Text>
-                      </View>
-                    )}
-                    {Object.entries(state.currentRun.lootCollected.materials).map(([id, qty]) => {
-                      const def = MATERIALS[id];
-                      return (
-                        <View key={id} style={styles.lootItemChip}>
-                          {def ? (
-                            <ItemSprite spritesheet={def.spritesheet} frameIndex={def.frameIndex} displaySize={32} opacity={0.5} />
-                          ) : (
-                            <ItemSprite spritesheet="icons-1" frameIndex={10} displaySize={32} opacity={0.5} />
-                          )}
-                          <Text style={[styles.lootChipQty, { textDecorationLine: 'line-through', opacity: 0.6 }]}>
-                            {qty}
-                          </Text>
-                          <Text style={styles.lootChipLabel}>
-                            {def?.name || id.replace(/_/g, ' ')}
-                          </Text>
-                        </View>
-                      );
-                    })}
-                  </View>
-                )}
-
-                <TouchableOpacity activeOpacity={0.85} onPress={handleDefeatReturn} style={styles.cozyButtonDanger}>
-                  <View style={styles.cozyButtonDangerInner}>
-                    <Text style={styles.cozyButtonText}>Return to Camp</Text>
-                  </View>
-                </TouchableOpacity>
-              </View>
-
-              <View style={styles.cozyTopWrap} pointerEvents="none">
-                <View style={styles.cozyTopOuter}>
-                  <View style={styles.cozyTopInner}>
-                    <Text style={styles.cozyTopText}>DEFEATED</Text>
-                  </View>
-                </View>
-              </View>
-
-            </View>
-          </View>
-        )}
-      </SafeAreaView>
+        </View>
+      )}
+    </SafeAreaView>
   );
 
   // ── Status-effect badge row (shared by hero + enemies) ──────────────────

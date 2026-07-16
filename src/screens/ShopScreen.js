@@ -237,44 +237,50 @@ export default function ShopScreen() {
     const isZone2Unlocked = state.progress.zone1Cleared === true;
 
     const items = [
-      { id: 'wooden_sword', price: 100 },
-      { id: 'leather_helmet', price: 100 },
-      { id: 'leather_chestpiece', price: 100 },
-      { id: 'leather_leggings', price: 100 },
-      { id: 'leather_gloves', price: 100 },
-      { id: 'leather_boots', price: 100 },
-      { id: 'leather_belt', price: 100 },
-      { id: 'simple_backpack', price: 300 },
+      'wooden_sword',
+      'leather_helmet',
+      'leather_chestpiece',
+      'leather_leggings',
+      'leather_gloves',
+      'leather_boots',
+      'leather_belt',
+      'simple_backpack',
     ];
 
     if (isLvl6Unlocked) {
       items.push(
-        { id: 'stone_sword', price: 200 },
-        { id: 'superior_leather_helmet', price: 200 },
-        { id: 'superior_leather_chestpiece', price: 200 },
-        { id: 'superior_leather_leggings', price: 200 },
-        { id: 'superior_leather_gloves', price: 200 },
-        { id: 'superior_leather_boots', price: 200 },
-        { id: 'superior_leather_belt', price: 200 },
-        { id: 'fine_backpack', price: 1000 }
+        'stone_sword',
+        'superior_leather_helmet',
+        'superior_leather_chestpiece',
+        'superior_leather_leggings',
+        'superior_leather_gloves',
+        'superior_leather_boots',
+        'superior_leather_belt',
+        'fine_backpack'
       );
     }
 
     if (isZone2Unlocked) {
-      items.push(
-        { id: 'luxury_backpack', price: 5000 }
-      );
+      items.push('luxury_backpack');
     }
 
-    return items.map(shopItem => {
-      const baseGear = GEAR[shopItem.id];
+    return items.map(itemId => {
+      const baseGear = GEAR[itemId];
       if (!baseGear) return null;
       return {
         ...baseGear,
-        goldCost: shopItem.price,
+        goldCost: baseGear.goldCost || 0,
       };
     }).filter(Boolean);
   }, [state.progress.floorsCleared?.zone1, state.progress.zone1Cleared]);
+
+  const sortedConsumables = useMemo(() => {
+    return [...CONSUMABLES].sort((a, b) => a.cost - b.cost);
+  }, []);
+
+  const sortedArmoryItems = useMemo(() => {
+    return [...armoryItems].sort((a, b) => a.goldCost - b.goldCost);
+  }, [armoryItems]);
 
 
 
@@ -433,7 +439,7 @@ export default function ShopScreen() {
             </View>
 
             <View style={styles.listContainer}>
-              {CONSUMABLES.filter(item => !item.minLevel || hero.level >= item.minLevel).map((item) => {
+              {sortedConsumables.filter(item => !item.minLevel || hero.level >= item.minLevel).map((item) => {
                 const owned = consumableCounts[item.id] || 0;
 
                 const qty = getQty(item.id);
@@ -543,7 +549,7 @@ export default function ShopScreen() {
 
             <View style={styles.listContainer}>
               {(() => {
-                const availableItems = armoryItems.filter(item => !craftedGear.includes(item.id));
+                const availableItems = sortedArmoryItems.filter(item => !craftedGear.includes(item.id));
                 if (availableItems.length === 0) {
                   return (
                     <View style={styles.emptyArmoryCard}>

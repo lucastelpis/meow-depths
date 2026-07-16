@@ -30,10 +30,12 @@ import Svg, { Defs, RadialGradient, Stop, Circle, Path, G } from 'react-native-s
 import theme from '../constants/theme';
 import { useGame } from '../state/gameState';
 import { calculateEffectiveStats } from '../logic/progressionEngine';
+import { getStaminaRegenInterval } from '../logic/staminaEngine';
 import { SKILLS } from '../data/skills';
 import ItemSprite from '../components/ItemSprite';
 import { pickRandomThought } from '../data/mochiThoughts';
 import { isQuestUnlocked } from '../data/quests';
+import { CONSUMABLES } from '../data/gear';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const BANNER_WIDTH = SCREEN_WIDTH - 40;
@@ -195,6 +197,7 @@ export default function CampScreen({ navigation }) {
   const [expandedQuestId, setExpandedQuestId] = React.useState(null);
   const [celebrationQuest, setCelebrationQuest] = React.useState(null);
   const [infoModal, setInfoModal] = React.useState(null); // { title: string, desc: string }
+  const [staminaInfoVisible, setStaminaInfoVisible] = React.useState(false);
 
   // Mochi's banner thought — re-rolled from the unlocked pool each time the hub
   // gains focus, so the hero "says" something new on every visit.
@@ -213,15 +216,59 @@ export default function CampScreen({ navigation }) {
     }, [state.progress.notesCollected, dispatch])
   );
 
-  // Tick every second while the modal is open so the reset countdown stays live
+  // Tick every second to keep reset countdown and stamina outline live
   React.useEffect(() => {
-    if (!questBoardModalVisible) return;
     setNowTs(Date.now());
-    const id = setInterval(() => setNowTs(Date.now()), 1000);
+    const id = setInterval(() => {
+      const now = Date.now();
+      setNowTs(now);
+
+      // Check if a stamina charge has recovered
+      const currentStamina = hero.stamina ?? 3;
+      const maxStamina = hero.maxStamina ?? 3;
+      const lastRegen = hero.lastStaminaRegenTime;
+
+      if (currentStamina < maxStamina && lastRegen) {
+        const interval = getStaminaRegenInterval(state);
+        const elapsed = now - lastRegen;
+        if (elapsed >= interval) {
+          dispatch({ type: 'TICK_STAMINA' });
+        }
+      }
+    }, 1000);
     return () => clearInterval(id);
-  }, [questBoardModalVisible]);
+  }, [hero.stamina, hero.maxStamina, hero.lastStaminaRegenTime, state, dispatch]);
 
   const effectiveStats = calculateEffectiveStats(hero);
+
+  const currentStamina = hero.stamina ?? 3;
+  const maxStamina = hero.maxStamina ?? 3;
+  const staminaProgress = React.useMemo(() => {
+    if (currentStamina >= maxStamina) return 1.0;
+    const lastRegen = hero.lastStaminaRegenTime;
+    if (!lastRegen) return 0.0;
+    const interval = getStaminaRegenInterval(state);
+    const elapsed = Math.max(0, nowTs - lastRegen);
+    return Math.min(1.0, elapsed / interval);
+  }, [currentStamina, maxStamina, hero.lastStaminaRegenTime, state, nowTs]);
+
+  const staminaCountdown = React.useMemo(() => {
+    if (currentStamina >= maxStamina) return 'FULL';
+    const lastRegen = hero.lastStaminaRegenTime;
+    if (!lastRegen) return '';
+    const interval = getStaminaRegenInterval(state);
+    const elapsed = Math.max(0, nowTs - lastRegen);
+    const remaining = Math.max(0, interval - elapsed);
+    const totalMin = Math.ceil(remaining / 60000);
+    const h = Math.floor(totalMin / 60);
+    const m = totalMin % 60;
+    return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+  }, [currentStamina, maxStamina, hero.lastStaminaRegenTime, state, nowTs]);
+
+  const staminaPotionCount = React.useMemo(() => {
+    const entry = state.hero.inventory.consumables?.find(c => c.id === 'stamina_potion');
+    return entry ? entry.quantity : 0;
+  }, [state.hero.inventory.consumables]);
 
   const notesCollected = state.progress.notesCollected || {};
   const readNotes = state.progress.readNotes || {};
@@ -353,17 +400,9 @@ export default function CampScreen({ navigation }) {
         desc: 'Shiny gold coins. Used to purchase gear, consumables, and all kinds of stuff.',
       };
     }
-    if (normalized === 'potion') {
-      return { title: 'HEALTH POTION', desc: 'Restore 50 HP.' };
-    }
-    if (normalized === 'super_potion') {
-      return { title: 'SUPER POTION', desc: 'Restore 100 HP.' };
-    }
-    if (normalized === 'mega_potion') {
-      return { title: 'MEGA POTION', desc: 'Restore 150 HP.' };
-    }
-    if (normalized === 'ultra_potion') {
-      return { title: 'ULTRA POTION', desc: 'Restore 200 HP.' };
+    const def = CONSUMABLES.find(c => c.id === normalized);
+    if (def) {
+      return { title: def.name.toUpperCase(), desc: def.description };
     }
     if (normalized === 'black_shard') {
       return { title: 'BLACK SHARD', desc: 'A fragmented piece of black crystal. Dropped by Sewer monsters. Used for crafting basic gear.' };
@@ -427,10 +466,8 @@ export default function CampScreen({ navigation }) {
         </View>
       );
     } else if (type === 'consumables') {
-      let frame = 0;
-      if (lowerKey === 'super_potion') frame = 1;
-      else if (lowerKey === 'mega_potion') frame = 2;
-      else if (lowerKey === 'ultra_potion') frame = 3;
+      const def = CONSUMABLES.find(c => c.id === lowerKey);
+      const frame = def ? def.frameIndex : 0;
       return (
         <View key={key} style={styles.rewardMiniChip}>
           <TouchableOpacity style={styles.infoTagSmall} onPress={handlePressInfo} activeOpacity={0.7}>
@@ -458,10 +495,8 @@ export default function CampScreen({ navigation }) {
   const getItemName = (itemId) => {
     const normalized = itemId.toLowerCase();
     if (normalized === 'gold') return 'Gold';
-    if (normalized === 'potion') return 'Health Potion';
-    if (normalized === 'super_potion') return 'Super Potion';
-    if (normalized === 'mega_potion') return 'Mega Potion';
-    if (normalized === 'ultra_potion') return 'Ultra Potion';
+    const def = CONSUMABLES.find(c => c.id === normalized);
+    if (def) return def.name;
 
     return normalized
       .split('_')
@@ -477,10 +512,8 @@ export default function CampScreen({ navigation }) {
     if (lowerKey === 'gold') {
       sprite = <ItemSprite spritesheet="icons-1" frameIndex={11} displaySize={32} />;
     } else if (type === 'consumables') {
-      let frame = 0;
-      if (lowerKey === 'super_potion') frame = 1;
-      else if (lowerKey === 'mega_potion') frame = 2;
-      else if (lowerKey === 'ultra_potion') frame = 3;
+      const def = CONSUMABLES.find(c => c.id === lowerKey);
+      const frame = def ? def.frameIndex : 0;
       sprite = <ItemSprite spritesheet="consumables-1" frameIndex={frame} displaySize={32} />;
     } else if (type === 'materials') {
       const frame = getCrystalFrame(lowerKey);
@@ -577,6 +610,52 @@ export default function CampScreen({ navigation }) {
               )}
             </View>
           </View>
+
+          {/* Stamina system charges container */}
+          <TouchableOpacity
+            style={styles.staminaContainer}
+            activeOpacity={0.85}
+            hitSlop={{ top: 12, right: 12, bottom: 12, left: 12 }}
+            onPress={() => setStaminaInfoVisible(true)}
+          >
+            <Svg width={92} height={92} style={styles.staminaSvg}>
+              {/* Background circle track */}
+              <Circle
+                cx="46"
+                cy="46"
+                r="41"
+                stroke="#4A3917"
+                strokeWidth="6"
+                fill="transparent"
+              />
+              {/* Active progress circle */}
+              {staminaProgress > 0 && (
+                <Circle
+                  cx="46"
+                  cy="46"
+                  r="41"
+                  stroke="#55c437ff"
+                  strokeWidth="6"
+                  fill="transparent"
+                  strokeDasharray={257.61}
+                  strokeDashoffset={257.61 - (staminaProgress * 257.61)}
+                  strokeLinecap='square'
+                  transform="rotate(-90 46 46)"
+                />
+              )}
+            </Svg>
+            <View style={styles.staminaInner}>
+              <View style={styles.staminaContent}>
+                <ItemSprite spritesheet="icons-map" frameIndex={134} displaySize={36} />
+                <Text style={styles.staminaText}>{currentStamina}</Text>
+                <Text style={styles.staminaMaxText}>/{maxStamina}</Text>
+              </View>
+              <Text style={[
+                styles.staminaTimerText,
+                staminaCountdown === 'FULL' && { color: '#3FB56E' }
+              ]}>{staminaCountdown}</Text>
+            </View>
+          </TouchableOpacity>
         </View>
 
 
@@ -781,6 +860,108 @@ export default function CampScreen({ navigation }) {
           </View>
         </View>
       </ScrollView>
+
+      {/* ═══════════════════════════════════════════════════════════════════
+          STAMINA INFO MODAL
+          ═══════════════════════════════════════════════════════════════════ */}
+      <Modal
+        visible={staminaInfoVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setStaminaInfoVisible(false)}
+        statusBarTranslucent
+      >
+        <TouchableOpacity
+          style={[StyleSheet.absoluteFillObject, styles.infoModalOverlay, { zIndex: 110 }]}
+          activeOpacity={1}
+          onPress={() => setStaminaInfoVisible(false)}
+        >
+          <Pressable style={styles.infoModalContent} onPress={(e) => e.stopPropagation()}>
+            <Text style={styles.infoModalTitle}>STAMINA SYSTEM</Text>
+
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginVertical: 6 }}>
+              <ItemSprite spritesheet="icons-map" frameIndex={134} displaySize={40} />
+              <Text style={{ fontFamily: 'Silkscreen-Regular', fontSize: 34, color: '#FFF3DA' }}>
+                {currentStamina}
+              </Text>
+              <Text style={{ fontFamily: 'Silkscreen-Regular', fontSize: 24, color: '#8A6E44', marginTop: 8 }}>
+                /{maxStamina}
+              </Text>
+            </View>
+            <Text style={[styles.staminaSubStatus, currentStamina >= maxStamina ? styles.staminaModalFullText : styles.staminaModalTimerText]}>
+              {currentStamina >= maxStamina ? 'Fully Charged' : `Next charge in: ${staminaCountdown}`}
+            </Text>
+
+            <View style={styles.staminaParchmentBox}>
+              <Text style={styles.staminaBoxText}>
+                • Stamina is required to start expeditions (1 charge per run).{"\n\n"}
+                • By default, 1 charge recovers every 8 hours and the maximum charges are 3.{"\n\n"}
+                • You can also use consumables to instantly restore stamina.
+              </Text>
+            </View>
+
+            <Text style={styles.sectionHeaderTitle}>INSTANT RECOVERY</Text>
+            <View style={[styles.potionCard, { flexDirection: 'column', alignItems: 'stretch', gap: 12 }]}>
+              <View style={styles.potionCardLeft}>
+                <ItemSprite spritesheet="consumables-1" frameIndex={5} displaySize={36} />
+                <View style={styles.potionCardTextCol}>
+                  <Text style={styles.potionCardName}>Stamina Potion</Text>
+                  <Text style={styles.potionCardDesc}>Instantly restores 1 charge</Text>
+                  <Text style={styles.potionCardQty}>Owned: {staminaPotionCount}</Text>
+                </View>
+              </View>
+
+              {staminaPotionCount > 0 ? (
+                <TouchableOpacity
+                  style={[styles.staminaActionBtn, { backgroundColor: '#1B4030', borderColor: '#4F856C', width: '100%' }]}
+                  onPress={() => {
+                    if (currentStamina >= maxStamina) {
+                      Alert.alert('Full Stamina', 'Your stamina is already fully charged!');
+                      return;
+                    }
+                    dispatch({ type: 'USE_CONSUMABLE', payload: { consumableId: 'stamina_potion' } });
+                    Alert.alert('⚡ Stamina Restored!', 'You recovered 1 stamina charge.');
+                  }}
+                  activeOpacity={0.8}
+                >
+                  <Text style={[styles.staminaActionBtnText, { color: '#FFE39B' }]}>USE POTION</Text>
+                </TouchableOpacity>
+              ) : (
+                <TouchableOpacity
+                  style={[
+                    styles.staminaActionBtn,
+                    { backgroundColor: '#3D2A00', borderColor: '#7D5A0F', width: '100%' },
+                    hero.gold < 1000 && { opacity: 0.5 }
+                  ]}
+                  disabled={hero.gold < 1000}
+                  onPress={() => {
+                    if (currentStamina >= maxStamina) {
+                      Alert.alert('Full Stamina', 'Your stamina is already fully charged!');
+                      return;
+                    }
+                    dispatch({ type: 'BUY_CONSUMABLE', payload: { consumableId: 'stamina_potion', price: 1000 } });
+                    dispatch({ type: 'USE_CONSUMABLE', payload: { consumableId: 'stamina_potion' } });
+                    Alert.alert('⚡ Purchased & Used!', 'Bought and consumed 1 Stamina Potion for 1000 Gold.');
+                  }}
+                  activeOpacity={0.8}
+                >
+                  <Text style={[styles.staminaActionBtnText, { color: '#DEC168' }]}>
+                    {hero.gold >= 1000 ? 'BUY & USE (1000 GOLD)' : 'NEED 1000 GOLD'}
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </View>
+
+            <TouchableOpacity
+              style={styles.infoCloseBtn}
+              onPress={() => setStaminaInfoVisible(false)}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.infoCloseBtnText}>CLOSE</Text>
+            </TouchableOpacity>
+          </Pressable>
+        </TouchableOpacity>
+      </Modal>
 
       {/* ═══════════════════════════════════════════════════════════════════
           DAILY REWARD MODAL — themed to match the hub redesign
@@ -1064,6 +1245,24 @@ export default function CampScreen({ navigation }) {
                 <Text style={styles.drCloseText}>✕</Text>
               </TouchableOpacity>
 
+              <Text style={styles.settingsSectionLabel}>Stamina Settings</Text>
+
+              <TouchableOpacity
+                activeOpacity={0.85}
+                style={styles.settingsStaminaBtn}
+                onPress={() => {
+                  dispatch({ type: 'REPLENISH_STAMINA' });
+                  Alert.alert('⚡ Stamina Replenished!', 'Your stamina charges have been fully restored to max.');
+                }}
+              >
+                <View style={styles.settingsStaminaBtnInner}>
+                  <Text style={styles.settingsStaminaBtnText}>REPLENISH STAMINA</Text>
+                </View>
+              </TouchableOpacity>
+              <Text style={[styles.settingsHint, { marginBottom: 20 }]}>
+                Instantly restore stamina charges to maximum capacity.
+              </Text>
+
               <Text style={styles.settingsSectionLabel}>Audio Settings</Text>
 
               <TouchableOpacity
@@ -1255,7 +1454,7 @@ const styles = StyleSheet.create({
   dungeonLabel: {
     fontFamily: 'Jersey10-Regular',
     fontWeight: 'normal',
-    fontSize: 34,
+    fontSize: 38,
     letterSpacing: 1,
     color: '#FFF3DA',
     textTransform: 'uppercase',
@@ -1266,7 +1465,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     letterSpacing: 0.5,
     color: '#FFEED0',
-    marginTop: 2,
+    marginTop: -2,
   },
   subButtonsRow: {
     flexDirection: 'row',
@@ -1413,7 +1612,7 @@ const styles = StyleSheet.create({
   dailyRewardTitle: {
     fontFamily: 'Jersey10-Regular',
     fontWeight: 'normal',
-    fontSize: 30,
+    fontSize: 32,
     letterSpacing: 1,
     textTransform: 'uppercase',
   },
@@ -1428,7 +1627,7 @@ const styles = StyleSheet.create({
     fontWeight: 'normal',
     fontSize: 16,
     letterSpacing: 0.5,
-    marginTop: 2,
+    marginTop: -2,
   },
   dailyRewardSubActive: {
     color: '#FFEED0',
@@ -1586,6 +1785,60 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 12,
     marginTop: -1,
+  },
+  staminaContainer: {
+    position: 'absolute',
+    bottom: 10,
+    right: 10,
+    width: 92,
+    height: 92,
+    borderRadius: 46,
+    backgroundColor: '#f3e2bdff',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 50,
+  },
+  staminaSvg: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    width: 92,
+    height: 92,
+  },
+  staminaInner: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  staminaContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 2,
+    marginLeft: -6,
+  },
+  staminaText: {
+    fontFamily: 'Jersey10-Regular',
+    fontSize: 40,
+    color: '#3a3310ff',
+    fontWeight: 'bold',
+    lineHeight: 40,
+    marginLeft: -5,
+  },
+  staminaMaxText: {
+    fontFamily: 'Jersey10-Regular',
+    fontSize: 22,
+    color: '#3A2410',
+    fontWeight: 'bold',
+    lineHeight: 22,
+    marginLeft: -2,
+    marginBottom: -8,
+  },
+  staminaTimerText: {
+    fontFamily: 'Jersey10-Regular',
+    fontSize: 22,
+    color: '#3a2410d6',
+    lineHeight: 22,
+    marginTop: -4,
   },
 
   /* ═══ Daily Reward Modal — Cozy Parchment ════════════════════════════════ */
@@ -1800,6 +2053,40 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     alignSelf: 'flex-start',
     marginBottom: 8,
+  },
+  settingsStaminaBtn: {
+    alignSelf: 'stretch',
+    backgroundColor: '#0D2118',
+    borderColor: '#3A2C18',
+    borderWidth: 2,
+    borderRadius: 12,
+    padding: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 3,
+    elevation: 4,
+  },
+  settingsStaminaBtnInner: {
+    backgroundColor: '#1B4030',
+    borderRadius: 9,
+    paddingVertical: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderTopWidth: 1.5,
+    borderTopColor: '#4F856C',
+    borderBottomWidth: 2,
+    borderBottomColor: '#0D2118',
+  },
+  settingsStaminaBtnText: {
+    fontFamily: 'Silkscreen-Regular',
+    fontSize: 12,
+    color: '#FFE39B',
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+    textShadowColor: '#0D2118',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 1,
   },
   settingsAudioBtn: {
     alignSelf: 'stretch',
@@ -2222,26 +2509,26 @@ const styles = StyleSheet.create({
   },
   infoModalContent: {
     width: '100%',
-    maxWidth: 320,
+    maxWidth: 345,
     backgroundColor: '#1E1E22',
     borderColor: theme.COLORS.panelBorderGoldStrong,
     borderWidth: 2,
     borderRadius: 12,
-    padding: 16,
+    padding: 18,
     alignItems: 'center',
   },
   infoModalTitle: {
     fontFamily: 'Silkscreen-Regular',
-    fontSize: 18,
+    fontSize: 24,
     color: '#FBBF24',
     textAlign: 'center',
-    marginBottom: 10,
+    marginBottom: 14,
     textTransform: 'uppercase',
   },
   infoModalDesc: {
     fontFamily: 'Jersey10-Regular',
-    fontSize: 20,
-    lineHeight: 24,
+    fontSize: 24,
+    lineHeight: 28,
     color: '#FFF3DA',
     textAlign: 'center',
     marginBottom: 16,
@@ -2251,13 +2538,105 @@ const styles = StyleSheet.create({
     borderColor: '#84735B',
     borderWidth: 1.5,
     borderRadius: 6,
-    paddingVertical: 8,
-    paddingHorizontal: 20,
+    paddingVertical: 10,
+    paddingHorizontal: 24,
   },
   infoCloseBtnText: {
     fontFamily: 'Silkscreen-Regular',
-    fontSize: 12,
+    fontSize: 16,
     color: '#FFF3DA',
+  },
+  staminaTitleText: {
+    fontFamily: 'Silkscreen-Regular',
+    fontSize: 26,
+    color: '#FFF3DA',
+    textAlign: 'center',
+    marginVertical: 6,
+  },
+  staminaSubStatus: {
+    fontFamily: 'Jersey10-Regular',
+    fontSize: 22,
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+  staminaModalFullText: {
+    color: '#4ADE80',
+  },
+  staminaModalTimerText: {
+    color: '#FBBF24',
+  },
+  staminaParchmentBox: {
+    alignSelf: 'stretch',
+    backgroundColor: '#1F140A',
+    borderColor: '#4A331A',
+    borderWidth: 1.5,
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 16,
+  },
+  staminaBoxText: {
+    fontFamily: 'Jersey10-Regular',
+    fontSize: 21,
+    lineHeight: 25,
+    color: '#ECCCA2',
+    textAlign: 'left',
+  },
+  sectionHeaderTitle: {
+    fontFamily: 'Silkscreen-Regular',
+    fontSize: 15,
+    color: '#8A6E44',
+    alignSelf: 'flex-start',
+    marginBottom: 8,
+    textTransform: 'uppercase',
+  },
+  potionCard: {
+    alignSelf: 'stretch',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.02)',
+    borderColor: 'rgba(255,255,255,0.06)',
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 18,
+  },
+  potionCardLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  potionCardTextCol: {
+    gap: 2,
+  },
+  potionCardName: {
+    fontFamily: 'Silkscreen-Regular',
+    fontSize: 15,
+    color: '#FFF3DA',
+  },
+  potionCardDesc: {
+    fontFamily: 'Jersey10-Regular',
+    fontSize: 18,
+    color: '#9CA3AF',
+  },
+  potionCardQty: {
+    fontFamily: 'Jersey10-Regular',
+    fontSize: 18,
+    color: '#FBBF24',
+  },
+  staminaActionBtn: {
+    borderWidth: 1.5,
+    borderRadius: 6,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    minWidth: 88,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  staminaActionBtnText: {
+    fontFamily: 'Silkscreen-Regular',
+    fontSize: 14,
+    fontWeight: 'bold',
   },
   claimBtnWrapper: {
     width: '100%',
@@ -2338,4 +2717,5 @@ const styles = StyleSheet.create({
     lineHeight: 14,
     marginTop: -1,
   },
+
 });

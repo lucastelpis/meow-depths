@@ -3,6 +3,14 @@
 ## Overview
 Meow Depths is an RPG/region-crawler game built using React Native and Expo, featuring turn-based combat, skills, equipment, progression, and a town hub.
 
+## Stamina System
+- **Expedition Cost**: Starting any dungeon floor run consumes 1 stamina charge.
+- **Recharge Mechanic**: Base recovery is 1 charge every 8 hours (can be scaled by equipped gear via `staminaRegenMultiplier`). Recharging only occurs when stamina is below the maximum capacity (base maximum of 3 charges). Starting a new game initializes stamina to full.
+- **Hub Banner Display**: Current stamina is shown at the bottom-right of the main hub's banner inside a large circular container (92px). Inside, it displays the last frame of the 9th row of `icons-map.png` (frame index 134, 36px) alongside the current charge count (34px font) and a live countdown timer/status (22px font). A dynamic gold circular outline (5px thick) tracks real-time progress. Tapping the container opens a highly visual pop-up modal displaying physical scroll icons for charge slots, remaining countdown, cozy rules parchment, and a quick-use/purchase panel for Stamina Potions.
+- **Visual Stamina Cost Cues**: The final "START EXPEDITION" button on the Floor Selection details contains a cozy, RPG-style parchment tag showing a `1` stamina cost next to the text. No stamina cost is displayed on the map navigation cards or packing screen buttons since browsing and packing do not consume stamina.
+- **Expedition Gate**: Attempting to enter a dungeon floor with 0 stamina prompts an enlarged "Out of Stamina!" modal with inline stamina rules and blocks entry. If the player owns any Stamina Potions, this warning modal displays a button to instantly consume one to proceed.
+- **Stamina Potion Consumable**: A new consumable item "Stamina Potion" is available in the Shop from level 1 for 1000 gold. It uses the 6th sprite frame of `consumables-1.png` (frame 5) and restores 1 stamina charge. It is usable from the Camp's Profile Inventory list, the home screen's Stamina Info popup, or directly inside the "Out of Stamina!" warning modal. Stamina Potions are filtered out of the floor packing supplies list since they cannot be used inside dungeons.
+
 ## Dungeon Floor Rules & Loot
 - **Dungeon Loot**: Potions (health potions, super potions, mega potions, ultra potions) do not drop from treasure chests, gamble rooms, or combat in the dungeons. They must be purchased from the Market (Shop) or obtained via daily rewards at the Camp hub.
 - **Floor Completion Rewards**: Each floor has pre-disclosed Gold and EXP rewards visible on its selection card and entry modal. These are awarded upon clearing all tiles on the floor grid and displayed in the floor complete modal.
