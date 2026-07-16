@@ -898,7 +898,7 @@ export default function CampScreen({ navigation }) {
                   activeOpacity={0.8}
                 >
                   <Text style={[styles.staminaActionBtnText, { color: '#DEC168' }]}>
-                    {hero.gold >= staminaPotionPrice ? `BUY & USE (${staminaPotionPrice} GOLD)` : `NEED MORE GOLD`}
+                    {hero.gold >= staminaPotionPrice ? `BUY & USE (${staminaPotionPrice} GOLD)` : `NEED ${staminaPotionPrice} GOLD`}
                   </Text>
                 </TouchableOpacity>
               )}
