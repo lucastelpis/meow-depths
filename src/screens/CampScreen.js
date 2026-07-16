@@ -270,6 +270,11 @@ export default function CampScreen({ navigation }) {
     return entry ? entry.quantity : 0;
   }, [state.hero.inventory.consumables]);
 
+  const staminaPotionPrice = React.useMemo(() => {
+    const def = CONSUMABLES.find(c => c.id === 'stamina_potion');
+    return def ? def.cost : 1000;
+  }, []);
+
   const notesCollected = state.progress.notesCollected || {};
   const readNotes = state.progress.readNotes || {};
   const hasUnreadNotes = Object.keys(notesCollected).some(
@@ -575,7 +580,7 @@ export default function CampScreen({ navigation }) {
                     backgroundColor: currentStamina >= maxStamina ? '#86C070' : '#A2DB9D',
                   }}
                 />
-                
+
                 {/* Content wrapper */}
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, zIndex: 2 }}>
                   <ItemSprite spritesheet="icons-map" frameIndex={134} displaySize={26} />
@@ -882,18 +887,18 @@ export default function CampScreen({ navigation }) {
                   style={[
                     styles.staminaActionBtn,
                     { backgroundColor: '#3D2A00', borderColor: '#7D5A0F', width: '100%' },
-                    hero.gold < 1000 && { opacity: 0.5 }
+                    hero.gold < staminaPotionPrice && { opacity: 0.5 }
                   ]}
-                  disabled={hero.gold < 1000}
+                  disabled={hero.gold < staminaPotionPrice}
                   onPress={() => {
-                    dispatch({ type: 'BUY_CONSUMABLE', payload: { consumableId: 'stamina_potion', price: 1000 } });
+                    dispatch({ type: 'BUY_CONSUMABLE', payload: { consumableId: 'stamina_potion', price: staminaPotionPrice } });
                     dispatch({ type: 'USE_CONSUMABLE', payload: { consumableId: 'stamina_potion' } });
-                    Alert.alert('⚡ Purchased & Used!', 'Bought and consumed 1 Stamina Potion for 1000 Gold.');
+                    Alert.alert('⚡ Purchased & Used!', `Bought and consumed 1 Stamina Potion for ${staminaPotionPrice} Gold.`);
                   }}
                   activeOpacity={0.8}
                 >
                   <Text style={[styles.staminaActionBtnText, { color: '#DEC168' }]}>
-                    {hero.gold >= 1000 ? 'BUY & USE (1000 GOLD)' : 'NEED 1000 GOLD'}
+                    {hero.gold >= staminaPotionPrice ? `BUY & USE (${staminaPotionPrice} GOLD)` : `NEED MORE GOLD`}
                   </Text>
                 </TouchableOpacity>
               )}
