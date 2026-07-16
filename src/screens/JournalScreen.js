@@ -171,7 +171,7 @@ export default function JournalScreen({ navigation, route }) {
   );
 
   return (
-      <View style={[styles.container, { paddingBottom: insets.bottom }]}>
+    <View style={[styles.container, { paddingBottom: insets.bottom }]}>
       {/* Header */}
       <View style={[styles.header, { paddingTop: insets.top }]}>
         <View style={styles.headerBackButtonWrapper}>
@@ -511,8 +511,8 @@ const styles = StyleSheet.create({
   dropLabel: { fontFamily: 'Jersey10-Regular', fontSize: 16, color: 'rgba(207,224,238,0.4)', marginRight: 2 },
   cardLore: {
     fontFamily: 'Jersey10-Regular',
-    fontSize: 20,
-    lineHeight: 20,
+    fontSize: 18,
+    lineHeight: 18,
     color: 'rgba(207,224,238,0.7)',
     marginTop: 12,
     fontStyle: 'italic',

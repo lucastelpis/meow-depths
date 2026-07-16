@@ -706,7 +706,7 @@ export default function ProfileScreen() {
                       <ItemSprite
                         spritesheet={spritesheet || "icons-1"}
                         frameIndex={frameIndex}
-                        displaySize={16}
+                        displaySize={22}
                         opacity={isActive ? 1.0 : 0.75}
                       />
                       <Text style={[styles.tabLabel, isActive ? styles.tabLabelActive : styles.tabLabelInactive]}>
@@ -1317,15 +1317,17 @@ export default function ProfileScreen() {
                     </View>
                   );
                 }
+                const bagNumColumns = 4;
+                const bagItemWidth = (availableWidth - (gap * (bagNumColumns - 1))) / bagNumColumns;
                 return (
                   <View style={styles.gridContainer}>
                     {items.map((entry) => {
                       const def = CONSUMABLES.find(c => c.id === entry.id);
-                      const iconSize = def?.spritesheet === 'icons-1' ? 48 : 42;
+                      const iconSize = def?.spritesheet === 'icons-1' ? 46 : 40;
                       return (
                         <TouchableOpacity
                           key={entry.id}
-                          style={[styles.gridCard, { width: itemWidth, height: itemWidth }]}
+                          style={[styles.gridCard, { width: bagItemWidth, height: bagItemWidth * 1.25 }]}
                           onPress={() => handleOpenDetails(entry, 'consumable')}
                           activeOpacity={0.8}
                         >
@@ -1334,9 +1336,9 @@ export default function ProfileScreen() {
                             <Rect x="1" y="1" width="98%" height="98%" rx={13} fill="none"
                               stroke="rgba(255,255,255,0.04)" strokeWidth={1} />
                           </Svg>
-                          <View style={styles.gridCardInner}>
-                            <Text style={styles.gridName} numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.8}>{def?.name || entry.id}</Text>
-                            <View style={styles.gridIconWrap}>
+                          <View style={styles.bagGridCardInner}>
+                            <Text style={styles.bagGridName} numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.8}>{def?.name || entry.id}</Text>
+                            <View style={styles.bagGridIconWrap}>
                               {def?.spritesheet ? (
                                 <ItemSprite spritesheet={def.spritesheet} frameIndex={def.frameIndex} displaySize={iconSize} />
                               ) : (
@@ -1345,7 +1347,7 @@ export default function ProfileScreen() {
                             </View>
                             <View style={styles.gridTagSlot}>
                               <View style={[styles.gridTagBadge, styles.gridQtyBadge]}>
-                                <Text style={[styles.gridTagText, styles.gridQtyText]}>×{entry.quantity}</Text>
+                                <Text style={[styles.bagGridTagText, styles.gridQtyText]}>×{entry.quantity}</Text>
                               </View>
                             </View>
                           </View>
@@ -1518,14 +1520,16 @@ export default function ProfileScreen() {
         transparent
         animationType="fade"
         onRequestClose={() => setModalVisible(false)}
+        statusBarTranslucent
       >
         <Pressable style={styles.modalBackdrop} onPress={() => setModalVisible(false)}>
-          <Pressable style={styles.modalCardOuter} onPress={(e) => e.stopPropagation()}>
-            <View style={styles.modalCardInner}>
+          <View style={[styles.itemModalFrame, theme.SHADOWS.cardShadow]}>
+            <View style={styles.itemModalParchment}>
+              <View style={styles.itemModalBevel} pointerEvents="none" />
+
               {selectedItem && (
                 (() => {
                   let title = '';
-                  let icon = '';
                   let spritesheet = null;
                   let frameIndex = 0;
                   let category = '';
@@ -1541,7 +1545,7 @@ export default function ProfileScreen() {
                     spritesheet = def?.spritesheet || null;
                     frameIndex = def?.frameIndex || 0;
                     category = 'Consumable';
-                    categoryColor = '#3FB56E';
+                    categoryColor = '#1D7044'; // dark green on parchment
                     statusText = `Owned: ${selectedItem.quantity}`;
                     if (selectedItem.id === 'mystery_chest') {
                       showOpenChestBtn = true;
@@ -1553,14 +1557,14 @@ export default function ProfileScreen() {
                     spritesheet = MATERIALS[selectedItem.id]?.spritesheet || null;
                     frameIndex = MATERIALS[selectedItem.id]?.frameIndex || 0;
                     category = 'Crafting Material';
-                    categoryColor = selectedItem.zone.zoneColor;
+                    categoryColor = '#7A5C30'; // dark brown
                     statusText = `Owned: ${selectedItem.qty}`;
                   }
 
                   const getRarityDetails = (itemId) => {
                     let label = 'COMMON';
-                    let color = '#94A3B8';
-                    let bg = 'rgba(148, 163, 184, 0.12)';
+                    let color = '#5C6B73';
+                    let bg = 'rgba(92, 107, 115, 0.12)';
 
                     const rares = [
                       'mega_potion', 'mystery_chest',
@@ -1577,16 +1581,16 @@ export default function ProfileScreen() {
 
                     if (epics.includes(itemId)) {
                       label = 'EPIC';
-                      color = '#A855F7';
-                      bg = 'rgba(168, 85, 247, 0.12)';
+                      color = '#8A2BE2';
+                      bg = 'rgba(138, 43, 226, 0.1)';
                     } else if (rares.includes(itemId)) {
                       label = 'RARE';
-                      color = '#06B6D4';
-                      bg = 'rgba(6, 182, 212, 0.12)';
+                      color = '#008B8B';
+                      bg = 'rgba(0, 139, 139, 0.1)';
                     } else if (uncommons.includes(itemId)) {
                       label = 'UNCOMMON';
-                      color = '#3FB56E';
-                      bg = 'rgba(63, 181, 110, 0.12)';
+                      color = '#2E8B57';
+                      bg = 'rgba(46, 139, 87, 0.1)';
                     }
                     return { label, color, bg };
                   };
@@ -1594,97 +1598,105 @@ export default function ProfileScreen() {
                   const rarity = getRarityDetails(selectedItem.id);
 
                   return (
-                    <View style={{ width: '100%' }}>
-                      {/* Header */}
-                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
-                        <View style={{ flex: 1, gap: 2 }}>
-                          <Text style={{ fontFamily: 'Jersey10-Regular', fontSize: 30, color: '#FFF3DA' }}>{title}</Text>
-                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                            {itemType !== 'consumable' && (
-                              <View style={{ backgroundColor: rarity.bg, paddingHorizontal: 6, paddingVertical: 1, borderRadius: 4, borderWidth: 1, borderColor: rarity.color + '40' }}>
-                                <Text style={{ fontFamily: 'Silkscreen-Regular', fontSize: 12, color: rarity.color }}>{rarity.label}</Text>
-                              </View>
-                            )}
-                            <Text style={{ fontSize: 16, color: categoryColor, fontWeight: 'bold' }}>{category.toUpperCase()}</Text>
+                    <View style={{ width: '100%', alignItems: 'center' }}>
+                      {/* Close button */}
+                      <TouchableOpacity
+                        style={styles.itemModalClose}
+                        onPress={() => setModalVisible(false)}
+                        activeOpacity={0.7}
+                      >
+                        <Text style={styles.itemModalCloseText}>✕</Text>
+                      </TouchableOpacity>
+
+                      {/* Title */}
+                      <Text style={styles.itemModalTitle}>{title}</Text>
+
+                      {/* Sub-row: Rarity & Category */}
+                      <View style={styles.itemModalSubRow}>
+                        {itemType !== 'consumable' && (
+                          <View style={[styles.itemRarityBadge, { borderColor: rarity.color, backgroundColor: rarity.bg }]}>
+                            <Text style={[styles.itemRarityText, { color: rarity.color }]}>{rarity.label}</Text>
                           </View>
-                        </View>
-                        <TouchableOpacity onPress={() => setModalVisible(false)} activeOpacity={0.7} style={{ width: 24, height: 24, alignItems: 'center', justifyContent: 'center' }}>
-                          <Text style={{ fontFamily: 'Jersey10-Regular', fontSize: 26, color: 'rgba(255, 243, 218, 0.6)' }}>✕</Text>
-                        </TouchableOpacity>
+                        )}
+                        <Text style={[styles.itemCategoryText, { color: categoryColor }]}>{category.toUpperCase()}</Text>
                       </View>
 
-                      {/* Icon Wrap */}
-                      <View style={{ alignItems: 'center', marginVertical: 16 }}>
-                        <View style={{
-                          width: 80,
-                          height: 80,
-                          borderRadius: 40,
-                          backgroundColor: 'rgba(212, 167, 84, 0.05)',
-                          borderWidth: 2,
-                          borderColor: 'rgba(212, 167, 84, 0.25)',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          marginBottom: 8,
-                          shadowColor: '#D4A754',
-                          shadowOffset: { width: 0, height: 0 },
-                          shadowOpacity: 0.3,
-                          shadowRadius: 6,
-                        }}>
+                      {/* Icon Plaque */}
+                      <View style={styles.itemIconSlotOuter}>
+                        <View style={styles.itemIconSlotInner}>
                           {spritesheet ? (
-                            <ItemSprite spritesheet={spritesheet} frameIndex={frameIndex} displaySize={48} />
+                            <ItemSprite spritesheet={spritesheet} frameIndex={frameIndex} displaySize={40} />
                           ) : (
-                            <ItemSprite spritesheet="icons-map" frameIndex={17} displaySize={48} />
+                            <ItemSprite spritesheet="icons-map" frameIndex={17} displaySize={40} />
                           )}
                         </View>
-                        <Text style={{ fontFamily: 'Silkscreen-Regular', fontSize: 13, color: '#94A3B8', marginTop: 4 }}>
-                          {statusText.toUpperCase()}
-                        </Text>
                       </View>
 
-                      {/* Description / Lore */}
+                      {/* Status text */}
+                      <Text style={styles.itemModalStatus}>{statusText.toUpperCase()}</Text>
+
+                      {/* Lore description */}
                       {!!lore && (
-                        <View style={{
-                          backgroundColor: 'rgba(26, 18, 0, 0.35)',
-                          borderColor: 'rgba(212, 167, 84, 0.15)',
-                          borderWidth: 1.2,
-                          borderRadius: 8,
-                          padding: 12,
-                          marginBottom: 18,
-                        }}>
-                          <Text style={{ fontSize: 18, color: '#F3E2BD', fontStyle: 'italic', lineHeight: 22, textAlign: 'center' }}>
+                        <View style={styles.itemModalLoreBox}>
+                          <Text style={styles.itemModalLoreText}>
                             "{lore}"
                           </Text>
                         </View>
                       )}
 
                       {/* Actions */}
-                      <View style={{ gap: 8 }}>
+                      <View style={{ width: '100%' }}>
                         {showOpenChestBtn && (
-                          <TouchableOpacity style={styles.primaryActionBtn} onPress={handleOpenChest} activeOpacity={0.85}>
-                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, justifyContent: 'center' }}>
-                              <ItemSprite spritesheet="icons-map" frameIndex={53} displaySize={18} />
-                              <Text style={styles.primaryActionText}>Open Mystery Chest</Text>
-                            </View>
-                          </TouchableOpacity>
+                          <View style={styles.itemModalBtnWrapper}>
+                            <View style={[styles.itemModalBtnShadow, styles.primaryBtnShadow]} />
+                            <TouchableOpacity
+                              style={[styles.itemModalBtnOuter, styles.primaryBtnOuter]}
+                              activeOpacity={0.85}
+                              onPress={handleOpenChest}
+                            >
+                              <View style={styles.primaryBtnInner}>
+                                <ItemSprite spritesheet="icons-map" frameIndex={53} displaySize={18} />
+                                <Text style={styles.primaryBtnText}>OPEN MYSTERY CHEST</Text>
+                              </View>
+                            </TouchableOpacity>
+                          </View>
                         )}
+
                         {showUseStaminaPotionBtn && (
-                          <TouchableOpacity style={styles.primaryActionBtn} onPress={handleUseStaminaPotion} activeOpacity={0.85}>
-                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, justifyContent: 'center' }}>
-                              <ItemSprite spritesheet="consumables-1" frameIndex={5} displaySize={18} />
-                              <Text style={styles.primaryActionText}>Use Stamina Potion</Text>
+                          <View style={styles.itemModalBtnWrapper}>
+                            <View style={[styles.itemModalBtnShadow, styles.primaryBtnShadow]} />
+                            <TouchableOpacity
+                              style={[styles.itemModalBtnOuter, styles.primaryBtnOuter]}
+                              activeOpacity={0.85}
+                              onPress={handleUseStaminaPotion}
+                            >
+                              <View style={styles.primaryBtnInner}>
+                                <ItemSprite spritesheet="consumables-1" frameIndex={5} displaySize={18} />
+                                <Text style={styles.primaryBtnText}>USE STAMINA POTION</Text>
+                              </View>
+                            </TouchableOpacity>
+                          </View>
+                        )}
+
+                        <View style={styles.itemModalBtnWrapper}>
+                          <View style={[styles.itemModalBtnShadow, styles.secondaryBtnShadow]} />
+                          <TouchableOpacity
+                            style={[styles.itemModalBtnOuter, styles.secondaryBtnOuter]}
+                            activeOpacity={0.85}
+                            onPress={() => setModalVisible(false)}
+                          >
+                            <View style={styles.secondaryBtnInner}>
+                              <Text style={styles.secondaryBtnText}>CLOSE</Text>
                             </View>
                           </TouchableOpacity>
-                        )}
-                        <TouchableOpacity style={styles.secondaryActionBtn} onPress={() => setModalVisible(false)} activeOpacity={0.85}>
-                          <Text style={styles.secondaryActionText}>Close</Text>
-                        </TouchableOpacity>
+                        </View>
                       </View>
                     </View>
                   );
                 })()
               )}
             </View>
-          </Pressable>
+          </View>
         </Pressable>
       </Modal>
 
@@ -3232,5 +3244,253 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: 'normal',
     letterSpacing: 0.8,
+  },
+  bagGridCardInner: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 6,
+  },
+  bagGridName: {
+    fontFamily: 'Jersey10-Regular',
+    fontSize: 18,
+    color: '#F3E2BD',
+    textAlign: 'center',
+    lineHeight: 16,
+    width: '100%',
+  },
+  bagGridIconWrap: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginVertical: 4,
+  },
+  bagGridTagText: {
+    fontFamily: 'Jersey10-Regular',
+    fontSize: 13,
+    letterSpacing: 0.2,
+    color: '#F3E2BD',
+  },
+  itemModalFrame: {
+    width: '100%',
+    maxWidth: 340,
+    backgroundColor: '#6E4524',
+    borderColor: '#3A2210',
+    borderWidth: 3,
+    borderRadius: 12,
+    padding: 10,
+    position: 'relative',
+  },
+  itemModalParchment: {
+    backgroundColor: '#ECD8A6',
+    borderRadius: 12,
+    borderColor: '#C9A86A',
+    borderWidth: 2,
+    paddingTop: 24,
+    paddingBottom: 18,
+    paddingHorizontal: 18,
+    alignItems: 'center',
+    position: 'relative',
+  },
+  itemModalBevel: {
+    position: 'absolute',
+    top: 3,
+    left: 3,
+    right: 3,
+    bottom: 3,
+    borderRadius: 9,
+    borderWidth: 1.5,
+    borderColor: 'rgba(255, 250, 228, 0.45)',
+    zIndex: 1,
+  },
+  itemModalClose: {
+    position: 'absolute',
+    top: 10,
+    right: 12,
+    zIndex: 10,
+    width: 28,
+    height: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  itemModalCloseText: {
+    fontFamily: 'Jersey10-Regular',
+    fontSize: 26,
+    color: '#6E4524',
+    fontWeight: 'bold',
+  },
+  itemModalTitle: {
+    fontFamily: 'Jersey10-Regular',
+    fontSize: 28,
+    color: '#4A2E14',
+    textAlign: 'center',
+    marginBottom: 4,
+    width: '85%',
+  },
+  itemModalSubRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginBottom: 14,
+  },
+  itemRarityBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 5,
+    borderWidth: 1.5,
+  },
+  itemRarityText: {
+    fontFamily: 'Silkscreen-Regular',
+    fontSize: 10,
+    fontWeight: 'bold',
+  },
+  itemCategoryText: {
+    fontFamily: 'Silkscreen-Regular',
+    fontSize: 10,
+    fontWeight: 'bold',
+  },
+  itemIconSlotOuter: {
+    width: 76,
+    height: 76,
+    borderRadius: 8,
+    backgroundColor: '#1E1E20',
+    borderWidth: 2.5,
+    borderColor: '#4A3917',
+    padding: 1.5,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 6,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.35,
+    shadowRadius: 3,
+    elevation: 4,
+  },
+  itemIconSlotInner: {
+    flex: 1,
+    width: '100%',
+    borderRadius: 5,
+    borderWidth: 2,
+    borderColor: '#D4A754',
+    backgroundColor: '#1E1E22',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  itemModalStatus: {
+    fontFamily: 'Silkscreen-Regular',
+    fontSize: 11,
+    color: '#7A5C30',
+    marginBottom: 14,
+  },
+  itemModalLoreBox: {
+    backgroundColor: 'rgba(74, 46, 20, 0.06)',
+    borderColor: 'rgba(110, 69, 36, 0.25)',
+    borderWidth: 1.5,
+    borderRadius: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    marginBottom: 16,
+    width: '100%',
+  },
+  itemModalLoreText: {
+    fontFamily: 'Jersey10-Regular',
+    fontSize: 20,
+    lineHeight: 22,
+    color: '#4A2E14',
+    fontStyle: 'italic',
+    textAlign: 'center',
+  },
+  itemModalBtnWrapper: {
+    width: '100%',
+    height: 40,
+    position: 'relative',
+    marginBottom: 8,
+  },
+  itemModalBtnShadow: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 2.5,
+    height: 40,
+    borderRadius: 8,
+    zIndex: 1,
+  },
+  itemModalBtnOuter: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    height: 40,
+    borderRadius: 8,
+    borderWidth: 2.2,
+    zIndex: 2,
+  },
+  itemModalBtnInner: {
+    flex: 1,
+    margin: 1.5,
+    borderRadius: 5,
+    borderWidth: 2.2,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+  },
+  primaryBtnShadow: {
+    backgroundColor: '#4A3917',
+  },
+  primaryBtnOuter: {
+    borderColor: '#4A3917',
+    backgroundColor: '#4A3917',
+  },
+  primaryBtnInner: {
+    flex: 1,
+    margin: 1.5,
+    borderRadius: 5,
+    borderWidth: 2.2,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: '#E8A73A',
+    borderTopColor: '#F5CF7A',
+    borderLeftColor: '#F5CF7A',
+    borderRightColor: '#F5CF7A',
+    borderBottomColor: '#845D18',
+    borderBottomWidth: 3.2,
+  },
+  primaryBtnText: {
+    fontFamily: 'Silkscreen-Regular',
+    fontSize: 10,
+    color: '#1A1200',
+    fontWeight: 'normal',
+  },
+  secondaryBtnShadow: {
+    backgroundColor: '#25160A',
+  },
+  secondaryBtnOuter: {
+    borderColor: '#3A2210',
+    backgroundColor: '#25160A',
+  },
+  secondaryBtnInner: {
+    flex: 1,
+    margin: 1.5,
+    borderRadius: 5,
+    borderWidth: 2.2,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: '#8B5A2B',
+    borderTopColor: '#CD853F',
+    borderLeftColor: '#CD853F',
+    borderRightColor: '#CD853F',
+    borderBottomColor: '#5C3E21',
+    borderBottomWidth: 3.2,
+  },
+  secondaryBtnText: {
+    fontFamily: 'Silkscreen-Regular',
+    fontSize: 10,
+    color: '#F3E2BD',
+    fontWeight: 'normal',
   },
 });

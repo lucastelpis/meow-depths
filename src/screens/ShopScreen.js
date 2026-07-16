@@ -412,7 +412,7 @@ export default function ShopScreen() {
                   <ItemSprite
                     spritesheet="icons-1"
                     frameIndex={frameIndex}
-                    displaySize={16}
+                    displaySize={22}
                     opacity={isActive ? 1.0 : 0.65}
                   />
                   <Text style={[styles.tabLabelText, isActive ? styles.tabLabelActive : styles.tabLabelInactive]}>

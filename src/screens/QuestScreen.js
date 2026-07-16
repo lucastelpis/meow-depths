@@ -260,7 +260,7 @@ export default function QuestScreen({ navigation }) {
           style={{ width: '100%' }}
         >
           <View style={styles.questTitleRow}>
-            <Text style={styles.questTitle} numberOfLines={1}>{quest.title}</Text>
+            <Text style={styles.questTitle}>{quest.title}</Text>
             <View style={styles.chevronShadow}>
               <View style={styles.chevronBadge}>
                 <Text style={styles.chevronText}>{isExpanded ? '▲' : '▼'}</Text>
