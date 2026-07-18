@@ -15,7 +15,7 @@
 import React from 'react';
 import { StatusBar, View, StyleSheet } from 'react-native';
 import { Image as ExpoImage } from 'expo-image';
-import { NavigationContainer, DarkTheme } from '@react-navigation/native';
+import { NavigationContainer, DarkTheme, useNavigationContainerRef } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import * as Font from 'expo-font';
@@ -64,6 +64,8 @@ const APP_FONTS = {
 function AppNavigator() {
   const { state, loading } = useGame();
   const hasElement = !!(state?.hero?.element);
+  const navigationRef = useNavigationContainerRef();
+  const [currentScreen, setCurrentScreen] = React.useState(null);
 
   React.useEffect(() => {
     if (loading || !state) return;
@@ -72,8 +74,9 @@ function AppNavigator() {
     const isMuted = !!(state.settings?.muteSounds);
     SoundManager.setMuted(isMuted);
 
-    // 2. Play BGM based on active run status
-    if (state.currentRun?.active) {
+    // 2. Play BGM based on current screen and active run status
+    const isDungeonScreen = currentScreen === 'DungeonMap' || currentScreen === 'Combat';
+    if (isDungeonScreen && state.currentRun?.active) {
       const zoneId = state.currentRun.zoneId;
       if (zoneId === 'zone1') {
         SoundManager.playMusic('zone1');
@@ -87,14 +90,29 @@ function AppNavigator() {
     } else {
       SoundManager.playMusic('hub');
     }
-  }, [loading, state?.currentRun?.active, state?.currentRun?.zoneId, state?.settings?.muteSounds]);
+  }, [loading, currentScreen, state?.currentRun?.active, state?.currentRun?.zoneId, state?.settings?.muteSounds]);
 
   if (loading) {
     return <View style={{ flex: 1, backgroundColor: '#0D0D0D' }} />;
   }
 
+  const handleNavigationReady = () => {
+    const route = navigationRef.current?.getCurrentRoute();
+    setCurrentScreen(route?.name || null);
+  };
+
+  const handleNavigationStateChange = () => {
+    const route = navigationRef.current?.getCurrentRoute();
+    setCurrentScreen(route?.name || null);
+  };
+
   return (
-    <NavigationContainer theme={DarkTheme}>
+    <NavigationContainer
+      theme={DarkTheme}
+      ref={navigationRef}
+      onReady={handleNavigationReady}
+      onStateChange={handleNavigationStateChange}
+    >
       <StatusBar barStyle="light-content" backgroundColor="#000" />
 
       {/* Pre-render heavy combat backgrounds behind the navigation stack so they cache perfectly at screen size */}

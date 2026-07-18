@@ -198,6 +198,13 @@ export default function CampScreen({ navigation }) {
   const [celebrationQuest, setCelebrationQuest] = React.useState(null);
   const [infoModal, setInfoModal] = React.useState(null); // { title: string, desc: string }
   const [staminaInfoVisible, setStaminaInfoVisible] = React.useState(false);
+  const [resumeModalVisible, setResumeModalVisible] = React.useState(false);
+
+  React.useEffect(() => {
+    if (state.currentRun?.active) {
+      setResumeModalVisible(true);
+    }
+  }, []);
 
   // Mochi's banner thought — re-rolled from the unlocked pool each time the hub
   // gains focus, so the hero "says" something new on every visit.
@@ -810,6 +817,59 @@ export default function CampScreen({ navigation }) {
       </ScrollView>
 
       {/* ═══════════════════════════════════════════════════════════════════
+          RESUME OR FLEE EXPEDITION MODAL
+          ═══════════════════════════════════════════════════════════════════ */}
+      <Modal
+        visible={resumeModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => {}}
+        statusBarTranslucent
+      >
+        <View style={styles.infoModalOverlay}>
+          <View style={styles.infoModalContent}>
+            <Text style={styles.infoModalTitle}>EXPEDITION IN PROGRESS</Text>
+            
+            <View style={{ marginVertical: 8, alignItems: 'center' }}>
+              <ItemSprite spritesheet="icons-map" frameIndex={99} displaySize={48} />
+            </View>
+
+            <Text style={styles.infoModalDesc}>
+              You closed the game in the middle of an active expedition. Would you like to resume your run or flee back to the Camp?
+            </Text>
+
+            <View style={{ alignSelf: 'stretch', gap: 12, marginTop: 10 }}>
+              <TouchableOpacity
+                activeOpacity={0.85}
+                style={styles.settingsStaminaBtn}
+                onPress={() => {
+                  setResumeModalVisible(false);
+                  navigation.navigate('DungeonMap');
+                }}
+              >
+                <View style={styles.settingsStaminaBtnInner}>
+                  <Text style={styles.settingsStaminaBtnText}>RESUME RUN</Text>
+                </View>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                activeOpacity={0.85}
+                style={styles.settingsResetBtn}
+                onPress={() => {
+                  setResumeModalVisible(false);
+                  dispatch({ type: 'END_RUN', payload: { outcome: 'flee' } });
+                }}
+              >
+                <View style={styles.settingsResetBtnInner}>
+                  <Text style={styles.settingsResetBtnText}>FLEE TO CAMP</Text>
+                </View>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* ═══════════════════════════════════════════════════════════════════
           STAMINA INFO MODAL
           ═══════════════════════════════════════════════════════════════════ */}
       <Modal
@@ -989,7 +1049,7 @@ export default function CampScreen({ navigation }) {
                             {quest.claimed ? (
                               <ItemSprite spritesheet="icons-map" frameIndex={95} displaySize={13} />
                             ) : quest.completed ? (
-                              <ItemSprite spritesheet="icons-map" frameIndex={140} displaySize={13} />
+                              <ItemSprite spritesheet="icons-map" frameIndex={28} displaySize={13} />
                             ) : (
                               <View style={styles.statusBulletActive} />
                             )}
@@ -1006,22 +1066,6 @@ export default function CampScreen({ navigation }) {
                           <View style={styles.questHeaderRight}>
                             {quest.claimed ? (
                               <Text style={styles.questStatusTextClaimed}>CLAIMED</Text>
-                            ) : quest.completed ? (
-                              <View style={styles.headerClaimBtnWrapper}>
-                                <View style={styles.headerClaimBtnShadow} />
-                                <TouchableOpacity
-                                  style={styles.headerClaimBtnOuter}
-                                  activeOpacity={0.7}
-                                  onPress={(e) => {
-                                    e.stopPropagation();
-                                    setCelebrationQuest(quest);
-                                  }}
-                                >
-                                  <View style={styles.headerClaimBtnInner}>
-                                    <Text style={styles.headerClaimBtnText}>CLAIM</Text>
-                                  </View>
-                                </TouchableOpacity>
-                              </View>
                             ) : (
                               <Text style={styles.questHeaderProgressText}>
                                 {quest.progress}/{quest.target}
@@ -1085,6 +1129,24 @@ export default function CampScreen({ navigation }) {
                                 </TouchableOpacity>
                               </View>
                             )}
+                          </View>
+                        )}
+
+                        {/* Collapsed state completed quest claim button */}
+                        {!isExpanded && !quest.claimed && quest.completed && (
+                          <View style={{ paddingHorizontal: 12, paddingBottom: 12 }}>
+                            <View style={[styles.claimBtnWrapper, { marginTop: 4 }]}>
+                              <View style={styles.claimBtnShadow} />
+                              <TouchableOpacity
+                                style={styles.claimBtnOuter}
+                                activeOpacity={0.8}
+                                onPress={() => setCelebrationQuest(quest)}
+                              >
+                                <View style={styles.claimBtnInner}>
+                                  <Text style={styles.claimBtnText}>CLAIM REWARD</Text>
+                                </View>
+                              </TouchableOpacity>
+                            </View>
                           </View>
                         )}
                       </View>

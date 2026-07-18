@@ -449,6 +449,65 @@ export default function ProfileScreen() {
     return deltas;
   };
 
+  const renderItemStats = (item, isEquipped, currentDef) => {
+    if (!item?.stats) return null;
+    const STAT_FIELDS = [
+      { key: 'attack', label: 'ATK', percent: false },
+      { key: 'defence', label: 'DEF', percent: false },
+      { key: 'maxHp', label: 'HP', percent: false },
+      { key: 'critChance', label: 'CRIT', percent: true },
+      { key: 'dodge', label: 'DODGE', percent: true },
+      { key: 'bagSlots', label: 'BAG SLOTS', percent: false },
+    ];
+
+    const elements = [];
+    STAT_FIELDS.forEach(({ key, label, percent }) => {
+      const val = item.stats[key];
+      if (!val) return;
+
+      const formattedVal = percent ? `+${Math.round(val * 100)}%` : `+${val}`;
+      let deltaNode = null;
+
+      if (!isEquipped) {
+        const currentVal = currentDef?.stats?.[key] || 0;
+        const diff = val - currentVal;
+        if (Math.abs(diff) >= 0.0001) {
+          const sign = diff > 0 ? '+' : '';
+          const formattedDiff = percent ? `${sign}${Math.round(diff * 100)}%` : `${sign}${diff}`;
+          const color = diff > 0 ? '#5CC489' : '#EF4444';
+          deltaNode = (
+            <Text key={`${key}_delta`} style={{ color }}>
+              {` (${formattedDiff})`}
+            </Text>
+          );
+        }
+      }
+
+      elements.push(
+        <Text key={key}>
+          {label} {formattedVal}
+          {deltaNode}
+        </Text>
+      );
+    });
+
+    if (elements.length === 0) return null;
+
+    const joinedElements = [];
+    elements.forEach((el, index) => {
+      joinedElements.push(el);
+      if (index < elements.length - 1) {
+        joinedElements.push(<Text key={`spacer_${index}`}>  </Text>);
+      }
+    });
+
+    return (
+      <Text style={styles.compareItemStats}>
+        {joinedElements}
+      </Text>
+    );
+  };
+
   // Data for the equipment slot popup
   const handleOpenSlot = (slotKey) => {
     const slotConfig = SLOT_CONFIG.find((s) => s.key === slotKey);
@@ -1403,7 +1462,7 @@ export default function ProfileScreen() {
             <View style={styles.modalCardInner}>
               <View style={styles.modalHeaderRow}>
                 <Text style={styles.modalTitle}>
-                  {modalData.candidates.length > 0 ? `Choose a ${modalData.slotConfig?.label}` : `No ${modalData.slotConfig?.label} Yet`}
+                  {modalData.candidates.length > 0 ? `Choose a ${modalData.slotConfig?.label} Item` : `No ${modalData.slotConfig?.label} Item Yet`}
                 </Text>
                 <TouchableOpacity onPress={() => setSelectedSlot(null)} activeOpacity={0.7}>
                   <Text style={styles.modalCloseText}>✕</Text>
@@ -1414,7 +1473,6 @@ export default function ProfileScreen() {
                 <ScrollView style={styles.modalList} showsVerticalScrollIndicator={false}>
                   {modalData.candidates.map((item) => {
                     const isEquipped = item.isEquipped;
-                    const deltas = item.deltas;
                     return (
                       <TouchableOpacity
                         key={item.id}
@@ -1424,19 +1482,21 @@ export default function ProfileScreen() {
                         disabled={isEquipped}
                       >
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                          {item.spritesheet ? (
-                            <ItemSprite
-                              spritesheet={item.spritesheet}
-                              frameIndex={item.frameIndex}
-                              displaySize={36}
-                            />
-                          ) : (
-                            <ExpoImage
-                              source={GEAR_ICON_PLACEHOLDER}
-                              style={{ width: 36, height: 36 }}
-                              contentFit="contain"
-                            />
-                          )}
+                          <View style={styles.compareItemIconBox}>
+                            {item.spritesheet ? (
+                              <ItemSprite
+                                spritesheet={item.spritesheet}
+                                frameIndex={item.frameIndex}
+                                displaySize={36}
+                              />
+                            ) : (
+                              <ExpoImage
+                                source={GEAR_ICON_PLACEHOLDER}
+                                style={{ width: 36, height: 36 }}
+                                contentFit="contain"
+                              />
+                            )}
+                          </View>
                           <View style={{ flex: 1 }}>
                             <View style={styles.compareRowHeader}>
                               <Text style={styles.compareItemName}>{item.name}</Text>
@@ -1446,24 +1506,10 @@ export default function ProfileScreen() {
                                 </View>
                               )}
                             </View>
-                            {!!statSummary(item) && (
-                              <Text style={styles.compareItemStats}>{statSummary(item)}</Text>
-                            )}
                             {!!item.description && (
                               <Text style={styles.compareItemDesc}>{item.description}</Text>
                             )}
-                            {!isEquipped && deltas.length > 0 && (
-                              <View style={styles.deltaRow}>
-                                {deltas.map((d) => (
-                                  <Text
-                                    key={d.label}
-                                    style={[styles.deltaText, { color: d.positive ? '#5CC489' : '#EF4444' }]}
-                                  >
-                                    {d.label} {d.text}
-                                  </Text>
-                                ))}
-                              </View>
-                            )}
+                            {renderItemStats(item, isEquipped, modalData.currentGearDef)}
                           </View>
                         </View>
                       </TouchableOpacity>
@@ -2926,6 +2972,16 @@ const styles = StyleSheet.create({
     backgroundColor: '#1C2E1B',
     borderColor: '#E8A73A',
   },
+  compareItemIconBox: {
+    width: 44,
+    height: 44,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1.5,
+    backgroundColor: '#2E5C41',
+    borderColor: '#4A3917',
+  },
   compareRowHeader: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -2934,17 +2990,17 @@ const styles = StyleSheet.create({
   compareItemName: {
     fontFamily: 'Jersey10-Regular',
     fontWeight: 'normal',
-    fontSize: 18,
+    fontSize: 24,
     color: theme.COLORS.parchment,
   },
   compareItemStats: {
     fontFamily: 'Silkscreen-Regular',
-    fontSize: 15,
+    fontSize: 12,
     color: '#E8A73A',
   },
   compareItemDesc: {
-    fontFamily: 'Silkscreen-Regular',
-    fontSize: 15,
+    fontFamily: 'Jersey10-Regular',
+    fontSize: 18,
     color: '#94A3B8', // readable blue-grey
     marginTop: 2,
   },

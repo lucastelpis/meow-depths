@@ -35,7 +35,7 @@ Meow Depths is an RPG/region-crawler game built using React Native and Expo, fea
     - **Skill Points warning badge**: Appears on the **Skills** button when there are available skill points to distribute.
     - **Notes warning badge**: Appears on the **Journal** button when there are unread collectible field notes.
 - **Quest Screen & Daily Tasks Accordion**:
-  - **Daily Tasks Accordion (Camp Modal)**: A list inside the Camp Hub where daily tasks default to a collapsed header. Completed-unclaimed tasks can be claimed directly from the header. The main Daily Tasks entry button on the hub is styled as a 3D pixel-art button matching the Earthy Moss Green design with 3D outlines/bevels, a pulsing glow animation when active, and an all-caps subtitle showing the task completion count (e.g. "0/3 COMPLETE"). The progress bar has a height of 24 and font size of 14 for optimal legibility.
+  - **Daily Tasks Accordion (Camp Modal)**: A list inside the Camp Hub where daily tasks default to a collapsed header. Completed-unclaimed tasks are claimed via a full-width "CLAIM REWARD" button rendered below the header (title) when collapsed, or from the bottom of the card when expanded/uncollapsed. The icon to the left of completed quests uses the fireplace icon (frame index 28 from `icons-map.png`). The main Daily Tasks entry button on the hub is styled as a 3D pixel-art button matching the Earthy Moss Green design with 3D outlines/bevels, a pulsing glow animation when active, and an all-caps subtitle showing the task completion count (e.g. "0/3 COMPLETE"). The progress bar has a height of 24 and font size of 14 for optimal legibility.
   - **Quest Screen**: A full screen with tabs for Daily Tasks (with countdown timers) and Campaign progression milestones. Quests are presented in an accordion style, naturally showing only the name and progress. Clicking a quest card expands it to reveal description, rewards, and the claim/status button. Only one quest can be expanded at any time; clicking a quest collapses any other active one. Top tab buttons, campaign sub-tab buttons, and active 'CLAIM REWARD' buttons are styled as 3D pixel-art buttons with double outlines (inactive in Earthy Moss Green, active/completed in warm Parchment or Earthy Moss Green).
   - **Quest Progress Bar**: Designed with a dark brown background (#3A2210), a green fill (#1c823eff), a height of 24, a gold border of 1.5, and a font size of 14 for highly legible progression tracking on mobile.
   - **Square Reward Chips**: Reward items are displayed on larger 84x84 squares beneath the "Rewards:" label (instead of horizontal tags next to it). They feature a custom 36 displaySize icon, quantity text at 14 (with small "x" prefix at 11), and a 20x20 absolute-positioned "?" tooltip button in the top-right corner to view names and descriptions in a cozy charcoal info modal.
@@ -169,15 +169,16 @@ This is a 15-column layout matrix of various game icons (480x320 px, 32x32 px pe
 - **Row 10**: 136: Grey mountain, 137: Blue fish, 138-150: Additional cells.
 
 ## Audio & Music Systems
-- **BGM Assets**:
-  - Main Hub and menus BGM: `hub&menus.mp3`
-  - Soggy Ruins (Zone 1) BGM: `soggy-ruins.mp3`
-  - Twisted Garden (Zone 2) BGM: `forest.mp3`
-  - Sunken Docks (Zone 3) BGM: `sunken-docks.mp3`
+- **BGM Assets & Routing**:
+  - Main Hub and menus BGM: `hub&menus.mp3`. Playback is dynamically routed: outside/hub screens (such as Camp, World Map, Shop, Profile, Quests) play the hub theme.
+  - Soggy Ruins (Zone 1) BGM: `soggy-ruins.mp3` (plays when actively inside Zone 1 dungeon/combat).
+  - Twisted Garden (Zone 2) BGM: `forest.mp3` (plays when actively inside Zone 2 dungeon/combat).
+  - Sunken Docks (Zone 3) BGM: `sunken-docks.mp3` (plays when actively inside Zone 3 dungeon/combat).
 - **SFX Assets**:
   - Hero attacks/skills: `hero-attack.mp3` (played sequentially for multi-hits like dual-slash).
   - Enemy attacks/skills: `enemy-attack.mp3` (played sequentially for multi-hits).
 - **Mute Control**: Mute toggle settings are persisted in global settings (`state.settings.muteSounds`) and can be adjusted from the settings modal in the Camp Hub. It instantly applies mute/unmute status to the active background music player.
+- **Auto-Resume & Navigation Guards**: If the app is closed and restarted during a run, the game loads the Camp screen and opens a confirmation modal prompting the player to either resume the run or flee to Camp. To prevent orphaned runs during gameplay, Android hardware back presses on `DungeonMap` and `Combat` are intercepted to present the Flee Confirmation modal instead of popping back to outside screens.
 
 ## Simulation Script
 A standalone Node-based simulation script is available at [simulate.js](file:///Users/lucastelpisferrante/Documents/Vibe_Coding_Projects/meow-depths/scripts/simulate.js) to model player progression from Floor 1 to 10.

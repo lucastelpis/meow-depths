@@ -39,6 +39,7 @@ import {
   Modal,
   Pressable,
   Dimensions,
+  BackHandler,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Defs, LinearGradient, RadialGradient, Stop, Rect, Ellipse, Circle, Path } from 'react-native-svg';
@@ -613,6 +614,18 @@ export default function CombatScreen() {
 
   // Target Selection border/glow pulsing animation value
   const targetBlinkAnim = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    const handleHardwareBack = () => {
+      if (!state.currentRun?.combatFleeUsed) {
+        setShowFleeConfirmModal(true);
+      }
+      return true; // Block popping
+    };
+
+    const subscription = BackHandler.addEventListener('hardwareBackPress', handleHardwareBack);
+    return () => subscription.remove();
+  }, [state.currentRun?.combatFleeUsed]);
 
   useEffect(() => {
     const anim = Animated.loop(

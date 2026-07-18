@@ -17,6 +17,7 @@ import {
   ScrollView,
   Dimensions,
   Animated,
+  BackHandler,
 } from 'react-native';
 import { Image as ExpoImage } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -461,6 +462,16 @@ export default function DungeonMapScreen({ navigation }) {
       ])
     ).start();
   }, [floatAnim]);
+
+  useEffect(() => {
+    const handleHardwareBack = () => {
+      setActiveModal('flee');
+      return true; // Prevent default popping behavior
+    };
+
+    const subscription = BackHandler.addEventListener('hardwareBackPress', handleHardwareBack);
+    return () => subscription.remove();
+  }, []);
 
   // Show floor-complete modal whenever the screen is focused and all tiles are cleared
   useFocusEffect(
