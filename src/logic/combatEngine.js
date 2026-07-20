@@ -1,6 +1,6 @@
 /**
  * =============================================================================
- * combatEngine.js — The Core Combat System for Meow Depths
+ * combatEngine.js — The Core Combat System for Meow Expeditions
  * =============================================================================
  *
  * This is the MOST IMPORTANT file in the game.  Every fight — every scratch,

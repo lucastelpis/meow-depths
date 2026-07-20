@@ -1,5 +1,5 @@
 /**
- * zones.js — Meow Depths Dungeon Zones
+ * zones.js — Meow Expeditions Dungeon Zones
  *
  * Defines the three explorable dungeon areas, their enemy rosters,
  * encounter probability tables, and reward values.
@@ -66,7 +66,7 @@ export const ZONES = {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Grid Size — same scale for all zones, grows with floor depth
+// Grid Size — same scale for all zones, grows with floor number
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**

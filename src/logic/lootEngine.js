@@ -194,7 +194,37 @@ export function generateTreasureDrops(zoneId, floorNumber, isDouble = false) {
 
   gold *= mult;
 
+  // Camp resources (wood/cloth/stone) can drop from treasure in small amounts.
+  const resourceDrops = rollResourceDrops('treasure');
+  for (const [id, qty] of Object.entries(resourceDrops)) {
+    materials[id] = (materials[id] || 0) + qty * mult;
+  }
+
   return { gold, materials, consumables };
+}
+
+// ============================================================================
+// 5) rollResourceDrops — roll for camp resources (wood / cloth / stone)
+// ============================================================================
+/**
+ * Camp resources drop in small quantities from combat wins and treasure. At
+ * most one resource type is granted per roll, keeping them scarce.
+ *
+ * @param {'combat'|'treasure'} source
+ * @returns {{ wood?: number, cloth?: number, stone?: number }} sparse material map
+ */
+export function rollResourceDrops(source = 'combat') {
+  // Chance that ANY resource drops from this event.
+  const chance = source === 'treasure' ? 0.4 : 0.25;
+  if (Math.random() >= chance) return {};
+
+  const types = ['wood', 'cloth', 'stone'];
+  const picked = types[Math.floor(Math.random() * types.length)];
+
+  // Treasure yields slightly more than a combat win.
+  const qty = source === 'treasure' ? randomInRange(1, 2) : 1;
+
+  return { [picked]: qty };
 }
 
 // ============================================================================

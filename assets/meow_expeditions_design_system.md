@@ -1,4 +1,4 @@
-# Meow Depths — Design System
+# Meow Expeditions — Design System
 ### Reference document. Feed this to Claude Code so all UI matches one visual language.
 
 ---

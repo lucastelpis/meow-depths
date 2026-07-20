@@ -1,6 +1,6 @@
-# Meow Depths — Complete Game Details & Mechanics Specification
+# Meow Expeditions — Complete Game Details & Mechanics Specification
 
-Welcome to the definitive guide and specification for **Meow Depths**, a cozy yet grim grid-based mobile RPG built with React Native and Expo. In this game, players guide **Mochi**, a brave feline protagonist and new recruit of the ancient **Meow Order**, through dark regions across three distinct zones to fight enemies, forge legendary gear, and grow in power.
+Welcome to the definitive guide and specification for **Meow Expeditions**, a cozy yet grim grid-based mobile RPG built with React Native and Expo. In this game, players guide **Mochi**, a brave feline protagonist and new recruit of the ancient **Meow Order**, through dark regions across three distinct zones to fight enemies, forge legendary gear, and grow in power.
 
 ---
 

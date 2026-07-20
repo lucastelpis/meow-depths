@@ -12,7 +12,7 @@
  *   context – the italic "where it was found" framing line
  *   body    – the full transcribed text ([unclear] markers preserved)
  *
- * Source text: meow_depths_notes_v2.md (doc "Zone N" = our floor N within a region).
+ * Source text: meow_expeditions_notes_v2.md (doc "Zone N" = our floor N within a region).
  */
 
 // "3rd row, 7th frame" of icons-map.png (480×320 = 15 cols × 10 rows @ 32px):

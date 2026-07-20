@@ -1,5 +1,5 @@
 /**
- * theme.js — Meow Depths Visual Theme
+ * theme.js — Meow Expeditions Visual Theme
  *
  * Central design-token file consumed by every screen and component.
  * Organised into COLORS, FONTS, SPACING, and BORDER_RADIUS sections.

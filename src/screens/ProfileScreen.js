@@ -54,7 +54,6 @@ const SLOT_EMPTY_FRAME = {
   gloves: 7,
   boots: 9,
   trinket: 11,
-  storage: 13,
 };
 
 // Faded weapon silhouette shown in the empty weapon slot
@@ -109,16 +108,12 @@ const LORE_DESCRIPTIONS = {
   green_crystal_small: "A minor forest gem that seems to breathe in sync with the garden.",
   green_crystal_big: "A heavy green gemstone, overgrown with tiny moss. Rich in natural magic.",
   green_crystal_core: "A pulsating heart of pure garden energy, warm and humming with growth.",
-  yellow_shard: "A bright amber shard washed up from the depths, smelling of sea salt.",
+  yellow_shard: "A bright amber shard washed up from the sea floor, smelling of sea salt.",
   yellow_crystal_small: "A small luminescent gemstone that glows like a firefly underwater.",
   yellow_crystal_big: "A large, heavy golden crystal. It seems to resist the pressure of the ocean.",
   yellow_crystal_core: "An ancient marine crystal core. It glows with the intense light of the deep sea.",
   toy_sword: "A wooden training sword. Mostly harmless, but good for building confidence.",
   cardboard_armor: "A taped-together box. Smells like old wet paper, but offers basic protection.",
-  leather_bag: "A small pouch for carrying basic items. Increases bag capacity by +3 slots.",
-  simple_backpack: "A simple, reliable backpack. Increases bag capacity by +5 slots.",
-  fine_backpack: "A well-crafted, sturdy backpack with extra pockets. Increases bag capacity by +7 slots.",
-  luxury_backpack: "An exquisite, high-capacity backpack made of fine leather. Increases bag capacity by +10 slots.",
   sewer_shiv: "A jagged piece of metal wrapped in dirty rags. Crude, but dangerous.",
   rat_hide_vest: "Tough leather made from sewer rats. Surprisingly flexible and waterproof.",
   slimecrawler_shell: "A hardened shell coated in slick mucus. Repels toxic liquids.",
@@ -187,12 +182,6 @@ const STAT_INFO = {
     desc: 'Your total health. If it reaches 0 during an expedition, the run ends and you lose any hoarded items.',
     effects: ['Vitality (+5 per point)', 'Gear', 'Water affinity (+HP%)'],
   },
-  bagSlots: {
-    title: 'Bag Slots',
-    color: theme.COLORS.candleGold,
-    desc: 'How many consumables you can pack to bring on an expedition.',
-    effects: ['Gear'],
-  },
   critRate: {
     title: 'Crit Rate',
     color: theme.COLORS.candleGold,
@@ -228,7 +217,6 @@ const SLOT_CONFIG = [
   { key: 'boots', label: 'Boots', emoji: '👢' },
   { key: 'weapon', label: 'Weapon', emoji: '⚔️' },
   { key: 'trinket', label: 'Trinket', emoji: '💎' },
-  { key: 'storage', label: 'Storage', emoji: '🎒' },
 ];
 
 // Slot keys laid out per row of the equipment grid (2 cards per row)
@@ -236,7 +224,7 @@ const SLOT_ROWS = [
   ['head', 'chest'],
   ['gloves', 'legs'],
   ['weapon', 'boots'],
-  ['trinket', 'storage'],
+  ['trinket'],
 ];
 
 export default function ProfileScreen() {
@@ -420,7 +408,6 @@ export default function ProfileScreen() {
     if (gearDef.stats.maxHp) parts.push(`HP +${gearDef.stats.maxHp}`);
     if (gearDef.stats.critChance) parts.push(`CRIT +${pct(gearDef.stats.critChance)}`);
     if (gearDef.stats.dodge) parts.push(`DODGE +${pct(gearDef.stats.dodge)}`);
-    if (gearDef.stats.bagSlots) parts.push(`Bag Slots +${gearDef.stats.bagSlots}`);
     return parts.join('  ');
   };
 
@@ -432,7 +419,6 @@ export default function ProfileScreen() {
       { key: 'maxHp', label: 'HP', percent: false },
       { key: 'critChance', label: 'CRIT', percent: true },
       { key: 'dodge', label: 'DODGE', percent: true },
-      { key: 'bagSlots', label: 'Bag Slots', percent: false },
     ];
     const deltas = [];
     STAT_FIELDS.forEach(({ key, label, percent }) => {
@@ -457,7 +443,6 @@ export default function ProfileScreen() {
       { key: 'maxHp', label: 'HP', percent: false },
       { key: 'critChance', label: 'CRIT', percent: true },
       { key: 'dodge', label: 'DODGE', percent: true },
-      { key: 'bagSlots', label: 'BAG SLOTS', percent: false },
     ];
 
     const elements = [];
@@ -1035,18 +1020,6 @@ export default function ProfileScreen() {
                   pendingDelta={previewEffectiveStats.maxHp - effectiveStats.maxHp}
                 />
                 <StatBox
-                  label="BAG SLOTS"
-                  infoKey="bagSlots"
-                  onInfo={setInfoStat}
-                  value={previewEffectiveStats.bagSlots}
-                  bonus={previewEffectiveStats.bagSlots - previewBaseStats.bagSlots}
-                  highlighted={previewEffectiveStats.bagSlots !== effectiveStats.bagSlots}
-                  pendingDelta={previewEffectiveStats.bagSlots - effectiveStats.bagSlots}
-                />
-              </View>
-
-              <View style={styles.statsRow}>
-                <StatBox
                   label="CRIT RATE"
                   infoKey="critRate"
                   onInfo={setInfoStat}
@@ -1056,6 +1029,9 @@ export default function ProfileScreen() {
                   highlighted={previewEffectiveStats.critChance !== effectiveStats.critChance}
                   pendingDelta={previewEffectiveStats.critChance - effectiveStats.critChance}
                 />
+              </View>
+
+              <View style={styles.statsRow}>
                 <StatBox
                   label="CRIT DMG"
                   infoKey="critDmg"
@@ -1064,9 +1040,6 @@ export default function ProfileScreen() {
                   highlighted={false}
                   pendingDelta={0}
                 />
-              </View>
-
-              <View style={styles.statsRow}>
                 <StatBox
                   label="DODGE RATE"
                   infoKey="dodge"
@@ -1077,6 +1050,9 @@ export default function ProfileScreen() {
                   highlighted={previewEffectiveStats.dodge !== effectiveStats.dodge}
                   pendingDelta={previewEffectiveStats.dodge - effectiveStats.dodge}
                 />
+              </View>
+
+              <View style={styles.statsRow}>
                 <StatBox
                   label="STATUS RES"
                   infoKey="statusRes"

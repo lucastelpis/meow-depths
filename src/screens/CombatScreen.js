@@ -78,7 +78,7 @@ import {
   executeCriticalWind,
   displayDamage,
 } from '../logic/combatEngine';
-import { calculateEncounterLoot } from '../logic/lootEngine';
+import { calculateEncounterLoot, rollResourceDrops } from '../logic/lootEngine';
 import { calculateEffectiveStats, checkLevelUp, getStanceBonus, applyHealingEfficiency } from '../logic/progressionEngine';
 import { useGame } from '../state/gameState';
 import theme from '../constants/theme';
@@ -1908,6 +1908,13 @@ export default function CombatScreen() {
       state.currentRun.zoneId,
       state.currentRun.floorNumber,
     );
+
+    // Camp resources (wood/cloth/stone) drop in small quantities on a win.
+    const resourceDrops = rollResourceDrops('combat');
+    for (const [id, qty] of Object.entries(resourceDrops)) {
+      loot.materials[id] = (loot.materials[id] || 0) + qty;
+    }
+
     setLootResult(loot);
 
     // Dispatch rewards to global state (Run bag instead of permanent inventory)
@@ -2040,7 +2047,7 @@ export default function CombatScreen() {
     return (
       <SafeAreaView style={styles.root}>
         <View style={styles.loadingContainer}>
-          <Text style={styles.loadingText}>Entering the depths…</Text>
+          <Text style={styles.loadingText}>Entering the region…</Text>
         </View>
       </SafeAreaView>
     );
@@ -2141,7 +2148,7 @@ export default function CombatScreen() {
               </Text>
             </View>
             <Text style={styles.infoBarSub} numberOfLines={1}>
-              {zone?.name || 'Unknown Depths'} · Zone {floorNumber}
+              {zone?.name || 'Unknown Region'} · Zone {floorNumber}
             </Text>
           </View>
           <View style={styles.turnPill}>
@@ -2590,7 +2597,7 @@ export default function CombatScreen() {
                 {heroState.name || 'Mochi'} retreats to camp, battered but alive.
               </Text>
 
-              <Text style={styles.lostLootTitle}>Loot Lost in the Depths:</Text>
+              <Text style={styles.lostLootTitle}>Loot Lost on the Expedition:</Text>
               {state.currentRun.lootCollected.gold === 0 &&
                 Object.keys(state.currentRun.lootCollected.materials).length === 0 &&
                 (state.currentRun.lootCollected.xp || 0) === 0 ? (

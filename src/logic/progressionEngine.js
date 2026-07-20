@@ -242,7 +242,7 @@ export function calculateEffectiveStats(hero, skillDefinitions = SKILLS, runBuff
 
   // --- 1. Gear bonuses -----------------------------------------------------
   // hero.gear looks like: { weapon, head, chest, legs, gloves, boots, trinket, storage }
-  const gearSlots = ['weapon', 'head', 'chest', 'legs', 'gloves', 'boots', 'trinket', 'storage'];
+  const gearSlots = ['weapon', 'head', 'chest', 'legs', 'gloves', 'boots', 'trinket'];
 
   let gearHp = 0;
   for (const slot of gearSlots) {

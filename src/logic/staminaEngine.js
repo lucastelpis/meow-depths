@@ -1,20 +1,24 @@
 import { GEAR } from '../data/gear';
+import { getImprovementLevel, getRegenHoursForLevel } from '../data/improvements';
 
 export const DEFAULT_MAX_STAMINA = 3;
 export const DEFAULT_REGEN_INTERVAL = 8 * 60 * 60 * 1000; // 8 hours in ms
 
 /**
  * Calculate the active stamina regeneration interval in milliseconds.
- * Checks for `staminaRegenMultiplier` on all equipped gear slots.
- * 
+ *
+ * The base interval comes from the Cooktop improvement (Lv1 = 8h … Lv5 = 4h).
+ * Any equipped gear with a `staminaRegenMultiplier` further scales it.
+ *
  * @param {Object} state - The global game state
  * @returns {number} The interval in milliseconds
  */
 export function getStaminaRegenInterval(state) {
-  let interval = DEFAULT_REGEN_INTERVAL;
+  const cooktopLevel = getImprovementLevel(state?.hero, 'cooktop');
+  let interval = getRegenHoursForLevel(cooktopLevel) * 60 * 60 * 1000;
 
   if (state?.hero?.gear) {
-    const slots = ['weapon', 'head', 'chest', 'legs', 'gloves', 'boots', 'trinket', 'storage'];
+    const slots = ['weapon', 'head', 'chest', 'legs', 'gloves', 'boots', 'trinket'];
     for (const slot of slots) {
       const gearId = state.hero.gear[slot];
       if (gearId && GEAR[gearId]?.stats?.staminaRegenMultiplier) {

@@ -1,5 +1,5 @@
 /**
- * App.js — Root component for Meow Depths
+ * App.js — Root component for Meow Expeditions
  *
  * Sets up:
  *   1. React Navigation (stack navigator)
@@ -36,6 +36,8 @@ import SkillTreeScreen from './src/screens/SkillTreeScreen';
 import ProfileScreen from './src/screens/ProfileScreen';
 import JournalScreen from './src/screens/JournalScreen';
 import QuestScreen from './src/screens/QuestScreen';
+import ImprovementsScreen from './src/screens/ImprovementsScreen';
+import NewsScreen from './src/screens/NewsScreen';
 import DungeonMapScreen from './src/screens/DungeonMapScreen';
 import DungeonFloorScreen from './src/screens/DungeonFloorScreen';
 import HeroDefinitionScreen from './src/screens/HeroDefinitionScreen';
@@ -157,6 +159,8 @@ function AppNavigator() {
               <Stack.Screen name="Profile" component={ProfileScreen} />
               <Stack.Screen name="Journal" component={JournalScreen} />
               <Stack.Screen name="Quests" component={QuestScreen} />
+              <Stack.Screen name="Improvements" component={ImprovementsScreen} />
+              <Stack.Screen name="News" component={NewsScreen} />
             </>
           )}
         </Stack.Navigator>

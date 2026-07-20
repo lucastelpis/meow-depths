@@ -110,6 +110,25 @@ export function generateDailyQuests(hero, progress, dateStr) {
     }
   });
 
+  // Quest type: Gather run — rewards a single camp resource in small quantity.
+  // Only one resource type is chosen (randomly) per generated quest.
+  const resourceTypes = ['wood', 'cloth', 'stone'];
+  const pickedResource = resourceTypes[Math.floor(rand() * resourceTypes.length)];
+  const resourceName = pickedResource.charAt(0).toUpperCase() + pickedResource.slice(1);
+  const gatherQty = 4 + Math.floor(lvl / 2);
+  const resourceReward = 2 + Math.floor(rand() * 3); // 2–4
+  pool.push({
+    type: 'hunt_stars',
+    title: `Supply Run: ${resourceName}`,
+    desc: `Defeat ${gatherQty} enemies to earn camp supplies.`,
+    target: gatherQty,
+    stars: 1,
+    rewards: {
+      gold: 120 + lvl * 20,
+      materials: { [pickedResource]: resourceReward },
+    },
+  });
+
   // Quest type: Star hunting
   const targetStars = rand() > 0.5 ? 2 : 1;
   const starHuntQty = 4 + Math.floor(lvl / 2);
@@ -788,7 +807,7 @@ export function syncPersistentQuests(state) {
         newProgress = 1;
       }
     } else if (q.type === 'equip_gear_set') {
-      const slots = ['weapon', 'head', 'chest', 'legs', 'gloves', 'boots', 'trinket', 'storage'];
+      const slots = ['weapon', 'head', 'chest', 'legs', 'gloves', 'boots', 'trinket'];
       const equippedCount = slots.filter(slot => hero.gear?.[slot] !== null).length;
       if (equippedCount >= q.target) {
         newProgress = q.target;

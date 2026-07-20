@@ -1,5 +1,5 @@
 /**
- * dungeonGenerator.js — Floor-Aware 2D Grid Generator for Meow Depths
+ * dungeonGenerator.js — Floor-Aware 2D Grid Generator for Meow Expeditions
  *
  * Generates a grid-based dungeon map for Mochi to explore.
  * Dimensions and content scale with the current floor number.
@@ -8,7 +8,7 @@
  *   - Floors 1–9: no boss tile; all rooms are combat / rest / treasure / gamble / start.
  *   - Floor 10: boss tile is placed (locked until all other tiles are cleared).
  *   - Combat tiles carry a battleRating (1 / 2 / 3 ★) that drives encounter difficulty.
- *   - Room composition (treasure / gamble density) scales with floor depth.
+ *   - Room composition (treasure / gamble density) scales with floor number.
  *   - Hard constraints are always enforced; soft constraints are relaxed after 50 attempts.
  */
 
