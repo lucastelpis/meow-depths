@@ -186,6 +186,56 @@ function AnimatedHubBackground({ width, height }) {
   );
 }
 
+// ─── Shared Parchment Modal Shell ────────────────────────────────────────────
+// The canonical "cozy parchment" modal used across the Camp hub (Settings,
+// Stamina, Daily Tasks). Renders the wooden frame, parchment sheet, inner
+// bevel, ✕ close button, and the mounted title sign. Pass `tall` for
+// scrollable content (constrains height + switches to a flex column), and
+// `overlay` for full-bleed overlays that must sit above the frame (e.g. reward
+// celebration or item-info popups).
+function ParchmentModal({ visible, onClose, title, tall = false, children, overlay }) {
+  return (
+    <Modal
+      visible={visible}
+      transparent
+      animationType="fade"
+      onRequestClose={onClose}
+      statusBarTranslucent
+    >
+      <View style={tall ? styles.qbOverlay : styles.drOverlay}>
+        <Pressable style={StyleSheet.absoluteFillObject} onPress={onClose} />
+        <View style={[tall ? styles.qbFrame : styles.drFrame, theme.SHADOWS.cardShadow]}>
+          <View style={tall ? styles.qbParchment : styles.drParchment}>
+            <View style={styles.drBevel} pointerEvents="none" />
+
+            <TouchableOpacity
+              style={styles.drClose}
+              onPress={onClose}
+              activeOpacity={0.8}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              <Text style={styles.drCloseText}>✕</Text>
+            </TouchableOpacity>
+
+            {children}
+          </View>
+
+          {/* Title sign mounted on top */}
+          <View style={styles.drTopWrap} pointerEvents="none">
+            <View style={styles.drTopOuter}>
+              <View style={styles.drTopInner}>
+                <Text style={styles.drTopText}>{title}</Text>
+              </View>
+            </View>
+          </View>
+        </View>
+
+        {overlay}
+      </View>
+    </Modal>
+  );
+}
+
 export default function CampScreen({ navigation }) {
   const { state, dispatch } = useGame();
   const { hero } = state;
@@ -588,7 +638,7 @@ export default function CampScreen({ navigation }) {
               {/* Tag 3: Stamina (Rectangular progress bar tag) */}
               <TouchableOpacity
                 style={[styles.bannerTag, { overflow: 'hidden', position: 'relative' }]}
-                activeOpacity={0.85}
+                activeOpacity={0.7}
                 onPress={() => setStaminaInfoVisible(true)}
               >
                 {/* Progress bar background fill */}
@@ -798,7 +848,7 @@ export default function CampScreen({ navigation }) {
                 <View style={styles.subCardInner}>
                   <View style={styles.subSpriteContainer}>
                     <IconGlowBackground size={44} />
-                    <ItemSprite spritesheet="icons-map" frameIndex={0} displaySize={38} />
+                    <ItemSprite spritesheet="icons-map" frameIndex={31} displaySize={38} />
                   </View>
                   <Text style={styles.subCardLabel}>CAMP</Text>
                 </View>
@@ -923,108 +973,78 @@ export default function CampScreen({ navigation }) {
       {/* ═══════════════════════════════════════════════════════════════════
           STAMINA INFO MODAL
           ═══════════════════════════════════════════════════════════════════ */}
-      <Modal
+      <ParchmentModal
         visible={staminaInfoVisible}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setStaminaInfoVisible(false)}
-        statusBarTranslucent
+        onClose={() => setStaminaInfoVisible(false)}
+        title="STAMINA SYSTEM"
       >
-        <TouchableOpacity
-          style={[StyleSheet.absoluteFillObject, styles.infoModalOverlay, { zIndex: 110 }]}
-          activeOpacity={1}
-          onPress={() => setStaminaInfoVisible(false)}
-        >
-          <Pressable style={styles.infoModalContent} onPress={(e) => e.stopPropagation()}>
-            <Text style={styles.infoModalTitle}>STAMINA SYSTEM</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 4, marginBottom: 2 }}>
+          <ItemSprite spritesheet="icons-map" frameIndex={134} displaySize={40} />
+          <Text style={styles.staminaValueBig}>{currentStamina}</Text>
+          <Text style={styles.staminaValueMax}>/{maxStamina}</Text>
+        </View>
+        <Text style={[styles.staminaSubStatus, currentStamina >= maxStamina ? styles.staminaFullTextDark : styles.staminaTimerTextDark]}>
+          {currentStamina >= maxStamina ? 'Fully Charged' : `Next charge in: ${staminaCountdown}`}
+        </Text>
 
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginVertical: 6 }}>
-              <ItemSprite spritesheet="icons-map" frameIndex={134} displaySize={40} />
-              <Text style={{ fontFamily: 'Silkscreen-Regular', fontSize: 34, color: '#FFF3DA' }}>
-                {currentStamina}
-              </Text>
-              <Text style={{ fontFamily: 'Silkscreen-Regular', fontSize: 24, color: '#8A6E44', marginTop: 8 }}>
-                /{maxStamina}
-              </Text>
+        <View style={styles.staminaBoxParchment}>
+          <Text style={styles.staminaBoxTextDark}>
+            • Stamina is required to start expeditions (1 charge per run).{"\n\n"}
+            • By default, 1 charge recovers every 8 hours and the maximum charges are 3.{"\n\n"}
+            • You can also use consumables to instantly restore stamina.
+          </Text>
+        </View>
+
+        <Text style={styles.settingsSectionLabel}>Instant Recovery</Text>
+        <View style={styles.potionCardParchment}>
+          <View style={styles.potionCardLeft}>
+            <ItemSprite spritesheet="consumables-1" frameIndex={5} displaySize={36} />
+            <View style={styles.potionCardTextCol}>
+              <Text style={styles.potionCardNameDark}>Stamina Potion</Text>
+              <Text style={styles.potionCardDescDark}>Instantly restores 1 charge</Text>
+              <Text style={styles.potionCardQtyDark}>Owned: {staminaPotionCount}</Text>
             </View>
-            <Text style={[styles.staminaSubStatus, currentStamina >= maxStamina ? styles.staminaModalFullText : styles.staminaModalTimerText]}>
-              {currentStamina >= maxStamina ? 'Fully Charged' : `Next charge in: ${staminaCountdown}`}
-            </Text>
+          </View>
 
-            <View style={styles.staminaParchmentBox}>
-              <Text style={styles.staminaBoxText}>
-                • Stamina is required to start expeditions (1 charge per run).{"\n\n"}
-                • By default, 1 charge recovers every 8 hours and the maximum charges are 3.{"\n\n"}
-                • You can also use consumables to instantly restore stamina.
-              </Text>
-            </View>
-
-            <Text style={styles.sectionHeaderTitle}>INSTANT RECOVERY</Text>
-            <View style={[styles.potionCard, { flexDirection: 'column', alignItems: 'stretch', gap: 12 }]}>
-              <View style={styles.potionCardLeft}>
-                <ItemSprite spritesheet="consumables-1" frameIndex={5} displaySize={36} />
-                <View style={styles.potionCardTextCol}>
-                  <Text style={styles.potionCardName}>Stamina Potion</Text>
-                  <Text style={styles.potionCardDesc}>Instantly restores 1 charge</Text>
-                  <Text style={styles.potionCardQty}>Owned: {staminaPotionCount}</Text>
-                </View>
+          {currentStamina >= maxStamina ? (
+            <TouchableOpacity style={styles.settingsDisabledBtn} disabled>
+              <View style={styles.settingsDisabledBtnInner}>
+                <Text style={styles.settingsDisabledBtnText}>STAMINA IS ALREADY FULL</Text>
               </View>
-
-              {currentStamina >= maxStamina ? (
-                <TouchableOpacity
-                  style={[
-                    styles.staminaActionBtn,
-                    { backgroundColor: '#2E2214', borderColor: '#4A3917', width: '100%', opacity: 0.6 }
-                  ]}
-                  disabled
-                >
-                  <Text style={[styles.staminaActionBtnText, { color: '#8A6E44' }]}>
-                    STAMINA IS ALREADY FULL
-                  </Text>
-                </TouchableOpacity>
-              ) : staminaPotionCount > 0 ? (
-                <TouchableOpacity
-                  style={[styles.staminaActionBtn, { backgroundColor: '#1B4030', borderColor: '#4F856C', width: '100%' }]}
-                  onPress={() => {
-                    dispatch({ type: 'USE_CONSUMABLE', payload: { consumableId: 'stamina_potion' } });
-                    Alert.alert('⚡ Stamina Restored!', 'You recovered 1 stamina charge.');
-                  }}
-                  activeOpacity={0.8}
-                >
-                  <Text style={[styles.staminaActionBtnText, { color: '#FFE39B' }]}>USE POTION</Text>
-                </TouchableOpacity>
-              ) : (
-                <TouchableOpacity
-                  style={[
-                    styles.staminaActionBtn,
-                    { backgroundColor: '#3D2A00', borderColor: '#7D5A0F', width: '100%' },
-                    hero.gold < staminaPotionPrice && { opacity: 0.5 }
-                  ]}
-                  disabled={hero.gold < staminaPotionPrice}
-                  onPress={() => {
-                    dispatch({ type: 'BUY_CONSUMABLE', payload: { consumableId: 'stamina_potion', price: staminaPotionPrice } });
-                    dispatch({ type: 'USE_CONSUMABLE', payload: { consumableId: 'stamina_potion' } });
-                    Alert.alert('⚡ Purchased & Used!', `Bought and consumed 1 Stamina Potion for ${staminaPotionPrice} Gold.`);
-                  }}
-                  activeOpacity={0.8}
-                >
-                  <Text style={[styles.staminaActionBtnText, { color: '#DEC168' }]}>
-                    {hero.gold >= staminaPotionPrice ? `BUY & USE (${staminaPotionPrice} GOLD)` : `NEED ${staminaPotionPrice} GOLD`}
-                  </Text>
-                </TouchableOpacity>
-              )}
-            </View>
-
-            <TouchableOpacity
-              style={styles.infoCloseBtn}
-              onPress={() => setStaminaInfoVisible(false)}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.infoCloseBtnText}>CLOSE</Text>
             </TouchableOpacity>
-          </Pressable>
-        </TouchableOpacity>
-      </Modal>
+          ) : staminaPotionCount > 0 ? (
+            <TouchableOpacity
+              activeOpacity={0.85}
+              style={styles.settingsStaminaBtn}
+              onPress={() => {
+                dispatch({ type: 'USE_CONSUMABLE', payload: { consumableId: 'stamina_potion' } });
+                Alert.alert('⚡ Stamina Restored!', 'You recovered 1 stamina charge.');
+              }}
+            >
+              <View style={styles.settingsStaminaBtnInner}>
+                <Text style={styles.settingsStaminaBtnText}>USE POTION</Text>
+              </View>
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity
+              activeOpacity={0.85}
+              style={[styles.settingsAudioBtn, hero.gold < staminaPotionPrice && { opacity: 0.5 }]}
+              disabled={hero.gold < staminaPotionPrice}
+              onPress={() => {
+                dispatch({ type: 'BUY_CONSUMABLE', payload: { consumableId: 'stamina_potion', price: staminaPotionPrice } });
+                dispatch({ type: 'USE_CONSUMABLE', payload: { consumableId: 'stamina_potion' } });
+                Alert.alert('⚡ Purchased & Used!', `Bought and consumed 1 Stamina Potion for ${staminaPotionPrice} Gold.`);
+              }}
+            >
+              <View style={styles.settingsAudioBtnInner}>
+                <Text style={styles.settingsAudioBtnText}>
+                  {hero.gold >= staminaPotionPrice ? `BUY & USE (${staminaPotionPrice} GOLD)` : `NEED ${staminaPotionPrice} GOLD`}
+                </Text>
+              </View>
+            </TouchableOpacity>
+          )}
+        </View>
+      </ParchmentModal>
 
       {/* ═══════════════════════════════════════════════════════════════════
           DAILY REWARD MODAL — themed to match the hub redesign
@@ -1033,32 +1053,88 @@ export default function CampScreen({ navigation }) {
           QUEST BOARD MODAL — scrollable parchment layout containing active
           daily and campaign quests, progress, rewards, and claim buttons.
           ═══════════════════════════════════════════════════════════════════ */}
-      <Modal
+      <ParchmentModal
         visible={questBoardModalVisible}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setQuestBoardModalVisible(false)}
-        statusBarTranslucent
-      >
-        <View style={styles.qbOverlay}>
-          <Pressable
-            style={StyleSheet.absoluteFillObject}
-            onPress={() => setQuestBoardModalVisible(false)}
-          />
-          <View style={[styles.qbFrame, theme.SHADOWS.cardShadow]}>
-            <View style={styles.qbParchment}>
-              <View style={styles.drBevel} pointerEvents="none" />
+        onClose={() => setQuestBoardModalVisible(false)}
+        title="DAILY TASKS"
+        tall
+        overlay={
+          <>
+            {/* Quest Reward Celebration Overlay */}
+            {celebrationQuest && (
+              <View style={[StyleSheet.absoluteFillObject, styles.drOverlay, { zIndex: 100 }]}>
+                <View style={[styles.drFrame, theme.SHADOWS.cardShadow]}>
+                  <View style={styles.drParchment}>
+                    <View style={styles.drBevel} pointerEvents="none" />
 
-              {/* Close button — inside the panel */}
+                    {/* Header Banner */}
+                    <View style={styles.drTopWrap} pointerEvents="none">
+                      <View style={styles.drTopOuter}>
+                        <View style={styles.drTopInner}>
+                          <Text style={styles.drTopText}>QUEST COMPLETED</Text>
+                        </View>
+                      </View>
+                    </View>
+
+                    <Text style={styles.drSubtitle}>{celebrationQuest.title}</Text>
+
+                    {/* Grid of rewards */}
+                    <View style={styles.drRewards}>
+                      {celebrationQuest.rewards.gold > 0 && renderCelebrationRewardChip('gold', 'gold', celebrationQuest.rewards.gold)}
+                      {celebrationQuest.rewards.consumables && Object.entries(celebrationQuest.rewards.consumables).map(([id, qty]) =>
+                        renderCelebrationRewardChip('consumables', id, qty)
+                      )}
+                      {celebrationQuest.rewards.materials && Object.entries(celebrationQuest.rewards.materials).map(([id, qty]) =>
+                        renderCelebrationRewardChip('materials', id, qty)
+                      )}
+                    </View>
+
+                    {/* AWESOME! button */}
+                    <TouchableOpacity
+                      style={styles.drButton}
+                      activeOpacity={0.8}
+                      onPress={() => {
+                        dispatch({ type: 'CLAIM_QUEST_REWARD', payload: { questId: celebrationQuest.id } });
+                        setCelebrationQuest(null);
+                      }}
+                    >
+                      <View style={styles.drButtonInner}>
+                        <Text style={styles.drButtonText}>AWESOME!</Text>
+                      </View>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              </View>
+            )}
+
+            {/* ITEM INFO OVERLAY */}
+            {infoModal && (
               <TouchableOpacity
-                style={styles.drClose}
-                onPress={() => setQuestBoardModalVisible(false)}
-                activeOpacity={0.8}
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                style={[StyleSheet.absoluteFillObject, styles.drOverlay, { zIndex: 110 }]}
+                activeOpacity={1}
+                onPress={() => setInfoModal(null)}
               >
-                <Text style={styles.drCloseText}>✕</Text>
+                <View style={[styles.drFrame, theme.SHADOWS.cardShadow]}>
+                  <View style={styles.drParchment}>
+                    <View style={styles.drBevel} pointerEvents="none" />
+                    <Text style={styles.itemInfoTitle}>{infoModal.title}</Text>
+                    <Text style={styles.itemInfoDesc}>{infoModal.desc}</Text>
+                    <TouchableOpacity
+                      style={styles.drButton}
+                      onPress={() => setInfoModal(null)}
+                      activeOpacity={0.8}
+                    >
+                      <View style={styles.drButtonInner}>
+                        <Text style={styles.drButtonText}>CLOSE</Text>
+                      </View>
+                    </TouchableOpacity>
+                  </View>
+                </View>
               </TouchableOpacity>
-
+            )}
+          </>
+        }
+      >
               {/* Scrollable quests list */}
               <ScrollView
                 style={styles.qbScrollView}
@@ -1098,7 +1174,7 @@ export default function CampScreen({ navigation }) {
                         >
                           <View style={styles.questHeaderLeft}>
                             {quest.claimed ? (
-                              <ItemSprite spritesheet="icons-map" frameIndex={95} displaySize={13} />
+                              <ItemSprite spritesheet="icons-map" frameIndex={28} displaySize={13} />
                             ) : quest.completed ? (
                               <ItemSprite spritesheet="icons-map" frameIndex={28} displaySize={13} />
                             ) : (
@@ -1205,217 +1281,111 @@ export default function CampScreen({ navigation }) {
                   })
                 )}
               </ScrollView>
-            </View>
-
-            {/* Title sign mounted on top */}
-            <View style={styles.drTopWrap} pointerEvents="none">
-              <View style={styles.drTopOuter}>
-                <View style={styles.drTopInner}>
-                  <Text style={styles.drTopText}>DAILY TASKS</Text>
-                </View>
-              </View>
-            </View>
-          </View>
-
-          {/* Quest Reward Celebration Overlay */}
-          {celebrationQuest && (
-            <View style={[StyleSheet.absoluteFillObject, styles.drOverlay, { zIndex: 100 }]}>
-              <View style={[styles.drFrame, theme.SHADOWS.cardShadow]}>
-                <View style={styles.drParchment}>
-                  <View style={styles.drBevel} pointerEvents="none" />
-
-                  {/* Header Banner */}
-                  <View style={styles.drTopWrap} pointerEvents="none">
-                    <View style={styles.drTopOuter}>
-                      <View style={styles.drTopInner}>
-                        <Text style={styles.drTopText}>QUEST COMPLETED</Text>
-                      </View>
-                    </View>
-                  </View>
-
-                  <Text style={styles.drSubtitle}>{celebrationQuest.title}</Text>
-
-                  {/* Grid of rewards */}
-                  <View style={styles.drRewards}>
-                    {celebrationQuest.rewards.gold > 0 && renderCelebrationRewardChip('gold', 'gold', celebrationQuest.rewards.gold)}
-                    {celebrationQuest.rewards.consumables && Object.entries(celebrationQuest.rewards.consumables).map(([id, qty]) =>
-                      renderCelebrationRewardChip('consumables', id, qty)
-                    )}
-                    {celebrationQuest.rewards.materials && Object.entries(celebrationQuest.rewards.materials).map(([id, qty]) =>
-                      renderCelebrationRewardChip('materials', id, qty)
-                    )}
-                  </View>
-
-                  {/* AWESOME! button */}
-                  <TouchableOpacity
-                    style={styles.drButton}
-                    activeOpacity={0.8}
-                    onPress={() => {
-                      dispatch({ type: 'CLAIM_QUEST_REWARD', payload: { questId: celebrationQuest.id } });
-                      setCelebrationQuest(null);
-                    }}
-                  >
-                    <View style={styles.drButtonInner}>
-                      <Text style={styles.drButtonText}>AWESOME!</Text>
-                    </View>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            </View>
-          )}
-          {/* ITEM INFO OVERLAY */}
-          {infoModal && (
-            <TouchableOpacity
-              style={[StyleSheet.absoluteFillObject, styles.infoModalOverlay, { zIndex: 110 }]}
-              activeOpacity={1}
-              onPress={() => setInfoModal(null)}
-            >
-              <View style={styles.infoModalContent}>
-                <Text style={styles.infoModalTitle}>{infoModal.title}</Text>
-                <Text style={styles.infoModalDesc}>{infoModal.desc}</Text>
-                <TouchableOpacity
-                  style={styles.infoCloseBtn}
-                  onPress={() => setInfoModal(null)}
-                  activeOpacity={0.8}
-                >
-                  <Text style={styles.infoCloseBtnText}>CLOSE</Text>
-                </TouchableOpacity>
-              </View>
-            </TouchableOpacity>
-          )}
-        </View>
-      </Modal>
+      </ParchmentModal>
 
       {/* ═══════════════════════════════════════════════════════════════════
           SETTINGS MODAL — holds destructive/save actions
           ═══════════════════════════════════════════════════════════════════ */}
-      <Modal
+      <ParchmentModal
         visible={settingsModalVisible}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setSettingsModalVisible(false)}
-        statusBarTranslucent
+        onClose={() => setSettingsModalVisible(false)}
+        title="SETTINGS"
       >
-        <Pressable style={styles.drOverlay} onPress={() => setSettingsModalVisible(false)}>
-          <Pressable style={[styles.drFrame, theme.SHADOWS.cardShadow]} onPress={() => { }}>
-            <View style={styles.drParchment}>
-              <View style={styles.drBevel} pointerEvents="none" />
+        <Text style={styles.settingsSectionLabel}>Stamina Settings</Text>
 
-              <TouchableOpacity
-                style={styles.drClose}
-                onPress={() => setSettingsModalVisible(false)}
-                activeOpacity={0.8}
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              >
-                <Text style={styles.drCloseText}>✕</Text>
-              </TouchableOpacity>
+        <TouchableOpacity
+          activeOpacity={0.85}
+          style={styles.settingsStaminaBtn}
+          onPress={() => {
+            dispatch({ type: 'REPLENISH_STAMINA' });
+            Alert.alert('⚡ Stamina Replenished!', 'Your stamina charges have been fully restored to max.');
+          }}
+        >
+          <View style={styles.settingsStaminaBtnInner}>
+            <Text style={styles.settingsStaminaBtnText}>REPLENISH STAMINA</Text>
+          </View>
+        </TouchableOpacity>
+        <Text style={[styles.settingsHint, { marginBottom: 20 }]}>
+          Instantly restore stamina charges to maximum capacity.
+        </Text>
 
-              <Text style={styles.settingsSectionLabel}>Stamina Settings</Text>
+        <Text style={styles.settingsSectionLabel}>Audio Settings</Text>
 
-              <TouchableOpacity
-                activeOpacity={0.85}
-                style={styles.settingsStaminaBtn}
-                onPress={() => {
-                  dispatch({ type: 'REPLENISH_STAMINA' });
-                  Alert.alert('⚡ Stamina Replenished!', 'Your stamina charges have been fully restored to max.');
-                }}
-              >
-                <View style={styles.settingsStaminaBtnInner}>
-                  <Text style={styles.settingsStaminaBtnText}>REPLENISH STAMINA</Text>
-                </View>
-              </TouchableOpacity>
-              <Text style={[styles.settingsHint, { marginBottom: 20 }]}>
-                Instantly restore stamina charges to maximum capacity.
-              </Text>
+        <TouchableOpacity
+          activeOpacity={0.85}
+          style={styles.settingsAudioBtn}
+          onPress={() => {
+            dispatch({ type: 'TOGGLE_MUTE_SOUNDS' });
+          }}
+        >
+          <View style={styles.settingsAudioBtnInner}>
+            <Text style={styles.settingsAudioBtnText}>
+              {state?.settings?.muteSounds ? 'UNMUTE SOUNDS' : 'MUTE SOUNDS'}
+            </Text>
+          </View>
+        </TouchableOpacity>
+        <Text style={[styles.settingsHint, { marginBottom: 20 }]}>
+          {state?.settings?.muteSounds ? 'Sounds are currently muted.' : 'Sounds are currently enabled.'}
+        </Text>
 
-              <Text style={styles.settingsSectionLabel}>Audio Settings</Text>
+        <Text style={styles.settingsSectionLabel}>Character Progression</Text>
 
-              <TouchableOpacity
-                activeOpacity={0.85}
-                style={styles.settingsAudioBtn}
-                onPress={() => {
-                  dispatch({ type: 'TOGGLE_MUTE_SOUNDS' });
-                }}
-              >
-                <View style={styles.settingsAudioBtnInner}>
-                  <Text style={styles.settingsAudioBtnText}>
-                    {state?.settings?.muteSounds ? 'UNMUTE SOUNDS' : 'MUTE SOUNDS'}
-                  </Text>
-                </View>
-              </TouchableOpacity>
-              <Text style={[styles.settingsHint, { marginBottom: 20 }]}>
-                {state?.settings?.muteSounds ? 'Sounds are currently muted.' : 'Sounds are currently enabled.'}
-              </Text>
+        <TouchableOpacity
+          activeOpacity={0.85}
+          style={styles.settingsResetStatsBtn}
+          onPress={() => {
+            Alert.alert(
+              'Reset Stats & Skills',
+              'Are you sure you want to reset all attribute points and skills? You will be fully refunded all spent Skill Points.',
+              [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                  text: 'Reset Stats & Skills',
+                  style: 'destructive',
+                  onPress: () => {
+                    dispatch({ type: 'RESET_STATS_AND_SKILLS' });
+                    setSettingsModalVisible(false);
+                  },
+                },
+              ]
+            );
+          }}
+        >
+          <View style={styles.settingsResetStatsBtnInner}>
+            <Text style={styles.settingsResetStatsBtnText}>RESET STATS & SKILLS</Text>
+          </View>
+        </TouchableOpacity>
+        <Text style={[styles.settingsHint, { marginBottom: 20 }]}>Reclaims all Strength, Agility, Vitality points, and crystal skill upgrades.</Text>
 
-              <Text style={styles.settingsSectionLabel}>Character Progression</Text>
+        <Text style={styles.settingsSectionLabel}>Save Data</Text>
 
-              <TouchableOpacity
-                activeOpacity={0.85}
-                style={styles.settingsResetStatsBtn}
-                onPress={() => {
-                  Alert.alert(
-                    'Reset Stats & Skills',
-                    'Are you sure you want to reset all attribute points and skills? You will be fully refunded all spent Skill Points.',
-                    [
-                      { text: 'Cancel', style: 'cancel' },
-                      {
-                        text: 'Reset Stats & Skills',
-                        style: 'destructive',
-                        onPress: () => {
-                          dispatch({ type: 'RESET_STATS_AND_SKILLS' });
-                          setSettingsModalVisible(false);
-                        },
-                      },
-                    ]
-                  );
-                }}
-              >
-                <View style={styles.settingsResetStatsBtnInner}>
-                  <Text style={styles.settingsResetStatsBtnText}>RESET STATS & SKILLS</Text>
-                </View>
-              </TouchableOpacity>
-              <Text style={[styles.settingsHint, { marginBottom: 20 }]}>Reclaims all Strength, Agility, Vitality points, and crystal skill upgrades.</Text>
-
-              <Text style={styles.settingsSectionLabel}>Save Data</Text>
-
-              <TouchableOpacity
-                activeOpacity={0.85}
-                style={styles.settingsResetBtn}
-                onPress={() => {
-                  Alert.alert(
-                    'Reset Game Data',
-                    'Are you sure you want to nuke your save and start completely fresh?',
-                    [
-                      { text: 'Cancel', style: 'cancel' },
-                      {
-                        text: 'Reset Data',
-                        style: 'destructive',
-                        onPress: () => {
-                          dispatch({ type: 'RESET_GAME' });
-                          setSettingsModalVisible(false);
-                        },
-                      },
-                    ]
-                  );
-                }}
-              >
-                <View style={styles.settingsResetBtnInner}>
-                  <Text style={styles.settingsResetBtnText}>RESET SAVE DATA</Text>
-                </View>
-              </TouchableOpacity>
-              <Text style={styles.settingsHint}>This permanently deletes all of your progress.</Text>
-            </View>
-
-            <View style={styles.drTopWrap} pointerEvents="none">
-              <View style={styles.drTopOuter}>
-                <View style={styles.drTopInner}>
-                  <Text style={styles.drTopText}>SETTINGS</Text>
-                </View>
-              </View>
-            </View>
-          </Pressable>
-        </Pressable>
-      </Modal>
+        <TouchableOpacity
+          activeOpacity={0.85}
+          style={styles.settingsResetBtn}
+          onPress={() => {
+            Alert.alert(
+              'Reset Game Data',
+              'Are you sure you want to nuke your save and start completely fresh?',
+              [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                  text: 'Reset Data',
+                  style: 'destructive',
+                  onPress: () => {
+                    dispatch({ type: 'RESET_GAME' });
+                    setSettingsModalVisible(false);
+                  },
+                },
+              ]
+            );
+          }}
+        >
+          <View style={styles.settingsResetBtnInner}>
+            <Text style={styles.settingsResetBtnText}>RESET SAVE DATA</Text>
+          </View>
+        </TouchableOpacity>
+        <Text style={styles.settingsHint}>This permanently deletes all of your progress.</Text>
+      </ParchmentModal>
 
     </SafeAreaView>
   );
@@ -2169,6 +2139,107 @@ const styles = StyleSheet.create({
     color: '#8A6E44',
     textAlign: 'center',
     marginTop: 10,
+  },
+  /* Disabled parchment action button (shares the settings button shape) */
+  settingsDisabledBtn: {
+    alignSelf: 'stretch',
+    backgroundColor: '#C9A86A',
+    borderColor: '#9A7A4A',
+    borderWidth: 2,
+    borderRadius: 12,
+    padding: 3,
+    opacity: 0.7,
+  },
+  settingsDisabledBtnInner: {
+    backgroundColor: '#DCC488',
+    borderRadius: 9,
+    paddingVertical: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  settingsDisabledBtnText: {
+    fontFamily: 'Silkscreen-Regular',
+    fontSize: 12,
+    color: '#8A6E44',
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+  },
+
+  /* ═══ Stamina Modal (parchment) ════════════════════════════════════════════ */
+  staminaValueBig: {
+    fontFamily: 'Silkscreen-Regular',
+    fontSize: 34,
+    color: '#3A2210',
+  },
+  staminaValueMax: {
+    fontFamily: 'Silkscreen-Regular',
+    fontSize: 24,
+    color: '#9A7A4A',
+    marginTop: 8,
+  },
+  staminaFullTextDark: {
+    color: '#2E7D32',
+  },
+  staminaTimerTextDark: {
+    color: '#9A6B34',
+  },
+  staminaBoxParchment: {
+    alignSelf: 'stretch',
+    backgroundColor: '#F4E6C0',
+    borderColor: '#C9A86A',
+    borderWidth: 1.5,
+    borderRadius: 8,
+    padding: 12,
+    marginTop: 4,
+    marginBottom: 16,
+  },
+  staminaBoxTextDark: {
+    fontFamily: 'Jersey10-Regular',
+    fontSize: 21,
+    lineHeight: 25,
+    color: '#4A2E14',
+    textAlign: 'left',
+  },
+  potionCardParchment: {
+    alignSelf: 'stretch',
+    backgroundColor: '#F4E6C0',
+    borderColor: '#C9A86A',
+    borderWidth: 1.5,
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 4,
+    gap: 12,
+  },
+  potionCardNameDark: {
+    fontFamily: 'Silkscreen-Regular',
+    fontSize: 15,
+    color: '#3A2210',
+  },
+  potionCardDescDark: {
+    fontFamily: 'Jersey10-Regular',
+    fontSize: 18,
+    color: '#9A7A4A',
+  },
+  potionCardQtyDark: {
+    fontFamily: 'Jersey10-Regular',
+    fontSize: 18,
+    color: '#9A6B34',
+  },
+  itemInfoTitle: {
+    fontFamily: 'Silkscreen-Regular',
+    fontSize: 18,
+    color: '#3A2210',
+    textAlign: 'center',
+    marginBottom: 12,
+    textTransform: 'uppercase',
+  },
+  itemInfoDesc: {
+    fontFamily: 'Jersey10-Regular',
+    fontSize: 22,
+    lineHeight: 26,
+    color: '#4A2E14',
+    textAlign: 'center',
+    marginBottom: 16,
   },
   qbFrame: {
     width: '100%',
