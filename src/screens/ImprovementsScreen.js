@@ -12,7 +12,7 @@
  * All numbers/formulas live in src/data/improvements.js.
  */
 
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -20,6 +20,7 @@ import {
   ScrollView,
   StyleSheet,
   Alert,
+  Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -37,10 +38,20 @@ import {
   isMaxLevel,
 } from '../data/improvements';
 
+// Base camp resources shown as chips in the top resource bar.
+const CAMP_RESOURCES = ['wood', 'cloth', 'stone'];
+
+// Every crystal material, in drop order, shown in the Crystals inventory modal.
+// Derived from MATERIALS so new crystal tiers appear automatically.
+const CRYSTAL_IDS = Object.keys(MATERIALS).filter(
+  (id) => MATERIALS[id].spritesheet === 'crystals-1'
+);
+
 export default function ImprovementsScreen({ navigation }) {
   const { state, dispatch } = useGame();
   const { hero } = state;
   const ownedMaterials = hero.inventory.materials || {};
+  const [crystalsOpen, setCrystalsOpen] = useState(false);
 
   const handleUpgrade = (id, cost) => {
     if (!cost || !canAfford(cost, ownedMaterials)) return;
@@ -156,12 +167,81 @@ export default function ImprovementsScreen({ navigation }) {
 
         <View style={styles.headerTitleOuterBorder}>
           <View style={styles.headerTitleInnerBorder}>
-            <Text style={styles.headerTitleText}>Improvements</Text>
+            <Text style={styles.headerTitleText}>Camp</Text>
           </View>
         </View>
 
         <View style={styles.headerSpacer} />
       </View>
+
+      {/* ── Resource bar: camp materials + Crystals inventory button ──────── */}
+      <View style={styles.resourceBar}>
+        {CAMP_RESOURCES.map((itemId) => {
+          const def = MATERIALS[itemId];
+          if (!def) return null;
+          return (
+            <View key={itemId} style={styles.resourceChip}>
+              <ItemSprite spritesheet={def.spritesheet} frameIndex={def.frameIndex} displaySize={24} />
+              <Text style={styles.resourceChipText}>{ownedMaterials[itemId] || 0}</Text>
+            </View>
+          );
+        })}
+
+        <TouchableOpacity
+          style={styles.crystalsButton}
+          activeOpacity={0.85}
+          onPress={() => setCrystalsOpen(true)}
+        >
+          <ItemSprite spritesheet="crystals-1" frameIndex={2} displaySize={26} />
+        </TouchableOpacity>
+      </View>
+
+      {/* ── Crystals inventory modal ──────────────────────────────────────── */}
+      <Modal
+        visible={crystalsOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setCrystalsOpen(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalBackdrop}
+          activeOpacity={1}
+          onPress={() => setCrystalsOpen(false)}
+        >
+          <TouchableOpacity style={styles.modalCard} activeOpacity={1}>
+            <Text style={styles.modalTitle}>Crystals</Text>
+            <ScrollView
+              style={styles.modalScroll}
+              contentContainerStyle={styles.modalGrid}
+              showsVerticalScrollIndicator={false}
+            >
+              {CRYSTAL_IDS.map((itemId) => {
+                const def = MATERIALS[itemId];
+                const have = ownedMaterials[itemId] || 0;
+                return (
+                  <View
+                    key={itemId}
+                    style={[styles.crystalSlot, have === 0 && styles.crystalSlotEmpty]}
+                  >
+                    <ItemSprite spritesheet={def.spritesheet} frameIndex={def.frameIndex} displaySize={40} />
+                    <Text style={styles.crystalSlotName} numberOfLines={2}>
+                      {def.name}
+                    </Text>
+                    <Text style={styles.crystalSlotQty}>×{have}</Text>
+                  </View>
+                );
+              })}
+            </ScrollView>
+            <TouchableOpacity
+              style={styles.modalCloseBtn}
+              activeOpacity={0.85}
+              onPress={() => setCrystalsOpen(false)}
+            >
+              <Text style={styles.modalCloseText}>CLOSE</Text>
+            </TouchableOpacity>
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
 
       <ScrollView
         contentContainerStyle={styles.scrollContent}
@@ -222,6 +302,106 @@ const styles = StyleSheet.create({
     fontFamily: 'Jersey10-Regular', fontSize: 22, color: PARCH, letterSpacing: 1,
   },
   headerSpacer: { width: 44, height: 44 },
+
+  /* ── Resource bar ────────────────────────────────────────── */
+  resourceBar: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderBottomWidth: 2,
+    borderBottomColor: '#4A3917',
+    backgroundColor: 'rgba(0,0,0,0.2)',
+  },
+  resourceChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: '#241A0C',
+    borderRadius: 6,
+    borderWidth: 1.5,
+    borderColor: '#5A4A2E',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
+  resourceChipText: {
+    fontFamily: 'Jersey10-Regular', fontSize: 18, color: PARCH,
+  },
+  crystalsButton: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#4F3C1E',
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: '#A89066',
+    borderBottomWidth: 4,
+    borderBottomColor: '#3A2C14',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+
+  /* ── Crystals modal ──────────────────────────────────────── */
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.65)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
+  modalCard: {
+    width: '100%',
+    maxWidth: 420,
+    maxHeight: '80%',
+    backgroundColor: '#3A2C14',
+    borderWidth: 2.5,
+    borderColor: GOLD,
+    borderRadius: 14,
+    padding: 16,
+  },
+  modalTitle: {
+    fontFamily: 'Jersey10-Regular', fontSize: 24, color: PARCH,
+    textAlign: 'center', letterSpacing: 1, marginBottom: 12,
+  },
+  modalScroll: { flexGrow: 0 },
+  modalGrid: {
+    flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 10,
+  },
+  crystalSlot: {
+    width: 88,
+    alignItems: 'center',
+    backgroundColor: '#241A0C',
+    borderRadius: 8,
+    borderWidth: 1.5,
+    borderColor: '#5A4A2E',
+    paddingVertical: 8,
+    paddingHorizontal: 4,
+  },
+  crystalSlotEmpty: { opacity: 0.4 },
+  crystalSlotName: {
+    fontFamily: 'Jersey10-Regular', fontSize: 13, color: '#C9A867',
+    textAlign: 'center', marginTop: 4, minHeight: 30,
+  },
+  crystalSlotQty: {
+    fontFamily: 'Jersey10-Regular', fontSize: 18, color: PARCH, marginTop: 2,
+  },
+  modalCloseBtn: {
+    marginTop: 14,
+    alignSelf: 'center',
+    backgroundColor: '#4F3C1E',
+    borderRadius: 8,
+    borderWidth: 2,
+    borderColor: '#84735B',
+    borderBottomWidth: 4,
+    borderBottomColor: '#241A0C',
+    paddingHorizontal: 28,
+    paddingVertical: 8,
+  },
+  modalCloseText: {
+    fontFamily: 'Jersey10-Regular', fontSize: 18, color: PARCH, letterSpacing: 1,
+  },
 
   /* ── Scroll body ─────────────────────────────────────────── */
   scrollContent: { paddingHorizontal: 16, paddingTop: 12, paddingBottom: 60 },
