@@ -1,5 +1,5 @@
 /**
- * sprites.js — Sprite animation definitions for Meow Depths
+ * sprites.js — Sprite animation definitions for Meow Expeditions
  *
  * Each entity has an `idle` and an `attack` animation key (and `guard` for the hero).
  * Each key is: { source, frameSize, frames }

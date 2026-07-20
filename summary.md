@@ -1,7 +1,7 @@
-# Meow Depths Game Summary
+# Meow Expeditions Game Summary
 
 ## Overview
-Meow Depths is an RPG/region-crawler game built using React Native and Expo, featuring turn-based combat, skills, equipment, progression, and a town hub.
+Meow Expeditions is an RPG/region-crawler game built using React Native and Expo, featuring turn-based combat, skills, equipment, progression, and a town hub.
 
 ## Stamina System
 - **Expedition Cost**: Starting any dungeon floor run consumes 1 stamina charge.
@@ -181,7 +181,7 @@ This is a 15-column layout matrix of various game icons (480x320 px, 32x32 px pe
 - **Auto-Resume & Navigation Guards**: If the app is closed and restarted during a run, the game loads the Camp screen and opens a confirmation modal prompting the player to either resume the run or flee to Camp. To prevent orphaned runs during gameplay, Android hardware back presses on `DungeonMap` and `Combat` are intercepted to present the Flee Confirmation modal instead of popping back to outside screens.
 
 ## Simulation Script
-A standalone Node-based simulation script is available at [simulate.js](file:///Users/lucastelpisferrante/Documents/Vibe_Coding_Projects/meow-depths/scripts/simulate.js) to model player progression from Floor 1 to 10.
+A standalone Node-based simulation script is available at [simulate.js](scripts/simulate.js) to model player progression from Floor 1 to 10.
 - **Purpose**: Simulate full dungeon crawling, combat encounters (including the Tyrant Rat boss fight on Floor 10), camp hub shop management, skill upgrades/pricing, attribute allocations, and daily ration claims.
 - **Interactive Affinity Toggling**: Auto-swaps between Fire, Water, Earth, and Wind affinities during the run depending on combat needs.
 - **Output**: Logs the floor-by-floor level-ups, gear/potion purchases, combat encounters, potion consumption, and prints a final metrics report showing clear/death status, levels reached, damage dealt, and skill upgrade levels.

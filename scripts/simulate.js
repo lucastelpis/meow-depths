@@ -3,7 +3,7 @@ import fs from 'fs';
 
 async function runSimulation() {
   console.log('────────────────────────────────────────────────────────────────────────');
-  console.log('🔮 STARTING MEOW DEPTHS DUNGEON SIMULATION (FLOORS 1 TO 10) 🔮');
+  console.log('🔮 STARTING MEOW EXPEDITIONS DUNGEON SIMULATION (FLOORS 1 TO 10) 🔮');
   console.log('────────────────────────────────────────────────────────────────────────\n');
 
   // Dynamically import data and logic modules

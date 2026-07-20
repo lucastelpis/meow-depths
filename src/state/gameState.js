@@ -46,13 +46,14 @@ import { recalculateStamina, getStaminaRegenInterval } from '../logic/staminaEng
 import { GEAR, CONSUMABLES } from '../data/gear';
 import { SKILLS, getSkillUpgradeCost } from '../data/skills';
 import { getInitialCampaignQuests, generateDailyQuests, syncPersistentQuests } from '../data/quests';
+import { getImprovementLevel, getUpgradeCost, canAfford, getMaxStaminaForLevel } from '../data/improvements';
 
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
 
 /** The key used to store / retrieve the save file in AsyncStorage. */
-const STORAGE_KEY = '@meow_depths_save';
+const STORAGE_KEY = '@meow_expeditions_save';
 
 // ---------------------------------------------------------------------------
 // Initial state — a brand-new game starts here
@@ -88,6 +89,16 @@ const initialState = {
     maxStamina: 3,
     lastStaminaRegenTime: null,
 
+    // -- Camp Improvements (facility upgrade levels) -------------------------
+    // Single source of truth for max stamina, regen rate, expedition capacity,
+    // and shop unlock tier. See src/data/improvements.js.
+    improvements: {
+      camp: 1,      // max stamina charges
+      cooktop: 1,   // stamina recharge rate
+      storage: 1,   // expedition consumable capacity (replaces the old bag system)
+      shop: 1,      // unlocked shop item tier
+    },
+
     // -- Equipment & Inventory -----------------------------------------------
     gear: {
       weapon:   'wooden_branch',     // equipped weapon gear ID (or null)
@@ -97,12 +108,11 @@ const initialState = {
       gloves:   null,                // equipped gloves gear ID
       boots:    null,                // equipped boots gear ID
       trinket:  null,                // equipped trinket gear ID
-      storage:  'leather_bag',       // equipped storage gear ID
     },
     inventory: {
       materials: {},          // { itemId: quantity } — crafting components
       consumables: [],        // array of { id, quantity } — starts empty, first daily reward grants potions
-      craftedGear: ['wooden_branch', 'leather_bag'],        // array of gear IDs the hero has crafted
+      craftedGear: ['wooden_branch'],        // array of gear IDs the hero has crafted
     },
   },
 
@@ -1470,6 +1480,46 @@ function baseGameReducer(state, action) {
     }
 
     // -----------------------------------------------------------------------
+    // UPGRADE_IMPROVEMENT — spend camp resources to level up a facility
+    // Payload: { id: 'camp'|'cooktop'|'storage'|'shop' }
+    // -----------------------------------------------------------------------
+    case 'UPGRADE_IMPROVEMENT': {
+      const { id } = action.payload;
+      const currentLevel = getImprovementLevel(state.hero, id);
+      const cost = getUpgradeCost(id, currentLevel);
+      if (!cost) return state; // unknown facility or already maxed
+
+      const owned = state.hero.inventory.materials || {};
+      if (!canAfford(cost, owned)) return state;
+
+      // Deduct materials
+      const newMaterials = { ...owned };
+      for (const [itemId, qty] of Object.entries(cost)) {
+        newMaterials[itemId] = Math.max(0, (newMaterials[itemId] || 0) - qty);
+        if (newMaterials[itemId] === 0) delete newMaterials[itemId];
+      }
+
+      const newLevel = currentLevel + 1;
+      const newImprovements = { ...(state.hero.improvements || {}), [id]: newLevel };
+
+      // Camp drives max stamina; the stamina engine reads hero.maxStamina directly,
+      // so keep it in sync here. Other facilities are read live from improvements.
+      const heroPatch = {
+        ...state.hero,
+        improvements: newImprovements,
+        inventory: {
+          ...state.hero.inventory,
+          materials: newMaterials,
+        },
+      };
+      if (id === 'camp') {
+        heroPatch.maxStamina = getMaxStaminaForLevel(newLevel);
+      }
+
+      return { ...state, hero: heroPatch };
+    }
+
+    // -----------------------------------------------------------------------
     // CLAIM_QUEST_REWARD — claim completed quest rewards
     // -----------------------------------------------------------------------
     case 'CLAIM_QUEST_REWARD': {
@@ -1611,30 +1661,27 @@ export function GameProvider({ children }) {
         // that were added after the save was created (forward-compatibility).
         const merged = deepMerge(initialState, savedState);
 
-        // Migrate old 3-slot gear shape ({ weapon, armor, trinket }) or 8-slot ({ trinket1, trinket2 }) to the new 8-slot shape.
+        // Migrate old 3-slot gear shape ({ weapon, armor, trinket }) or 8-slot ({ trinket1, trinket2 }) to the current 7-slot shape.
         if (merged.hero?.gear) {
           const gear = merged.hero.gear;
           if ('armor' in gear) {
             if (gear.armor) gear.chest = gear.armor;
             delete gear.armor;
           }
-          // Migrate old trinket1/trinket2 to new trinket/storage
+          // Migrate old trinket1 to trinket
           if ('trinket1' in gear) {
             gear.trinket = gear.trinket1;
             delete gear.trinket1;
           }
           if ('trinket2' in gear) {
-            gear.storage = gear.trinket2;
             delete gear.trinket2;
           }
-          // If leather_bag is equipped in the trinket slot, move it to storage
-          if (gear.trinket === 'leather_bag') {
-            gear.storage = 'leather_bag';
-            gear.trinket = null;
+          // The Bag system is retired: the storage slot no longer exists and any
+          // equipped backpack/pouch is dropped from it.
+          if ('storage' in gear) {
+            delete gear.storage;
           }
-          // If the old trinket field exists (from 3-slot shape), map it directly
-          if ('trinket' in gear && gear.trinket === 'leather_bag') {
-            gear.storage = 'leather_bag';
+          if (gear.trinket === 'leather_bag') {
             gear.trinket = null;
           }
         }
@@ -1653,8 +1700,26 @@ export function GameProvider({ children }) {
           if (merged.hero.gear?.weapon === 'wooden_branch' && !merged.hero.inventory.craftedGear.includes('wooden_branch')) {
             merged.hero.inventory.craftedGear.push('wooden_branch');
           }
-          if ((merged.hero.gear?.storage === 'leather_bag' || merged.hero.gear?.trinket === 'leather_bag') && !merged.hero.inventory.craftedGear.includes('leather_bag')) {
-            merged.hero.inventory.craftedGear.push('leather_bag');
+        }
+
+        // Camp Improvements migration. deepMerge fills hero.improvements with the
+        // level-1 defaults for old saves; here we reconcile the fields that used
+        // to live elsewhere so existing players don't regress.
+        if (merged.hero) {
+          if (!merged.hero.improvements) {
+            merged.hero.improvements = { camp: 1, cooktop: 1, storage: 1, shop: 1 };
+          }
+          // Camp level drives max stamina — keep them in sync.
+          merged.hero.maxStamina = getMaxStaminaForLevel(merged.hero.improvements.camp || 1);
+          if (merged.hero.stamina > merged.hero.maxStamina) {
+            merged.hero.stamina = merged.hero.maxStamina;
+          }
+          // Preserve previously-unlocked shop stock: each cleared zone == one tier.
+          const p = merged.progress || {};
+          const preservedShop =
+            1 + (p.zone1Cleared ? 1 : 0) + (p.zone2Cleared ? 1 : 0) + (p.zone3Cleared ? 1 : 0);
+          if ((merged.hero.improvements.shop || 1) < preservedShop) {
+            merged.hero.improvements.shop = preservedShop;
           }
         }
 

@@ -75,7 +75,7 @@ export default function ScreenLoader({ assets = [], children }) {
         {/* Subtle vignette radial feel */}
         <View style={styles.overlayInner}>
           <Animated.Text style={[styles.logo, { opacity: pulseAnim }]}>
-            ⚔ Meow Depths
+            ⚔ Meow Expeditions
           </Animated.Text>
           <Animated.View style={[styles.dotRow, { opacity: pulseAnim }]}>
             <View style={styles.dot} />

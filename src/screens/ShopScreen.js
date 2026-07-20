@@ -1,6 +1,6 @@
 /**
  * =============================================================================
- * ShopScreen.js — Meow Depths Town Shop (Consumables & Armory - Redesigned Premium UI)
+ * ShopScreen.js — Meow Expeditions Town Shop (Consumables & Armory - Redesigned Premium UI)
  * =============================================================================
  *
  * This screen consolidates the items shop (consumables bought with Gold) and
@@ -28,6 +28,7 @@ import theme from '../constants/theme';
 import { useGame } from '../state/gameState';
 import { GEAR, CONSUMABLES, MATERIALS } from '../data/gear';
 import { ZONES } from '../data/zones';
+import { getImprovementLevel } from '../data/improvements';
 import ItemSprite from '../components/ItemSprite';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -44,7 +45,6 @@ const COMPARE_STAT_FIELDS = [
   { key: 'critChance', label: 'CRIT', percent: true },
   { key: 'dodge', label: 'DODGE', percent: true },
   { key: 'bleedChance', label: 'BLEED', percent: true },
-  { key: 'bagSlots', label: 'BAG SLOTS', percent: false },
 ];
 
 // Stat-by-stat delta of a candidate gear def vs the currently equipped def.
@@ -231,11 +231,11 @@ export default function ShopScreen() {
   const ownedMaterials = hero.inventory.materials || {};
   const craftedGear = hero.inventory.craftedGear || [];
 
-  // ── Build shop items list based on progression ─────────────────────────────
+  // ── Build shop items list based on the Shop improvement level ──────────────
+  // Item unlocks are gated entirely by the Camp → Shop improvement tier.
+  const shopLevel = getImprovementLevel(hero, 'shop');
   const armoryItems = useMemo(() => {
-    const isLvl6Unlocked = (state.progress.floorsCleared?.zone1 || 0) >= 5;
-    const isZone2Unlocked = state.progress.zone1Cleared === true;
-
+    // Tier 1 (Shop Lv1): basic leather set + starter blade.
     const items = [
       'wooden_sword',
       'leather_helmet',
@@ -244,10 +244,10 @@ export default function ShopScreen() {
       'leather_gloves',
       'leather_boots',
       'leather_belt',
-      'simple_backpack',
     ];
 
-    if (isLvl6Unlocked) {
+    // Tier 2 (Shop Lv2): superior leather set + stronger blade.
+    if (shopLevel >= 2) {
       items.push(
         'stone_sword',
         'superior_leather_helmet',
@@ -255,14 +255,11 @@ export default function ShopScreen() {
         'superior_leather_leggings',
         'superior_leather_gloves',
         'superior_leather_boots',
-        'superior_leather_belt',
-        'fine_backpack'
+        'superior_leather_belt'
       );
     }
 
-    if (isZone2Unlocked) {
-      items.push('luxury_backpack');
-    }
+    // Tiers 3–4 (Shop Lv3/Lv4): reserved for future gold-only stock.
 
     return items.map(itemId => {
       const baseGear = GEAR[itemId];
@@ -272,7 +269,7 @@ export default function ShopScreen() {
         goldCost: baseGear.goldCost || 0,
       };
     }).filter(Boolean);
-  }, [state.progress.floorsCleared?.zone1, state.progress.zone1Cleared]);
+  }, [shopLevel]);
 
   const sortedConsumables = useMemo(() => {
     return [...CONSUMABLES].sort((a, b) => a.cost - b.cost);
@@ -439,7 +436,7 @@ export default function ShopScreen() {
             </View>
 
             <View style={styles.listContainer}>
-              {sortedConsumables.filter(item => !item.minLevel || hero.level >= item.minLevel).map((item) => {
+              {sortedConsumables.filter(item => (item.shopTier || 1) <= shopLevel).map((item) => {
                 const owned = consumableCounts[item.id] || 0;
 
                 const qty = getQty(item.id);
@@ -544,7 +541,7 @@ export default function ShopScreen() {
         {activeTab === 'armory' && (
           <View style={styles.tabContent}>
             <View style={styles.consumablesIntro}>
-              <Text style={styles.introDesc}>Spend Gold on weapons and gear. New items unlock as you venture deeper into the regions.</Text>
+              <Text style={styles.introDesc}>Spend Gold on weapons and gear. New stock unlocks by upgrading the Shop at Camp → Improvements.</Text>
             </View>
 
             <View style={styles.listContainer}>
@@ -569,7 +566,7 @@ export default function ShopScreen() {
                       <ItemSprite spritesheet="icons-1" frameIndex={12} displaySize={40} opacity={0.6} />
                       <Text style={styles.emptyArmoryTitle}>The shelves are bare</Text>
                       <Text style={styles.emptyArmoryDesc}>
-                        You've claimed everything on offer. Venture deeper into the regions to unlock new weapons and gear.
+                        You've claimed everything on offer. Upgrade the Shop at Camp → Improvements to unlock new weapons and gear.
                       </Text>
                     </View>
                   );

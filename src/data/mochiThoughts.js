@@ -19,7 +19,7 @@ export const MOCHI_THOUGHTS = [
   // ─── Default — cozy, curious, always available ─────────────────────────────
   { id: 'd1',  default: true, text: "What adventures lie ahead today? I'm excited!" },
   { id: 'd2',  default: true, text: "I could go for a nap... right after one little expedition." },
-  { id: 'd3',  default: true, text: "Do you think there are fish down in the depths?" },
+  { id: 'd3',  default: true, text: "Do you think there are fish out in the flooded ruins?" },
   { id: 'd4',  default: true, text: "My whiskers are tingling. That always means treasure!" },
   { id: 'd5',  default: true, text: "Onward, into the dark! ...after a quick snack." },
   { id: 'd6',  default: true, text: "I wonder what's waiting past the next region." },
@@ -28,7 +28,7 @@ export const MOCHI_THOUGHTS = [
   { id: 'd9',  default: true, text: "Claws sharpened. Ready for anything!" },
   { id: 'd10', default: true, text: "Gold, gear, glory... and maybe a cozy nap." },
   { id: 'd11', default: true, text: "Supplies packed! Did I forget anything? Probably snacks." },
-  { id: 'd12', default: true, text: "Every depth has a story. I want to hear them all." },
+  { id: 'd12', default: true, text: "Every region has a story. I want to hear them all." },
   { id: 'd13', default: true, text: "Today feels lucky. I can smell it!" },
   { id: 'd14', default: true, text: "Stretch, yawn, adventure. In that order." },
   { id: 'd15', default: true, text: "I hope we find something shiny down there." },
@@ -40,7 +40,7 @@ export const MOCHI_THOUGHTS = [
   { id: 'd21', default: true, text: "Did you hear that? ...probably just the wind. Probably." },
   { id: 'd22', default: true, text: "A full belly and a brave heart. Let's go!" },
   { id: 'd23', default: true, text: "Rations packed, spirits high!" },
-  { id: 'd24', default: true, text: "The depths are scary... but I'm scarier. Maybe." },
+  { id: 'd24', default: true, text: "The ruins are scary... but I'm scarier. Maybe." },
   { id: 'd25', default: true, text: "Adventure now, biscuits later. That's the plan." },
 
   // ─── Unlocked by notes — quieter, reflective, lore-tinged ───────────────────

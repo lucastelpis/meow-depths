@@ -35,7 +35,7 @@ import { SKILLS } from '../data/skills';
 import ItemSprite from '../components/ItemSprite';
 import { pickRandomThought } from '../data/mochiThoughts';
 import { isQuestUnlocked } from '../data/quests';
-import { CONSUMABLES } from '../data/gear';
+import { CONSUMABLES, MATERIALS } from '../data/gear';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const BANNER_WIDTH = SCREEN_WIDTH - 40;
@@ -416,6 +416,15 @@ export default function CampScreen({ navigation }) {
     if (def) {
       return { title: def.name.toUpperCase(), desc: def.description };
     }
+    if (normalized === 'wood') {
+      return { title: 'WOOD', desc: 'Sturdy timber gathered on expeditions. Used to upgrade Camp Improvements.' };
+    }
+    if (normalized === 'cloth') {
+      return { title: 'CLOTH', desc: 'Woven fabric scraps found on expeditions. Used to upgrade Camp Improvements.' };
+    }
+    if (normalized === 'stone') {
+      return { title: 'STONE', desc: 'Rough stone blocks hauled from expeditions. Used to upgrade Camp Improvements.' };
+    }
     if (normalized === 'black_shard') {
       return { title: 'BLACK SHARD', desc: 'A fragmented piece of black crystal. Dropped by Sewer monsters. Used for crafting basic gear.' };
     }
@@ -490,13 +499,17 @@ export default function CampScreen({ navigation }) {
         </View>
       );
     } else if (type === 'materials') {
-      const frame = getCrystalFrame(lowerKey);
+      // Camp resources (wood/cloth/stone) and any non-crystal material carry their
+      // own spritesheet/frameIndex; crystals fall back to the crystal sheet.
+      const matDef = MATERIALS[lowerKey];
+      const spritesheet = matDef?.spritesheet || 'crystals-1';
+      const frame = matDef ? matDef.frameIndex : getCrystalFrame(lowerKey);
       return (
         <View key={key} style={styles.rewardMiniChip}>
           <TouchableOpacity style={styles.infoTagSmall} onPress={handlePressInfo} activeOpacity={0.7}>
             <Text style={styles.infoTagText}>?</Text>
           </TouchableOpacity>
-          <ItemSprite spritesheet="crystals-1" frameIndex={frame} displaySize={36} />
+          <ItemSprite spritesheet={spritesheet} frameIndex={frame} displaySize={36} />
           <Text style={styles.rewardMiniText}><Text style={{ fontSize: 11 }}>x</Text>{qty}</Text>
         </View>
       );
@@ -528,8 +541,10 @@ export default function CampScreen({ navigation }) {
       const frame = def ? def.frameIndex : 0;
       sprite = <ItemSprite spritesheet="consumables-1" frameIndex={frame} displaySize={32} />;
     } else if (type === 'materials') {
-      const frame = getCrystalFrame(lowerKey);
-      sprite = <ItemSprite spritesheet="crystals-1" frameIndex={frame} displaySize={32} />;
+      const matDef = MATERIALS[lowerKey];
+      const spritesheet = matDef?.spritesheet || 'crystals-1';
+      const frame = matDef ? matDef.frameIndex : getCrystalFrame(lowerKey);
+      sprite = <ItemSprite spritesheet={spritesheet} frameIndex={frame} displaySize={32} />;
     }
 
     return (
@@ -676,75 +691,8 @@ export default function CampScreen({ navigation }) {
             </View>
           </TouchableOpacity>
 
-          {/* Sub Navigation Cards — Row 1 */}
+          {/* Sub Navigation Cards — Row 1: Profile, Skills, Market, Quests */}
           <View style={styles.subButtonsRow}>
-            {/* Shopping */}
-            <View style={styles.subCardWrapper}>
-              <View style={styles.subCardShadow} />
-              <TouchableOpacity
-                style={styles.subCardOuter}
-                activeOpacity={0.8}
-                onPress={() => navigation.navigate('Shop')}
-              >
-                <View style={styles.subCardInner}>
-                  <View style={styles.subSpriteContainer}>
-                    <IconGlowBackground size={44} />
-                    <ItemSprite spritesheet="icons-1" frameIndex={1} displaySize={40} />
-                  </View>
-                  <Text style={styles.subCardLabel}>MARKET</Text>
-                </View>
-              </TouchableOpacity>
-            </View>
-
-            {/* Skills */}
-            <View style={styles.subCardWrapper}>
-              <View style={styles.subCardShadow} />
-              <TouchableOpacity
-                style={styles.subCardOuter}
-                activeOpacity={0.8}
-                onPress={() => navigation.navigate('SkillTree')}
-              >
-                <View style={styles.subCardInner}>
-                  <View style={styles.subSpriteContainer}>
-                    <IconGlowBackground size={44} />
-                    <ItemSprite spritesheet="icons-map" frameIndex={95} displaySize={40} />
-                  </View>
-                  <Text style={styles.subCardLabel}>SKILLS</Text>
-                </View>
-              </TouchableOpacity>
-              {(hero.skillPoints || 0) > 0 && (
-                <View style={styles.questBadge}>
-                  <Text style={styles.questBadgeText}>!</Text>
-                </View>
-              )}
-            </View>
-
-            {/* Quests */}
-            <View style={styles.subCardWrapper}>
-              <View style={styles.subCardShadow} />
-              <TouchableOpacity
-                style={styles.subCardOuter}
-                activeOpacity={0.8}
-                onPress={() => navigation.navigate('Quests')}
-              >
-                <View style={styles.subCardInner}>
-                  <View style={styles.subSpriteContainer}>
-                    <IconGlowBackground size={44} />
-                    <ItemSprite spritesheet="icons-map" frameIndex={73} displaySize={40} />
-                  </View>
-                  <Text style={styles.subCardLabel}>QUESTS</Text>
-                </View>
-              </TouchableOpacity>
-              {hasClaimableQuestReward && (
-                <View style={styles.questBadge}>
-                  <Text style={styles.questBadgeText}>!</Text>
-                </View>
-              )}
-            </View>
-          </View>
-
-          {/* Sub Navigation Cards — Row 2 */}
-          <View style={[styles.subButtonsRow, { marginTop: 12 }]}>
             {/* Profile */}
             <View style={styles.subCardWrapper}>
               <View style={styles.subCardShadow} />
@@ -758,7 +706,7 @@ export default function CampScreen({ navigation }) {
                     <IconGlowBackground size={44} />
                     <ExpoImage
                       source={require('../../assets/sprites/units/hero/hero_head.png')}
-                      style={{ width: 40, height: 40 }}
+                      style={{ width: 38, height: 38 }}
                       contentFit="contain"
                     />
                   </View>
@@ -772,6 +720,91 @@ export default function CampScreen({ navigation }) {
               )}
             </View>
 
+            {/* Skills */}
+            <View style={styles.subCardWrapper}>
+              <View style={styles.subCardShadow} />
+              <TouchableOpacity
+                style={styles.subCardOuter}
+                activeOpacity={0.8}
+                onPress={() => navigation.navigate('SkillTree')}
+              >
+                <View style={styles.subCardInner}>
+                  <View style={styles.subSpriteContainer}>
+                    <IconGlowBackground size={44} />
+                    <ItemSprite spritesheet="icons-map" frameIndex={95} displaySize={38} />
+                  </View>
+                  <Text style={styles.subCardLabel}>SKILLS</Text>
+                </View>
+              </TouchableOpacity>
+              {(hero.skillPoints || 0) > 0 && (
+                <View style={styles.questBadge}>
+                  <Text style={styles.questBadgeText}>!</Text>
+                </View>
+              )}
+            </View>
+
+            {/* Market */}
+            <View style={styles.subCardWrapper}>
+              <View style={styles.subCardShadow} />
+              <TouchableOpacity
+                style={styles.subCardOuter}
+                activeOpacity={0.8}
+                onPress={() => navigation.navigate('Shop')}
+              >
+                <View style={styles.subCardInner}>
+                  <View style={styles.subSpriteContainer}>
+                    <IconGlowBackground size={44} />
+                    <ItemSprite spritesheet="icons-1" frameIndex={1} displaySize={38} />
+                  </View>
+                  <Text style={styles.subCardLabel}>MARKET</Text>
+                </View>
+              </TouchableOpacity>
+            </View>
+
+            {/* Quests */}
+            <View style={styles.subCardWrapper}>
+              <View style={styles.subCardShadow} />
+              <TouchableOpacity
+                style={styles.subCardOuter}
+                activeOpacity={0.8}
+                onPress={() => navigation.navigate('Quests')}
+              >
+                <View style={styles.subCardInner}>
+                  <View style={styles.subSpriteContainer}>
+                    <IconGlowBackground size={44} />
+                    <ItemSprite spritesheet="icons-map" frameIndex={73} displaySize={38} />
+                  </View>
+                  <Text style={styles.subCardLabel}>QUESTS</Text>
+                </View>
+              </TouchableOpacity>
+              {hasClaimableQuestReward && (
+                <View style={styles.questBadge}>
+                  <Text style={styles.questBadgeText}>!</Text>
+                </View>
+              )}
+            </View>
+          </View>
+
+          {/* Sub Navigation Cards — Row 2: Camp, Journal, News, Config */}
+          <View style={[styles.subButtonsRow, { marginTop: 12 }]}>
+            {/* Camp (Improvements) */}
+            <View style={styles.subCardWrapper}>
+              <View style={styles.subCardShadow} />
+              <TouchableOpacity
+                style={styles.subCardOuter}
+                activeOpacity={0.8}
+                onPress={() => navigation.navigate('Improvements')}
+              >
+                <View style={styles.subCardInner}>
+                  <View style={styles.subSpriteContainer}>
+                    <IconGlowBackground size={44} />
+                    <ItemSprite spritesheet="icons-map" frameIndex={0} displaySize={38} />
+                  </View>
+                  <Text style={styles.subCardLabel}>CAMP</Text>
+                </View>
+              </TouchableOpacity>
+            </View>
+
             {/* Journal */}
             <View style={styles.subCardWrapper}>
               <View style={styles.subCardShadow} />
@@ -783,7 +816,7 @@ export default function CampScreen({ navigation }) {
                 <View style={styles.subCardInner}>
                   <View style={styles.subSpriteContainer}>
                     <IconGlowBackground size={44} />
-                    <ItemSprite spritesheet="icons-map" frameIndex={121} displaySize={40} />
+                    <ItemSprite spritesheet="icons-map" frameIndex={121} displaySize={38} />
                   </View>
                   <Text style={styles.subCardLabel}>JOURNAL</Text>
                 </View>
@@ -795,7 +828,25 @@ export default function CampScreen({ navigation }) {
               )}
             </View>
 
-            {/* Settings */}
+            {/* News */}
+            <View style={styles.subCardWrapper}>
+              <View style={styles.subCardShadow} />
+              <TouchableOpacity
+                style={styles.subCardOuter}
+                activeOpacity={0.8}
+                onPress={() => navigation.navigate('News')}
+              >
+                <View style={styles.subCardInner}>
+                  <View style={styles.subSpriteContainer}>
+                    <IconGlowBackground size={44} />
+                    <ItemSprite spritesheet="icons-map" frameIndex={101} displaySize={38} />
+                  </View>
+                  <Text style={styles.subCardLabel}>NEWS</Text>
+                </View>
+              </TouchableOpacity>
+            </View>
+
+            {/* Config (Settings) */}
             <View style={styles.subCardWrapper}>
               <View style={styles.subCardShadow} />
               <TouchableOpacity
@@ -806,9 +857,9 @@ export default function CampScreen({ navigation }) {
                 <View style={styles.subCardInner}>
                   <View style={styles.subSpriteContainer}>
                     <IconGlowBackground size={44} />
-                    <ItemSprite spritesheet="icons-map" frameIndex={111} displaySize={40} />
+                    <ItemSprite spritesheet="icons-map" frameIndex={111} displaySize={38} />
                   </View>
-                  <Text style={styles.subCardLabel}>SETTINGS</Text>
+                  <Text style={styles.subCardLabel}>CONFIG</Text>
                 </View>
               </TouchableOpacity>
             </View>
@@ -1487,7 +1538,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   subCardWrapper: {
-    flex: 1,
+    flex: 1,          // 4 buttons share the row width equally
     height: 82,
     position: 'relative',
   },
@@ -1540,9 +1591,9 @@ const styles = StyleSheet.create({
   subCardLabel: {
     fontFamily: 'Jersey10-Regular',
     fontWeight: 'normal',
-    fontSize: 16,
-    lineHeight: 15,
-    letterSpacing: 0.5,
+    fontSize: 14,
+    lineHeight: 14,
+    letterSpacing: 0.3,
     color: '#FFF3DA',
     textAlign: 'center',
     textTransform: 'uppercase',

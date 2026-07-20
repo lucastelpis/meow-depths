@@ -31,6 +31,7 @@ import { useGame } from '../state/gameState';
 import { ZONES, getFloorCompletionReward } from '../data/zones';
 import { CONSUMABLES, MATERIALS } from '../data/gear';
 import { calculateEffectiveStats } from '../logic/progressionEngine';
+import { getImprovementLevel, getStorageCapacityForLevel } from '../data/improvements';
 import ItemSprite from '../components/ItemSprite';
 import { isQuestUnlocked } from '../data/quests';
 
@@ -193,7 +194,8 @@ export default function DungeonFloorScreen() {
   }, []);
 
   const effectiveStats = useMemo(() => calculateEffectiveStats(state.hero), [state.hero]);
-  const maxSlots = effectiveStats.bagSlots || 0;
+  // Expedition consumable capacity comes from the Storage improvement.
+  const maxSlots = getStorageCapacityForLevel(getImprovementLevel(state.hero, 'storage'));
 
   const totalPacked = useMemo(
     () => Object.values(loadout).reduce((s, v) => s + v, 0),

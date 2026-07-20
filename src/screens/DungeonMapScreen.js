@@ -1312,7 +1312,7 @@ export default function DungeonMapScreen({ navigation }) {
 
 
                 <Text style={styles.cozySubtitle}>
-                  You found a quiet corner. Take a moment to prepare for the depths ahead.
+                  You found a quiet corner. Take a moment to prepare for the expedition ahead.
                 </Text>
 
                 <View style={styles.modalChoiceContainer}>
@@ -1481,7 +1481,7 @@ export default function DungeonMapScreen({ navigation }) {
                 </Text>
 
                 <View style={styles.cozyWellDanger}>
-                  <Text style={styles.lostLootTitle}>Loot Lost in the Depths:</Text>
+                  <Text style={styles.lostLootTitle}>Loot Lost on the Expedition:</Text>
                   {currentRun.lootCollected.gold === 0 &&
                     Object.keys(currentRun.lootCollected.materials).length === 0 &&
                     Object.keys(currentRun.lootCollected.consumables || {}).length === 0 &&

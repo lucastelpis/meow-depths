@@ -1,5 +1,5 @@
 /**
- * gear.js — Meow Depths Equipment, Materials, Sets & Consumables
+ * gear.js — Meow Expeditions Equipment, Materials, Sets & Consumables
  *
  * Contains every craftable item the player can equip, the raw materials
  * needed to forge them, set-bonus definitions, and purchasable consumables.
@@ -27,6 +27,12 @@ export const MATERIALS = {
   yellow_crystal_small: { name: 'Small Yellow Crystal', spritesheet: 'crystals-1', frameIndex: 9 },
   yellow_crystal_big: { name: 'Big Yellow Crystal', spritesheet: 'crystals-1', frameIndex: 10 },
   yellow_crystal_core: { name: 'Yellow Crystal Core', spritesheet: 'crystals-1', frameIndex: 11 },
+
+  // Camp resources — dropped in small quantities from combat, treasure, and daily quests.
+  // Used to upgrade Camp Improvements. Icons come from the 15×10 icons-map sheet.
+  wood:  { name: 'Wood',  spritesheet: 'icons-map', frameIndex: 144 },
+  cloth: { name: 'Cloth', spritesheet: 'icons-map', frameIndex: 149 },
+  stone: { name: 'Stone', spritesheet: 'icons-map', frameIndex: 64 },
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -374,6 +380,7 @@ export const CONSUMABLES = [
     name: 'Potion',
     cost: 50,
     minLevel: 1,
+    shopTier: 1,
     effect: { type: 'heal', amount: 50 },
     description: 'Restore 50 HP',
     spritesheet: 'consumables-1',
@@ -384,6 +391,7 @@ export const CONSUMABLES = [
     name: 'Super Potion',
     cost: 100,
     minLevel: 10,
+    shopTier: 2,
     effect: { type: 'heal', amount: 100 },
     description: 'Restore 100 HP',
     spritesheet: 'consumables-1',
@@ -394,6 +402,7 @@ export const CONSUMABLES = [
     name: 'Mega Potion',
     cost: 250,
     minLevel: 20,
+    shopTier: 3,
     effect: { type: 'heal', amount: 150 },
     description: 'Restore 150 HP',
     spritesheet: 'consumables-1',
@@ -404,6 +413,7 @@ export const CONSUMABLES = [
     name: 'Ultra Potion',
     cost: 400,
     minLevel: 30,
+    shopTier: 4,
     effect: { type: 'heal', amount: 200 },
     description: 'Restore 200 HP',
     spritesheet: 'consumables-1',
@@ -413,6 +423,7 @@ export const CONSUMABLES = [
     id: 'antidote',
     name: 'Antidote',
     cost: 60,
+    shopTier: 1,
     effect: { type: 'remove_bleed' },
     description: 'Remove all Bleed stacks',
     spritesheet: 'consumables-1',
@@ -423,6 +434,7 @@ export const CONSUMABLES = [
     name: 'Stamina Potion',
     cost: 500,
     minLevel: 1,
+    shopTier: 1,
     effect: { type: 'stamina', amount: 1 },
     description: 'Restores 1 stamina charge',
     spritesheet: 'consumables-1',
@@ -432,6 +444,7 @@ export const CONSUMABLES = [
     id: 'smoke_vial',
     name: 'Smoke Vial',
     cost: 75,
+    shopTier: 1,
     effect: { type: 'debuff_attack', reduction: 0.3, duration: 2 },
     description: 'Reduce all enemy Attack by 30% for 2 turns',
     spritesheet: 'consumables-1',

@@ -18,7 +18,7 @@ No test runner or lint script is configured. There is no CI pipeline.
 
 ## Architecture Overview
 
-**Meow Depths** is an Expo + React Native mobile RPG. Mochi (the hero cat) explores grid-based regions (each containing 10 zones) on expeditions, fighting enemies in a turn-based combat system. Summary of it can be seen in [gamedetails.md](gamedetails.md)
+**Meow Expeditions** is an Expo + React Native mobile RPG. Mochi (the hero cat) explores grid-based regions (each containing 10 zones) on expeditions, fighting enemies in a turn-based combat system. Summary of it can be seen in [gamedetails.md](gamedetails.md)
 
 ### State management
 
@@ -85,4 +85,4 @@ Stack navigator defined in [App.js](App.js). `Camp` is the initial route. `Comba
 
 ### Theme and design system
 
-All colors, fonts, spacing, and border-radius tokens are in [src/constants/theme.js](src/constants/theme.js). The design follows a "cozy meets grim" rule: **warm palette** (`hearthBlack`, `torchOrange`, `candleGold`) for safe screens (Camp, Shop, Inventory); **cold palette** (`voidNavy`, `coldBlue`, `mysteryViolet`) for region map and combat. See [assets/meow_depths_design_system.md](assets/meow_depths_design_system.md) for the full visual spec.
+All colors, fonts, spacing, and border-radius tokens are in [src/constants/theme.js](src/constants/theme.js). The design follows a "cozy meets grim" rule: **warm palette** (`hearthBlack`, `torchOrange`, `candleGold`) for safe screens (Camp, Shop, Inventory); **cold palette** (`voidNavy`, `coldBlue`, `mysteryViolet`) for region map and combat. See [assets/meow_expeditions_design_system.md](assets/meow_expeditions_design_system.md) for the full visual spec.
