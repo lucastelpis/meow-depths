@@ -21,9 +21,9 @@
 export const IMPROVEMENTS = {
   camp: {
     id: 'camp',
-    name: 'Camp',
+    name: 'Tent',
     blurb: 'Maximum stamina charges',
-    icon: { sheet: 'icons-map', frame: 0 },
+    icon: { sheet: 'icons-map', frame: 15 },
     maxLevel: 5,
     // Cost to go FROM the keyed level TO the next one.
     costs: {
