@@ -52,8 +52,8 @@ export function generateDailyQuests(hero, progress, dateStr) {
     completed: true,
     claimed: false,
     rewards: {
-      gold: 100 + lvl * 50,
-      consumables: { potion: 3, stamina_potion: 1 }
+      gold: 25 + lvl * 25,
+      consumables: { potion: 1 }
     },
     tag: 'Daily'
   };
@@ -223,7 +223,7 @@ export const CAMPAIGN_QUEST_TEMPLATES = [
     target: 1,
     completed: false,
     claimed: false,
-    rewards: { gold: 250, consumables: { potion: 2 } },
+    rewards: { gold: 250, consumables: { potion: 2 }, gear: ['weird_wooden_sword'] },
     tag: 'Story',
     prerequisite: { type: 'quest_completed', questId: 'camp_clear_zone1_f2' }
   },
@@ -253,7 +253,7 @@ export const CAMPAIGN_QUEST_TEMPLATES = [
     target: 1,
     completed: false,
     claimed: false,
-    rewards: { gold: 350, consumables: { potion: 2 } },
+    rewards: { gold: 350, consumables: { potion: 2 }, gear: ['utility_leather_belt'] },
     tag: 'Story',
     prerequisite: { type: 'quest_completed', questId: 'camp_clear_zone1_f4' }
   },
@@ -283,7 +283,7 @@ export const CAMPAIGN_QUEST_TEMPLATES = [
     target: 1,
     completed: false,
     claimed: false,
-    rewards: { gold: 450, consumables: { potion: 2 } },
+    rewards: { gold: 450, consumables: { potion: 2 }, gear: ['bone_sword'] },
     tag: 'Story',
     prerequisite: { type: 'quest_completed', questId: 'camp_clear_zone1_f6' }
   },
@@ -328,7 +328,7 @@ export const CAMPAIGN_QUEST_TEMPLATES = [
     target: 1,
     completed: false,
     claimed: false,
-    rewards: { gold: 800, consumables: { mega_potion: 2 } },
+    rewards: { gold: 800, consumables: { mega_potion: 2 }, gear: ['bronze_sword'] },
     tag: 'Story',
     prerequisite: { type: 'quest_completed', questId: 'camp_clear_zone1_f9' }
   },
@@ -407,7 +407,7 @@ export const CAMPAIGN_QUEST_TEMPLATES = [
     target: 1,
     completed: false,
     claimed: false,
-    rewards: { gold: 700, consumables: { potion: 3 } },
+    rewards: { gold: 700, consumables: { potion: 3 }, gear: ['refined_bronze_sword'] },
     tag: 'Story',
     prerequisite: { type: 'quest_completed', questId: 'camp_clear_zone2_f4' }
   },
@@ -482,7 +482,7 @@ export const CAMPAIGN_QUEST_TEMPLATES = [
     target: 1,
     completed: false,
     claimed: false,
-    rewards: { gold: 1600, consumables: { mega_potion: 4 } },
+    rewards: { gold: 1600, consumables: { mega_potion: 4 }, gear: ['iron_sword'] },
     tag: 'Story',
     prerequisite: { type: 'quest_completed', questId: 'camp_clear_zone2_f9' }
   },
@@ -561,7 +561,7 @@ export const CAMPAIGN_QUEST_TEMPLATES = [
     target: 1,
     completed: false,
     claimed: false,
-    rewards: { gold: 1050, consumables: { potion: 4 } },
+    rewards: { gold: 1050, consumables: { potion: 4 }, gear: ['curved_iron_sword'] },
     tag: 'Story',
     prerequisite: { type: 'quest_completed', questId: 'camp_clear_zone3_f4' }
   },
@@ -636,7 +636,7 @@ export const CAMPAIGN_QUEST_TEMPLATES = [
     target: 1,
     completed: false,
     claimed: false,
-    rewards: { gold: 2400, consumables: { mega_potion: 6 } },
+    rewards: { gold: 2400, consumables: { mega_potion: 6 }, gear: ['refined_iron_sword'] },
     tag: 'Story',
     prerequisite: { type: 'quest_completed', questId: 'camp_clear_zone3_f9' }
   },
@@ -807,8 +807,8 @@ export function syncPersistentQuests(state) {
         newProgress = 1;
       }
     } else if (q.type === 'equip_gear_set') {
-      const slots = ['weapon', 'head', 'chest', 'legs', 'gloves', 'boots', 'trinket'];
-      const equippedCount = slots.filter(slot => hero.gear?.[slot] !== null).length;
+      const slots = ['weapon', 'head', 'chest', 'legs', 'gloves', 'boots', 'trinket', 'trinket2'];
+      const equippedCount = slots.filter(slot => Boolean(hero.gear?.[slot])).length;
       if (equippedCount >= q.target) {
         newProgress = q.target;
       } else {

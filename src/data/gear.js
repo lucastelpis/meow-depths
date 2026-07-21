@@ -28,9 +28,11 @@ export const MATERIALS = {
   yellow_crystal_big: { name: 'Big Yellow Crystal', spritesheet: 'crystals-1', frameIndex: 10 },
   yellow_crystal_core: { name: 'Yellow Crystal Core', spritesheet: 'crystals-1', frameIndex: 11 },
 
-  // Camp resources — dropped in small quantities from combat, treasure, and daily quests.
-  // Used to upgrade Camp Improvements. Icons come from the 15×10 icons-map sheet.
-  wood:  { name: 'Wood',  spritesheet: 'icons-map', frameIndex: 144 },
+  // Camp resources — granted exclusively by quests (daily "Supply Run" + campaign
+  // bundles), the Camp economy's single tunable faucet. See the Loot Source
+  // Doctrine in gamedetails.md. Used to upgrade Camp Improvements.
+  // Icons come from the 15×10 icons-map sheet.
+  wood: { name: 'Wood', spritesheet: 'icons-map', frameIndex: 144 },
   cloth: { name: 'Cloth', spritesheet: 'icons-map', frameIndex: 149 },
   stone: { name: 'Stone', spritesheet: 'icons-map', frameIndex: 64 },
 };
@@ -432,7 +434,7 @@ export const CONSUMABLES = [
   {
     id: 'stamina_potion',
     name: 'Stamina Potion',
-    cost: 500,
+    cost: 2000,
     minLevel: 1,
     shopTier: 1,
     effect: { type: 'stamina', amount: 1 },
@@ -909,11 +911,12 @@ export function getGearByZone(zone) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const EQUIP_SLOTS = [
-  'weapon', 'head', 'chest', 'legs', 'gloves', 'boots', 'trinket', 'storage',
+  'weapon', 'head', 'chest', 'legs', 'gloves', 'boots', 'trinket', 'trinket2',
 ];
 
-// Which gear `type`s are valid for each slot. head/legs/gloves/boots have no
-// gear defined yet — they remain empty until that gear is added.
+// Which gear `type`s are valid for each slot. The two trinket slots both accept
+// 'trinket' gear (the storage/bag slot was retired in favour of the Storage
+// camp improvement — its freed space became the second trinket slot).
 export const SLOT_TYPES = {
   weapon: ['weapon'],
   head: ['head'],
@@ -922,7 +925,7 @@ export const SLOT_TYPES = {
   gloves: ['gloves'],
   boots: ['boots'],
   trinket: ['trinket'],
-  storage: ['storage'],
+  trinket2: ['trinket'],
 };
 
 /**

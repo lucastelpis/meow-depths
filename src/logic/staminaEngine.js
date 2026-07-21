@@ -18,7 +18,7 @@ export function getStaminaRegenInterval(state) {
   let interval = getRegenHoursForLevel(cooktopLevel) * 60 * 60 * 1000;
 
   if (state?.hero?.gear) {
-    const slots = ['weapon', 'head', 'chest', 'legs', 'gloves', 'boots', 'trinket'];
+    const slots = ['weapon', 'head', 'chest', 'legs', 'gloves', 'boots', 'trinket', 'trinket2'];
     for (const slot of slots) {
       const gearId = state.hero.gear[slot];
       if (gearId && GEAR[gearId]?.stats?.staminaRegenMultiplier) {

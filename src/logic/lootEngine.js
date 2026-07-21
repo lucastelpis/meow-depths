@@ -194,37 +194,30 @@ export function generateTreasureDrops(zoneId, floorNumber, isDouble = false) {
 
   gold *= mult;
 
-  // Camp resources (wood/cloth/stone) can drop from treasure in small amounts.
-  const resourceDrops = rollResourceDrops('treasure');
-  for (const [id, qty] of Object.entries(resourceDrops)) {
-    materials[id] = (materials[id] || 0) + qty * mult;
+  // Camp resources (wood/cloth/stone) are NOT dropped by treasure — they come
+  // exclusively from quests (see Loot Source Doctrine in gamedetails.md).
+
+  // Stamina Potion — rare treasure drop. Chance scales +1% per floor and is
+  // capped at 10% (so floors 1→10 range from 1%→10%). A Double Treasure
+  // outcome grants 2 instead of 1, matching how other quantities are doubled.
+  const staminaChance = Math.min(0.10, floorNumber * 0.01);
+  if (Math.random() < staminaChance) {
+    consumables.stamina_potion = 1 * mult;
+  }
+
+  // Potion — medium treasure drop, available on every floor. Chance scales with
+  // floor (+2.5% per floor over a 15% base) and is capped at 40%. Grants 1–3.
+  const potionChance = Math.min(0.40, 0.15 + floorNumber * 0.025);
+  if (Math.random() < potionChance) {
+    consumables.potion = randomInRange(1, 3) * mult;
+  }
+
+  // Super Potion — small bonus drop on deeper floors (6–10) only. Grants 1–2.
+  if (floorNumber >= 6 && Math.random() < 0.12) {
+    consumables.super_potion = randomInRange(1, 2) * mult;
   }
 
   return { gold, materials, consumables };
-}
-
-// ============================================================================
-// 5) rollResourceDrops — roll for camp resources (wood / cloth / stone)
-// ============================================================================
-/**
- * Camp resources drop in small quantities from combat wins and treasure. At
- * most one resource type is granted per roll, keeping them scarce.
- *
- * @param {'combat'|'treasure'} source
- * @returns {{ wood?: number, cloth?: number, stone?: number }} sparse material map
- */
-export function rollResourceDrops(source = 'combat') {
-  // Chance that ANY resource drops from this event.
-  const chance = source === 'treasure' ? 0.4 : 0.25;
-  if (Math.random() >= chance) return {};
-
-  const types = ['wood', 'cloth', 'stone'];
-  const picked = types[Math.floor(Math.random() * types.length)];
-
-  // Treasure yields slightly more than a combat win.
-  const qty = source === 'treasure' ? randomInRange(1, 2) : 1;
-
-  return { [picked]: qty };
 }
 
 // ============================================================================

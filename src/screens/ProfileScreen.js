@@ -217,6 +217,7 @@ const SLOT_CONFIG = [
   { key: 'boots', label: 'Boots', emoji: '👢' },
   { key: 'weapon', label: 'Weapon', emoji: '⚔️' },
   { key: 'trinket', label: 'Trinket', emoji: '💎' },
+  { key: 'trinket2', label: 'Trinket', emoji: '💎' },
 ];
 
 // Slot keys laid out per row of the equipment grid (2 cards per row)
@@ -224,7 +225,7 @@ const SLOT_ROWS = [
   ['head', 'chest'],
   ['gloves', 'legs'],
   ['weapon', 'boots'],
-  ['trinket'],
+  ['trinket', 'trinket2'],
 ];
 
 export default function ProfileScreen() {
@@ -499,8 +500,12 @@ export default function ProfileScreen() {
     const gearId = hero.gear?.[slotKey];
     const gearDef = gearId ? GEAR[gearId] : null;
     const ownedIds = hero.inventory?.craftedGear || [];
+    // The two trinket slots share a type — exclude whatever is equipped in the
+    // sibling trinket slot so the same piece can't be equipped in both.
+    const siblingSlot = slotKey === 'trinket' ? 'trinket2' : (slotKey === 'trinket2' ? 'trinket' : null);
+    const siblingGearId = siblingSlot ? hero.gear?.[siblingSlot] : null;
     const candidates = getGearForSlot(slotKey)
-      .filter((item) => ownedIds.includes(item.id))
+      .filter((item) => ownedIds.includes(item.id) && item.id !== siblingGearId)
       .map((item) => ({
         ...item,
         isEquipped: item.id === gearId,
