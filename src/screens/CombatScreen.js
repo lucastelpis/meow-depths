@@ -52,7 +52,7 @@ import { ZONES } from '../data/zones';
 import { ENEMIES, STAR_MULTIPLIERS } from '../data/enemies';
 import { SKILLS, SKILL_SPRITE_FRAMES } from '../data/skills';
 import { SKILL_STAT_LABELS, formatSkillStatValue } from './SkillTreeScreen';
-import { CONSUMABLES, MATERIALS, GEAR } from '../data/gear';
+import { CONSUMABLES, MATERIALS } from '../data/gear';
 import AnimatedSprite from '../components/AnimatedSprite';
 import Button from '../components/ui/Button';
 import ResourceBar from '../components/ui/ResourceBar';
@@ -78,7 +78,7 @@ import {
   executeCriticalWind,
   displayDamage,
 } from '../logic/combatEngine';
-import { calculateEncounterLoot, rollResourceDrops } from '../logic/lootEngine';
+import { calculateEncounterLoot } from '../logic/lootEngine';
 import { calculateEffectiveStats, checkLevelUp, getStanceBonus, applyHealingEfficiency } from '../logic/progressionEngine';
 import { useGame } from '../state/gameState';
 import theme from '../constants/theme';
@@ -560,6 +560,8 @@ export default function CombatScreen() {
   const [cooldowns, setCooldowns] = useState(() => initialCombatData?.cooldowns || {});
   const [combatLog, setCombatLog] = useState([]);
   const [lootResult, setLootResult] = useState(null);
+  // Info popup for a tapped loot item: { name, description, spritesheet?, frameIndex? }
+  const [lootInfoItem, setLootInfoItem] = useState(null);
   const [turnCount, setTurnCount] = useState(0);
   const [runConsumables, setRunConsumables] = useState(() => initialCombatData?.consumables || []);
   const [narratorText, setNarratorText] = useState(() => randomPick(NARRATOR_LINES));
@@ -1900,6 +1902,41 @@ export default function CombatScreen() {
 
 
   // =========================================================================
+  // Builds the { name, description } shown in the loot item info popup.
+  const getLootItemInfo = (itemId) => {
+    if (itemId === 'gold') {
+      return {
+        name: 'Gold',
+        description: 'Currency. Spend it at the Shop on gear and consumables.',
+        spritesheet: 'icons-1',
+        frameIndex: 11,
+      };
+    }
+    if (itemId === 'xp') {
+      return {
+        name: 'Experience (XP)',
+        description: 'Earned in combat. Fills your level bar — reach the next level to grow stronger.',
+        spritesheet: 'icons-map',
+        frameIndex: 146,
+      };
+    }
+    const def = MATERIALS[itemId];
+    let description;
+    if (itemId === 'wood' || itemId === 'cloth' || itemId === 'stone') {
+      description = 'Camp resource. Used to build and upgrade Camp Improvements.';
+    } else if (itemId.includes('core')) {
+      description = 'Rare crystal core. Used for top-tier skill upgrades and Camp facilities.';
+    } else {
+      description = 'Crystal material. Used to unlock and upgrade skills at Camp.';
+    }
+    return {
+      name: def?.name || itemId.replace(/_/g, ' '),
+      description,
+      spritesheet: def?.spritesheet,
+      frameIndex: def?.frameIndex,
+    };
+  };
+
   // VICTORY — calculate loot, dispatch to global state
   // =========================================================================
   const handleVictory = () => {
@@ -1909,12 +1946,8 @@ export default function CombatScreen() {
       state.currentRun.floorNumber,
     );
 
-    // Camp resources (wood/cloth/stone) drop in small quantities on a win.
-    const resourceDrops = rollResourceDrops('combat');
-    for (const [id, qty] of Object.entries(resourceDrops)) {
-      loot.materials[id] = (loot.materials[id] || 0) + qty;
-    }
-
+    // Camp resources (wood/cloth/stone) are NOT dropped by combat — they come
+    // exclusively from quests (see Loot Source Doctrine in gamedetails.md).
     setLootResult(loot);
 
     // Dispatch rewards to global state (Run bag instead of permanent inventory)
@@ -2374,20 +2407,10 @@ export default function CombatScreen() {
             </Svg>
 
             <View style={styles.modalContentInner}>
-              {(() => {
-                const bagId = state.hero.gear?.storage;
-                const bagDef = bagId ? GEAR[bagId] : null;
-                return (
-                  <View style={styles.modalTitleRow}>
-                    <ItemSprite
-                      spritesheet={bagDef?.spritesheet || 'storages-1'}
-                      frameIndex={bagDef?.frameIndex ?? 0}
-                      displaySize={24}
-                    />
-                    <Text style={styles.modalTitle}>Supplies Bag</Text>
-                  </View>
-                );
-              })()}
+              <View style={styles.modalTitleRow}>
+                <ItemSprite spritesheet="storages-1" frameIndex={0} displaySize={24} />
+                <Text style={styles.modalTitle}>Supplies Bag</Text>
+              </View>
 
               <ScrollView style={styles.modalItemScroll} showsVerticalScrollIndicator={false}>
                 {runConsumables.length === 0 ? (
@@ -2523,6 +2546,14 @@ export default function CombatScreen() {
               <View style={styles.lootChipsContainer}>
                 {lootResult.xp > 0 && (
                   <View style={styles.lootItemChip}>
+                    <TouchableOpacity
+                      style={styles.lootChipInfoBadge}
+                      onPress={() => setLootInfoItem(getLootItemInfo('xp'))}
+                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={styles.lootChipInfoBadgeText}>?</Text>
+                    </TouchableOpacity>
                     <ItemSprite spritesheet="icons-map" frameIndex={146} displaySize={32} />
                     <Text style={styles.lootChipQty}>{lootResult.xp} XP</Text>
                     <Text style={styles.lootChipLabel}>XP</Text>
@@ -2530,6 +2561,14 @@ export default function CombatScreen() {
                 )}
                 {lootResult.gold > 0 && (
                   <View style={styles.lootItemChip}>
+                    <TouchableOpacity
+                      style={styles.lootChipInfoBadge}
+                      onPress={() => setLootInfoItem(getLootItemInfo('gold'))}
+                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={styles.lootChipInfoBadgeText}>?</Text>
+                    </TouchableOpacity>
                     <ItemSprite spritesheet="icons-1" frameIndex={11} displaySize={32} />
                     <Text style={styles.lootChipQty}>{lootResult.gold} G</Text>
                     <Text style={styles.lootChipLabel}>Gold</Text>
@@ -2539,6 +2578,14 @@ export default function CombatScreen() {
                   const def = MATERIALS[itemId];
                   return (
                     <View key={itemId} style={styles.lootItemChip}>
+                      <TouchableOpacity
+                        style={styles.lootChipInfoBadge}
+                        onPress={() => setLootInfoItem(getLootItemInfo(itemId))}
+                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                        activeOpacity={0.7}
+                      >
+                        <Text style={styles.lootChipInfoBadgeText}>?</Text>
+                      </TouchableOpacity>
                       {def ? (
                         <ItemSprite spritesheet={def.spritesheet} frameIndex={def.frameIndex} displaySize={32} />
                       ) : (
@@ -2585,6 +2632,32 @@ export default function CombatScreen() {
           </View>
         </View>
       )}
+
+      {/* ── Loot item info popup (tapping a reward box's ?) ──────────────── */}
+      <Modal visible={!!lootInfoItem} transparent animationType="fade" onRequestClose={() => setLootInfoItem(null)}>
+        <TouchableOpacity activeOpacity={1} style={styles.cozyOverlay} onPress={() => setLootInfoItem(null)}>
+          <View style={[styles.cozyFrame, { maxWidth: 320 }, theme.SHADOWS.cardShadow]}>
+            <View style={styles.cozyParchment}>
+              <View style={styles.cozyBevel} pointerEvents="none" />
+
+              {lootInfoItem?.spritesheet != null && lootInfoItem?.frameIndex != null && (
+                <View style={{ marginBottom: 8 }}>
+                  <ItemSprite spritesheet={lootInfoItem.spritesheet} frameIndex={lootInfoItem.frameIndex} displaySize={44} />
+                </View>
+              )}
+
+              <Text style={styles.lootInfoName}>{lootInfoItem?.name}</Text>
+              <Text style={styles.lootInfoDesc}>{lootInfoItem?.description}</Text>
+
+              <TouchableOpacity activeOpacity={0.85} onPress={() => setLootInfoItem(null)} style={styles.cozyButton}>
+                <View style={styles.cozyButtonInner}>
+                  <Text style={styles.cozyButtonText}>Got it</Text>
+                </View>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </TouchableOpacity>
+      </Modal>
 
       {/* ── Defeat Overlay ───────────────────────────────────────────── */}
       {combatPhase === 'defeat' && (
@@ -4547,6 +4620,43 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     marginTop: 2,
     textAlign: 'center',
+  },
+  lootChipInfoBadge: {
+    position: 'absolute',
+    top: 2,
+    right: 2,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: '#6E4524',
+    borderColor: '#ECD8A6',
+    borderWidth: 1.5,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 2,
+    elevation: 3,
+  },
+  lootChipInfoBadgeText: {
+    fontFamily: 'Silkscreen-Regular',
+    fontSize: 9,
+    lineHeight: 12,
+    color: '#F4E6C0',
+    textAlign: 'center',
+  },
+  lootInfoName: {
+    fontFamily: 'Silkscreen-Regular',
+    fontSize: 13,
+    color: '#3A2210',
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  lootInfoDesc: {
+    fontFamily: 'Silkscreen-Regular',
+    fontSize: 10,
+    lineHeight: 16,
+    color: '#6A4A2A',
+    textAlign: 'center',
+    marginBottom: 14,
   },
 
   // ── Level up ──────────────────────────────────────────────────────────────

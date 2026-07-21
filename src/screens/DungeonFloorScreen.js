@@ -30,9 +30,11 @@ import Svg, { Defs, RadialGradient, LinearGradient, Stop, Rect, Line, Path } fro
 import { useGame } from '../state/gameState';
 import { ZONES, getFloorCompletionReward } from '../data/zones';
 import { CONSUMABLES, MATERIALS } from '../data/gear';
+import { getItemInfo } from '../data/itemInfo';
 import { calculateEffectiveStats } from '../logic/progressionEngine';
 import { getImprovementLevel, getStorageCapacityForLevel } from '../data/improvements';
 import ItemSprite from '../components/ItemSprite';
+import ParchmentModal from '../components/ui/ParchmentModal';
 import { isQuestUnlocked } from '../data/quests';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -226,6 +228,8 @@ export default function DungeonFloorScreen() {
 
   const [noConsumablesModalVisible, setNoConsumablesModalVisible] = useState(false);
   const [noStaminaModalVisible, setNoStaminaModalVisible] = useState(false);
+  // Info popup for a tapped reward chip: { title, desc }
+  const [rewardInfo, setRewardInfo] = useState(null);
 
   const executeStartRun = () => {
     const carried = [];
@@ -651,7 +655,7 @@ export default function DungeonFloorScreen() {
                 {/* Supplies Items List */}
                 <ScrollView style={styles.inlineScroll} showsVerticalScrollIndicator={true}>
                   {maxSlots === 0 ? (
-                    <Text style={styles.emptySuppliesText}>No bag slots. Equip a belt/bag in Profile loadout!</Text>
+                    <Text style={styles.emptySuppliesText}>No bag slots. Upgrade Storage at the Camp to carry supplies!</Text>
                   ) : state.hero.inventory.consumables.filter(c => c.quantity > 0 && c.id !== 'stamina_potion').length === 0 ? (
                     <Text style={styles.emptySuppliesText}>No supplies owned. Purchase potions at the Shop!</Text>
                   ) : (
@@ -836,18 +840,28 @@ export default function DungeonFloorScreen() {
                       <View style={styles.modalRewardsRow}>
                         {/* Gold Reward */}
                         {activeQuestForFloor.rewards?.gold > 0 && (
-                          <View style={styles.modalRewardCard}>
+                          <TouchableOpacity
+                            style={styles.modalRewardCard}
+                            activeOpacity={0.7}
+                            onPress={() => setRewardInfo(getItemInfo('gold'))}
+                          >
                             <ItemSprite spritesheet="icons-1" frameIndex={11} displaySize={24} />
                             <Text style={styles.modalRewardText}>{activeQuestForFloor.rewards.gold} G</Text>
-                          </View>
+                            <View style={styles.rewardInfoTag}><Text style={styles.rewardInfoTagText}>?</Text></View>
+                          </TouchableOpacity>
                         )}
 
                         {/* XP Reward */}
                         {activeQuestForFloor.rewards?.xp > 0 && (
-                          <View style={styles.modalRewardCard}>
+                          <TouchableOpacity
+                            style={styles.modalRewardCard}
+                            activeOpacity={0.7}
+                            onPress={() => setRewardInfo(getItemInfo('xp'))}
+                          >
                             <ItemSprite spritesheet="icons-map" frameIndex={146} displaySize={24} />
                             <Text style={styles.modalRewardText}>{activeQuestForFloor.rewards.xp} XP</Text>
-                          </View>
+                            <View style={styles.rewardInfoTag}><Text style={styles.rewardInfoTagText}>?</Text></View>
+                          </TouchableOpacity>
                         )}
 
                         {/* Consumables Rewards */}
@@ -857,10 +871,16 @@ export default function DungeonFloorScreen() {
                             const isSuper = itemId.includes('super');
                             const frame = isMega ? 4 : (isSuper ? 3 : 2); // Potion frames
                             return (
-                              <View key={itemId} style={styles.modalRewardCard}>
+                              <TouchableOpacity
+                                key={itemId}
+                                style={styles.modalRewardCard}
+                                activeOpacity={0.7}
+                                onPress={() => setRewardInfo(getItemInfo(itemId))}
+                              >
                                 <ItemSprite spritesheet="icons-1" frameIndex={frame} displaySize={24} />
                                 <Text style={styles.modalRewardText}>{qty}x {itemId.replace('_', ' ').toUpperCase()}</Text>
-                              </View>
+                                <View style={styles.rewardInfoTag}><Text style={styles.rewardInfoTagText}>?</Text></View>
+                              </TouchableOpacity>
                             );
                           })}
                       </View>
@@ -885,139 +905,124 @@ export default function DungeonFloorScreen() {
           </Pressable>
         </Modal>
 
-        {/* ── No Consumables Warning Modal ── */}
-        <Modal
-          visible={noConsumablesModalVisible}
-          transparent={true}
-          animationType="fade"
-          onRequestClose={() => setNoConsumablesModalVisible(false)}
+        {/* ── Reward Item Info Popup (tapping a reward chip's ?) ── */}
+        <ParchmentModal
+          visible={!!rewardInfo}
+          onClose={() => setRewardInfo(null)}
+          title={rewardInfo?.title || ''}
+          maxWidth={320}
         >
-          <Pressable
-            style={styles.modalOverlay}
-            onPress={() => setNoConsumablesModalVisible(false)}
-          >
-            <View style={styles.modalContentWrapper}>
-              <Pressable style={styles.modalContent} onPress={(e) => e.stopPropagation()}>
-                {/* Modal Header */}
-                <View style={styles.modalHeader}>
-                  <ItemSprite spritesheet="icons-map" frameIndex={49} displaySize={24} />
-                  <Text style={styles.modalTitle}>No Supplies packed!</Text>
-                </View>
+          <Text style={styles.pmDesc}>{rewardInfo?.desc}</Text>
+          <View style={styles.pmBtnCol}>
+            <TouchableOpacity
+              activeOpacity={0.85}
+              onPress={() => setRewardInfo(null)}
+              style={styles.pmBtnSecondaryOuter}
+            >
+              <View style={styles.pmBtnSecondaryInner}>
+                <Text style={styles.pmBtnSecondaryText}>GOT IT</Text>
+              </View>
+            </TouchableOpacity>
+          </View>
+        </ParchmentModal>
 
-                <View style={styles.modalDivider} />
+        {/* ── No Consumables Warning Modal ── */}
+        <ParchmentModal
+          visible={noConsumablesModalVisible}
+          onClose={() => setNoConsumablesModalVisible(false)}
+          title="NO SUPPLIES"
+        >
+          <View style={styles.pmIconWrap}>
+            <ItemSprite spritesheet="icons-map" frameIndex={99} displaySize={40} />
+          </View>
 
-                {/* Warning Text */}
-                <Text style={styles.modalQuestDesc}>
-                  You are starting the expedition without packing any consumables.
-                  {"\n\n"}
-                  Are you sure you want to proceed unprepared?
-                </Text>
+          <Text style={styles.pmDesc}>
+            You are starting the expedition without packing any consumables.
+            {"\n\n"}
+            Are you sure you want to proceed unprepared?
+          </Text>
 
-                {/* Action Buttons Row */}
-                <View style={styles.warningModalBtnRow}>
-                  {/* Cancel / Go Back */}
-                  <TouchableOpacity
-                    activeOpacity={0.8}
-                    onPress={() => setNoConsumablesModalVisible(false)}
-                    style={[styles.warningBtnOuter, { borderColor: '#84735B' }]}
-                  >
-                    <View style={[styles.warningBtnInner, { backgroundColor: '#4F3C1E' }]}>
-                      <Text style={styles.warningBtnText}>GO BACK</Text>
-                    </View>
-                  </TouchableOpacity>
+          <View style={styles.pmBtnRow}>
+            <TouchableOpacity
+              activeOpacity={0.85}
+              onPress={() => setNoConsumablesModalVisible(false)}
+              style={[styles.pmBtnSecondaryOuter, { flex: 1 }]}
+            >
+              <View style={styles.pmBtnSecondaryInner}>
+                <Text style={styles.pmBtnSecondaryText}>GO BACK</Text>
+              </View>
+            </TouchableOpacity>
 
-                  {/* Confirm / Start anyway */}
-                  <TouchableOpacity
-                    activeOpacity={0.8}
-                    onPress={() => {
-                      setNoConsumablesModalVisible(false);
-                      executeStartRun();
-                    }}
-                    style={[styles.warningBtnOuter, { borderColor: '#A61C1C' }]}
-                  >
-                    <View style={[styles.warningBtnInner, { backgroundColor: '#590D0E', borderColor: '#A61C1C' }]}>
-                      <Text style={[styles.warningBtnText, { color: '#FFF3DA' }]}>PROCEED</Text>
-                    </View>
-                  </TouchableOpacity>
-                </View>
-              </Pressable>
-            </View>
-          </Pressable>
-        </Modal>
+            <TouchableOpacity
+              activeOpacity={0.85}
+              onPress={() => {
+                setNoConsumablesModalVisible(false);
+                executeStartRun();
+              }}
+              style={[styles.pmBtnDangerOuter, { flex: 1 }]}
+            >
+              <View style={styles.pmBtnDangerInner}>
+                <Text style={styles.pmBtnDangerText}>PROCEED</Text>
+              </View>
+            </TouchableOpacity>
+          </View>
+        </ParchmentModal>
 
         {/* ── No Stamina Warning Modal ── */}
-        <Modal
+        <ParchmentModal
           visible={noStaminaModalVisible}
-          transparent={true}
-          animationType="fade"
-          onRequestClose={() => setNoStaminaModalVisible(false)}
+          onClose={() => setNoStaminaModalVisible(false)}
+          title="OUT OF STAMINA"
         >
-          <Pressable
-            style={styles.modalOverlay}
-            onPress={() => setNoStaminaModalVisible(false)}
-          >
-            <View style={styles.staminaModalContentWrapper}>
-              <Pressable style={styles.staminaModalContent} onPress={(e) => e.stopPropagation()}>
-                {/* Modal Header */}
-                <View style={styles.modalHeader}>
-                  <ItemSprite spritesheet="icons-map" frameIndex={131} displaySize={24} />
-                  <Text style={styles.staminaModalTitle}>Out of Stamina!</Text>
-                </View>
+          <View style={styles.pmIconWrap}>
+            <ItemSprite spritesheet="icons-map" frameIndex={134} displaySize={40} />
+          </View>
 
-                <View style={styles.modalDivider} />
+          <Text style={styles.pmDesc}>
+            You don't have enough Stamina to start this expedition.
+          </Text>
 
-                {/* Warning Text */}
-                <Text style={styles.staminaModalQuestDesc}>
-                  You do not have enough Stamina to start this expedition.
-                </Text>
+          <View style={styles.pmStaminaInfoBox}>
+            <Text style={styles.pmStaminaInfoBoxText}>
+              • 1 charge is consumed per expedition.
+              {"\n\n"}
+              • Base recovery: 1 charge every 8 hours. Pauses when full (3/3).
+              {"\n\n"}
+              • Special items can speed up recovery.
+            </Text>
+          </View>
 
-                <View style={styles.staminaInfoBox}>
-                  <Text style={styles.staminaInfoBoxText}>
-                    • 1 charge is consumed per expedition.
-                    {"\n\n"}
-                    • Base recovery: 1 charge every 8 hours. Pauses when full (3/3).
-                    {"\n\n"}
-                    • Special items can speed up recovery.
+          <View style={styles.pmBtnCol}>
+            {staminaPotionCount > 0 && (
+              <TouchableOpacity
+                activeOpacity={0.85}
+                onPress={() => {
+                  dispatch({ type: 'USE_CONSUMABLE', payload: { consumableId: 'stamina_potion' } });
+                  setNoStaminaModalVisible(false);
+                  Alert.alert('⚡ Stamina Restored!', 'You recovered 1 stamina charge.');
+                }}
+                style={styles.pmBtnPrimaryOuter}
+              >
+                <View style={styles.pmBtnPrimaryInner}>
+                  <ItemSprite spritesheet="consumables-1" frameIndex={5} displaySize={18} />
+                  <Text style={styles.pmBtnPrimaryText}>
+                    USE STAMINA POTION ({staminaPotionCount})
                   </Text>
                 </View>
+              </TouchableOpacity>
+            )}
 
-                {/* Action Buttons Row */}
-                <View style={{ gap: 8, marginTop: 10 }}>
-                  {staminaPotionCount > 0 && (
-                    <TouchableOpacity
-                      activeOpacity={0.8}
-                      onPress={() => {
-                        dispatch({ type: 'USE_CONSUMABLE', payload: { consumableId: 'stamina_potion' } });
-                        setNoStaminaModalVisible(false);
-                        Alert.alert('⚡ Stamina Restored!', 'You recovered 1 stamina charge.');
-                      }}
-                      style={[styles.warningBtnOuter, { borderColor: '#b98c33ff', width: '100%' }]}
-                    >
-                      <View style={[styles.warningBtnInner, { backgroundColor: '#8E5A1D', borderColor: '#b98c33ff' }]}>
-                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, justifyContent: 'center' }}>
-                          <ItemSprite spritesheet="consumables-1" frameIndex={5} displaySize={18} />
-                          <Text style={[styles.warningBtnText, { color: '#FFF3DA', fontWeight: 'bold' }]}>
-                            USE STAMINA POTION ({staminaPotionCount})
-                          </Text>
-                        </View>
-                      </View>
-                    </TouchableOpacity>
-                  )}
-
-                  <TouchableOpacity
-                    activeOpacity={0.8}
-                    onPress={() => setNoStaminaModalVisible(false)}
-                    style={[styles.warningBtnOuter, { borderColor: '#84735B', width: '100%' }]}
-                  >
-                    <View style={[styles.warningBtnInner, { backgroundColor: '#4F3C1E' }]}>
-                      <Text style={styles.warningBtnText}>OK</Text>
-                    </View>
-                  </TouchableOpacity>
-                </View>
-              </Pressable>
-            </View>
-          </Pressable>
-        </Modal>
+            <TouchableOpacity
+              activeOpacity={0.85}
+              onPress={() => setNoStaminaModalVisible(false)}
+              style={styles.pmBtnSecondaryOuter}
+            >
+              <View style={styles.pmBtnSecondaryInner}>
+                <Text style={styles.pmBtnSecondaryText}>OK</Text>
+              </View>
+            </TouchableOpacity>
+          </View>
+        </ParchmentModal>
       </View>
     </View>
   );
@@ -1646,6 +1651,21 @@ const styles = StyleSheet.create({
     fontSize: 20,
     color: '#FFE39B',
   },
+  rewardInfoTag: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(234, 217, 186, 0.35)',
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  rewardInfoTagText: {
+    fontFamily: 'Silkscreen-Regular',
+    fontSize: 9,
+    color: '#EAD9BA',
+  },
   modalFooter: {
     alignItems: 'center',
   },
@@ -1672,75 +1692,110 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: '#FFF3DA',
   },
-  warningModalBtnRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: 12,
-    marginTop: 10,
+  // Shared ParchmentModal content styles (stamina / no-supplies / reward info)
+  pmIconWrap: {
+    marginBottom: 8,
   },
-  warningBtnOuter: {
-    flex: 1,
-    height: 38,
-    borderRadius: 8,
-    borderWidth: 1.5,
-    padding: 2,
-    backgroundColor: '#000',
-  },
-  warningBtnInner: {
-    flex: 1,
-    borderRadius: 5,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  warningBtnText: {
+  pmDesc: {
     fontFamily: 'Jersey10-Regular',
-    fontSize: 16,
-    color: '#EAD9BA',
+    fontSize: 19,
+    color: '#4A2E14',
+    textAlign: 'center',
+    lineHeight: 23,
+    marginBottom: 14,
   },
-  staminaModalContentWrapper: {
-    width: '92%',
-    maxWidth: 380,
-    borderWidth: 2,
-    borderColor: '#84735B',
-    borderRadius: 16,
-    backgroundColor: '#4F3C1E',
-    padding: 3,
-  },
-  staminaModalContent: {
-    borderWidth: 1.5,
-    borderColor: '#4F856C',
-    borderRadius: 12,
-    backgroundColor: '#1B4030',
-    padding: 24,
-  },
-  staminaModalTitle: {
-    fontFamily: 'Jersey10-Regular',
-    fontSize: 28,
-    color: '#FFE39B',
-    marginLeft: 8,
-  },
-  staminaModalQuestDesc: {
-    fontFamily: 'Jersey10-Regular',
-    fontSize: 20,
-    color: '#EAD9BA',
-    lineHeight: 24,
-    marginBottom: 20,
-  },
-  staminaInfoBox: {
-    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+  pmStaminaInfoBox: {
+    width: '100%',
+    backgroundColor: '#E5D3A2',
     borderRadius: 8,
     padding: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(212, 167, 84, 0.2)',
+    borderWidth: 1.5,
+    borderColor: '#C9A86A',
     marginBottom: 16,
   },
-  staminaInfoBoxText: {
+  pmStaminaInfoBoxText: {
+    fontFamily: 'Jersey10-Regular',
+    fontSize: 15,
+    color: '#6A4A2A',
+    lineHeight: 17,
+  },
+  pmBtnCol: {
+    width: '100%',
+    gap: 8,
+  },
+  pmBtnRow: {
+    width: '100%',
+    flexDirection: 'row',
+    gap: 8,
+  },
+  pmBtnPrimaryOuter: {
+    height: 40,
+    borderRadius: 8,
+    borderWidth: 1.5,
+    borderColor: '#C79A3A',
+    padding: 2,
+    backgroundColor: '#5A3A12',
+  },
+  pmBtnPrimaryInner: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    borderRadius: 5,
+    backgroundColor: '#8E5A1D',
+    borderWidth: 1,
+    borderColor: '#C79A3A',
+  },
+  pmBtnPrimaryText: {
     fontFamily: 'Jersey10-Regular',
     fontSize: 16,
-    color: '#FFE39B',
-    lineHeight: 18,
+    color: '#FFF3DA',
+    fontWeight: 'bold',
+  },
+  pmBtnSecondaryOuter: {
+    height: 40,
+    borderRadius: 8,
+    borderWidth: 1.5,
+    borderColor: '#84735B',
+    padding: 2,
+    backgroundColor: '#2C2013',
+  },
+  pmBtnSecondaryInner: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 5,
+    backgroundColor: '#4F3C1E',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+  },
+  pmBtnSecondaryText: {
+    fontFamily: 'Jersey10-Regular',
+    fontSize: 16,
+    color: '#EAD9BA',
+  },
+  pmBtnDangerOuter: {
+    height: 40,
+    borderRadius: 8,
+    borderWidth: 1.5,
+    borderColor: '#A61C1C',
+    padding: 2,
+    backgroundColor: '#3A0B0C',
+  },
+  pmBtnDangerInner: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 5,
+    backgroundColor: '#590D0E',
+    borderWidth: 1,
+    borderColor: '#A61C1C',
+  },
+  pmBtnDangerText: {
+    fontFamily: 'Jersey10-Regular',
+    fontSize: 16,
+    color: '#FFF3DA',
   },
   cozyStaminaCostTag: {
     flexDirection: 'row',

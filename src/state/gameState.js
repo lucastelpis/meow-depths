@@ -107,7 +107,8 @@ const initialState = {
       legs:     null,                // equipped legs gear ID
       gloves:   null,                // equipped gloves gear ID
       boots:    null,                // equipped boots gear ID
-      trinket:  null,                // equipped trinket gear ID
+      trinket:  null,                // equipped trinket gear ID (slot 1)
+      trinket2: null,                // equipped trinket gear ID (slot 2)
     },
     inventory: {
       materials: {},          // { itemId: quantity } — crafting components
@@ -301,7 +302,7 @@ function baseGameReducer(state, action) {
 
     // -----------------------------------------------------------------------
     // EQUIP_GEAR — put a gear piece in its slot
-    // Payload: { slot: 'weapon'|'head'|'chest'|'legs'|'gloves'|'boots'|'trinket'|'storage', gearId: string }
+    // Payload: { slot: 'weapon'|'head'|'chest'|'legs'|'gloves'|'boots'|'trinket'|'trinket2', gearId: string }
     // -----------------------------------------------------------------------
     case 'EQUIP_GEAR': {
       const { slot, gearId } = action.payload;
@@ -309,9 +310,18 @@ function baseGameReducer(state, action) {
       const oldMaxHpBonus = (oldGearId && GEAR[oldGearId]?.stats?.maxHp) || 0;
       const newMaxHpBonus = (gearId && GEAR[gearId]?.stats?.maxHp) || 0;
       const maxHpDelta = newMaxHpBonus - oldMaxHpBonus;
+      const newGear = { ...state.hero.gear, [slot]: gearId };
+      // A single gear instance can only occupy one slot. If this same id is
+      // already equipped elsewhere (the two trinket slots share a type), clear
+      // it from the other slot so it can't be equipped twice.
+      if (gearId) {
+        for (const s of Object.keys(newGear)) {
+          if (s !== slot && newGear[s] === gearId) newGear[s] = null;
+        }
+      }
       const updatedHero = {
         ...state.hero,
-        gear: { ...state.hero.gear, [slot]: gearId },
+        gear: newGear,
       };
       const newEffectiveMaxHp = calculateEffectiveStats(updatedHero).maxHp;
       const newHp = state.currentRun.active ? Math.min(newEffectiveMaxHp, state.hero.hp + maxHpDelta) : newEffectiveMaxHp;
@@ -1573,6 +1583,17 @@ function baseGameReducer(state, action) {
         }
       }
 
+      // Gear rewards — campaign quests grant named signature equipment (the
+      // drop-only weapons/belts). Add each to craftedGear if not already owned.
+      let newCraftedGear = state.hero.inventory.craftedGear;
+      if (quest.rewards.gear) {
+        const owned = new Set(newCraftedGear);
+        const toAdd = quest.rewards.gear.filter(id => GEAR[id] && !owned.has(id));
+        if (toAdd.length > 0) {
+          newCraftedGear = [...newCraftedGear, ...toAdd];
+        }
+      }
+
       return {
         ...state,
         hero: {
@@ -1582,6 +1603,7 @@ function baseGameReducer(state, action) {
             ...state.hero.inventory,
             materials: newMaterials,
             consumables: newConsumables,
+            craftedGear: newCraftedGear,
           }
         },
         progress: {
@@ -1661,20 +1683,19 @@ export function GameProvider({ children }) {
         // that were added after the save was created (forward-compatibility).
         const merged = deepMerge(initialState, savedState);
 
-        // Migrate old 3-slot gear shape ({ weapon, armor, trinket }) or 8-slot ({ trinket1, trinket2 }) to the current 7-slot shape.
+        // Migrate old gear shapes to the current 8-slot shape
+        // ({ weapon, head, chest, legs, gloves, boots, trinket, trinket2 }).
         if (merged.hero?.gear) {
           const gear = merged.hero.gear;
           if ('armor' in gear) {
             if (gear.armor) gear.chest = gear.armor;
             delete gear.armor;
           }
-          // Migrate old trinket1 to trinket
+          // Migrate old trinket1 to trinket (trinket2 is a valid slot again and
+          // is preserved / defaulted to null via deepMerge with initialState).
           if ('trinket1' in gear) {
             gear.trinket = gear.trinket1;
             delete gear.trinket1;
-          }
-          if ('trinket2' in gear) {
-            delete gear.trinket2;
           }
           // The Bag system is retired: the storage slot no longer exists and any
           // equipped backpack/pouch is dropped from it.
@@ -1683,6 +1704,9 @@ export function GameProvider({ children }) {
           }
           if (gear.trinket === 'leather_bag') {
             gear.trinket = null;
+          }
+          if (gear.trinket2 === 'leather_bag') {
+            gear.trinket2 = null;
           }
         }
 

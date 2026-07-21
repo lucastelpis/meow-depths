@@ -241,8 +241,8 @@ export function calculateEffectiveStats(hero, skillDefinitions = SKILLS, runBuff
   const passives = {};
 
   // --- 1. Gear bonuses -----------------------------------------------------
-  // hero.gear looks like: { weapon, head, chest, legs, gloves, boots, trinket, storage }
-  const gearSlots = ['weapon', 'head', 'chest', 'legs', 'gloves', 'boots', 'trinket'];
+  // hero.gear looks like: { weapon, head, chest, legs, gloves, boots, trinket, trinket2 }
+  const gearSlots = ['weapon', 'head', 'chest', 'legs', 'gloves', 'boots', 'trinket', 'trinket2'];
 
   let gearHp = 0;
   for (const slot of gearSlots) {
@@ -495,7 +495,7 @@ export function getActiveSetBonuses(gear) {
   // Collect all equipped gear ids into a flat array for easy checking
   const equippedIds = [
     gear.weapon, gear.head, gear.chest, gear.legs,
-    gear.gloves, gear.boots, gear.trinket, gear.storage,
+    gear.gloves, gear.boots, gear.trinket, gear.trinket2,
   ].filter(Boolean);
 
   // Check each set bonus definition

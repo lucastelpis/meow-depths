@@ -40,7 +40,7 @@ import { useGame } from '../state/gameState';
 import { useFocusEffect } from '@react-navigation/native';
 import { ZONES, getFloorCompletionReward } from '../data/zones';
 import { ZONE_COMBAT_POOLS } from '../logic/dungeonGenerator';
-import { MATERIALS, CONSUMABLES, GEAR } from '../data/gear';
+import { MATERIALS, CONSUMABLES } from '../data/gear';
 import { getNote, NOTE_SPRITE } from '../data/notes';
 import { calculateEffectiveStats, getXpForLevel, applyHealingEfficiency } from '../logic/progressionEngine';
 import { generateTreasureDrops } from '../logic/lootEngine';
@@ -336,6 +336,8 @@ export default function DungeonMapScreen({ navigation }) {
   // Local modal states
   const [activeModal, setActiveModal] = useState(null); // 'rest' | 'treasure' | 'gamble' | 'death' | 'flee' | 'bag'
   const [modalData, setModalData] = useState(null);
+  // Info popup for a tapped loot item: { name, description, spritesheet?, frameIndex? }
+  const [infoItem, setInfoItem] = useState(null);
   // Themed replacement for native Alert popups: { title, message, spritesheet?, frameIndex?, highlight? }
   const [notice, setNotice] = useState(null);
 
@@ -1065,6 +1067,50 @@ export default function DungeonMapScreen({ navigation }) {
     return <View style={styles.gridContainer}>{rows}</View>;
   };
 
+  // Builds the { name, description } shown in the loot item info popup.
+  const getLootItemInfo = (id, isConsumable) => {
+    if (id === 'gold') {
+      return {
+        name: 'Gold',
+        description: 'Currency. Spend it at the Shop on gear and consumables.',
+        spritesheet: 'icons-1',
+        frameIndex: 11,
+      };
+    }
+    if (id === 'xp') {
+      return {
+        name: 'Experience (XP)',
+        description: 'Earned in combat. Fills your level bar — reach the next level to grow stronger.',
+        spritesheet: 'icons-map',
+        frameIndex: 146,
+      };
+    }
+    if (isConsumable) {
+      const def = CONSUMABLES.find(c => c.id === id);
+      return {
+        name: def?.name || id,
+        description: def?.description || 'A useful consumable.',
+        spritesheet: def?.spritesheet,
+        frameIndex: def?.frameIndex,
+      };
+    }
+    const def = MATERIALS[id];
+    let description;
+    if (id === 'wood' || id === 'cloth' || id === 'stone') {
+      description = 'Camp resource. Used to build and upgrade Camp Improvements.';
+    } else if (id.includes('core')) {
+      description = 'Rare crystal core. Used for top-tier skill upgrades and Camp facilities.';
+    } else {
+      description = 'Crystal material. Used to unlock and upgrade skills at Camp.';
+    }
+    return {
+      name: def?.name || id,
+      description,
+      spritesheet: def?.spritesheet,
+      frameIndex: def?.frameIndex,
+    };
+  };
+
   const renderLootItems = (lootMats, lootConsumables = {}, gold = 0, xp = 0, recessed = false) => {
     const items = [];
     for (const [id, qty] of Object.entries(lootMats || {})) {
@@ -1082,12 +1128,28 @@ export default function DungeonMapScreen({ navigation }) {
       <View style={styles.bagChipsContainer}>
         {xp > 0 && (
           <View style={chipStyle}>
+            <TouchableOpacity
+              style={styles.chipInfoBadge}
+              onPress={() => setInfoItem(getLootItemInfo('xp'))}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.chipInfoBadgeText}>?</Text>
+            </TouchableOpacity>
             <ItemSprite spritesheet="icons-map" frameIndex={146} displaySize={32} />
             <Text style={styles.bagChipQty}>{xp} XP</Text>
           </View>
         )}
         {gold > 0 && (
           <View style={chipStyle}>
+            <TouchableOpacity
+              style={styles.chipInfoBadge}
+              onPress={() => setInfoItem(getLootItemInfo('gold'))}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.chipInfoBadgeText}>?</Text>
+            </TouchableOpacity>
             <ItemSprite spritesheet="icons-1" frameIndex={11} displaySize={32} />
             <Text style={styles.bagChipQty}>{gold}</Text>
           </View>
@@ -1096,6 +1158,14 @@ export default function DungeonMapScreen({ navigation }) {
           const def = isConsumable ? CONSUMABLES.find(c => c.id === id) : MATERIALS[id];
           return (
             <View key={id} style={chipStyle}>
+              <TouchableOpacity
+                style={styles.chipInfoBadge}
+                onPress={() => setInfoItem(getLootItemInfo(id, isConsumable))}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.chipInfoBadgeText}>?</Text>
+              </TouchableOpacity>
               {def?.spritesheet && (
                 <ItemSprite
                   spritesheet={def.spritesheet}
@@ -1539,38 +1609,13 @@ export default function DungeonMapScreen({ navigation }) {
                   Object.keys(currentRun.lootCollected.consumables || {}).length === 0 ? (
                   <Text style={[styles.noLostLootText, { textAlign: 'center', marginBottom: 12 }]}>No loot collected yet.</Text>
                 ) : (
-                  <View style={[styles.bagChipsContainer, { marginBottom: 12 }]}>
-                    {currentRun.lootCollected.gold > 0 && (
-                      <View style={styles.bagItemChip}>
-                        <ItemSprite spritesheet="icons-1" frameIndex={11} displaySize={32} />
-                        <Text style={styles.bagChipQty}>{currentRun.lootCollected.gold} G</Text>
-                      </View>
+                  <View style={{ marginBottom: 12 }}>
+                    {renderLootItems(
+                      currentRun.lootCollected.materials,
+                      currentRun.lootCollected.consumables,
+                      currentRun.lootCollected.gold,
+                      currentRun.lootCollected.xp,
                     )}
-                    {(() => {
-                      const items = [];
-                      for (const [id, qty] of Object.entries(currentRun.lootCollected.materials || {})) {
-                        if (qty > 0) items.push({ id, keptQty: qty, isConsumable: false });
-                      }
-                      for (const [id, qty] of Object.entries(currentRun.lootCollected.consumables || {})) {
-                        if (qty > 0) items.push({ id, keptQty: qty, isConsumable: true });
-                      }
-                      if (items.length === 0) return null;
-                      return items.map(({ id, keptQty, isConsumable }) => {
-                        const def = isConsumable ? CONSUMABLES.find(c => c.id === id) : MATERIALS[id];
-                        return (
-                          <View key={id} style={styles.bagItemChip}>
-                            {def?.spritesheet && (
-                              <ItemSprite
-                                spritesheet={def.spritesheet}
-                                frameIndex={def.frameIndex}
-                                displaySize={32}
-                              />
-                            )}
-                            <Text style={styles.bagChipQty}>{keptQty}</Text>
-                          </View>
-                        );
-                      });
-                    })()}
                   </View>
                 )}
 
@@ -1637,6 +1682,34 @@ export default function DungeonMapScreen({ navigation }) {
               </View>
             </View>
           </View>
+        </Modal>
+
+        {/* ════════════════════════════════════════════════════════════════
+          LOOT ITEM INFO POPUP — tapping a reward box's (?) explains the item
+      ════════════════════════════════════════════════════════════════ */}
+        <Modal visible={!!infoItem} transparent animationType="fade" onRequestClose={() => setInfoItem(null)}>
+          <TouchableOpacity activeOpacity={1} style={styles.cozyOverlay} onPress={() => setInfoItem(null)}>
+            <View style={[styles.cozyFrame, { maxWidth: 320 }, theme.SHADOWS.cardShadow]}>
+              <View style={styles.cozyParchment}>
+                <View style={styles.cozyBevel} pointerEvents="none" />
+
+                {infoItem?.spritesheet != null && infoItem?.frameIndex != null && (
+                  <View style={{ marginBottom: 8 }}>
+                    <ItemSprite spritesheet={infoItem.spritesheet} frameIndex={infoItem.frameIndex} displaySize={44} />
+                  </View>
+                )}
+
+                <Text style={styles.itemInfoName}>{infoItem?.name}</Text>
+                <Text style={styles.itemInfoDesc}>{infoItem?.description}</Text>
+
+                <TouchableOpacity activeOpacity={0.85} onPress={() => setInfoItem(null)} style={styles.cozyButtonSecondary}>
+                  <View style={styles.cozyButtonSecondaryInner}>
+                    <Text style={styles.cozyButtonText}>Got it</Text>
+                  </View>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </TouchableOpacity>
         </Modal>
 
         {/* ════════════════════════════════════════════════════════════════
@@ -1798,27 +1871,16 @@ export default function DungeonMapScreen({ navigation }) {
                 <ScrollView style={styles.modalBagScroll} showsVerticalScrollIndicator={true} persistentScrollbar={true}>
                   {/* Section 1: Packed Supplies */}
                   {(() => {
-                    const equippedStorageId = hero.gear?.storage;
-                    const equippedStorage = equippedStorageId ? GEAR[equippedStorageId] : null;
-
                     return (
                       <View style={{ marginBottom: 12 }}>
                         <View style={styles.bagSectionHeaderContainer}>
-                          {equippedStorage ? (
-                            <ItemSprite
-                              spritesheet={equippedStorage.spritesheet}
-                              frameIndex={equippedStorage.frameIndex}
-                              displaySize={22}
-                            />
-                          ) : null}
-                          <Text style={[styles.bagSectionHeader, { color: '#8A6E44', marginLeft: equippedStorage ? 6 : 0 }]}>
+                          <ItemSprite spritesheet="storages-1" frameIndex={0} displaySize={22} />
+                          <Text style={[styles.bagSectionHeader, { color: '#8A6E44', marginLeft: 6 }]}>
                             Packed Supplies
                           </Text>
                         </View>
 
-                        {!equippedStorage ? (
-                          <Text style={styles.emptyBagText}>There is no bag equipped to pack supplies.</Text>
-                        ) : runConsumablesList.length === 0 ? (
+                        {runConsumablesList.length === 0 ? (
                           <Text style={styles.emptyBagText}>No items remaining in your run bag.</Text>
                         ) : (
                           <View style={styles.bagChipsContainer}>
@@ -1874,46 +1936,11 @@ export default function DungeonMapScreen({ navigation }) {
                       Object.keys(currentRun.lootCollected.consumables || {}).length === 0 ? (
                       <Text style={styles.emptyBagText}>No gold or items collected yet.</Text>
                     ) : (
-                      <View style={styles.bagChipsContainer}>
-                        {currentRun.lootCollected.gold > 0 && (
-                          <View style={styles.bagItemChip}>
-                            <ItemSprite spritesheet="icons-1" frameIndex={11} displaySize={32} />
-                            <Text style={styles.bagChipQty}>{currentRun.lootCollected.gold} G</Text>
-                          </View>
-                        )}
-                        {Object.entries(currentRun.lootCollected.materials || {}).map(([id, qty]) => {
-                          if (qty <= 0) return null;
-                          const def = MATERIALS[id];
-                          return (
-                            <View key={id} style={styles.bagItemChip}>
-                              {def?.spritesheet && (
-                                <ItemSprite
-                                  spritesheet={def.spritesheet}
-                                  frameIndex={def.frameIndex}
-                                  displaySize={32}
-                                />
-                              )}
-                              <Text style={styles.bagChipQty}>{qty}</Text>
-                            </View>
-                          );
-                        })}
-                        {Object.entries(currentRun.lootCollected.consumables || {}).map(([id, qty]) => {
-                          if (qty <= 0) return null;
-                          const def = CONSUMABLES.find(c => c.id === id);
-                          return (
-                            <View key={id} style={styles.bagItemChip}>
-                              {def?.spritesheet && (
-                                <ItemSprite
-                                  spritesheet={def.spritesheet}
-                                  frameIndex={def.frameIndex}
-                                  displaySize={32}
-                                />
-                              )}
-                              <Text style={styles.bagChipQty}>{qty}</Text>
-                            </View>
-                          );
-                        })}
-                      </View>
+                      renderLootItems(
+                        currentRun.lootCollected.materials,
+                        currentRun.lootCollected.consumables,
+                        currentRun.lootCollected.gold,
+                      )
                     )}
                   </View>
                 </ScrollView>
@@ -2696,6 +2723,43 @@ const styles = StyleSheet.create({
     marginTop: 4,
     textAlign: 'center',
   },
+  chipInfoBadge: {
+    position: 'absolute',
+    top: 2,
+    right: 2,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: '#6E4524',
+    borderColor: '#ECD8A6',
+    borderWidth: 1.5,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 2,
+    elevation: 3,
+  },
+  chipInfoBadgeText: {
+    fontFamily: 'Silkscreen-Regular',
+    fontSize: 9,
+    lineHeight: 12,
+    color: '#F4E6C0',
+    textAlign: 'center',
+  },
+  itemInfoName: {
+    fontFamily: 'Silkscreen-Regular',
+    fontSize: 13,
+    color: '#3A2210',
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  itemInfoDesc: {
+    fontFamily: 'Silkscreen-Regular',
+    fontSize: 10,
+    lineHeight: 16,
+    color: '#6A4A2A',
+    textAlign: 'center',
+    marginBottom: 14,
+  },
   bagChipLabel: {
     fontFamily: 'Silkscreen-Regular',
     fontSize: 7,
@@ -3159,11 +3223,11 @@ const styles = StyleSheet.create({
   },
   cozyChoiceCardDesc: {
     fontFamily: 'Silkscreen-Regular',
-    fontSize: 8,
+    fontSize: 11,
     color: '#8A6E44',
     textAlign: 'center',
-    marginTop: 4,
-    lineHeight: 11,
+    marginTop: 6,
+    lineHeight: 16,
   },
   cozyButton: {
     alignSelf: 'stretch',
