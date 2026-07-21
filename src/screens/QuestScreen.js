@@ -24,6 +24,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import theme from '../constants/theme';
 import { useGame } from '../state/gameState';
 import ItemSprite from '../components/ItemSprite';
+import ParchmentModal from '../components/ui/ParchmentModal';
 import { isQuestUnlocked } from '../data/quests';
 import { CONSUMABLES } from '../data/gear';
 import { getItemInfo } from '../data/itemInfo';
@@ -472,31 +473,25 @@ export default function QuestScreen({ navigation }) {
       </Modal>
 
       {/* ITEM INFO MODAL */}
-      <Modal
-        transparent
+      <ParchmentModal
         visible={!!infoModal}
-        animationType="fade"
-        onRequestClose={() => setInfoModal(null)}
-        statusBarTranslucent
+        onClose={() => setInfoModal(null)}
+        title={infoModal?.title || ''}
+        maxWidth={320}
       >
-        <TouchableOpacity
-          style={styles.infoModalOverlay}
-          activeOpacity={1}
-          onPress={() => setInfoModal(null)}
-        >
-          <View style={styles.infoModalContent}>
-            <Text style={styles.infoModalTitle}>{infoModal?.title}</Text>
-            <Text style={styles.infoModalDesc}>{infoModal?.desc}</Text>
-            <TouchableOpacity
-              style={styles.infoCloseBtn}
-              onPress={() => setInfoModal(null)}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.infoCloseBtnText}>CLOSE</Text>
-            </TouchableOpacity>
-          </View>
-        </TouchableOpacity>
-      </Modal>
+        <Text style={styles.pmDesc}>{infoModal?.desc}</Text>
+        <View style={styles.pmBtnCol}>
+          <TouchableOpacity
+            activeOpacity={0.85}
+            onPress={() => setInfoModal(null)}
+            style={styles.pmBtnSecondaryOuter}
+          >
+            <View style={styles.pmBtnSecondaryInner}>
+              <Text style={styles.pmBtnSecondaryText}>GOT IT</Text>
+            </View>
+          </TouchableOpacity>
+        </View>
+      </ParchmentModal>
     </View>
   );
 }
@@ -673,7 +668,6 @@ const styles = StyleSheet.create({
   countdownLabel: {
     fontFamily: 'Silkscreen-Regular',
     fontSize: 14,
-    style: 'bold',
     color: 'rgba(207,224,238,0.75)',
   },
   countdownValue: {
@@ -746,7 +740,7 @@ const styles = StyleSheet.create({
   questDesc: {
     fontFamily: 'Jersey10-Regular',
     fontSize: 22,
-    lineHeight: 22,
+    lineHeight: 26,
     color: 'rgba(207,224,238,0.7)',
     marginBottom: 8,
   },
@@ -834,51 +828,40 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#FFF3DA',
   },
-  infoModalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(24, 14, 6, 0.78)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 24,
-  },
-  infoModalContent: {
-    width: '100%',
-    maxWidth: 320,
-    backgroundColor: '#1E1E22',
-    borderColor: theme.COLORS.panelBorderGoldStrong,
-    borderWidth: 2,
-    borderRadius: 12,
-    padding: 16,
-    alignItems: 'center',
-  },
-  infoModalTitle: {
-    fontFamily: 'Silkscreen-Regular',
-    fontSize: 18,
-    color: '#FBBF24',
-    textAlign: 'center',
-    marginBottom: 10,
-    textTransform: 'uppercase',
-  },
-  infoModalDesc: {
+  // Shared ParchmentModal content styles (item info popup)
+  pmDesc: {
     fontFamily: 'Jersey10-Regular',
-    fontSize: 20,
-    lineHeight: 24,
-    color: '#FFF3DA',
+    fontSize: 19,
+    color: '#4A2E14',
     textAlign: 'center',
-    marginBottom: 16,
+    lineHeight: 23,
+    marginBottom: 14,
   },
-  infoCloseBtn: {
-    backgroundColor: '#3A2210',
-    borderColor: '#84735B',
+  pmBtnCol: {
+    width: '100%',
+    gap: 8,
+  },
+  pmBtnSecondaryOuter: {
+    height: 40,
+    borderRadius: 8,
     borderWidth: 1.5,
-    borderRadius: 6,
-    paddingVertical: 8,
-    paddingHorizontal: 20,
+    borderColor: '#84735B',
+    padding: 2,
+    backgroundColor: '#2C2013',
   },
-  infoCloseBtnText: {
-    fontFamily: 'Silkscreen-Regular',
-    fontSize: 12,
-    color: '#FFF3DA',
+  pmBtnSecondaryInner: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 5,
+    backgroundColor: '#4F3C1E',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+  },
+  pmBtnSecondaryText: {
+    fontFamily: 'Jersey10-Regular',
+    fontSize: 16,
+    color: '#EAD9BA',
   },
   claimBtnWrapper: {
     width: '100%',
@@ -1099,7 +1082,7 @@ const styles = StyleSheet.create({
   },
   drChipLabel: {
     fontFamily: 'Silkscreen-Regular',
-    fontSize: 8,
+    fontSize: 10,
     color: '#9A7A4A',
     textTransform: 'uppercase',
     marginTop: 2,

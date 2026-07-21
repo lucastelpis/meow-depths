@@ -91,7 +91,7 @@ const GOLD = '#D4A754';
 const PARCH = '#FFF3DA';
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#2A1E10' },
+  root: { flex: 1, backgroundColor: '#133131' },
 
   /* ── Header ──────────────────────────────────────────────── */
   header: {
@@ -127,7 +127,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#1E1E20', paddingVertical: 6, paddingHorizontal: 20,
   },
   headerTitleText: {
-    fontFamily: 'Jersey10-Regular', fontSize: 22, color: PARCH, letterSpacing: 1,
+    fontFamily: 'Jersey10-Regular', fontSize: 28, color: PARCH, textAlign: 'center',
+    textShadowColor: '#000', textShadowOffset: { width: 1, height: 1 }, textShadowRadius: 1,
   },
   headerSpacer: { width: 44, height: 44 },
 
