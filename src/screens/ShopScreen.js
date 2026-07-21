@@ -17,8 +17,6 @@ import {
   TouchableOpacity,
   StyleSheet,
   Dimensions,
-  Modal,
-  Pressable,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -30,6 +28,7 @@ import { GEAR, CONSUMABLES, MATERIALS } from '../data/gear';
 import { ZONES } from '../data/zones';
 import { getImprovementLevel } from '../data/improvements';
 import ItemSprite from '../components/ItemSprite';
+import ParchmentModal from '../components/ui/ParchmentModal';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -645,134 +644,134 @@ export default function ShopScreen() {
       </ScrollView>
 
       {/* ── Gear purchase confirmation ──────────────────────────────────────── */}
-      <Modal visible={!!buyPrompt} transparent animationType="fade" onRequestClose={() => setBuyPrompt(null)}>
-        <Pressable style={styles.equipModalBackdrop} onPress={() => setBuyPrompt(null)}>
-          <Pressable style={styles.equipModalCard} onPress={(e) => e.stopPropagation()}>
-            {buyPrompt && (
-              <>
-                <Text style={styles.equipModalTitle}>Purchase Equipment</Text>
+      <ParchmentModal
+        visible={!!buyPrompt}
+        onClose={() => setBuyPrompt(null)}
+        title="PURCHASE"
+        maxWidth={360}
+      >
+        {buyPrompt && (
+          <>
+            <View style={styles.buyItemRow}>
+              <View style={styles.buyItemIcon}>
+                <ItemSprite spritesheet={buyPrompt.spritesheet} frameIndex={buyPrompt.frameIndex} displaySize={36} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.buyItemName} numberOfLines={1}>{buyPrompt.name}</Text>
+                <Text style={styles.buyItemStats} numberOfLines={1}>{formatStats(buyPrompt.stats)}</Text>
+              </View>
+            </View>
 
-                <View style={styles.buyItemRow}>
-                  <View style={styles.buyItemIcon}>
-                    <ItemSprite spritesheet={buyPrompt.spritesheet} frameIndex={buyPrompt.frameIndex} displaySize={36} />
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.buyItemName} numberOfLines={1}>{buyPrompt.name}</Text>
-                    <Text style={styles.buyItemStats} numberOfLines={1}>{formatStats(buyPrompt.stats)}</Text>
-                  </View>
-                </View>
+            <View style={styles.buyPriceRow}>
+              <Text style={styles.buyPriceLabel}>Price</Text>
+              <View style={styles.buyPriceValue}>
+                <ItemSprite spritesheet="icons-1" frameIndex={11} displaySize={16} />
+                <Text style={styles.buyPriceText}>{buyPrompt.goldCost} G</Text>
+              </View>
+            </View>
 
-                <View style={styles.buyPriceRow}>
-                  <Text style={styles.buyPriceLabel}>Price</Text>
-                  <View style={styles.buyPriceValue}>
-                    <ItemSprite spritesheet="icons-1" frameIndex={11} displaySize={16} />
-                    <Text style={styles.buyPriceText}>{buyPrompt.goldCost} G</Text>
+            <View style={styles.equipModalBtnRow}>
+              {/* Cancel Button (Crimson 3D) */}
+              <View style={styles.modalCancelBtnWrapper}>
+                <View style={styles.modalCancelBtnShadow} />
+                <TouchableOpacity
+                  style={styles.modalCancelBtnOuter}
+                  onPress={() => setBuyPrompt(null)}
+                  activeOpacity={0.8}
+                >
+                  <View style={styles.modalCancelBtnInner}>
+                    <Text style={styles.modalCancelBtnText}>Cancel</Text>
                   </View>
-                </View>
+                </TouchableOpacity>
+              </View>
 
-                <View style={styles.equipModalBtnRow}>
-                  {/* Cancel Button (Crimson 3D) */}
-                  <View style={styles.modalCancelBtnWrapper}>
-                    <View style={styles.modalCancelBtnShadow} />
-                    <TouchableOpacity
-                      style={styles.modalCancelBtnOuter}
-                      onPress={() => setBuyPrompt(null)}
-                      activeOpacity={0.8}
-                    >
-                      <View style={styles.modalCancelBtnInner}>
-                        <Text style={styles.modalCancelBtnText}>Cancel</Text>
-                      </View>
-                    </TouchableOpacity>
+              {/* Buy Button (Green 3D) */}
+              <View style={styles.modalConfirmBtnWrapper}>
+                <View style={styles.modalConfirmBtnShadow} />
+                <TouchableOpacity
+                  style={styles.modalConfirmBtnOuter}
+                  onPress={handleConfirmBuy}
+                  activeOpacity={0.8}
+                >
+                  <View style={styles.modalConfirmBtnInner}>
+                    <Text style={styles.modalConfirmBtnText}>Buy</Text>
                   </View>
-
-                  {/* Buy Button (Green 3D) */}
-                  <View style={styles.modalConfirmBtnWrapper}>
-                    <View style={styles.modalConfirmBtnShadow} />
-                    <TouchableOpacity
-                      style={styles.modalConfirmBtnOuter}
-                      onPress={handleConfirmBuy}
-                      activeOpacity={0.8}
-                    >
-                      <View style={styles.modalConfirmBtnInner}>
-                        <Text style={styles.modalConfirmBtnText}>Buy</Text>
-                      </View>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              </>
-            )}
-          </Pressable>
-        </Pressable>
-      </Modal>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </>
+        )}
+      </ParchmentModal>
 
       {/* ── Post-purchase: equip now? ───────────────────────────────────────── */}
-      <Modal visible={!!equipPrompt} transparent animationType="fade" onRequestClose={() => setEquipPrompt(null)}>
-        <Pressable style={styles.equipModalBackdrop} onPress={() => setEquipPrompt(null)}>
-          <Pressable style={styles.equipModalCard} onPress={(e) => e.stopPropagation()}>
-            {equipPrompt && (() => {
-              const newDef = GEAR[equipPrompt.gearId];
-              const curDef = equipPrompt.currentId ? GEAR[equipPrompt.currentId] : null;
-              return (
-                <>
-                  <Text style={styles.equipModalTitle}>Equip {newDef?.name}?</Text>
-                  <Text style={styles.equipModalSub}>
-                    {equipPrompt.slot.toUpperCase()} slot
-                    {curDef ? ` · currently: ${curDef.name}` : ' · currently empty'}
-                  </Text>
+      <ParchmentModal
+        visible={!!equipPrompt}
+        onClose={() => setEquipPrompt(null)}
+        title="EQUIP ITEM?"
+        maxWidth={360}
+      >
+        {equipPrompt && (() => {
+          const newDef = GEAR[equipPrompt.gearId];
+          const curDef = equipPrompt.currentId ? GEAR[equipPrompt.currentId] : null;
+          return (
+            <>
+              <Text style={styles.equipModalItemName}>{newDef?.name}</Text>
+              <Text style={styles.equipModalSub}>
+                {equipPrompt.slot.toUpperCase()} slot
+                {curDef ? ` · currently: ${curDef.name}` : ' · currently empty'}
+              </Text>
 
-                  {/* Stat comparison vs current piece */}
-                  <View style={styles.equipDeltaBox}>
-                    {!curDef ? (
-                      <Text style={styles.equipDeltaEmpty}>Nothing equipped here — pure upgrade.</Text>
-                    ) : equipPrompt.deltas.length === 0 ? (
-                      <Text style={styles.equipDeltaEmpty}>Same stats as your current piece.</Text>
-                    ) : (
-                      equipPrompt.deltas.map((d) => (
-                        <View key={d.label} style={styles.equipDeltaRow}>
-                          <Text style={styles.equipDeltaLabel}>{d.label}</Text>
-                          <Text style={[styles.equipDeltaValue, { color: d.positive ? '#7CFFB2' : '#FF8A8A' }]}>
-                            {d.text}
-                          </Text>
-                        </View>
-                      ))
-                    )}
-                  </View>
-
-                  <View style={styles.equipModalBtnRow}>
-                    {/* Not Now Button (Crimson 3D) */}
-                    <View style={styles.modalCancelBtnWrapper}>
-                      <View style={styles.modalCancelBtnShadow} />
-                      <TouchableOpacity
-                        style={styles.modalCancelBtnOuter}
-                        onPress={() => setEquipPrompt(null)}
-                        activeOpacity={0.8}
-                      >
-                        <View style={styles.modalCancelBtnInner}>
-                          <Text style={styles.modalCancelBtnText}>Not Now</Text>
-                        </View>
-                      </TouchableOpacity>
+              {/* Stat comparison vs current piece */}
+              <View style={styles.equipDeltaBox}>
+                {!curDef ? (
+                  <Text style={styles.equipDeltaEmpty}>Nothing equipped here — pure upgrade.</Text>
+                ) : equipPrompt.deltas.length === 0 ? (
+                  <Text style={styles.equipDeltaEmpty}>Same stats as your current piece.</Text>
+                ) : (
+                  equipPrompt.deltas.map((d) => (
+                    <View key={d.label} style={styles.equipDeltaRow}>
+                      <Text style={styles.equipDeltaLabel}>{d.label}</Text>
+                      <Text style={[styles.equipDeltaValue, { color: d.positive ? '#1D7044' : '#B23A3A' }]}>
+                        {d.text}
+                      </Text>
                     </View>
+                  ))
+                )}
+              </View>
 
-                    {/* Equip Now Button (Green 3D) */}
-                    <View style={styles.modalConfirmBtnWrapper}>
-                      <View style={styles.modalConfirmBtnShadow} />
-                      <TouchableOpacity
-                        style={styles.modalConfirmBtnOuter}
-                        onPress={handleEquipNow}
-                        activeOpacity={0.8}
-                      >
-                        <View style={styles.modalConfirmBtnInner}>
-                          <Text style={styles.modalConfirmBtnText}>Equip Now</Text>
-                        </View>
-                      </TouchableOpacity>
+              <View style={styles.equipModalBtnRow}>
+                {/* Not Now Button (Crimson 3D) */}
+                <View style={styles.modalCancelBtnWrapper}>
+                  <View style={styles.modalCancelBtnShadow} />
+                  <TouchableOpacity
+                    style={styles.modalCancelBtnOuter}
+                    onPress={() => setEquipPrompt(null)}
+                    activeOpacity={0.8}
+                  >
+                    <View style={styles.modalCancelBtnInner}>
+                      <Text style={styles.modalCancelBtnText}>Not Now</Text>
                     </View>
-                  </View>
-                </>
-              );
-            })()}
-          </Pressable>
-        </Pressable>
-      </Modal>
+                  </TouchableOpacity>
+                </View>
+
+                {/* Equip Now Button (Green 3D) */}
+                <View style={styles.modalConfirmBtnWrapper}>
+                  <View style={styles.modalConfirmBtnShadow} />
+                  <TouchableOpacity
+                    style={styles.modalConfirmBtnOuter}
+                    onPress={handleEquipNow}
+                    activeOpacity={0.8}
+                  >
+                    <View style={styles.modalConfirmBtnInner}>
+                      <Text style={styles.modalConfirmBtnText}>Equip Now</Text>
+                    </View>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </>
+          );
+        })()}
+      </ParchmentModal>
     </SafeAreaView>
   );
 }
@@ -1061,11 +1060,11 @@ const styles = StyleSheet.create({
   },
   emptyArmoryDesc: {
     fontFamily: 'Silkscreen-Regular',
-    fontSize: 18,
+    fontSize: 13,
     color: '#707F94',
     fontWeight: 'normal',
     textAlign: 'center',
-    lineHeight: 16,
+    lineHeight: 20,
     letterSpacing: 0,
   },
   shopRow: {
@@ -1577,34 +1576,18 @@ const styles = StyleSheet.create({
     color: '#F3E2BD',
   },
 
-  /* ── Post-purchase equip modal ─────────────────────────────── */
-  equipModalBackdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 28,
-  },
-  equipModalCard: {
-    width: '100%',
-    maxWidth: 360,
-    backgroundColor: '#1A2E22',
-    borderColor: '#4A3917',
-    borderWidth: 2,
-    borderRadius: 16,
-    padding: 20,
-  },
-  equipModalTitle: {
+  /* ── Post-purchase equip modal (parchment) ─────────────────── */
+  equipModalItemName: {
     fontFamily: 'Jersey10-Regular',
     fontSize: 24,
-    color: '#F3E2BD',
+    color: '#4A2E14',
     textAlign: 'center',
   },
   equipModalSub: {
     fontFamily: 'Silkscreen-Regular',
     fontSize: 9,
     letterSpacing: 0.5,
-    color: 'rgba(243,226,189,0.55)',
+    color: '#7A5C30',
     textAlign: 'center',
     marginTop: 6,
   },
@@ -1613,8 +1596,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    marginTop: 16,
-    backgroundColor: 'rgba(0,0,0,0.25)',
+    marginTop: 4,
+    alignSelf: 'stretch',
+    backgroundColor: '#E5D3A2',
+    borderWidth: 1.5,
+    borderColor: '#C9A86A',
     borderRadius: 10,
     paddingVertical: 10,
     paddingHorizontal: 12,
@@ -1623,21 +1609,21 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 8,
-    backgroundColor: 'rgba(255,255,255,0.04)',
+    backgroundColor: '#F4E6C0',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
+    borderColor: '#C9A86A',
     alignItems: 'center',
     justifyContent: 'center',
   },
   buyItemName: {
     fontFamily: 'Jersey10-Regular',
     fontSize: 18,
-    color: '#F3E2BD',
+    color: '#4A2E14',
   },
   buyItemStats: {
     fontFamily: 'Jersey10-Regular',
     fontSize: 14,
-    color: '#7CFFB2',
+    color: '#1D7044',
     marginTop: 2,
   },
   buyPriceRow: {
@@ -1645,14 +1631,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     marginTop: 12,
-    marginBottom: 18,
+    marginBottom: 16,
     paddingHorizontal: 4,
+    alignSelf: 'stretch',
   },
   buyPriceLabel: {
     fontFamily: 'Silkscreen-Regular',
     fontSize: 10,
     letterSpacing: 0.5,
-    color: 'rgba(243,226,189,0.55)',
+    color: '#7A5C30',
   },
   buyPriceValue: {
     flexDirection: 'row',
@@ -1662,13 +1649,16 @@ const styles = StyleSheet.create({
   buyPriceText: {
     fontFamily: 'Jersey10-Regular',
     fontSize: 20,
-    color: '#E8A73A',
+    color: '#8E5A1D',
   },
 
   equipDeltaBox: {
-    marginTop: 16,
-    marginBottom: 18,
-    backgroundColor: 'rgba(0,0,0,0.25)',
+    marginTop: 14,
+    marginBottom: 16,
+    alignSelf: 'stretch',
+    backgroundColor: '#E5D3A2',
+    borderWidth: 1.5,
+    borderColor: '#C9A86A',
     borderRadius: 10,
     paddingVertical: 10,
     paddingHorizontal: 14,
@@ -1676,7 +1666,7 @@ const styles = StyleSheet.create({
   equipDeltaEmpty: {
     fontFamily: 'Jersey10-Regular',
     fontSize: 15,
-    color: 'rgba(243,226,189,0.7)',
+    color: '#5A3D1E',
     textAlign: 'center',
   },
   equipDeltaRow: {
@@ -1689,7 +1679,7 @@ const styles = StyleSheet.create({
     fontFamily: 'Silkscreen-Regular',
     fontSize: 10,
     letterSpacing: 0.5,
-    color: 'rgba(243,226,189,0.7)',
+    color: '#7A5C30',
   },
   equipDeltaValue: {
     fontFamily: 'Jersey10-Regular',
@@ -1698,6 +1688,7 @@ const styles = StyleSheet.create({
   equipModalBtnRow: {
     flexDirection: 'row',
     gap: 12,
+    alignSelf: 'stretch',
   },
   modalCancelBtnWrapper: {
     flex: 1,

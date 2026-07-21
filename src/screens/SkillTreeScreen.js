@@ -1220,7 +1220,7 @@ const styles = StyleSheet.create({
   },
   headerTitleText: {
     fontFamily: 'Jersey10-Regular',
-    fontSize: 32,
+    fontSize: 28,
     color: '#FFF3DA',
     textAlign: 'center',
     textShadowColor: '#000',

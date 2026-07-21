@@ -30,6 +30,7 @@ import ResourceBar from '../components/ui/ResourceBar';
 import { HERO_SPRITE } from '../constants/sprites';
 import { GEAR, CONSUMABLES, MATERIALS, getGearForSlot } from '../data/gear';
 import ItemSprite from '../components/ItemSprite';
+import ParchmentModal from '../components/ui/ParchmentModal';
 
 const HERO_AVATAR_DISPLAY_SIZE = 80;
 
@@ -460,7 +461,7 @@ export default function ProfileScreen() {
         if (Math.abs(diff) >= 0.0001) {
           const sign = diff > 0 ? '+' : '';
           const formattedDiff = percent ? `${sign}${Math.round(diff * 100)}%` : `${sign}${diff}`;
-          const color = diff > 0 ? '#5CC489' : '#EF4444';
+          const color = diff > 0 ? '#1D7044' : '#B23A3A';
           deltaNode = (
             <Text key={`${key}_delta`} style={{ color }}>
               {` (${formattedDiff})`}
@@ -1385,11 +1386,9 @@ export default function ProfileScreen() {
                                 <ItemSprite spritesheet="consumables-1" frameIndex={0} displaySize={iconSize} />
                               )}
                             </View>
-                            <View style={styles.gridTagSlot}>
-                              <View style={[styles.gridTagBadge, styles.gridQtyBadge]}>
-                                <Text style={[styles.bagGridTagText, styles.gridQtyText]}>×{entry.quantity}</Text>
-                              </View>
-                            </View>
+                          </View>
+                          <View style={styles.bagGridQtyBadge}>
+                            <Text style={styles.bagGridQtyText}>×{entry.quantity}</Text>
                           </View>
                         </TouchableOpacity>
                       );
@@ -1432,24 +1431,13 @@ export default function ProfileScreen() {
       </View>
 
       {/* ── Equipment Slot Popup ── */}
-      <Modal
+      <ParchmentModal
         visible={!!selectedSlot}
-        transparent
-        animationType="none"
-        onRequestClose={() => setSelectedSlot(null)}
+        onClose={() => setSelectedSlot(null)}
+        title={(modalData.slotConfig?.label || '').toUpperCase()}
+        maxWidth={420}
       >
-        <Pressable style={styles.modalBackdrop} onPress={() => setSelectedSlot(null)}>
-          <Pressable style={styles.modalCardOuter} onPress={(e) => e.stopPropagation()}>
-            <View style={styles.modalCardInner}>
-              <View style={styles.modalHeaderRow}>
-                <Text style={styles.modalTitle}>
-                  {modalData.candidates.length > 0 ? `Choose a ${modalData.slotConfig?.label} Item` : `No ${modalData.slotConfig?.label} Item Yet`}
-                </Text>
-                <TouchableOpacity onPress={() => setSelectedSlot(null)} activeOpacity={0.7}>
-                  <Text style={styles.modalCloseText}>✕</Text>
-                </TouchableOpacity>
-              </View>
-
+        <>
               {modalData.candidates.length > 0 ? (
                 <ScrollView style={styles.modalList} showsVerticalScrollIndicator={false}>
                   {modalData.candidates.map((item) => {
@@ -1479,28 +1467,44 @@ export default function ProfileScreen() {
                             )}
                           </View>
                           <View style={{ flex: 1 }}>
-                            <View style={styles.compareRowHeader}>
-                              <Text style={styles.compareItemName}>{item.name}</Text>
-                              {isEquipped && (
-                                <View style={styles.equippedBadge}>
-                                  <Text style={styles.equippedBadgeText}>EQUIPPED</Text>
-                                </View>
-                              )}
-                            </View>
+                            <Text style={styles.compareItemName} numberOfLines={1}>{item.name}</Text>
                             {!!item.description && (
                               <Text style={styles.compareItemDesc}>{item.description}</Text>
                             )}
                             {renderItemStats(item, isEquipped, modalData.currentGearDef)}
                           </View>
                         </View>
+                        {isEquipped && (
+                          <View style={styles.equippedBadge}>
+                            <Text style={styles.equippedBadgeText}>EQUIPPED</Text>
+                          </View>
+                        )}
                       </TouchableOpacity>
                     );
                   })}
                 </ScrollView>
               ) : (
                 <View style={styles.emptyStateBody}>
-                  <View style={{ marginBottom: 4 }}>
-                    <ItemSprite spritesheet="icons-map" frameIndex={49} displaySize={40} />
+                  <View style={styles.emptyStateIconBox}>
+                    {modalData.slotKey === 'weapon' ? (
+                      <SpriteFrame
+                        source={WEAPONS_SHEET}
+                        frameIndex={0}
+                        frameSize={WEAPONS_FRAME_SIZE}
+                        totalFrames={WEAPONS_FRAMES}
+                        displaySize={44}
+                        opacity={0.32}
+                      />
+                    ) : (
+                      <SpriteFrame
+                        source={EQUIPMENT_LEATHER_SHEET}
+                        frameIndex={SLOT_EMPTY_FRAME[modalData.slotKey === 'trinket2' ? 'trinket' : modalData.slotKey] ?? 1}
+                        frameSize={EQUIPMENT_LEATHER_FRAME_SIZE}
+                        totalFrames={EQUIPMENT_LEATHER_FRAMES}
+                        displaySize={44}
+                        opacity={0.32}
+                      />
+                    )}
                   </View>
                   <Text style={styles.emptyStateText}>
                     No {modalData.slotConfig?.label} gear owned yet. Visit the Shop to find gear for this slot!
@@ -1536,10 +1540,8 @@ export default function ProfileScreen() {
                   </TouchableOpacity>
                 </View>
               )}
-            </View>
-          </Pressable>
-        </Pressable>
-      </Modal>
+        </>
+      </ParchmentModal>
 
       {/* ── Details Popup Modal (Consumables/Materials) ── */}
       <Modal
@@ -1562,6 +1564,7 @@ export default function ProfileScreen() {
                   let category = '';
                   let categoryColor = '#D4A754';
                   let lore = LORE_DESCRIPTIONS[selectedItem.id] || '';
+                  let effectText = '';
                   let statusText = '';
                   let showOpenChestBtn = false;
                   let showUseStaminaPotionBtn = false;
@@ -1573,6 +1576,7 @@ export default function ProfileScreen() {
                     frameIndex = def?.frameIndex || 0;
                     category = 'Consumable';
                     categoryColor = '#1D7044'; // dark green on parchment
+                    effectText = def?.description || '';
                     statusText = `Owned: ${selectedItem.quantity}`;
                     if (selectedItem.id === 'mystery_chest') {
                       showOpenChestBtn = true;
@@ -1662,6 +1666,13 @@ export default function ProfileScreen() {
                       {/* Status text */}
                       <Text style={styles.itemModalStatus}>{statusText.toUpperCase()}</Text>
 
+                      {/* Effect (mechanical description) */}
+                      {!!effectText && (
+                        <View style={styles.itemModalEffectBox}>
+                          <Text style={styles.itemModalEffectText}>{effectText}</Text>
+                        </View>
+                      )}
+
                       {/* Lore description */}
                       {!!lore && (
                         <View style={styles.itemModalLoreBox}>
@@ -1728,51 +1739,37 @@ export default function ProfileScreen() {
       </Modal>
 
       {/* ── Stat / Attribute Info Popup ── */}
-      <Modal
+      <ParchmentModal
         visible={infoStat !== null}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setInfoStat(null)}
+        onClose={() => setInfoStat(null)}
+        title={infoStat && STAT_INFO[infoStat] ? STAT_INFO[infoStat].title : ''}
+        maxWidth={360}
       >
-        <Pressable style={styles.infoModalOverlay} onPress={() => setInfoStat(null)}>
-          <Pressable style={styles.infoModalContent} onPress={(e) => e.stopPropagation()}>
-            <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
-              <Defs>
-                <LinearGradient id="statInfoGrad" x1="0" y1="0" x2="0" y2="1">
-                  <Stop offset="0%" stopColor="#102719" stopOpacity="1" />
-                  <Stop offset="100%" stopColor="#0A160F" stopOpacity="1" />
-                </LinearGradient>
-              </Defs>
-              <Rect width="100%" height="100%" fill="url(#statInfoGrad)" rx={18} />
-              <Rect x="1" y="1" width="98%" height="98%" rx={17} fill="none" stroke="rgba(212, 167, 84, 0.18)" strokeWidth={1} />
-            </Svg>
-
-            {infoStat && STAT_INFO[infoStat] && (
-              <View style={styles.infoModalInner}>
-                <Text style={[styles.infoModalTitle, { color: STAT_INFO[infoStat].color }]}>
-                  {STAT_INFO[infoStat].title}
-                </Text>
-                <Text style={styles.infoModalDesc}>{STAT_INFO[infoStat].desc}</Text>
-                <View style={styles.infoModalEffects}>
-                  {STAT_INFO[infoStat].effects.map((line) => (
-                    <View key={line} style={styles.infoEffectRow}>
-                      <Text style={styles.infoEffectBullet}>›</Text>
-                      <Text style={styles.infoEffectText}>{line}</Text>
-                    </View>
-                  ))}
+        {infoStat && STAT_INFO[infoStat] && (
+          <>
+            <Text style={styles.infoModalDesc}>{STAT_INFO[infoStat].desc}</Text>
+            <View style={styles.infoModalEffects}>
+              {STAT_INFO[infoStat].effects.map((line) => (
+                <View key={line} style={styles.infoEffectRow}>
+                  <Text style={styles.infoEffectBullet}>›</Text>
+                  <Text style={styles.infoEffectText}>{line}</Text>
                 </View>
-                <TouchableOpacity
-                  style={styles.infoCloseBtn}
-                  onPress={() => setInfoStat(null)}
-                  activeOpacity={0.8}
-                >
-                  <Text style={styles.infoCloseBtnText}>Got it</Text>
-                </TouchableOpacity>
-              </View>
-            )}
-          </Pressable>
-        </Pressable>
-      </Modal>
+              ))}
+            </View>
+            <View style={styles.pmBtnCol}>
+              <TouchableOpacity
+                activeOpacity={0.85}
+                onPress={() => setInfoStat(null)}
+                style={styles.pmBtnSecondaryOuter}
+              >
+                <View style={styles.pmBtnSecondaryInner}>
+                  <Text style={styles.pmBtnSecondaryText}>GOT IT</Text>
+                </View>
+              </TouchableOpacity>
+            </View>
+          </>
+        )}
+      </ParchmentModal>
     </SafeAreaView>
   );
 }
@@ -2398,7 +2395,7 @@ const styles = StyleSheet.create({
   },
   headerTitleText: {
     fontFamily: 'Jersey10-Regular',
-    fontSize: 34,
+    fontSize: 28,
     color: '#FFF3DA',
     textAlign: 'center',
     textShadowColor: '#000',
@@ -2686,38 +2683,18 @@ const styles = StyleSheet.create({
     textTransform: 'none',
   },
   // ── Stat / attribute info modal ──
-  infoModalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 32,
-  },
-  infoModalContent: {
-    width: '100%',
-    maxWidth: 360,
-    borderRadius: 18,
-    overflow: 'hidden',
-  },
-  infoModalInner: {
-    padding: 20,
-  },
-  infoModalTitle: {
-    fontFamily: 'Silkscreen-Regular',
-    fontSize: 22,
-    letterSpacing: 0.5,
-    marginBottom: 8,
-  },
   infoModalDesc: {
     fontFamily: 'Jersey10-Regular',
-    fontSize: 18,
+    fontSize: 19,
     lineHeight: 23,
-    color: theme.COLORS.parchment,
+    color: '#4A2E14',
+    textAlign: 'center',
     marginBottom: 14,
   },
   infoModalEffects: {
     gap: 6,
-    marginBottom: 18,
+    marginBottom: 16,
+    alignSelf: 'stretch',
   },
   infoEffectRow: {
     flexDirection: 'row',
@@ -2727,7 +2704,7 @@ const styles = StyleSheet.create({
   infoEffectBullet: {
     fontFamily: 'Jersey10-Regular',
     fontSize: 18,
-    color: theme.COLORS.candleGold,
+    color: '#9A6B34',
     lineHeight: 22,
   },
   infoEffectText: {
@@ -2735,21 +2712,34 @@ const styles = StyleSheet.create({
     fontFamily: 'Jersey10-Regular',
     fontSize: 18,
     lineHeight: 22,
-    color: '#C9D6C0',
+    color: '#5A3D1E',
   },
-  infoCloseBtn: {
+  // Shared ParchmentModal content styles
+  pmBtnCol: {
+    width: '100%',
+    gap: 8,
+  },
+  pmBtnSecondaryOuter: {
     height: 40,
-    borderRadius: 10,
+    borderRadius: 8,
+    borderWidth: 1.5,
+    borderColor: '#84735B',
+    padding: 2,
+    backgroundColor: '#2C2013',
+  },
+  pmBtnSecondaryInner: {
+    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(212, 167, 84, 0.15)',
+    borderRadius: 5,
+    backgroundColor: '#4F3C1E',
     borderWidth: 1,
-    borderColor: 'rgba(212, 167, 84, 0.4)',
+    borderColor: 'rgba(255,255,255,0.1)',
   },
-  infoCloseBtnText: {
-    fontFamily: 'Silkscreen-Regular',
+  pmBtnSecondaryText: {
+    fontFamily: 'Jersey10-Regular',
     fontSize: 16,
-    color: theme.COLORS.candleGold,
+    color: '#EAD9BA',
   },
   equipmentGrid: {
     marginBottom: 16,
@@ -2939,18 +2929,21 @@ const styles = StyleSheet.create({
   },
   modalList: {
     maxHeight: 400,
+    alignSelf: 'stretch',
+    width: '100%',
   },
   compareRow: {
     borderRadius: 10,
     padding: 12,
     marginBottom: 8,
-    backgroundColor: '#142C1C',
-    borderWidth: 2,
-    borderColor: 'rgba(74,57,23,0.6)',
+    backgroundColor: '#F4E6C0',
+    borderWidth: 1.5,
+    borderColor: '#C9A86A',
     gap: 4,
+    position: 'relative',
   },
   compareRowEquipped: {
-    backgroundColor: '#1C2E1B',
+    backgroundColor: '#EAD199',
     borderColor: '#E8A73A',
   },
   compareItemIconBox: {
@@ -2960,8 +2953,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1.5,
-    backgroundColor: '#2E5C41',
-    borderColor: '#4A3917',
+    backgroundColor: '#E3CF9C',
+    borderColor: '#C9A86A',
   },
   compareRowHeader: {
     flexDirection: 'row',
@@ -2972,33 +2965,38 @@ const styles = StyleSheet.create({
     fontFamily: 'Jersey10-Regular',
     fontWeight: 'normal',
     fontSize: 24,
-    color: theme.COLORS.parchment,
+    color: '#4A2E14',
+    flexShrink: 1,
+    marginRight: 8,
   },
   compareItemStats: {
     fontFamily: 'Silkscreen-Regular',
     fontSize: 12,
-    color: '#E8A73A',
+    color: '#8E5A1D',
   },
   compareItemDesc: {
     fontFamily: 'Jersey10-Regular',
     fontSize: 18,
-    color: '#94A3B8', // readable blue-grey
+    color: '#7A5C30',
     marginTop: 2,
   },
   equippedBadge: {
-    backgroundColor: 'rgba(212,167,84,0.18)',
-    borderColor: 'rgba(212,167,84,0.4)',
+    position: 'absolute',
+    bottom: 8,
+    right: 8,
+    backgroundColor: 'rgba(154,107,52,0.18)',
+    borderColor: '#9A6B34',
     borderWidth: 1,
-    borderRadius: 8,
-    paddingHorizontal: 6,
+    borderRadius: 6,
+    paddingHorizontal: 5,
     paddingVertical: 2,
   },
   equippedBadgeText: {
     fontFamily: 'Silkscreen-Regular',
-    fontSize: 13,
+    fontSize: 9,
     fontWeight: 'normal',
-    color: '#D4A754',
-    letterSpacing: 0.5,
+    color: '#8E5A1D',
+    letterSpacing: 0.3,
   },
   deltaRow: {
     flexDirection: 'row',
@@ -3013,8 +3011,20 @@ const styles = StyleSheet.create({
   },
   emptyStateBody: {
     alignItems: 'center',
+    alignSelf: 'stretch',
     paddingVertical: 16,
     gap: 12,
+  },
+  emptyStateIconBox: {
+    width: 60,
+    height: 60,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#E3CF9C',
+    borderWidth: 1.5,
+    borderColor: '#C9A86A',
+    marginBottom: 4,
   },
   emptyStateEmoji: {
     fontFamily: 'System',
@@ -3022,10 +3032,10 @@ const styles = StyleSheet.create({
   },
   emptyStateText: {
     fontFamily: 'Jersey10-Regular',
-    fontSize: 24,
-    color: theme.COLORS.parchment,
+    fontSize: 22,
+    color: '#4A2E14',
     textAlign: 'center',
-    lineHeight: 24,
+    lineHeight: 26,
   },
   shopBtnWrapper: {
     width: '100%',
@@ -3285,21 +3295,43 @@ const styles = StyleSheet.create({
   bagGridCardInner: {
     flex: 1,
     alignItems: 'center',
-    justifyContent: 'center',
-    padding: 6,
+    justifyContent: 'flex-start',
+    paddingTop: 6,
+    paddingHorizontal: 6,
+    paddingBottom: 20,
   },
   bagGridName: {
     fontFamily: 'Jersey10-Regular',
-    fontSize: 18,
+    fontSize: 19,
     color: '#F3E2BD',
     textAlign: 'center',
-    lineHeight: 16,
+    lineHeight: 19,
+    height: 38,
     width: '100%',
   },
   bagGridIconWrap: {
+    flex: 1,
+    width: '100%',
     alignItems: 'center',
     justifyContent: 'center',
-    marginVertical: 4,
+  },
+  bagGridQtyBadge: {
+    position: 'absolute',
+    bottom: 6,
+    right: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+    borderRadius: 5,
+    borderWidth: 1,
+    borderColor: 'rgba(212, 167, 84, 0.3)',
+    backgroundColor: 'rgba(212, 167, 84, 0.12)',
+  },
+  bagGridQtyText: {
+    fontFamily: 'Jersey10-Regular',
+    fontSize: 15,
+    letterSpacing: 0.3,
+    color: '#D4A754',
+    fontWeight: 'bold',
   },
   bagGridTagText: {
     fontFamily: 'Jersey10-Regular',
@@ -3418,6 +3450,23 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: '#7A5C30',
     marginBottom: 14,
+  },
+  itemModalEffectBox: {
+    backgroundColor: 'rgba(29, 112, 68, 0.10)',
+    borderColor: 'rgba(29, 112, 68, 0.35)',
+    borderWidth: 1.5,
+    borderRadius: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    marginBottom: 12,
+    width: '100%',
+  },
+  itemModalEffectText: {
+    fontFamily: 'Jersey10-Regular',
+    fontSize: 20,
+    lineHeight: 22,
+    color: '#1D7044',
+    textAlign: 'center',
   },
   itemModalLoreBox: {
     backgroundColor: 'rgba(74, 46, 20, 0.06)',
