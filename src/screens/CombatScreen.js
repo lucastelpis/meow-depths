@@ -3443,7 +3443,7 @@ export default function CombatScreen() {
 
                 {stars > 0 && infoSkill.stars?.[stars] && (
                   <View style={styles.infoStatBox}>
-                    <Text style={styles.infoStatLabel}>★{stars} CURRENT STATS</Text>
+                    <Text style={styles.infoStatLabel}>{stars}★ CURRENT STATS</Text>
                     {Object.entries(infoSkill.stars[stars]).filter(([k]) => k !== 'atkMultiplier').map(([k, v]) => (
                       <Text key={k} style={styles.infoStatLine}>
                         {SKILL_STAT_LABELS[k] || k}: <Text style={styles.infoStatStrong}>{formatSkillStatValue(k, v)}</Text>

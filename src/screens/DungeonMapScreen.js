@@ -1181,6 +1181,41 @@ export default function DungeonMapScreen({ navigation }) {
     );
   };
 
+  // Item-info popup for a tapped loot/reward (?). Rendered INSIDE whichever
+  // modal is currently open — a second RN <Modal> stacked over an already-open
+  // one fails to display on iOS, which is why the (?) taps used to do nothing.
+  const renderInfoOverlay = () => {
+    if (!infoItem) return null;
+    return (
+      <TouchableOpacity
+        activeOpacity={1}
+        style={[StyleSheet.absoluteFillObject, styles.cozyOverlay, { zIndex: 60 }]}
+        onPress={() => setInfoItem(null)}
+      >
+        <View style={[styles.cozyFrame, { maxWidth: 320 }, theme.SHADOWS.cardShadow]}>
+          <View style={styles.cozyParchment}>
+            <View style={styles.cozyBevel} pointerEvents="none" />
+
+            {infoItem?.spritesheet != null && infoItem?.frameIndex != null && (
+              <View style={{ marginBottom: 8 }}>
+                <ItemSprite spritesheet={infoItem.spritesheet} frameIndex={infoItem.frameIndex} displaySize={44} />
+              </View>
+            )}
+
+            <Text style={styles.itemInfoName}>{infoItem?.name}</Text>
+            <Text style={styles.itemInfoDesc}>{infoItem?.description}</Text>
+
+            <TouchableOpacity activeOpacity={0.85} onPress={() => setInfoItem(null)} style={styles.cozyButtonSecondary}>
+              <View style={styles.cozyButtonSecondaryInner}>
+                <Text style={styles.cozyButtonText}>Got it</Text>
+              </View>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </TouchableOpacity>
+    );
+  };
+
   const bgImage = ZONE_BACKGROUNDS[currentRun.zoneId] || ZONE_BACKGROUNDS.zone1;
 
   return (
@@ -1391,7 +1426,7 @@ export default function DungeonMapScreen({ navigation }) {
                     onPress={() => handleChooseRestOption('heal')}
                     activeOpacity={0.8}
                   >
-                    <ItemSprite spritesheet="icons-map" frameIndex={3} displaySize={32} />
+                    <ItemSprite spritesheet="icons-map" frameIndex={3} displaySize={42} />
                     <Text style={styles.cozyChoiceCardText}>Restore Health</Text>
                     <Text style={styles.cozyChoiceCardDesc}>
                       Recover your full health (+{effectiveStats.maxHp} HP)
@@ -1403,7 +1438,7 @@ export default function DungeonMapScreen({ navigation }) {
                     onPress={() => handleChooseRestOption('buff')}
                     activeOpacity={0.8}
                   >
-                    <ItemSprite spritesheet="icons-1" frameIndex={4} displaySize={32} />
+                    <ItemSprite spritesheet="icons-1" frameIndex={4} displaySize={42} />
                     <Text style={styles.cozyChoiceCardText}>Receive Buff</Text>
                     <Text style={styles.cozyChoiceCardDesc}>
                       Skip heal & obtain: {modalData?.buffLabel}
@@ -1455,6 +1490,7 @@ export default function DungeonMapScreen({ navigation }) {
                 </View>
               </View>
             </View>
+            {renderInfoOverlay()}
           </View>
         </Modal>
 
@@ -1532,8 +1568,8 @@ export default function DungeonMapScreen({ navigation }) {
                 </TouchableOpacity>
               </View>
 
-
             </View>
+            {renderInfoOverlay()}
           </View>
         </Modal>
 
@@ -1587,6 +1623,7 @@ export default function DungeonMapScreen({ navigation }) {
                 </View>
               </View>
             </View>
+            {renderInfoOverlay()}
           </View>
         </Modal>
 
@@ -1609,7 +1646,7 @@ export default function DungeonMapScreen({ navigation }) {
                   Object.keys(currentRun.lootCollected.consumables || {}).length === 0 ? (
                   <Text style={[styles.noLostLootText, { textAlign: 'center', marginBottom: 12 }]}>No loot collected yet.</Text>
                 ) : (
-                  <View style={{ marginBottom: 12 }}>
+                  <View style={{ marginBottom: 12, width: '100%', alignItems: 'center' }}>
                     {renderLootItems(
                       currentRun.lootCollected.materials,
                       currentRun.lootCollected.consumables,
@@ -1642,6 +1679,7 @@ export default function DungeonMapScreen({ navigation }) {
                 </View>
               </View>
             </View>
+            {renderInfoOverlay()}
           </View>
         </Modal>
 
@@ -1684,33 +1722,9 @@ export default function DungeonMapScreen({ navigation }) {
           </View>
         </Modal>
 
-        {/* ════════════════════════════════════════════════════════════════
-          LOOT ITEM INFO POPUP — tapping a reward box's (?) explains the item
-      ════════════════════════════════════════════════════════════════ */}
-        <Modal visible={!!infoItem} transparent animationType="fade" onRequestClose={() => setInfoItem(null)}>
-          <TouchableOpacity activeOpacity={1} style={styles.cozyOverlay} onPress={() => setInfoItem(null)}>
-            <View style={[styles.cozyFrame, { maxWidth: 320 }, theme.SHADOWS.cardShadow]}>
-              <View style={styles.cozyParchment}>
-                <View style={styles.cozyBevel} pointerEvents="none" />
-
-                {infoItem?.spritesheet != null && infoItem?.frameIndex != null && (
-                  <View style={{ marginBottom: 8 }}>
-                    <ItemSprite spritesheet={infoItem.spritesheet} frameIndex={infoItem.frameIndex} displaySize={44} />
-                  </View>
-                )}
-
-                <Text style={styles.itemInfoName}>{infoItem?.name}</Text>
-                <Text style={styles.itemInfoDesc}>{infoItem?.description}</Text>
-
-                <TouchableOpacity activeOpacity={0.85} onPress={() => setInfoItem(null)} style={styles.cozyButtonSecondary}>
-                  <View style={styles.cozyButtonSecondaryInner}>
-                    <Text style={styles.cozyButtonText}>Got it</Text>
-                  </View>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </TouchableOpacity>
-        </Modal>
+        {/* LOOT ITEM INFO POPUP — the (?) explanation is now rendered by
+            renderInfoOverlay() inside whichever modal is open (a stacked second
+            <Modal> would not display over an open one on iOS). */}
 
         {/* ════════════════════════════════════════════════════════════════
           6. FLOOR COMPLETE MODAL
@@ -1734,10 +1748,26 @@ export default function DungeonMapScreen({ navigation }) {
                       <Text style={styles.clearRewardHeader}>Floor Clear Bonus:</Text>
                       <View style={styles.clearRewardChips}>
                         <View style={styles.clearRewardChip}>
+                          <TouchableOpacity
+                            style={styles.chipInfoBadge}
+                            onPress={() => setInfoItem(getLootItemInfo('gold'))}
+                            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                            activeOpacity={0.7}
+                          >
+                            <Text style={styles.chipInfoBadgeText}>?</Text>
+                          </TouchableOpacity>
                           <ItemSprite spritesheet="icons-1" frameIndex={11} displaySize={32} />
                           <Text style={styles.clearRewardQty}>{clearReward.gold} G</Text>
                         </View>
                         <View style={styles.clearRewardChip}>
+                          <TouchableOpacity
+                            style={styles.chipInfoBadge}
+                            onPress={() => setInfoItem(getLootItemInfo('xp'))}
+                            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                            activeOpacity={0.7}
+                          >
+                            <Text style={styles.chipInfoBadgeText}>?</Text>
+                          </TouchableOpacity>
                           <ItemSprite spritesheet="icons-map" frameIndex={146} displaySize={32} />
                           <Text style={styles.clearRewardQty}>{clearReward.xp} XP</Text>
                         </View>
@@ -1793,6 +1823,7 @@ export default function DungeonMapScreen({ navigation }) {
                 </View>
               </View>
             </View>
+            {renderInfoOverlay()}
           </View>
         </Modal>
 
@@ -2019,16 +2050,16 @@ const styles = StyleSheet.create({
   },
   zoneTitle: {
     ...theme.FONTS.heading,
-    fontSize: 15,
+    fontSize: 18,
     fontWeight: 'bold',
     color: theme.COLORS.ghostWhite,
   },
   floorLabel: {
     ...theme.FONTS.label,
-    fontSize: 9,
-    marginTop: 1,
+    fontSize: 12,
+    marginTop: 2,
     fontWeight: '500',
-    opacity: 0.8,
+    opacity: 0.85,
   },
   roomsBadge: {
     borderRadius: theme.BORDER_RADIUS.pill,
@@ -2042,7 +2073,7 @@ const styles = StyleSheet.create({
   },
   roomsBadgeText: {
     ...theme.FONTS.label,
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: 'bold',
   },
 
@@ -2080,25 +2111,25 @@ const styles = StyleSheet.create({
   },
   lootStatLabel: {
     fontFamily: 'Silkscreen-Regular',
-    fontSize: 7.5,
+    fontSize: 9.5,
     fontWeight: 'normal',
-    color: 'rgba(255, 255, 255, 0.35)',
+    color: 'rgba(255, 255, 255, 0.45)',
     letterSpacing: 0.5,
     textTransform: 'uppercase',
   },
   lootStatValueGold: {
     ...theme.FONTS.label,
-    fontSize: 12,
+    fontSize: 15,
     color: theme.COLORS.candleGold,
     fontWeight: 'bold',
-    marginTop: 1,
+    marginTop: 2,
   },
   lootStatValueXp: {
     ...theme.FONTS.label,
-    fontSize: 12,
+    fontSize: 15,
     color: '#A98EE0',
     fontWeight: 'bold',
-    marginTop: 1,
+    marginTop: 2,
   },
 
   // Hero Status
@@ -2124,18 +2155,18 @@ const styles = StyleSheet.create({
   },
   levelLabel: {
     fontFamily: 'Silkscreen-Regular',
-    fontSize: 8,
+    fontSize: 9.5,
     fontWeight: 'normal',
-    color: 'rgba(232, 167, 58, 0.65)',
+    color: 'rgba(232, 167, 58, 0.7)',
     letterSpacing: 0.5,
-    lineHeight: 10,
+    lineHeight: 12,
   },
   levelValue: {
     ...theme.FONTS.heading,
-    fontSize: 15,
+    fontSize: 18,
     fontWeight: 'bold',
     color: theme.COLORS.candleGold,
-    lineHeight: 18,
+    lineHeight: 20,
   },
   gaugesContainer: {
     flex: 1,
@@ -3135,11 +3166,11 @@ const styles = StyleSheet.create({
   },
   cozySubtitle: {
     fontFamily: 'Silkscreen-Regular',
-    fontSize: 11,
+    fontSize: 13,
     color: '#4A2E14',
     textAlign: 'center',
     letterSpacing: 0.3,
-    lineHeight: 17,
+    lineHeight: 20,
     marginTop: 8,
     marginBottom: 16,
     paddingHorizontal: 6,
@@ -3215,19 +3246,19 @@ const styles = StyleSheet.create({
   },
   cozyChoiceCardText: {
     fontFamily: 'Jersey10-Regular',
-    fontSize: 12,
+    fontSize: 20,
     color: '#4A2E14',
     fontWeight: 'bold',
     textAlign: 'center',
-    marginTop: 6,
+    marginTop: 8,
   },
   cozyChoiceCardDesc: {
     fontFamily: 'Silkscreen-Regular',
-    fontSize: 11,
+    fontSize: 12,
     color: '#8A6E44',
     textAlign: 'center',
-    marginTop: 6,
-    lineHeight: 16,
+    marginTop: 8,
+    lineHeight: 18,
   },
   cozyButton: {
     alignSelf: 'stretch',

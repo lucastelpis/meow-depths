@@ -938,7 +938,7 @@ export default function SkillTreeScreen() {
                           {/* Table Header Row */}
                           <View style={styles.modalStatHeader}>
                             <Text style={styles.modalStatHeaderLeft}>
-                              CURRENT LEVEL <Text style={{ fontSize: 11 }}>★</Text>{selectedStars}
+                              CURRENT LEVEL {selectedStars}<Text style={{ fontSize: 11 }}>★</Text>
                             </Text>
                             <Text style={[
                               styles.modalStatHeaderRight,
@@ -946,7 +946,7 @@ export default function SkillTreeScreen() {
                             ]}>
                               {selectedStars === 5 ? 'MAXED' : (
                                 <Text>
-                                  NEXT <Text style={{ fontSize: 11 }}>★</Text>{selectedStars + 1}
+                                  NEXT {selectedStars + 1}<Text style={{ fontSize: 11 }}>★</Text>
                                 </Text>
                               )}
                             </Text>
@@ -989,9 +989,9 @@ export default function SkillTreeScreen() {
                     <View style={[styles.modalCostBox, { borderColor: `${elementColor}55` }]}>
                       <Text style={styles.modalStatLabel}>
                         {selectedCardState === 'available' ? (
-                          <Text>UNLOCK <Text style={{ fontSize: 11 }}>★</Text>1 COST</Text>
+                          <Text>UNLOCK 1<Text style={{ fontSize: 11 }}>★</Text> COST</Text>
                         ) : (
-                          <Text><Text style={{ fontSize: 11 }}>★</Text>{selectedStars + 1} UPGRADE COST</Text>
+                          <Text>{selectedStars + 1}<Text style={{ fontSize: 11 }}>★</Text> UPGRADE COST</Text>
                         )}
                       </Text>
                       <View style={styles.modalCostLevelRow}>
@@ -1026,11 +1026,11 @@ export default function SkillTreeScreen() {
                   <View style={styles.modalActions}>
                     {/* Row 1: Unlock / Level Up / Status */}
                     {selectedCardState === 'available' && (
-                      <GradientButton color={elementColor} label="UNLOCK ★1" onPress={handleUnlock} />
+                      <GradientButton color={elementColor} label="UNLOCK 1★" onPress={handleUnlock} />
                     )}
 
                     {selectedCardState === 'unlocked' && starUpCheck?.can && (
-                      <GradientButton color={elementColor} label={`LEVEL UP → ★${selectedStars + 1}`} onPress={handleStarUp} />
+                      <GradientButton color={elementColor} label={`LEVEL UP → ${selectedStars + 1}★`} onPress={handleStarUp} />
                     )}
 
                     {selectedCardState === 'unlocked' && !starUpCheck?.can && selectedStars < 5 && (

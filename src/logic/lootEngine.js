@@ -198,11 +198,12 @@ export function generateTreasureDrops(zoneId, floorNumber, isDouble = false) {
   // exclusively from quests (see Loot Source Doctrine in gamedetails.md).
 
   // Stamina Potion — rare treasure drop. Chance scales +1% per floor and is
-  // capped at 10% (so floors 1→10 range from 1%→10%). A Double Treasure
-  // outcome grants 2 instead of 1, matching how other quantities are doubled.
+  // capped at 10% (so floors 1→10 range from 1%→10%). A chest never yields more
+  // than a single stamina potion — it is deliberately excluded from the Double
+  // Treasure multiplier so jackpots can't stack extra charges.
   const staminaChance = Math.min(0.10, floorNumber * 0.01);
   if (Math.random() < staminaChance) {
-    consumables.stamina_potion = 1 * mult;
+    consumables.stamina_potion = 1;
   }
 
   // Potion — medium treasure drop, available on every floor. Chance scales with

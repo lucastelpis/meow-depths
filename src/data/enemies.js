@@ -103,7 +103,7 @@ const cockroach_knight = {
   isBoss: false,
   isElite: false,
   baseXp: 30,
-  baseGold: 4,
+  baseGold: 5,
   drops: [],
   moves: [
     {
@@ -181,8 +181,8 @@ const king_rat = {
   isBoss: true,
   isElite: false,
   xp: 500,
-  goldMin: 100,
-  goldMax: 200,
+  goldMin: 300,
+  goldMax: 600,
   drops: [
     { itemId: 'gnarlcrown_shard', chance: 1.0 },
     { itemId: 'black_shard_fire', chance: 1.0, count: 2 },
