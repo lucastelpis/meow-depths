@@ -703,7 +703,7 @@ export default function HeroDefinitionScreen({ navigation }) {
                       {/* Stats Preview */}
                       {skill.stars?.[1] && (
                         <View style={[styles.modalSkillStatsBox, { borderColor: 'rgba(255, 243, 218, 0.15)' }]}>
-                          <Text style={styles.modalSkillStatsTitle}>★1 INITIAL STATS</Text>
+                          <Text style={styles.modalSkillStatsTitle}>1★ INITIAL STATS</Text>
                           {Object.entries(skill.stars[1]).map(([k, v]) => (
                             <View key={k} style={styles.modalSkillStatRow}>
                               <Text style={styles.modalSkillStatLabel}>{SKILL_STAT_LABELS[k] || k}:</Text>

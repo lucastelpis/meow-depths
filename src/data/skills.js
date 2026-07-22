@@ -474,7 +474,7 @@ export function canUnlockElementSkill(skillId, hero) {
     const parentEntry = hero.unlockedSkills[skill.unlockedBy];
     if (!parentEntry || parentEntry.stars < 5) {
       const parentSkill = SKILLS[skill.unlockedBy];
-      return { can: false, reason: `Requires ${parentSkill?.name || skill.unlockedBy} at ★5.`, cost };
+      return { can: false, reason: `Requires ${parentSkill?.name || skill.unlockedBy} at 5★.`, cost };
     }
   }
 

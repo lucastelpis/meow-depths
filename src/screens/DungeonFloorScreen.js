@@ -867,9 +867,7 @@ export default function DungeonFloorScreen() {
                         {/* Consumables Rewards */}
                         {activeQuestForFloor.rewards?.consumables &&
                           Object.entries(activeQuestForFloor.rewards.consumables).map(([itemId, qty]) => {
-                            const isMega = itemId.includes('mega');
-                            const isSuper = itemId.includes('super');
-                            const frame = isMega ? 4 : (isSuper ? 3 : 2); // Potion frames
+                            const def = CONSUMABLES.find(c => c.id === itemId);
                             return (
                               <TouchableOpacity
                                 key={itemId}
@@ -877,8 +875,12 @@ export default function DungeonFloorScreen() {
                                 activeOpacity={0.7}
                                 onPress={() => setRewardInfo(getItemInfo(itemId))}
                               >
-                                <ItemSprite spritesheet="icons-1" frameIndex={frame} displaySize={24} />
-                                <Text style={styles.modalRewardText}>{qty}x {itemId.replace('_', ' ').toUpperCase()}</Text>
+                                <ItemSprite
+                                  spritesheet={def?.spritesheet || 'consumables-1'}
+                                  frameIndex={def?.frameIndex ?? 0}
+                                  displaySize={24}
+                                />
+                                <Text style={styles.modalRewardText}>{qty}x {(def?.name || itemId.replace(/_/g, ' ')).toUpperCase()}</Text>
                                 <View style={styles.rewardInfoTag}><Text style={styles.rewardInfoTagText}>?</Text></View>
                               </TouchableOpacity>
                             );
@@ -902,29 +904,34 @@ export default function DungeonFloorScreen() {
                 )}
               </Pressable>
             </View>
+
+            {/* Reward info popup — rendered INSIDE this modal so it shows on top.
+                A second RN <Modal> stacked over an already-open one fails to
+                display on iOS, which previously made the (?) taps appear dead and
+                left the quest modal unable to reopen afterwards. */}
+            {rewardInfo && (
+              <Pressable style={styles.rewardInfoOverlay} onPress={() => setRewardInfo(null)}>
+                <Pressable style={styles.rewardInfoFrame} onPress={(e) => e.stopPropagation()}>
+                  <View style={styles.rewardInfoParchment}>
+                    <Text style={styles.rewardInfoTitle}>{rewardInfo?.title}</Text>
+                    <Text style={styles.pmDesc}>{rewardInfo?.desc}</Text>
+                    <View style={styles.pmBtnCol}>
+                      <TouchableOpacity
+                        activeOpacity={0.85}
+                        onPress={() => setRewardInfo(null)}
+                        style={styles.pmBtnSecondaryOuter}
+                      >
+                        <View style={styles.pmBtnSecondaryInner}>
+                          <Text style={styles.pmBtnSecondaryText}>GOT IT</Text>
+                        </View>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                </Pressable>
+              </Pressable>
+            )}
           </Pressable>
         </Modal>
-
-        {/* ── Reward Item Info Popup (tapping a reward chip's ?) ── */}
-        <ParchmentModal
-          visible={!!rewardInfo}
-          onClose={() => setRewardInfo(null)}
-          title={rewardInfo?.title || ''}
-          maxWidth={320}
-        >
-          <Text style={styles.pmDesc}>{rewardInfo?.desc}</Text>
-          <View style={styles.pmBtnCol}>
-            <TouchableOpacity
-              activeOpacity={0.85}
-              onPress={() => setRewardInfo(null)}
-              style={styles.pmBtnSecondaryOuter}
-            >
-              <View style={styles.pmBtnSecondaryInner}>
-                <Text style={styles.pmBtnSecondaryText}>GOT IT</Text>
-              </View>
-            </TouchableOpacity>
-          </View>
-        </ParchmentModal>
 
         {/* ── No Consumables Warning Modal ── */}
         <ParchmentModal
@@ -1548,17 +1555,17 @@ const styles = StyleSheet.create({
   modalContentWrapper: {
     width: '100%',
     maxWidth: 340,
-    borderWidth: 2,
-    borderColor: '#84735B',
-    borderRadius: 16,
-    backgroundColor: '#4F3C1E',
-    padding: 3,
+    borderWidth: 3,
+    borderColor: '#3A2210',
+    borderRadius: 12,
+    backgroundColor: '#6E4524',
+    padding: 10,
   },
   modalContent: {
-    borderWidth: 1.5,
-    borderColor: '#4F856C',
-    borderRadius: 12,
-    backgroundColor: '#1B4030',
+    borderWidth: 2,
+    borderColor: '#C9A86A',
+    borderRadius: 14,
+    backgroundColor: '#ECD8A6',
     padding: 16,
   },
   modalHeader: {
@@ -1571,7 +1578,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontFamily: 'Jersey10-Regular',
     fontSize: 26,
-    color: '#FFE39B',
+    color: '#3A2210',
     marginLeft: 8,
   },
   modalCloseButton: {
@@ -1580,24 +1587,24 @@ const styles = StyleSheet.create({
   modalCloseButtonText: {
     fontFamily: 'Jersey10-Regular',
     fontSize: 24,
-    color: '#EAD9BA',
+    color: '#6E4524',
   },
   modalDivider: {
     height: 2,
-    backgroundColor: 'rgba(234, 217, 186, 0.15)',
+    backgroundColor: 'rgba(58, 34, 16, 0.25)',
     marginBottom: 12,
   },
   modalQuestDesc: {
     fontFamily: 'Jersey10-Regular',
     fontSize: 22,
-    color: '#EAD9BA',
-    lineHeight: 20,
+    color: '#4A2E14',
+    lineHeight: 22,
     marginBottom: 16,
   },
   modalSectionLabel: {
     fontFamily: 'Silkscreen-Regular',
     fontSize: 14,
-    color: '#c9bb25ff',
+    color: '#8A6E44',
     marginBottom: 6,
   },
   modalProgressSection: {
@@ -1610,11 +1617,11 @@ const styles = StyleSheet.create({
   },
   modalProgressBarBg: {
     flex: 1,
-    height: 10,
-    backgroundColor: 'rgba(0, 0, 0, 0.4)',
-    borderRadius: 5,
+    height: 12,
+    backgroundColor: '#3A2210',
+    borderRadius: 6,
     borderWidth: 1,
-    borderColor: '#84735B',
+    borderColor: '#C9A86A',
     overflow: 'hidden',
   },
   modalProgressBarFill: {
@@ -1625,7 +1632,7 @@ const styles = StyleSheet.create({
   modalProgressText: {
     fontFamily: 'Silkscreen-Regular',
     fontSize: 14,
-    color: '#EAD9BA',
+    color: '#4A2E14',
   },
   modalRewardsSection: {
     marginBottom: 20,
@@ -1638,33 +1645,67 @@ const styles = StyleSheet.create({
   modalRewardCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.25)',
+    backgroundColor: '#F4E6C0',
     borderRadius: 8,
-    paddingVertical: 4,
+    paddingVertical: 5,
     paddingHorizontal: 8,
-    borderWidth: 1,
-    borderColor: 'rgba(234, 217, 186, 0.1)',
+    borderWidth: 1.5,
+    borderColor: '#C9A86A',
     gap: 6,
   },
   modalRewardText: {
     fontFamily: 'Jersey10-Regular',
     fontSize: 20,
-    color: '#FFE39B',
+    color: '#3A2210',
   },
   rewardInfoTag: {
     width: 16,
     height: 16,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: 'rgba(234, 217, 186, 0.35)',
-    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    borderColor: '#ECD8A6',
+    backgroundColor: '#6E4524',
     justifyContent: 'center',
     alignItems: 'center',
   },
   rewardInfoTagText: {
     fontFamily: 'Silkscreen-Regular',
     fontSize: 9,
-    color: '#EAD9BA',
+    color: '#F4E6C0',
+  },
+  rewardInfoOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(24, 14, 6, 0.82)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 26,
+    zIndex: 50,
+  },
+  rewardInfoFrame: {
+    width: '100%',
+    maxWidth: 320,
+    backgroundColor: '#6E4524',
+    borderColor: '#3A2210',
+    borderWidth: 3,
+    borderRadius: 12,
+    padding: 10,
+  },
+  rewardInfoParchment: {
+    backgroundColor: '#ECD8A6',
+    borderRadius: 14,
+    borderColor: '#C9A86A',
+    borderWidth: 2,
+    paddingTop: 18,
+    paddingBottom: 16,
+    paddingHorizontal: 18,
+    alignItems: 'center',
+  },
+  rewardInfoTitle: {
+    fontFamily: 'PressStart2P-Regular',
+    fontSize: 12,
+    color: '#4A2E14',
+    textAlign: 'center',
+    marginBottom: 12,
   },
   modalFooter: {
     alignItems: 'center',
@@ -1729,10 +1770,10 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   pmBtnPrimaryOuter: {
-    height: 40,
+    height: 46,
     borderRadius: 8,
-    borderWidth: 1.5,
-    borderColor: '#C79A3A',
+    borderWidth: 2,
+    borderColor: '#3A2210',
     padding: 2,
     backgroundColor: '#5A3A12',
   },
@@ -1743,9 +1784,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 8,
     borderRadius: 5,
-    backgroundColor: '#8E5A1D',
-    borderWidth: 1,
-    borderColor: '#C79A3A',
+    backgroundColor: '#B5791F',
+    borderWidth: 1.5,
+    borderTopColor: '#E6BB58',
+    borderLeftColor: '#E6BB58',
+    borderRightColor: '#E6BB58',
+    borderBottomColor: '#5A3A12',
+    borderBottomWidth: 4,
   },
   pmBtnPrimaryText: {
     fontFamily: 'Jersey10-Regular',
@@ -1754,10 +1799,10 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   pmBtnSecondaryOuter: {
-    height: 40,
+    height: 46,
     borderRadius: 8,
-    borderWidth: 1.5,
-    borderColor: '#84735B',
+    borderWidth: 2,
+    borderColor: '#3A2210',
     padding: 2,
     backgroundColor: '#2C2013',
   },
@@ -1766,9 +1811,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 5,
-    backgroundColor: '#4F3C1E',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
+    backgroundColor: '#6E5230',
+    borderWidth: 1.5,
+    borderTopColor: '#9A7B4C',
+    borderLeftColor: '#9A7B4C',
+    borderRightColor: '#9A7B4C',
+    borderBottomColor: '#2C2013',
+    borderBottomWidth: 4,
   },
   pmBtnSecondaryText: {
     fontFamily: 'Jersey10-Regular',
@@ -1776,10 +1825,10 @@ const styles = StyleSheet.create({
     color: '#EAD9BA',
   },
   pmBtnDangerOuter: {
-    height: 40,
+    height: 46,
     borderRadius: 8,
-    borderWidth: 1.5,
-    borderColor: '#A61C1C',
+    borderWidth: 2,
+    borderColor: '#2A0708',
     padding: 2,
     backgroundColor: '#3A0B0C',
   },
@@ -1788,9 +1837,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 5,
-    backgroundColor: '#590D0E',
-    borderWidth: 1,
-    borderColor: '#A61C1C',
+    backgroundColor: '#A61C1C',
+    borderWidth: 1.5,
+    borderTopColor: '#D8483F',
+    borderLeftColor: '#D8483F',
+    borderRightColor: '#D8483F',
+    borderBottomColor: '#590D0E',
+    borderBottomWidth: 4,
   },
   pmBtnDangerText: {
     fontFamily: 'Jersey10-Regular',

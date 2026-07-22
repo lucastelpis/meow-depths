@@ -45,7 +45,7 @@ export function generateDailyQuests(hero, progress, dateStr) {
   const loginQuest = {
     id: 'daily_visit_camp',
     title: 'Report to Camp',
-    desc: 'Check in at the Camp hub to coordinate with Mochi.',
+    desc: "Every expedition begins with a briefing. Check in at the Camp hub to coordinate the day's work with Mochi.",
     type: 'visit_camp',
     progress: 1, // Auto-completes upon focus/generation
     target: 1,
@@ -67,8 +67,8 @@ export function generateDailyQuests(hero, progress, dateStr) {
     const floorToClear = Math.floor(rand() * clearedFloorsCount) + 1;
     pool.push({
       type: 'clear_cleared_floor',
-      title: `Tactical Recrawl: Floor ${floorToClear}`,
-      desc: `Clear all rooms on Floor ${floorToClear} of the ${getZoneName(currentZone)}.`,
+      title: `Tactical Recrawl: Zone ${floorToClear}`,
+      desc: `The corruption seeps back into ground we've already taken. Sweep it out again — clear every room on Zone ${floorToClear} of the ${getZoneName(currentZone)}.`,
       target: 1,
       targetFloor: floorToClear,
       targetZone: currentZone,
@@ -101,7 +101,7 @@ export function generateDailyQuests(hero, progress, dateStr) {
   pool.push({
     type: 'hunt_creature',
     title: `Creature Bounty: ${pickedEnemy.name}s`,
-    desc: `Defeat ${huntQty} ${pickedEnemy.name}s in combat.`,
+    desc: `The ${pickedEnemy.name}s are multiplying faster than the Order can track. Thin the pack — defeat ${huntQty} of them in combat.`,
     target: huntQty,
     enemyId: pickedEnemy.id,
     rewards: {
@@ -120,7 +120,7 @@ export function generateDailyQuests(hero, progress, dateStr) {
   pool.push({
     type: 'hunt_stars',
     title: `Supply Run: ${resourceName}`,
-    desc: `Defeat ${gatherQty} enemies to earn camp supplies.`,
+    desc: `The Camp's stores are running thin. Fight your way to a resupply — defeat ${gatherQty} enemies to earn camp supplies.`,
     target: gatherQty,
     stars: 1,
     rewards: {
@@ -135,7 +135,7 @@ export function generateDailyQuests(hero, progress, dateStr) {
   pool.push({
     type: 'hunt_stars',
     title: `Elite Hunt: ${targetStars}★ Threats`,
-    desc: `Defeat ${starHuntQty} enemies of ${targetStars}★ rating or higher in combat.`,
+    desc: `Something is drawing the strongest beasts toward the surface. Cull them — defeat ${starHuntQty} enemies of ${targetStars}★ rating or higher in combat.`,
     target: starHuntQty,
     stars: targetStars,
     rewards: {
@@ -186,7 +186,7 @@ export const CAMPAIGN_QUEST_TEMPLATES = [
   {
     id: 'camp_clear_zone1_f1',
     title: 'Ruins Initiate',
-    desc: 'Clear Floor 1 of Soggy Ruins.',
+    desc: "The Order's maps end where the old shelters begin. Descend into the flooded tunnels and clear Floor 1 — whatever became of the people who hid here, their story starts at the surface.",
     type: 'progression_clear_floor',
     zoneId: 'zone1',
     floorNumber: 1,
@@ -200,7 +200,7 @@ export const CAMPAIGN_QUEST_TEMPLATES = [
   {
     id: 'camp_clear_zone1_f2',
     title: 'Ruins Scout',
-    desc: 'Clear Floor 2 of Soggy Ruins.',
+    desc: 'Survivors sealed themselves down here as the world burned above. Push deeper and clear Floor 2 to follow where they went.',
     type: 'progression_clear_floor',
     zoneId: 'zone1',
     floorNumber: 2,
@@ -215,7 +215,7 @@ export const CAMPAIGN_QUEST_TEMPLATES = [
   {
     id: 'camp_clear_zone1_f3',
     title: 'Ruins Explorer',
-    desc: 'Clear Floor 3 of Soggy Ruins.',
+    desc: 'The black crystal grows thickest where the corruption first took root. Clear Floor 3 and see how far it has already spread.',
     type: 'progression_clear_floor',
     zoneId: 'zone1',
     floorNumber: 3,
@@ -230,7 +230,7 @@ export const CAMPAIGN_QUEST_TEMPLATES = [
   {
     id: 'camp_clear_zone1_f4',
     title: 'Ruins Excavator',
-    desc: 'Clear Floor 4 of Soggy Ruins.',
+    desc: 'Another shelter, another silence. Clear Floor 4 and recover whatever the tunnel-folk left behind for someone to find.',
     type: 'progression_clear_floor',
     zoneId: 'zone1',
     floorNumber: 4,
@@ -245,7 +245,7 @@ export const CAMPAIGN_QUEST_TEMPLATES = [
   {
     id: 'camp_clear_zone1_f5',
     title: 'Ruins Delver',
-    desc: 'Clear Floor 5 of Soggy Ruins.',
+    desc: 'Something has been nesting in the deep water, fed by the crystal. Clear Floor 5 before it grows bold enough to climb.',
     type: 'progression_clear_floor',
     zoneId: 'zone1',
     floorNumber: 5,
@@ -260,7 +260,7 @@ export const CAMPAIGN_QUEST_TEMPLATES = [
   {
     id: 'camp_clear_zone1_f6',
     title: 'Ruins Pathfinder',
-    desc: 'Clear Floor 6 of Soggy Ruins.',
+    desc: 'The notes speak of hundreds who counted heads each morning until the counting stopped. Clear Floor 6 and give their story a witness.',
     type: 'progression_clear_floor',
     zoneId: 'zone1',
     floorNumber: 6,
@@ -275,7 +275,7 @@ export const CAMPAIGN_QUEST_TEMPLATES = [
   {
     id: 'camp_clear_zone1_f7',
     title: 'Ruins Veteran',
-    desc: 'Clear Floor 7 of Soggy Ruins.',
+    desc: 'The corruption is changing the creatures down here, not merely killing them. Clear Floor 7 and learn how deep the change runs.',
     type: 'progression_clear_floor',
     zoneId: 'zone1',
     floorNumber: 7,
@@ -290,7 +290,7 @@ export const CAMPAIGN_QUEST_TEMPLATES = [
   {
     id: 'camp_clear_zone1_f8',
     title: 'Ruins Conqueror',
-    desc: 'Clear Floor 8 of Soggy Ruins.',
+    desc: 'Sealed doors mean someone once had something worth protecting. Clear Floor 8 and find out what they hoped would outlast them.',
     type: 'progression_clear_floor',
     zoneId: 'zone1',
     floorNumber: 8,
@@ -305,7 +305,7 @@ export const CAMPAIGN_QUEST_TEMPLATES = [
   {
     id: 'camp_clear_zone1_f9',
     title: 'Ruins Vanguard',
-    desc: 'Clear Floor 9 of Soggy Ruins.',
+    desc: 'You are near the heart of the warren now. Clear Floor 9 — whatever rules these tunnels waits just below.',
     type: 'progression_clear_floor',
     zoneId: 'zone1',
     floorNumber: 9,
@@ -320,7 +320,7 @@ export const CAMPAIGN_QUEST_TEMPLATES = [
   {
     id: 'camp_defeat_king_rat',
     title: 'Bane of Sewer Rats',
-    desc: 'Defeat the Sewer King (King Rat) on Floor 10 of Soggy Ruins.',
+    desc: 'The last survivor wrote of a rat that only sat and watched, swollen with black crystal. It watches no longer. Descend to Floor 10 and put down the Sewer King before it reaches the surface.',
     type: 'defeat_boss',
     bossId: 'king_rat',
     zoneId: 'zone1',
@@ -339,7 +339,7 @@ export const CAMPAIGN_QUEST_TEMPLATES = [
   {
     id: 'camp_clear_zone2_f1',
     title: 'Garden Pathfinder',
-    desc: 'Clear Floor 1 of Twisted Garden.',
+    desc: 'The Order followed the green bloom to a buried greenhouse. Clear Floor 1 of the Twisted Garden and learn what the corruption does to living things.',
     type: 'progression_clear_floor',
     zoneId: 'zone2',
     floorNumber: 1,
@@ -354,7 +354,7 @@ export const CAMPAIGN_QUEST_TEMPLATES = [
   {
     id: 'camp_clear_zone2_f2',
     title: 'Garden Scout',
-    desc: 'Clear Floor 2 of Twisted Garden.',
+    desc: 'The plants here grow faster than anything should. Clear Floor 2 before the overgrowth seals the path behind you.',
     type: 'progression_clear_floor',
     zoneId: 'zone2',
     floorNumber: 2,
@@ -369,7 +369,7 @@ export const CAMPAIGN_QUEST_TEMPLATES = [
   {
     id: 'camp_clear_zone2_f3',
     title: 'Garden Explorer',
-    desc: 'Clear Floor 3 of Twisted Garden.',
+    desc: 'The researchers studied this place until it began to study them back. Clear Floor 3 and recover the work they died protecting.',
     type: 'progression_clear_floor',
     zoneId: 'zone2',
     floorNumber: 3,
@@ -384,7 +384,7 @@ export const CAMPAIGN_QUEST_TEMPLATES = [
   {
     id: 'camp_clear_zone2_f4',
     title: 'Garden Weed-Cutter',
-    desc: 'Clear Floor 4 of Twisted Garden.',
+    desc: 'Green crystal pulses in the roots like a second heartbeat. Clear Floor 4 and trace it back toward its source.',
     type: 'progression_clear_floor',
     zoneId: 'zone2',
     floorNumber: 4,
@@ -399,7 +399,7 @@ export const CAMPAIGN_QUEST_TEMPLATES = [
   {
     id: 'camp_clear_zone2_f5',
     title: 'Garden Herbalist',
-    desc: 'Clear Floor 5 of Twisted Garden.',
+    desc: 'The insects here no longer behave like insects. Clear Floor 5 and see what the corruption has been teaching them.',
     type: 'progression_clear_floor',
     zoneId: 'zone2',
     floorNumber: 5,
@@ -414,7 +414,7 @@ export const CAMPAIGN_QUEST_TEMPLATES = [
   {
     id: 'camp_clear_zone2_f6',
     title: 'Garden Trailblazer',
-    desc: 'Clear Floor 6 of Twisted Garden.',
+    desc: 'One caretaker kept this station alive long after the scientists were gone. Clear Floor 6 and honor what they refused to let die.',
     type: 'progression_clear_floor',
     zoneId: 'zone2',
     floorNumber: 6,
@@ -429,7 +429,7 @@ export const CAMPAIGN_QUEST_TEMPLATES = [
   {
     id: 'camp_clear_zone2_f7',
     title: 'Garden Botanist',
-    desc: 'Clear Floor 7 of Twisted Garden.',
+    desc: 'The deeper wings have grown wild and wrong. Clear Floor 7 to keep the way to the core from closing over.',
     type: 'progression_clear_floor',
     zoneId: 'zone2',
     floorNumber: 7,
@@ -444,7 +444,7 @@ export const CAMPAIGN_QUEST_TEMPLATES = [
   {
     id: 'camp_clear_zone2_f8',
     title: 'Garden Defoliator',
-    desc: 'Clear Floor 8 of Twisted Garden.',
+    desc: 'The garden defends itself now, as if it knows you are coming. Clear Floor 8 and prove the corruption can still be driven back.',
     type: 'progression_clear_floor',
     zoneId: 'zone2',
     floorNumber: 8,
@@ -459,7 +459,7 @@ export const CAMPAIGN_QUEST_TEMPLATES = [
   {
     id: 'camp_clear_zone2_f9',
     title: 'Garden Sentinel',
-    desc: 'Clear Floor 9 of Twisted Garden.',
+    desc: 'Every root in the station leads to a single chamber at its heart. Clear Floor 9 — its guardian is already stirring.',
     type: 'progression_clear_floor',
     zoneId: 'zone2',
     floorNumber: 9,
@@ -474,7 +474,7 @@ export const CAMPAIGN_QUEST_TEMPLATES = [
   {
     id: 'camp_defeat_granite_crawler',
     title: 'Crawler Crusher',
-    desc: 'Defeat the Granite Crawler on Floor 10 of Twisted Garden.',
+    desc: "At the garden's heart the corruption grew itself a warden of stone and vine. Reach Floor 10 and shatter the Granite Crawler before it can seed the world above.",
     type: 'defeat_boss',
     bossId: 'granite_crawler',
     zoneId: 'zone2',
@@ -493,7 +493,7 @@ export const CAMPAIGN_QUEST_TEMPLATES = [
   {
     id: 'camp_clear_zone3_f1',
     title: 'Docks Explorer',
-    desc: 'Clear Floor 1 of Sunken Docks.',
+    desc: "The Order's oldest legend points to a drowned harbor — and a wall where a grey cat was first named. Clear Floor 1 of the Sunken Docks and start toward the truth.",
     type: 'progression_clear_floor',
     zoneId: 'zone3',
     floorNumber: 1,
@@ -508,7 +508,7 @@ export const CAMPAIGN_QUEST_TEMPLATES = [
   {
     id: 'camp_clear_zone3_f2',
     title: 'Docks Wharf-Scout',
-    desc: 'Clear Floor 2 of Sunken Docks.',
+    desc: 'They fled by sea, praying somewhere had been spared. Clear Floor 2 and follow their trail down into the black water.',
     type: 'progression_clear_floor',
     zoneId: 'zone3',
     floorNumber: 2,
@@ -523,7 +523,7 @@ export const CAMPAIGN_QUEST_TEMPLATES = [
   {
     id: 'camp_clear_zone3_f3',
     title: 'Docks Beachcomber',
-    desc: 'Clear Floor 3 of Sunken Docks.',
+    desc: 'Yellow crystal glows beneath the tide like a drowned sun. Clear Floor 3 and begin to understand what it wants.',
     type: 'progression_clear_floor',
     zoneId: 'zone3',
     floorNumber: 3,
@@ -538,7 +538,7 @@ export const CAMPAIGN_QUEST_TEMPLATES = [
   {
     id: 'camp_clear_zone3_f4',
     title: 'Docks Mariner',
-    desc: 'Clear Floor 4 of Sunken Docks.',
+    desc: 'The ships never made it far, and their captains knew it. Clear Floor 4 and recover the logs of those who tried to leave.',
     type: 'progression_clear_floor',
     zoneId: 'zone3',
     floorNumber: 4,
@@ -553,7 +553,7 @@ export const CAMPAIGN_QUEST_TEMPLATES = [
   {
     id: 'camp_clear_zone3_f5',
     title: 'Docks Diver',
-    desc: 'Clear Floor 5 of Sunken Docks.',
+    desc: 'A researcher stayed behind to record what the corruption did to the sea. Clear Floor 5 and find the notes she never sent.',
     type: 'progression_clear_floor',
     zoneId: 'zone3',
     floorNumber: 5,
@@ -568,7 +568,7 @@ export const CAMPAIGN_QUEST_TEMPLATES = [
   {
     id: 'camp_clear_zone3_f6',
     title: 'Docks Navigator',
-    desc: 'Clear Floor 6 of Sunken Docks.',
+    desc: 'The harbor is silent now, its whole fleet unaccounted for. Clear Floor 6 and read what the last keeper of the log left behind.',
     type: 'progression_clear_floor',
     zoneId: 'zone3',
     floorNumber: 6,
@@ -583,7 +583,7 @@ export const CAMPAIGN_QUEST_TEMPLATES = [
   {
     id: 'camp_clear_zone3_f7',
     title: 'Docks Ship-Master',
-    desc: 'Clear Floor 7 of Sunken Docks.',
+    desc: 'Some chose to stay rather than sail into the unknown. Clear Floor 7 and learn what became of the ones who never boarded.',
     type: 'progression_clear_floor',
     zoneId: 'zone3',
     floorNumber: 7,
@@ -598,7 +598,7 @@ export const CAMPAIGN_QUEST_TEMPLATES = [
   {
     id: 'camp_clear_zone3_f8',
     title: 'Docks Leviathan-Hunter',
-    desc: 'Clear Floor 8 of Sunken Docks.',
+    desc: 'The water no longer moves the way water should. Clear Floor 8 and press on toward whatever waits in the deep.',
     type: 'progression_clear_floor',
     zoneId: 'zone3',
     floorNumber: 8,
@@ -613,7 +613,7 @@ export const CAMPAIGN_QUEST_TEMPLATES = [
   {
     id: 'camp_clear_zone3_f9',
     title: 'Docks Admiral',
-    desc: 'Clear Floor 9 of Sunken Docks.',
+    desc: 'The deepest chamber was sealed from the inside, beside markings older than the war. Clear Floor 9 — something ancient is stirring behind it.',
     type: 'progression_clear_floor',
     zoneId: 'zone3',
     floorNumber: 9,
@@ -628,7 +628,7 @@ export const CAMPAIGN_QUEST_TEMPLATES = [
   {
     id: 'camp_defeat_sea_abomination',
     title: 'Dread of the Deep',
-    desc: 'Defeat the Sea Abomination on Floor 10 of Sunken Docks.',
+    desc: 'The corruption reached the sea and made something that should not be. Reach Floor 10 and end the Sea Abomination — the waiting wall beyond it was left for you.',
     type: 'defeat_boss',
     bossId: 'sea_abomination',
     zoneId: 'zone3',
@@ -647,7 +647,7 @@ export const CAMPAIGN_QUEST_TEMPLATES = [
   {
     id: 'camp_equip_four_items',
     title: 'Armored Adventurer',
-    desc: 'Equip any 4 pieces of gear simultaneously in Mochi\'s profile.',
+    desc: 'The deep tunnels are no place to walk unready. Equip any 4 pieces of gear at once in Mochi\'s profile.',
     type: 'equip_gear_set',
     count: 4,
     progress: 0,
@@ -660,7 +660,7 @@ export const CAMPAIGN_QUEST_TEMPLATES = [
   {
     id: 'camp_max_t1_skill',
     title: 'Skill Master',
-    desc: 'Upgrade any Tier 1 active or passive skill to ★5.',
+    desc: 'Instinct sharpens with use, and the corruption punishes the unpracticed. Upgrade any Tier 1 active or passive skill to 5★.',
     type: 'max_t1_skill',
     progress: 0,
     target: 1,
@@ -672,7 +672,7 @@ export const CAMPAIGN_QUEST_TEMPLATES = [
   {
     id: 'camp_max_two_t1_skills',
     title: 'Versatile Warrior',
-    desc: 'Upgrade two Tier 1 skills to ★5.',
+    desc: 'One trick is never enough this far underground. Upgrade two Tier 1 skills to 5★.',
     type: 'max_two_t1_skills',
     progress: 0,
     target: 2,
@@ -688,7 +688,7 @@ export const CAMPAIGN_QUEST_TEMPLATES = [
   {
     id: 'camp_max_t2_skill',
     title: 'Aura Ascendancy',
-    desc: 'Upgrade any Tier 2 skill to ★5.',
+    desc: 'The corruption rewards those who adapt to it. Upgrade any Tier 2 skill to 5★.',
     type: 'max_t2_skill',
     progress: 0,
     target: 5,
@@ -770,6 +770,15 @@ export function syncPersistentQuests(state) {
               mergedChanged = true;
             }
           }
+          // Authored/narrative fields always track the template so rewritten
+          // lore reaches existing saves without wiping the player's progress
+          // (progress / completed / claimed are never touched here).
+          for (const key of ['desc', 'title']) {
+            if (template[key] !== undefined && merged[key] !== template[key]) {
+              merged[key] = template[key];
+              mergedChanged = true;
+            }
+          }
           if (mergedChanged) {
             changed = true;
             return merged;
@@ -786,15 +795,42 @@ export function syncPersistentQuests(state) {
   const hero = state.hero;
   const progress = state.progress;
 
-  const dailies = (questsState.dailies || []).map(q => {
-    if (q.completed) return q;
-    let newProgress = q.progress;
-    const completed = newProgress >= q.target;
-    if (newProgress !== q.progress || completed !== q.completed) {
-      changed = true;
-      return { ...q, progress: newProgress, completed };
+  // Build a reference set of today's dailies so rewritten flavor (desc) reaches
+  // an already-generated set without regenerating it (which would reset
+  // progress). Daily generation is deterministic per date + hero name, so the
+  // rebuilt quests match the stored ones by id + title; we only copy `desc`
+  // when the title also matches, guarding against any same-day pool drift.
+  const dailyRef = {};
+  if (questsState.lastGeneratedDate) {
+    try {
+      for (const rq of generateDailyQuests(hero, progress, questsState.lastGeneratedDate)) {
+        dailyRef[rq.id] = rq;
+      }
+    } catch (e) {
+      // If regeneration fails for any reason, skip the flavor refresh.
     }
-    return q;
+  }
+
+  const dailies = (questsState.dailies || []).map(q => {
+    let merged = q;
+
+    // Refresh authored flavor text onto the matching stored daily.
+    const ref = dailyRef[q.id];
+    if (ref && ref.title === q.title && ref.desc !== q.desc) {
+      merged = { ...merged, desc: ref.desc };
+      changed = true;
+    }
+
+    // Recompute the completed flag from stored progress (unchanged behavior).
+    if (!merged.completed) {
+      const completed = merged.progress >= merged.target;
+      if (completed !== merged.completed) {
+        merged = { ...merged, completed };
+        changed = true;
+      }
+    }
+
+    return merged;
   });
 
   const campaign = (questsState.campaign || []).map(q => {
