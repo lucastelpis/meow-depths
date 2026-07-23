@@ -57,6 +57,7 @@ import AnimatedSprite from '../components/AnimatedSprite';
 import Button from '../components/ui/Button';
 import ResourceBar from '../components/ui/ResourceBar';
 import ItemSprite from '../components/ItemSprite';
+import ParchmentModal from '../components/ui/ParchmentModal';
 import { HERO_SPRITE, getEnemySprite } from '../constants/sprites';
 import SoundManager from '../utils/soundManager';
 import {
@@ -306,6 +307,35 @@ function getEnemyLayout(count) {
   return ENEMY_LAYOUTS[clamped] || ENEMY_LAYOUTS[4];
 }
 
+// ============================================================================
+// Turn order (AGI-based initiative)
+// ----------------------------------------------------------------------------
+// Combat resolves participants in descending AGI. Because AGI is static for the
+// whole battle, "interleaved by AGI" reduces to a simple partition: enemies
+// STRICTLY faster than the hero act before the hero each round; everyone else
+// (slower, or tied — the hero wins ties) acts after. Within each group, order
+// is AGI desc, then spawn order. This keeps the turn order stable throughout
+// the fight (summoned units simply slot in by their own AGI).
+// ============================================================================
+const heroAgiOf = (hero) => (hero?.agility ?? 10);
+const enemyAgiOf = (enemy) => (enemy?.agi ?? 10);
+
+/** Partition the ALIVE enemies into { pre, post } around the hero's AGI. */
+function partitionByInitiative(enemyList, hero) {
+  const hAgi = heroAgiOf(hero);
+  const pre = [];
+  const post = [];
+  for (const e of enemyList || []) {
+    if (!e || e.hp <= 0) continue;
+    (enemyAgiOf(e) > hAgi ? pre : post).push(e);
+  }
+  const cmp = (x, y) =>
+    enemyAgiOf(y) - enemyAgiOf(x) || (x.spawnIndex ?? 0) - (y.spawnIndex ?? 0);
+  pre.sort(cmp);
+  post.sort(cmp);
+  return { pre, post };
+}
+
 
 /** Map enemy ids (or keywords) to display emojis */
 const ENEMY_EMOJI_MAP = {
@@ -531,7 +561,15 @@ export default function CombatScreen() {
   }, [state, roomType, battleRating, enemyCount]);
 
   // ── Local combat state ───────────────────────────────────────────────────
-  const [combatPhase, setCombatPhase] = useState('playerTurn');
+  // Start locked in 'enemyTurn' if any enemy is faster than the hero — those
+  // enemies take their pre-turn on mount before the player gets control.
+  const [combatPhase, setCombatPhase] = useState(() => {
+    const data = initialCombatData;
+    if (!data) return 'playerTurn';
+    return partitionByInitiative(data.enemies, data.hero).pre.length > 0
+      ? 'enemyTurn'
+      : 'playerTurn';
+  });
   const [enemiesState, setEnemiesState] = useState(() => ({
     alive: initialCombatData?.enemies || [],
     dying: [],
@@ -576,6 +614,50 @@ export default function CombatScreen() {
     const unlocked = state.hero.unlockedSkills || {};
     return Object.keys(unlocked).filter((id) => SKILLS[id]?.type === 'passive');
   }, [state.hero.unlockedSkills]);
+
+  // ── Turn-order ring (for the bottom preview) ───────────────────────────────
+  // Ordered list of the current combatants: fast enemies, then the hero, then
+  // slower enemies. Re-derived from live state so deaths/summons stay accurate.
+  const turnOrderRing = React.useMemo(() => {
+    if (!heroState) return [];
+    const { pre, post } = partitionByInitiative(enemies, heroState);
+
+    // Disambiguate duplicate enemy names (e.g. two "Infected Rat"s → " 1", " 2").
+    const nameCounts = {};
+    enemies.forEach((e) => { nameCounts[e.name] = (nameCounts[e.name] || 0) + 1; });
+    const seen = {};
+    const label = (e) => {
+      if ((nameCounts[e.name] || 0) > 1) {
+        seen[e.name] = (seen[e.name] || 0) + 1;
+        return `${e.name} ${seen[e.name]}`;
+      }
+      return e.name;
+    };
+
+    const ring = [];
+    const pushEnemy = (e) =>
+      ring.push({ key: e.uid, uid: e.uid, name: label(e), portrait: e.portrait ?? 1, kind: 'enemy' });
+    pre.forEach(pushEnemy);
+    ring.push({ key: 'hero', uid: 'hero', name: heroState.name || 'Mochi', portrait: 0, kind: 'hero' });
+    post.forEach(pushEnemy);
+    return ring;
+  }, [enemies, heroState]);
+
+  // The full initiative list in FIXED order — positions stay put and only the
+  // highlight moves to whoever is acting right now.
+  const turnOrderDisplay = React.useMemo(() => {
+    const n = turnOrderRing.length;
+    if (n === 0) return [];
+    const heroIdx = turnOrderRing.findIndex((t) => t.kind === 'hero');
+    let curIdx;
+    if (combatPhase === 'enemyTurn' && activeEnemyUid) {
+      const idx = turnOrderRing.findIndex((t) => t.uid === activeEnemyUid);
+      curIdx = idx >= 0 ? idx : heroIdx;
+    } else {
+      curIdx = heroIdx;
+    }
+    return turnOrderRing.map((t, i) => ({ ...t, isCurrent: i === curIdx }));
+  }, [turnOrderRing, combatPhase, activeEnemyUid]);
 
   // Element-tinted accent color used by skill / passive buttons.
   const heroElementColor = state.hero.element === 'fire' ? '#FF6B35'
@@ -937,12 +1019,14 @@ export default function CombatScreen() {
     }
 
     // Apply Turn 1 Calcify healing if active
-    setHeroState(prev => {
-      if (!prev) return prev;
-      return triggerPlayerTurnStartEffects(prev);
-    });
+    const startHero = triggerPlayerTurnStartEffects(initialCombatData.hero);
+    setHeroState(startHero);
 
     defeatedEnemiesRef.current = [];
+
+    // Kick off the turn order: any enemy faster than the hero takes their
+    // opening turn before the player gets control.
+    runInitialEnemyPhase(initialCombatData.enemies, startHero);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -1048,7 +1132,7 @@ export default function CombatScreen() {
       await delay(400);
     }
 
-    runEnemyTurn(updatedEnemies, updatedHero);
+    runEnemyTurnsAfterHero(updatedEnemies, updatedHero);
   };
 
   // =========================================================================
@@ -1437,7 +1521,7 @@ export default function CombatScreen() {
     }
 
     // Pass finalHero so skill heals/buffs and status effect ticks aren't lost
-    runEnemyTurn(updatedEnemies, finalHero);
+    runEnemyTurnsAfterHero(updatedEnemies, finalHero);
   };
 
   // =========================================================================
@@ -1498,11 +1582,19 @@ export default function CombatScreen() {
     setCombatPhase('enemyTurn');
     await delay(600 + (logged ? 400 : 0));
     // Pass finalHero so the heal/debuff and status effect ticks aren't lost
-    runEnemyTurn(updatedEnemiesFromItem, finalHero);
+    runEnemyTurnsAfterHero(updatedEnemiesFromItem, finalHero);
   };
 
   // =========================================================================
-  // ENEMY TURN — sequential async: attack → pause → effects → pause → next turn
+  // ENEMY TURNS — AGI-based initiative
+  //
+  // Turn order is resolved by AGI (see partitionByInitiative). A round is the
+  // ring [faster-than-hero enemies…, HERO, slower/tied enemies…]. Because AGI is
+  // static, we never re-sort mid-fight — we just split the enemies around the
+  // hero and run each group in its own async phase:
+  //   • runInitialEnemyPhase   — faster enemies open the fight, then the player.
+  //   • runEnemyTurnsAfterHero — after the player acts: slower enemies → round
+  //     bookkeeping (endOfRound) → next round's faster enemies → player again.
   //
   // WHY ASYNC:
   //   Each `await delay(ms)` suspends the function and lets React flush pending
@@ -1512,20 +1604,27 @@ export default function CombatScreen() {
   // currentHeroState must be passed explicitly (not read from closure) because
   //   React batches setState and the fresh value isn't available synchronously.
   // =========================================================================
-  const runEnemyTurn = async (currentEnemies, currentHeroState) => {
-    // setCombatPhase was already called by the action handler — this is a no-op
-    // but kept for safety in case runEnemyTurn is ever called directly.
-    setCombatPhase('enemyTurn');
-
-    // Add a 1 second cozy delay before enemies act
-    await delay(1000);
-
+  // ── actEnemyList: run a specific ordered subset of enemies, each taking
+  //    their telegraphed move. Used for both the "faster than hero" group
+  //    (before the player acts) and the "slower than hero" group (after).
+  //    Operates on the FULL enemy array but only acts the ids in `list`. ─────
+  const actEnemyList = async (list, currentEnemies, currentHeroState) => {
     let updatedHero = { ...(currentHeroState ?? heroState) };
     let updatedEnemies = [...currentEnemies];
     let turnDead = [];
 
-    // ── Phase 1: Each enemy executes their telegraphed move ─────────────────
-    for (let i = 0; i < updatedEnemies.length; i++) {
+    if (!list || list.length === 0) {
+      return { enemies: updatedEnemies, hero: updatedHero, dead: turnDead };
+    }
+
+    // A cozy beat before this group acts.
+    await delay(700);
+
+    for (const actor of list) {
+      // Re-resolve the actor's index each iteration — the array shifts as
+      // enemies are summoned or self-destruct.
+      const i = updatedEnemies.findIndex((e) => e.uid === actor.uid);
+      if (i < 0) continue;
       const enemy = updatedEnemies[i];
       const enemyUid = enemy.uid;
 
@@ -1737,7 +1836,6 @@ export default function CombatScreen() {
           turnDead.push(selfDestructEnemy);
         }
         updatedEnemies = updatedEnemies.filter((_, idx) => idx !== i);
-        i--;
       }
 
       // Flush HP bar update to screen immediately after each enemy acts
@@ -1748,17 +1846,23 @@ export default function CombatScreen() {
       await delay(animDuration + 1000);
     }
 
-    // Clear the acting-enemy highlight now that every enemy has moved
     setActiveEnemyUid(null);
+    return { enemies: updatedEnemies, hero: updatedHero, dead: turnDead };
+  };
+
+  // ── endOfRound: once-per-round bookkeeping that runs after the slower group
+  //    has acted — DoT ticks, skill-cooldown decrement, boss phase triggers,
+  //    Calcify regen and intent refresh. ────────────────────────────────────
+  const endOfRound = async (currentEnemies, currentHeroState) => {
+    let updatedEnemies = [...currentEnemies];
+    let updatedHero = { ...currentHeroState };
 
     // Pause briefly before processing status effects so there is a clean beat
     await delay(200);
 
-    // ── Phase 2: End-of-turn status effects (bleed ticks, buff countdowns) ──
-    let statusLogFired = false;
-
+    // ── End-of-turn status effects (bleed ticks, buff countdowns) ──────────
     // (Hero status effects are ticked at the end of the hero's own turn instead)
-
+    let statusLogFired = false;
     updatedEnemies = updatedEnemies.map((e) => {
       const res = processStatusEffects(e);
       if (res.log) addLog(`${e.name}: ${res.log}`);
@@ -1782,7 +1886,6 @@ export default function CombatScreen() {
     // ── Remove enemies that died from status effects ─────────────────────────
     const statusDeadRes = processDeadEnemies(updatedEnemies);
     updatedEnemies = statusDeadRes.alive;
-    turnDead = [...turnDead, ...statusDeadRes.dead];
 
     // ── Decrement skill cooldowns ────────────────────────────────────────────
     setCooldowns((prev) => {
@@ -1794,21 +1897,6 @@ export default function CombatScreen() {
     });
 
     setTurnCount((prev) => prev + 1);
-
-    // ── Check hero death ─────────────────────────────────────────────────────
-    if (updatedHero.hp <= 0) {
-      setHeroState({ ...updatedHero });
-      updateEnemiesAndDyingEnemies(updatedEnemies, turnDead);
-      setCombatPhase('defeat');
-      return;
-    }
-
-    // ── Check victory (enemies wiped by bleed / self-destruct) ──────────────
-    if (updatedEnemies.length === 0) {
-      setHeroState({ ...updatedHero });
-      handleVictory();
-      return;
-    }
 
     // ── Check boss phase triggers ────────────────────────────────────────────
     updatedEnemies = updatedEnemies.map((e) => {
@@ -1826,34 +1914,82 @@ export default function CombatScreen() {
     // ── Apply Calcify start-of-turn regeneration ───────────────────────────
     updatedHero = triggerPlayerTurnStartEffects(updatedHero);
 
-    // ── Refresh enemy intents for next player turn ───────────────────────────
+    // ── Refresh enemy intents ────────────────────────────────────────────────
     updatedEnemies = refreshIntents(updatedEnemies);
 
     setHeroState({ ...updatedHero });
-    updateEnemiesAndDyingEnemies(updatedEnemies, turnDead);
+    updateEnemiesAndDyingEnemies(updatedEnemies, statusDeadRes.dead);
 
-    if (selectedEnemyIndex >= updatedEnemies.length) {
-      setSelectedEnemyIndex(Math.max(0, updatedEnemies.length - 1));
+    return { enemies: updatedEnemies, hero: updatedHero, dead: statusDeadRes.dead };
+  };
+
+  // ── runInitialEnemyPhase: on mount, let any enemy faster than the hero take
+  //    their opening turn before the player gets control. ────────────────────
+  const runInitialEnemyPhase = async (startEnemies, startHero) => {
+    const { pre } = partitionByInitiative(startEnemies, startHero);
+    if (pre.length === 0) {
+      setCombatPhase('playerTurn');
+      return;
+    }
+    setCombatPhase('enemyTurn');
+    const res = await actEnemyList(pre, startEnemies, startHero);
+    setHeroState({ ...res.hero });
+    if (res.hero.hp <= 0) { setCombatPhase('defeat'); return; }
+    if (res.enemies.length === 0) { handleVictory(); return; }
+
+    updateEnemiesAndDyingEnemies(refreshIntents(res.enemies), []);
+    setActiveEnemyUid(null);
+    setCombatPhase('playerTurn');
+  };
+
+  // ── runEnemyTurnsAfterHero: called after the hero acts. Runs the slower
+  //    enemies, then end-of-round bookkeeping, then the next round's faster
+  //    enemies — ending back on the hero's turn. ─────────────────────────────
+  const runEnemyTurnsAfterHero = async (currentEnemies, currentHeroState) => {
+    setCombatPhase('enemyTurn');
+
+    // Phase A — enemies slower than / tied with the hero act now.
+    const { post } = partitionByInitiative(currentEnemies, currentHeroState);
+    const resA = await actEnemyList(post, currentEnemies, currentHeroState ?? heroState);
+    setHeroState({ ...resA.hero });
+    if (resA.hero.hp <= 0) { setCombatPhase('defeat'); return; }
+    if (resA.enemies.length === 0) { handleVictory(); return; }
+
+    // Round bookkeeping (DoT ticks, cooldowns, intents, boss phases).
+    const eor = await endOfRound(resA.enemies, resA.hero);
+    if (eor.hero.hp <= 0) { setCombatPhase('defeat'); return; }
+    if (eor.enemies.length === 0) { handleVictory(); return; }
+
+    // Phase B — next round's faster enemies act before the hero regains control.
+    const { pre } = partitionByInitiative(eor.enemies, eor.hero);
+    const resB = await actEnemyList(pre, eor.enemies, eor.hero);
+    setHeroState({ ...resB.hero });
+    if (resB.hero.hp <= 0) { setCombatPhase('defeat'); return; }
+    if (resB.enemies.length === 0) { handleVictory(); return; }
+
+    const finalEnemies = refreshIntents(resB.enemies);
+    updateEnemiesAndDyingEnemies(finalEnemies, []);
+    setActiveEnemyUid(null);
+
+    if (selectedEnemyIndex >= finalEnemies.length) {
+      setSelectedEnemyIndex(Math.max(0, finalEnemies.length - 1));
     }
 
-    // ── Check if the hero is stunned ────────────────────────────────────────
-    const isHeroStunned = updatedHero.effects?.some(e => e.type === 'stun');
+    // ── Check if the hero is stunned — skip their turn and run another cycle ──
+    const finalHero = { ...resB.hero };
+    const isHeroStunned = finalHero.effects?.some((e) => e.type === 'stun');
     if (isHeroStunned) {
-      addLog(`${updatedHero.name || 'Mochi'} is stunned and can't move!`);
+      addLog(`${finalHero.name || 'Mochi'} is stunned and can't move!`);
 
       // Tick hero's status effects (which handles bleed and decrements stun)
-      const { updatedHero: finalHero } = tickHeroStatusEffects(updatedHero);
-      setHeroState(finalHero);
+      const { updatedHero: tickedHero } = tickHeroStatusEffects(finalHero);
+      setHeroState(tickedHero);
 
-      if (finalHero.hp <= 0) {
-        setCombatPhase('defeat');
-        return;
-      }
+      if (tickedHero.hp <= 0) { setCombatPhase('defeat'); return; }
 
-      // Pause for a moment to let the player digest the stun log, then run enemy turn again
-      setCombatPhase('enemyTurn');
-      await delay(1500);
-      runEnemyTurn(updatedEnemies, finalHero);
+      // Pause so the player can digest the stun log, then run enemies again.
+      await delay(1200);
+      runEnemyTurnsAfterHero(finalEnemies, tickedHero);
       return;
     }
 
@@ -2163,20 +2299,22 @@ export default function CombatScreen() {
           transition={0}
         />
 
-        {/* ── Info bar: encounter type · dungeon · floor + turn ── */}
+        {/* ── Info bar ──
+             Line 1: encounter-type badge  ·  dungeon & zone
+             Line 2: turn #  ·  upcoming turn order (by AGI) ── */}
         <View style={styles.infoBar}>
-          <View style={styles.infoBarLeft}>
-            <View style={styles.encounterTypeRow}>
+          <View style={styles.infoBarLine1}>
+            <View style={[styles.encounterBadge, roomType === 'boss' && styles.encounterBadgeBoss]}>
               {roomType === 'boss' && (
-                <ItemSprite spritesheet="icons-map" frameIndex={34} displaySize={16} />
+                <ItemSprite spritesheet="icons-map" frameIndex={34} displaySize={18} />
               )}
               {roomType === 'ambush' && (
-                <ItemSprite spritesheet="icons-map" frameIndex={92} displaySize={16} />
+                <ItemSprite spritesheet="icons-map" frameIndex={92} displaySize={18} />
               )}
               {roomType !== 'boss' && roomType !== 'ambush' && (
-                <ItemSprite spritesheet="icons-1" frameIndex={10} displaySize={16} />
+                <ItemSprite spritesheet="icons-1" frameIndex={10} displaySize={18} />
               )}
-              <Text style={styles.encounterTypeLabel}>
+              <Text style={[styles.encounterTypeLabel, roomType === 'boss' && styles.encounterTypeLabelBoss]}>
                 {roomType === 'boss' ? 'BOSS BATTLE' : roomType === 'ambush' ? 'AMBUSH!' : 'COMBAT'}
               </Text>
             </View>
@@ -2184,8 +2322,31 @@ export default function CombatScreen() {
               {zone?.name || 'Unknown Region'} · Zone {floorNumber}
             </Text>
           </View>
-          <View style={styles.turnPill}>
-            <Text style={styles.turnPillText}>Turn {turnCount + 1}</Text>
+
+          <View style={styles.infoBarDivider} />
+
+          <View style={styles.infoBarLine2}>
+            {/* Turn counter — a wider pill, matching the tile height */}
+            <View style={styles.turnCounterPill}>
+              <Text style={styles.turnCounterLabel}>TURN</Text>
+              <Text style={styles.turnCounterNum}>{turnCount + 1}</Text>
+            </View>
+            {(combatPhase === 'playerTurn' || combatPhase === 'enemyTurn') && turnOrderDisplay.length > 0 && (
+              <View style={styles.turnOrderRow}>
+                {turnOrderDisplay.map((t, idx) => (
+                  <View
+                    key={`${t.key}_${idx}`}
+                    style={[
+                      styles.turnOrderTile,
+                      t.kind === 'hero' && styles.turnOrderTileHero,
+                      t.isCurrent && styles.turnOrderTileActive,
+                    ]}
+                  >
+                    <ItemSprite spritesheet="portraits-1" frameIndex={t.portrait} displaySize={34} />
+                  </View>
+                ))}
+              </View>
+            )}
           </View>
         </View>
 
@@ -2477,59 +2638,43 @@ export default function CombatScreen() {
       {renderPassivesModal()}
 
       {/* ── Flee confirmation popup ─────────────────────────────────── */}
-      <Modal
+      <ParchmentModal
         visible={showFleeConfirmModal}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowFleeConfirmModal(false)}
+        onClose={() => setShowFleeConfirmModal(false)}
+        title="FLEE BATTLE"
       >
-        <Pressable style={styles.modalOverlay} onPress={() => setShowFleeConfirmModal(false)}>
-          <Pressable style={styles.modalContent}>
-            <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
-              <Defs>
-                <LinearGradient id="fleeInfoGrad" x1="0" y1="0" x2="0" y2="1">
-                  <Stop offset="0%" stopColor={theme.COLORS.panelGreenTop} stopOpacity="1" />
-                  <Stop offset="100%" stopColor={theme.COLORS.panelGreenBottom} stopOpacity="1" />
-                </LinearGradient>
-              </Defs>
-              <Rect width="100%" height="100%" fill="url(#fleeInfoGrad)" rx={20} />
-              <Rect x="1" y="1" width="98%" height="98%" rx={19} fill="none" stroke="rgba(212, 167, 84, 0.18)" strokeWidth={1} />
-            </Svg>
+        <View style={styles.pmIconWrap}>
+          <ItemSprite spritesheet="icons-map" frameIndex={127} displaySize={40} />
+        </View>
 
-            <View style={styles.modalContentInner}>
-              <View style={styles.modalTitleRow}>
-                <ItemSprite spritesheet="icons-map" frameIndex={127} displaySize={28} />
-                <Text style={styles.modalTitle}>Flee Battle</Text>
-              </View>
+        <Text style={styles.pmDesc}>
+          Are you sure you want to flee this battle?
+          {"\n\n"}
+          You keep any loot gathered so far, but this can only be used once per run.
+        </Text>
 
-              <Text style={styles.fleeConfirmText}>
-                Are you sure you want to flee this battle?
-              </Text>
-              <Text style={styles.fleeConfirmSubText}>
-                Can only be used once per run.
-              </Text>
-
-              <View style={styles.fleeModalButtonsRow}>
-                <TouchableOpacity
-                  activeOpacity={0.85}
-                  onPress={() => setShowFleeConfirmModal(false)}
-                  style={[styles.fleeModalBtn, styles.fleeModalBtnCancel]}
-                >
-                  <Text style={styles.fleeModalBtnText}>CANCEL</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  activeOpacity={0.85}
-                  onPress={performFlee}
-                  style={[styles.fleeModalBtn, styles.fleeModalBtnConfirm]}
-                >
-                  <Text style={[styles.fleeModalBtnText, { color: '#DD7A86' }]}>FLEE</Text>
-                </TouchableOpacity>
-              </View>
+        <View style={styles.pmBtnRow}>
+          <TouchableOpacity
+            activeOpacity={0.85}
+            onPress={() => setShowFleeConfirmModal(false)}
+            style={[styles.pmBtnSecondaryOuter, { flex: 1 }]}
+          >
+            <View style={styles.pmBtnSecondaryInner}>
+              <Text style={styles.pmBtnSecondaryText}>CANCEL</Text>
             </View>
-          </Pressable>
-        </Pressable>
-      </Modal>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            activeOpacity={0.85}
+            onPress={performFlee}
+            style={[styles.pmBtnDangerOuter, { flex: 1 }]}
+          >
+            <View style={styles.pmBtnDangerInner}>
+              <Text style={styles.pmBtnDangerText}>FLEE</Text>
+            </View>
+          </TouchableOpacity>
+        </View>
+      </ParchmentModal>
 
       {/* ── Victory / Loot Overlay ───────────────────────────────────── */}
       {combatPhase === 'loot' && lootResult && (
@@ -3386,83 +3531,70 @@ export default function CombatScreen() {
             : '#A98EE0';
 
     return (
-      <Modal
+      <ParchmentModal
         visible={infoSkillId !== null}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setInfoSkillId(null)}
+        onClose={() => setInfoSkillId(null)}
+        title={infoSkill ? infoSkill.name.toUpperCase() : 'SKILL'}
       >
-        <Pressable style={styles.modalOverlay} onPress={() => setInfoSkillId(null)}>
-          <Pressable style={styles.modalContent}>
-            <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
-              <Defs>
-                <LinearGradient id="skillInfoGrad" x1="0" y1="0" x2="0" y2="1">
-                  <Stop offset="0%" stopColor={theme.COLORS.panelGreenTop} stopOpacity="1" />
-                  <Stop offset="100%" stopColor={theme.COLORS.panelGreenBottom} stopOpacity="1" />
-                </LinearGradient>
-              </Defs>
-              <Rect width="100%" height="100%" fill="url(#skillInfoGrad)" rx={20} />
-              <Rect x="1" y="1" width="98%" height="98%" rx={19} fill="none" stroke="rgba(212, 167, 84, 0.18)" strokeWidth={1} />
-            </Svg>
-
-            {infoSkill && (
-              <View style={styles.modalContentInner}>
-                <View style={styles.infoTitleRow}>
-                  {frame != null ? (
-                    <ItemSprite spritesheet="skill-icons-1" frameIndex={frame} displaySize={44} />
-                  ) : (
-                    <Text style={{ fontSize: 32 }}>{infoSkill.icon || '✨'}</Text>
-                  )}
-                  <View style={styles.infoTitleRight}>
-                    <Text style={styles.infoSkillName}>{infoSkill.name}</Text>
-                    <View style={styles.infoBadges}>
-                      <View style={[styles.infoTypeBadge, { borderColor: `${isActive ? '#F08A4A' : '#5CC489'}55` }]}>
-                        <Text style={[styles.infoTypeBadgeText, { color: isActive ? '#F08A4A' : '#5CC489' }]}>
-                          {isActive ? 'ACTIVE' : 'PASSIVE'}
-                        </Text>
-                      </View>
-                      <Text style={styles.infoTierText}>TIER {infoSkill.tier}</Text>
-                      {infoSkill.cooldown > 0 && (
-                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                          <ItemSprite spritesheet="icons-map" frameIndex={86} displaySize={11} />
-                          <Text style={styles.infoCdText}>{infoSkill.cooldown}-TURN CD</Text>
-                        </View>
-                      )}
-                    </View>
-                    {stars > 0 && (
-                      <View style={styles.infoStarsRow}>
-                        {Array.from({ length: 5 }, (_, i) => (
-                          <Text key={i} style={{ color: i < stars ? elColor : 'rgba(255,243,218,0.14)', fontSize: 13 }}>★</Text>
-                        ))}
-                      </View>
-                    )}
-                  </View>
+        {infoSkill && (
+          <>
+            <View style={styles.pmSkillHeader}>
+              {frame != null ? (
+                <ItemSprite spritesheet="skill-icons-1" frameIndex={frame} displaySize={46} />
+              ) : (
+                <Text style={{ fontSize: 34 }}>{infoSkill.icon || '✨'}</Text>
+              )}
+              <View style={styles.pmSkillBadges}>
+                <View style={[styles.pmBadge, { borderColor: isActive ? '#B5701A' : '#2E7D4F' }]}>
+                  <Text style={[styles.pmBadgeText, { color: isActive ? '#8A4E12' : '#2E7D4F' }]}>
+                    {isActive ? 'ACTIVE' : 'PASSIVE'}
+                  </Text>
                 </View>
-
-                <Text style={styles.infoDesc}>{infoSkill.description}</Text>
-
-                {stars > 0 && infoSkill.stars?.[stars] && (
-                  <View style={styles.infoStatBox}>
-                    <Text style={styles.infoStatLabel}>{stars}★ CURRENT STATS</Text>
-                    {Object.entries(infoSkill.stars[stars]).filter(([k]) => k !== 'atkMultiplier').map(([k, v]) => (
-                      <Text key={k} style={styles.infoStatLine}>
-                        {SKILL_STAT_LABELS[k] || k}: <Text style={styles.infoStatStrong}>{formatSkillStatValue(k, v)}</Text>
-                      </Text>
-                    ))}
+                <Text style={styles.pmTierText}>TIER {infoSkill.tier}</Text>
+                {infoSkill.cooldown > 0 && (
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                    <ItemSprite spritesheet="icons-map" frameIndex={86} displaySize={12} />
+                    <Text style={styles.pmCdText}>{infoSkill.cooldown}-TURN CD</Text>
                   </View>
                 )}
+              </View>
+            </View>
 
-                <Button
-                  title="Close"
-                  variant="secondary"
-                  onPress={() => setInfoSkillId(null)}
-                  style={{ width: '100%', marginTop: 16 }}
-                />
+            {stars > 0 && (
+              <View style={styles.pmStarsRow}>
+                {Array.from({ length: 5 }, (_, i) => (
+                  <Text key={i} style={{ color: i < stars ? elColor : 'rgba(74,46,20,0.18)', fontSize: 16 }}>★</Text>
+                ))}
               </View>
             )}
-          </Pressable>
-        </Pressable>
-      </Modal>
+
+            <Text style={styles.pmDesc}>{infoSkill.description}</Text>
+
+            {stars > 0 && infoSkill.stars?.[stars] && (
+              <View style={styles.pmStatBox}>
+                <Text style={styles.pmStatLabel}>{stars}★ CURRENT STATS</Text>
+                {Object.entries(infoSkill.stars[stars]).filter(([k]) => k !== 'atkMultiplier').map(([k, v]) => (
+                  <Text key={k} style={styles.pmStatLine}>
+                    {SKILL_STAT_LABELS[k] || k}: <Text style={styles.pmStatStrong}>{formatSkillStatValue(k, v)}</Text>
+                  </Text>
+                ))}
+              </View>
+            )}
+
+            <View style={styles.pmBtnRow}>
+              <TouchableOpacity
+                activeOpacity={0.85}
+                onPress={() => setInfoSkillId(null)}
+                style={[styles.pmBtnSecondaryOuter, { flex: 1 }]}
+              >
+                <View style={styles.pmBtnSecondaryInner}>
+                  <Text style={styles.pmBtnSecondaryText}>CLOSE</Text>
+                </View>
+              </TouchableOpacity>
+            </View>
+          </>
+        )}
+      </ParchmentModal>
     );
   }
 }
@@ -3671,38 +3803,65 @@ const styles = StyleSheet.create({
 
   /* ── Info bar (inside the battlefield container) ─────────────── */
   infoBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
     marginHorizontal: 10,
     marginTop: 10,
     marginBottom: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    backgroundColor: 'rgba(0, 0, 0, 0.65)',
+    paddingHorizontal: 11,
+    paddingTop: 9,
+    paddingBottom: 4,
+    backgroundColor: 'rgba(8, 6, 3, 0.72)',
     borderWidth: 1,
-    borderColor: 'rgba(212, 167, 84, 0.35)',
+    borderColor: 'rgba(212, 167, 84, 0.30)',
     borderRadius: theme.BORDER_RADIUS.card,
     zIndex: 2,
   },
-  infoBarLeft: {
-    flex: 1,
+  infoBarLine1: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
   },
-  encounterTypeRow: {
+  infoBarDivider: {
+    height: 1,
+    backgroundColor: 'rgba(212, 167, 84, 0.14)',
+    marginTop: 5,
+    marginBottom: 5,
+  },
+  infoBarLine2: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+  },
+  encounterBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
-    marginBottom: 3,
+    paddingHorizontal: 9,
+    paddingVertical: 3,
+    backgroundColor: 'rgba(245, 207, 74, 0.10)',
+    borderWidth: 1,
+    borderColor: 'rgba(212, 167, 84, 0.35)',
+    borderRadius: theme.BORDER_RADIUS.pill,
+  },
+  encounterBadgeBoss: {
+    backgroundColor: 'rgba(216, 72, 63, 0.14)',
+    borderColor: 'rgba(216, 72, 63, 0.45)',
   },
   encounterTypeLabel: {
     ...theme.FONTS.label,
-    fontSize: 12,
+    fontSize: 13,
     color: theme.COLORS.warmGlow,
     letterSpacing: 1,
+  },
+  encounterTypeLabelBoss: {
+    color: '#F0A79A',
   },
   infoBarSub: {
     ...theme.FONTS.small,
     fontSize: 10,
-    color: 'rgba(243,226,189,0.55)',
+    color: 'rgba(243, 226, 189, 0.5)',
+    flexShrink: 1,
+    textAlign: 'right',
   },
 
   /* ── Stage (bottom half of battlefield) ─────────────────────── */
@@ -3794,18 +3953,59 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(216, 72, 63, 0.6)',
     backgroundColor: 'rgba(216, 72, 63, 0.05)',
   },
-  turnPill: {
-    backgroundColor: 'rgba(0,0,0,0.25)',
-    borderWidth: 1,
-    borderColor: theme.COLORS.panelBorderGoldStrong,
-    borderRadius: theme.BORDER_RADIUS.pill,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
+  /* ── Turn order (info bar, line 2 — turn tile + portrait tiles by AGI) ── */
+  turnOrderRow: {
+    flex: 1,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'flex-start',
   },
-  turnPillText: {
-    ...theme.FONTS.label,
-    fontSize: 9,
-    color: theme.COLORS.candleGold,
+  turnOrderTile: {
+    width: 38,
+    height: 38,
+    borderRadius: 10,
+    borderWidth: 1.5,
+    borderColor: 'rgba(212, 167, 84, 0.25)',
+    backgroundColor: 'rgba(0, 0, 0, 0.35)',
+    overflow: 'hidden',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 5,
+    marginBottom: 4,
+  },
+  turnOrderTileHero: {
+    borderColor: 'rgba(92, 196, 137, 0.6)',
+  },
+  turnOrderTileActive: {
+    borderColor: theme.COLORS.treasureGold,
+    ...theme.SHADOWS.glowFocus,
+  },
+
+  /* ── Turn counter — a wider pill matching the tile height ── */
+  turnCounterPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    height: 38,
+    paddingHorizontal: 12,
+    borderRadius: 9,
+    borderWidth: 1.5,
+    borderColor: 'rgba(212, 167, 84, 0.38)',
+    backgroundColor: 'rgba(245, 207, 74, 0.12)',
+    marginRight: 5,
+    marginBottom: 4,
+  },
+  turnCounterLabel: {
+    fontFamily: 'Silkscreen-Regular',
+    fontSize: 10,
+    letterSpacing: 0.5,
+    color: 'rgba(245, 207, 122, 0.7)',
+  },
+  turnCounterNum: {
+    fontFamily: 'Jersey10-Regular',
+    fontSize: 19,
+    lineHeight: 20,
+    color: theme.COLORS.warmGlow,
   },
 
   /* ── Section divider ──────────────────────────────── */
@@ -4107,6 +4307,145 @@ const styles = StyleSheet.create({
   },
 
   /* ── Item modal ────────────────────────────────────────────── */
+  // ── ParchmentModal content styles (Flee / Skill info) ──────────────────
+  pmIconWrap: {
+    marginBottom: 8,
+  },
+  pmDesc: {
+    fontFamily: 'Jersey10-Regular',
+    fontSize: 19,
+    color: '#4A2E14',
+    textAlign: 'center',
+    lineHeight: 23,
+    marginBottom: 14,
+  },
+  pmSkillHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    width: '100%',
+    marginBottom: 8,
+  },
+  pmSkillBadges: {
+    flex: 1,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    gap: 8,
+  },
+  pmBadge: {
+    borderWidth: 1.5,
+    borderRadius: 6,
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    backgroundColor: 'rgba(255, 250, 228, 0.5)',
+  },
+  pmBadgeText: {
+    fontFamily: 'Silkscreen-Regular',
+    fontSize: 9,
+    letterSpacing: 0.5,
+  },
+  pmTierText: {
+    fontFamily: 'Silkscreen-Regular',
+    fontSize: 9,
+    letterSpacing: 0.5,
+    color: '#6A4A2A',
+  },
+  pmCdText: {
+    fontFamily: 'Silkscreen-Regular',
+    fontSize: 9,
+    letterSpacing: 0.5,
+    color: '#6A4A2A',
+  },
+  pmStarsRow: {
+    flexDirection: 'row',
+    gap: 2,
+    alignSelf: 'flex-start',
+    marginBottom: 10,
+  },
+  pmStatBox: {
+    width: '100%',
+    backgroundColor: '#E5D3A2',
+    borderRadius: 8,
+    padding: 12,
+    borderWidth: 1.5,
+    borderColor: '#C9A86A',
+    marginBottom: 16,
+  },
+  pmStatLabel: {
+    fontFamily: 'Silkscreen-Regular',
+    fontSize: 9,
+    letterSpacing: 0.5,
+    color: '#8A6A3A',
+    marginBottom: 6,
+  },
+  pmStatLine: {
+    fontFamily: 'Jersey10-Regular',
+    fontSize: 16,
+    lineHeight: 20,
+    color: '#5A3A1A',
+  },
+  pmStatStrong: {
+    color: '#3A2210',
+  },
+  pmBtnRow: {
+    width: '100%',
+    flexDirection: 'row',
+    gap: 8,
+  },
+  pmBtnSecondaryOuter: {
+    height: 46,
+    borderRadius: 8,
+    borderWidth: 2,
+    borderColor: '#3A2210',
+    padding: 2,
+    backgroundColor: '#2C2013',
+  },
+  pmBtnSecondaryInner: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 5,
+    backgroundColor: '#6E5230',
+    borderWidth: 1.5,
+    borderTopColor: '#9A7B4C',
+    borderLeftColor: '#9A7B4C',
+    borderRightColor: '#9A7B4C',
+    borderBottomColor: '#2C2013',
+    borderBottomWidth: 4,
+  },
+  pmBtnSecondaryText: {
+    fontFamily: 'Jersey10-Regular',
+    fontSize: 16,
+    color: '#EAD9BA',
+  },
+  pmBtnDangerOuter: {
+    height: 46,
+    borderRadius: 8,
+    borderWidth: 2,
+    borderColor: '#2A0708',
+    padding: 2,
+    backgroundColor: '#3A0B0C',
+  },
+  pmBtnDangerInner: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 5,
+    backgroundColor: '#A61C1C',
+    borderWidth: 1.5,
+    borderTopColor: '#D8483F',
+    borderLeftColor: '#D8483F',
+    borderRightColor: '#D8483F',
+    borderBottomColor: '#590D0E',
+    borderBottomWidth: 4,
+  },
+  pmBtnDangerText: {
+    fontFamily: 'Jersey10-Regular',
+    fontSize: 16,
+    color: '#FFF3DA',
+  },
+
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.82)',

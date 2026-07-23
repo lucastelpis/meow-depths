@@ -194,8 +194,16 @@ export function generateTreasureDrops(zoneId, floorNumber, isDouble = false) {
 
   gold *= mult;
 
-  // Camp resources (wood/cloth/stone) are NOT dropped by treasure — they come
-  // exclusively from quests (see Loot Source Doctrine in gamedetails.md).
+  // Camp resources (wood/stone/cloth): treasure is a SECONDARY faucet behind the
+  // daily quests. ~60% of chests yield 1–2 of a random resource (doubled on a
+  // Double Treasure jackpot). Tuned alongside quest rewards so a full day of play
+  // (~3–4 expeditions + dailies) tops out near one cheap Camp upgrade. See the
+  // Loot Source Doctrine in gamedetails.md.
+  const RESOURCE_TYPES = ['wood', 'stone', 'cloth'];
+  if (Math.random() < 0.60) {
+    const resource = RESOURCE_TYPES[Math.floor(Math.random() * RESOURCE_TYPES.length)];
+    materials[resource] = randomInRange(1, 2) * mult;
+  }
 
   // Stamina Potion — rare treasure drop. Chance scales +1% per floor and is
   // capped at 10% (so floors 1→10 range from 1%→10%). A chest never yields more

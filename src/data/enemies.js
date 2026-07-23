@@ -7,6 +7,12 @@
  * Optional `minFloor` (default 1): the earliest floor of a zone on which the
  * enemy can spawn in normal/ambush encounters. e.g. `minFloor: 5` means the
  * creature only starts appearing from floor 5 onward.
+ *
+ * `agi` — Agility, drives combat turn order. Combat resolves participants in
+ * descending AGI (the hero is placed by their own AGI too; ties go to the
+ * hero, then to earlier spawn order). AGI is a flat speed archetype and is
+ * NOT multiplied by star rating. The hero's baseline AGI is 10, so anything
+ * above 10 tends to act before a fresh hero, and anything below acts after.
  */
 
 // Applied to both HP and ATK at encounter generation time.
@@ -34,6 +40,8 @@ const sewer_rat = {
   def: 0,
   dodge: 0.10,
   crit: 0.00,
+  agi: 14, // fast, skittery — outspeeds a baseline hero
+  portrait: 1,
   zone: 1,
   isBoss: false,
   isElite: false,
@@ -64,6 +72,8 @@ const slimeling = {
   def: 0,
   dodge: 0.00,
   crit: 0.00,
+  agi: 6, // sluggish blob
+  portrait: 2,
   zone: 1,
   isBoss: false,
   isElite: false,
@@ -98,6 +108,8 @@ const cockroach_knight = {
   def: 3,
   dodge: 0.00,
   crit: 0.00,
+  agi: 5, // heavy carapace, slow to act
+  portrait: 4,
   zone: 1,
   minFloor: 3, // DEF-stacking tank; debuts on floor 3+ after the 1★ trio teaches the basics
   isBoss: false,
@@ -141,6 +153,8 @@ const plague_frog = {
   def: 0,
   dodge: 0.05,
   crit: 0.00,
+  agi: 9, // hops about at a middling pace
+  portrait: 3,
   zone: 1,
   isBoss: false,
   isElite: false,
@@ -177,6 +191,8 @@ const king_rat = {
   def: 20,
   dodge: 0.10,
   crit: 0.05,
+  agi: 11, // aggressive tyrant, edges out a baseline hero
+  portrait: 5,
   zone: 1,
   isBoss: true,
   isElite: false,
@@ -233,6 +249,8 @@ const mutated_plant = {
   def: 1,
   dodge: 0.12,
   crit: 0.05,
+  agi: 15, // explosive snapping stems — very fast
+  portrait: 8,
   zone: 2,
   isBoss: false,
   isElite: false,
@@ -256,6 +274,8 @@ const ironclad_beetle = {
   def: 7,
   dodge: 0.00,
   crit: 0.00,
+  agi: 4, // moves slowly under its heavy carapace
+  portrait: 6,
   zone: 2,
   isBoss: false,
   isElite: false,
@@ -279,6 +299,8 @@ const spore_shroom = {
   def: 0,
   dodge: 0.00,
   crit: 0.00,
+  agi: 6, // rooted fungus, slow to react
+  portrait: 7,
   zone: 2,
   isBoss: false,
   isElite: false,
@@ -302,6 +324,8 @@ const savage_worm = {
   def: 1,
   dodge: 0.05,
   crit: 0.02,
+  agi: 11, // bursts from the soil to strike
+  portrait: 11,
   zone: 2,
   isBoss: false,
   isElite: false,
@@ -325,6 +349,8 @@ const caustic_slug = {
   def: 2,
   dodge: 0.00,
   crit: 0.10,
+  agi: 7, // slow crawler, but strikes true
+  portrait: 9,
   zone: 2,
   isBoss: false,
   isElite: false,
@@ -348,6 +374,8 @@ const granite_crawler = {
   def: 8,
   dodge: 0.00,
   crit: 0.05,
+  agi: 10, // patient web-weaver
+  portrait: 10,
   zone: 2,
   isBoss: true,
   isElite: false,
@@ -388,6 +416,8 @@ const mineral_pincher = {
   def: 10,
   dodge: 0.00,
   crit: 0.00,
+  agi: 6, // crystal-heavy armor weighs it down
+  portrait: 12,
   zone: 3,
   isBoss: false,
   isElite: false,
@@ -411,6 +441,8 @@ const neon_jelly = {
   def: 2,
   dodge: 0.10,
   crit: 0.10,
+  agi: 13, // quick electric jolts
+  portrait: 13,
   zone: 3,
   isBoss: false,
   isElite: false,
@@ -434,6 +466,8 @@ const toxic_puff = {
   def: 0,
   dodge: 0.00,
   crit: 0.00,
+  agi: 8, // bloated and drifting
+  portrait: 15,
   zone: 3,
   minFloor: 3,
   isBoss: false,
@@ -459,6 +493,8 @@ const sea_abomination = {
   def: 12,
   dodge: 0.00,
   crit: 0.08,
+  agi: 9, // colossal but deliberate
+  portrait: 16,
   zone: 3,
   isBoss: true,
   isElite: false,
@@ -484,6 +520,48 @@ const sea_abomination = {
   ],
 };
 
+/** Zone 3 — elite (non-boss) — the strongest thing short of the Abomination */
+const monster_octopus = {
+  id: 'monster_octopus',
+  name: 'Monster Octopus',
+  lore: "Eight arms, and each one seems to think for itself. It drags the light down with it and blinds its prey with clouds of ink before the coils tighten. Stronger than anything else that still answers to the tide — save the thing in the deep.",
+  stars: 4,
+  hp: 220,
+  attack: 22,
+  def: 6,
+  dodge: 0.08,
+  crit: 0.08,
+  agi: 12, // whip-fast tentacles
+  portrait: 14,
+  zone: 3,
+  minFloor: 5, // an elite threat — only surfaces deeper into the docks
+  isBoss: false,
+  isElite: true,
+  baseXp: 170,
+  baseGold: 68,
+  drops: [],
+  moves: [
+    { name: 'Tentacle Lash', multiplier: 1.0, minStars: 1, priority: 1 },
+    {
+      name: 'Ink Cloud',
+      multiplier: 0.7,
+      effect: { type: 'dodge_reduce', chance: 1.0, value: 0.15, duration: 2 },
+      minStars: 1,
+      cooldown: 3,
+      priority: 2,
+    },
+    {
+      name: 'Crushing Coils',
+      multiplier: 1.7,
+      effect: { type: 'stun', chance: 0.35, duration: 1 },
+      minStars: 3,
+      cooldown: 4,
+      priority: 3,
+    },
+  ],
+  phaseChanges: [],
+};
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Aggregated map — keyed by enemy id for O(1) lookup
 // ─────────────────────────────────────────────────────────────────────────────
@@ -503,6 +581,7 @@ export const ENEMIES = {
   mineral_pincher,
   neon_jelly,
   toxic_puff,
+  monster_octopus,
   sea_abomination,
 };
 

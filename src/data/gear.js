@@ -28,9 +28,9 @@ export const MATERIALS = {
   yellow_crystal_big: { name: 'Big Yellow Crystal', spritesheet: 'crystals-1', frameIndex: 10 },
   yellow_crystal_core: { name: 'Yellow Crystal Core', spritesheet: 'crystals-1', frameIndex: 11 },
 
-  // Camp resources — granted exclusively by quests (daily "Supply Run" + campaign
-  // bundles), the Camp economy's single tunable faucet. See the Loot Source
-  // Doctrine in gamedetails.md. Used to upgrade Camp Improvements.
+  // Camp resources — the Camp economy's tunable faucet. Granted primarily by the
+  // daily quests, with a smaller secondary trickle from treasure chests. See the
+  // Loot Source Doctrine in gamedetails.md. Used to upgrade Camp Improvements.
   // Icons come from the 15×10 icons-map sheet.
   wood: { name: 'Wood', spritesheet: 'icons-map', frameIndex: 144 },
   cloth: { name: 'Cloth', spritesheet: 'icons-map', frameIndex: 149 },

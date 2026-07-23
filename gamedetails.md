@@ -565,9 +565,9 @@ The two currencies that are hardest to balance — **Equipment** and **Resources
 | Source | 🥇 Signature | Secondary | Never grants |
 | :--- | :--- | :--- | :--- |
 | **Combat** | EXP + Crystals (scaled by ★) | Gold | Equipment*, Resources |
-| **Treasure sites** | Crystal burst + Consumables | Gold | EXP, Equipment, Resources |
+| **Treasure sites** | Crystal burst + Consumables | Gold, minor Resources | EXP, Equipment |
 | **Zone / floor clear** | Guaranteed Gold + Crystal cache | *Chance* at Equipment | Resources |
-| **Daily quests** | **Resources** (the Camp faucet) | Gold, 1 consumable | EXP, Crystals, Equipment |
+| **Daily quests** | **Resources** (primary Camp faucet) | Gold | EXP, Crystals, Equipment, Consumables |
 | **Campaign quests** | **Named / signature Equipment** + Resource bundles | Crystal **cores** only | Normal crystals, EXP |
 
 *\*Combat equipment drops are **bosses only**.*
@@ -575,14 +575,14 @@ The two currencies that are hardest to balance — **Equipment** and **Resources
 ### Design Rules
 
 1. **Combat is the grind engine.** It is the only reliable source of EXP, and the primary source of star-scaled crystals. It deliberately does **not** drop camp resources (that would make Camp progression scale with raw playtime and become untunable).
-2. **Treasure is a greed node with no fight.** Because there is no combat, it grants **zero EXP** — that is what mechanically distinguishes it from an Ambush. It is pure loot: a crystal burst, consumables, and gold.
+2. **Treasure is a greed node with no fight.** Because there is no combat, it grants **zero EXP** — that is what mechanically distinguishes it from an Ambush. It is pure loot: a crystal burst, consumables, gold, and a *minor* chance at camp resources (a secondary, smaller faucet behind the daily quests).
 3. **Floor clears are milestones.** Completing a whole zone is where equipment is allowed to drop inside a run, alongside a guaranteed gold + crystal cache.
-4. **Daily quests own Resources.** Camp resources (wood/stone/cloth) come **exclusively from quests** — primarily the rotating daily "Supply Run" — giving the Camp Improvements economy a single, predictable, non-grindable faucet.
+4. **Daily quests own Resources.** Camp resources (wood/stone/cloth) come **primarily from the daily quests** (every daily grants a small random stack), with treasure chests as a smaller secondary trickle. Combat and floor clears still never grant them. The faucet is deliberately tuned so a full day of play (~3–4 expeditions + dailies) tops out near **one cheap Camp upgrade** — Camp Improvements are a slow, non-grindable QoL long-tail, never a power gate. Dailies no longer grant consumables.
 5. **Campaign quests are the trophy cabinet.** As non-repeatable, one-time rewards, they safely hand out the special stuff: named signature equipment (the drop-only weapons and belts) and — as the one crystal exception — rare **Crystal Cores** as milestone payouts. Normal crystals never appear in quests, which keeps region-gating trivial (a quest can never grant a crystal the player hasn't earned access to).
 
 ### One-line mental model
 - **Combat** = grind engine (XP, crystals, gold)
-- **Treasure** = greed node (loot, no fight, no XP)
+- **Treasure** = greed node (loot, no fight, no XP; minor resource trickle)
 - **Floor clear** = milestone (gold + gear chance)
 - **Daily** = feed the Camp (resources)
 - **Campaign** = trophy cabinet (signature gear + cores)

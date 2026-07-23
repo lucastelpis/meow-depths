@@ -59,7 +59,7 @@ export const ZONES = {
     maxLevel: 45,
     floorCount: 10,
     backgroundColor: '#0A0F1A',
-    enemies: ['mineral_pincher', 'neon_jelly', 'toxic_puff'],
+    enemies: ['mineral_pincher', 'neon_jelly', 'toxic_puff', 'monster_octopus'],
     bossId: 'sea_abomination',
     unlockCondition: 'zone2Cleared', // Requires Zone 2 boss defeated
   },
