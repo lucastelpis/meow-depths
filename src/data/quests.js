@@ -41,12 +41,15 @@ export function generateDailyQuests(hero, progress, dateStr) {
   const currentZone = getHighestUnlockedZone(progress);
   const color = getZoneCrystalColor(currentZone);
 
-  // Daily quests reward gold + exactly one random camp resource (wood/stone/cloth).
-  // No consumables/potions.
+  // Daily quests reward gold + a random camp resource (wood/stone/cloth); no
+  // consumables. Quests are the PRIMARY resource faucet (treasure is secondary),
+  // tuned so a full day of play yields at most ~1 cheap Camp upgrade. The free
+  // login quest grants a single unit; earned dailies grant a small stack.
   const RESOURCE_TYPES = ['wood', 'stone', 'cloth'];
-  const randomResourceReward = (gold) => ({
+  const randInt = (min, max) => min + Math.floor(rand() * (max - min + 1));
+  const randomResourceReward = (gold, min = 2, max = 4) => ({
     gold,
-    materials: { [RESOURCE_TYPES[Math.floor(rand() * RESOURCE_TYPES.length)]]: 1 },
+    materials: { [RESOURCE_TYPES[Math.floor(rand() * RESOURCE_TYPES.length)]]: randInt(min, max) },
   });
 
   // 1. Report to Camp (Always generated as Quest 1)
@@ -59,7 +62,7 @@ export function generateDailyQuests(hero, progress, dateStr) {
     target: 1,
     completed: true,
     claimed: false,
-    rewards: randomResourceReward(25 + lvl * 25),
+    rewards: randomResourceReward(25 + lvl * 25, 1, 1),
     tag: 'Daily'
   };
 
@@ -122,7 +125,7 @@ export function generateDailyQuests(hero, progress, dateStr) {
     stars: 1,
     rewards: {
       gold: 120 + lvl * 20,
-      materials: { [pickedResource]: 1 },
+      materials: { [pickedResource]: randInt(2, 4) },
     },
   });
 
