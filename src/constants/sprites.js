@@ -31,6 +31,7 @@ export const ITEM_SPRITESHEETS = {
   'status-icons-1': require('../../assets/sprites/items/status-icons-1.png'),
   'reward-icons': require('../../assets/sprites/items/reward-icons.png'),
   'icons-map': require('../../assets/sprites/items/icons-map.png'),
+  'portraits-1': require('../../assets/sprites/units/dungeon-1/portraits.png'),
 };
 
 const HERO_SHEET_SOURCE = require('../../assets/sprites/units/hero/hero_sheet.png');
@@ -282,6 +283,12 @@ export const ENEMY_SPRITES = {
     idle: { source: require('../../assets/sprites/units/dungeon-1/seaabomination.png'), frameSize: 128, frames: 8, startFrame: 0, endFrame: 3 },
     attack: { source: require('../../assets/sprites/units/dungeon-1/seaabomination.png'), frameSize: 128, frames: 8, startFrame: 4, endFrame: 7, fps: 6 },
   },
+  monster_octopus: {
+    platformOffsetFactor: 0.0,
+    faceLeft: true,
+    idle: { source: require('../../assets/sprites/units/dungeon-1/octupus.png'), frameSize: 128, frames: 8, startFrame: 0, endFrame: 3 },
+    attack: { source: require('../../assets/sprites/units/dungeon-1/octupus.png'), frameSize: 128, frames: 8, startFrame: 4, endFrame: 7, fps: 6 },
+  },
 };
 
 // ─── Fallback for unknown / elite enemies ─────────────────────────────────────
@@ -377,6 +384,9 @@ export const ALL_SPRITESHEET_ASSETS = [
   require('../../assets/sprites/units/dungeon-1/crab.png'),
   require('../../assets/sprites/units/dungeon-1/pufferfish.png'),
   require('../../assets/sprites/units/dungeon-1/seaabomination.png'),
+  require('../../assets/sprites/units/dungeon-1/octupus.png'),
+  // Combatant portraits (turn-order strip)
+  require('../../assets/sprites/units/dungeon-1/portraits.png'),
   // Fallbacks
   require('../../assets/sprites/Tiny Swords (Free Pack)/Units/Black Units/Warrior/Warrior_Idle.png'),
   require('../../assets/sprites/Tiny Swords (Free Pack)/Units/Black Units/Warrior/Warrior_Attack1.png'),
@@ -425,6 +435,7 @@ export const DUNGEON_RUN_ASSETS = {
     require('../../assets/sprites/items/consumables-1.png'),
     require('../../assets/sprites/banners/soggy_sewers.png'),
     require('../../assets/sprites/banners/battle_bg_1.png'),
+    require('../../assets/sprites/units/dungeon-1/portraits.png'),
     require('../../assets/sprites/units/dungeon-1/rat.png'),
     require('../../assets/sprites/units/dungeon-1/slime.png'),
     require('../../assets/sprites/units/dungeon-1/cockroach.png'),
@@ -439,6 +450,7 @@ export const DUNGEON_RUN_ASSETS = {
     require('../../assets/sprites/items/consumables-1.png'),
     require('../../assets/sprites/banners/twisted_gardens_banner_600x300.png'),
     require('../../assets/sprites/banners/battle_bg_1.png'),
+    require('../../assets/sprites/units/dungeon-1/portraits.png'),
     require('../../assets/sprites/units/dungeon-1/plant.png'),
     require('../../assets/sprites/units/dungeon-1/beetle.png'),
     require('../../assets/sprites/units/dungeon-1/mushroom.png'),
@@ -454,9 +466,11 @@ export const DUNGEON_RUN_ASSETS = {
     require('../../assets/sprites/items/consumables-1.png'),
     require('../../assets/sprites/banners/sunken_docks_banner_600x300.png'),
     require('../../assets/sprites/banners/battle_bg_1.png'),
+    require('../../assets/sprites/units/dungeon-1/portraits.png'),
     require('../../assets/sprites/units/dungeon-1/jellyfish.png'),
     require('../../assets/sprites/units/dungeon-1/crab.png'),
     require('../../assets/sprites/units/dungeon-1/pufferfish.png'),
     require('../../assets/sprites/units/dungeon-1/seaabomination.png'),
+    require('../../assets/sprites/units/dungeon-1/octupus.png'),
   ],
 };

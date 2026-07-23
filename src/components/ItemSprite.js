@@ -27,6 +27,7 @@ export default function ItemSprite({ spritesheet, frameIndex, displaySize = 36, 
     'status-icons-1': 24,
     'reward-icons': 2,
     'icons-map': 137,
+    'portraits-1': 17,
   };
   const totalFrames = FRAMES_MAP[spritesheet] || 1;
   const scale = displaySize / frameSize;

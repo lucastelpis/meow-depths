@@ -41,6 +41,14 @@ export function generateDailyQuests(hero, progress, dateStr) {
   const currentZone = getHighestUnlockedZone(progress);
   const color = getZoneCrystalColor(currentZone);
 
+  // Daily quests reward gold + exactly one random camp resource (wood/stone/cloth).
+  // No consumables/potions.
+  const RESOURCE_TYPES = ['wood', 'stone', 'cloth'];
+  const randomResourceReward = (gold) => ({
+    gold,
+    materials: { [RESOURCE_TYPES[Math.floor(rand() * RESOURCE_TYPES.length)]]: 1 },
+  });
+
   // 1. Report to Camp (Always generated as Quest 1)
   const loginQuest = {
     id: 'daily_visit_camp',
@@ -51,10 +59,7 @@ export function generateDailyQuests(hero, progress, dateStr) {
     target: 1,
     completed: true,
     claimed: false,
-    rewards: {
-      gold: 25 + lvl * 25,
-      consumables: { potion: 1 }
-    },
+    rewards: randomResourceReward(25 + lvl * 25),
     tag: 'Daily'
   };
 
@@ -72,10 +77,7 @@ export function generateDailyQuests(hero, progress, dateStr) {
       target: 1,
       targetFloor: floorToClear,
       targetZone: currentZone,
-      rewards: {
-        gold: 200 + lvl * 30,
-        consumables: { potion: 1 }
-      }
+      rewards: randomResourceReward(200 + lvl * 30)
     });
   }
 
@@ -104,19 +106,14 @@ export function generateDailyQuests(hero, progress, dateStr) {
     desc: `The ${pickedEnemy.name}s are multiplying faster than the Order can track. Thin the pack — defeat ${huntQty} of them in combat.`,
     target: huntQty,
     enemyId: pickedEnemy.id,
-    rewards: {
-      gold: 150 + lvl * 25,
-      consumables: { potion: 2 }
-    }
+    rewards: randomResourceReward(150 + lvl * 25)
   });
 
   // Quest type: Gather run — rewards a single camp resource in small quantity.
   // Only one resource type is chosen (randomly) per generated quest.
-  const resourceTypes = ['wood', 'cloth', 'stone'];
-  const pickedResource = resourceTypes[Math.floor(rand() * resourceTypes.length)];
+  const pickedResource = RESOURCE_TYPES[Math.floor(rand() * RESOURCE_TYPES.length)];
   const resourceName = pickedResource.charAt(0).toUpperCase() + pickedResource.slice(1);
   const gatherQty = 4 + Math.floor(lvl / 2);
-  const resourceReward = 2 + Math.floor(rand() * 3); // 2–4
   pool.push({
     type: 'hunt_stars',
     title: `Supply Run: ${resourceName}`,
@@ -125,7 +122,7 @@ export function generateDailyQuests(hero, progress, dateStr) {
     stars: 1,
     rewards: {
       gold: 120 + lvl * 20,
-      materials: { [pickedResource]: resourceReward },
+      materials: { [pickedResource]: 1 },
     },
   });
 
@@ -138,10 +135,7 @@ export function generateDailyQuests(hero, progress, dateStr) {
     desc: `Something is drawing the strongest beasts toward the surface. Cull them — defeat ${starHuntQty} enemies of ${targetStars}★ rating or higher in combat.`,
     target: starHuntQty,
     stars: targetStars,
-    rewards: {
-      gold: 180 + lvl * 30,
-      consumables: { super_potion: 1 }
-    }
+    rewards: randomResourceReward(180 + lvl * 30)
   });
 
   // Pick 2 random unique quests from the pool
