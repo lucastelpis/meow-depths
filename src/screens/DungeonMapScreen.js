@@ -484,19 +484,36 @@ export default function DungeonMapScreen({ navigation }) {
     }, [currentRun.active, currentRun.roomsCleared, currentRun.totalRooms])
   );
 
-  const handleFloorComplete = () => {
+  // Close a run-ending modal, then return to Camp.
+  //
+  // IMPORTANT: END_RUN flips `currentRun.active` to false, which trips the
+  // safety-check `return null` at the top of render and UNMOUNTS this screen.
+  // If that happens while one of these native <Modal>s is still visible, iOS is
+  // left with a phantom modal window that swallows every touch on the Camp hub
+  // ("can't click anything"). So we close the modal first and let it finish its
+  // fade-out before dispatching END_RUN + navigating.
+  const MODAL_DISMISS_MS = 320; // matches the <Modal> fade animation
+  const endRunAndReturnToCamp = (runEndDispatch) => {
     setActiveModal(null);
-    dispatch({
-      type: 'UPDATE_QUEST_PROGRESS',
-      payload: {
-        type: 'clear_cleared_floor',
-        zoneId: currentRun.zoneId,
-        floorNumber: currentRun.floorNumber,
-        amount: 1,
-      },
+    setTimeout(() => {
+      runEndDispatch();
+      navigation.navigate('Camp');
+    }, MODAL_DISMISS_MS);
+  };
+
+  const handleFloorComplete = () => {
+    endRunAndReturnToCamp(() => {
+      dispatch({
+        type: 'UPDATE_QUEST_PROGRESS',
+        payload: {
+          type: 'clear_cleared_floor',
+          zoneId: currentRun.zoneId,
+          floorNumber: currentRun.floorNumber,
+          amount: 1,
+        },
+      });
+      dispatch({ type: 'END_RUN', payload: { outcome: 'win' } });
     });
-    dispatch({ type: 'END_RUN', payload: { outcome: 'win' } });
-    navigation.navigate('Camp');
   };
 
   // Safety check
@@ -675,15 +692,15 @@ export default function DungeonMapScreen({ navigation }) {
   };
 
   const handleCloseDeath = () => {
-    setActiveModal(null);
-    dispatch({ type: 'END_RUN', payload: { outcome: 'lose' } });
-    navigation.navigate('Camp');
+    endRunAndReturnToCamp(() => {
+      dispatch({ type: 'END_RUN', payload: { outcome: 'lose' } });
+    });
   };
 
   const handleConfirmFlee = () => {
-    setActiveModal(null);
-    dispatch({ type: 'END_RUN', payload: { outcome: 'flee' } });
-    navigation.navigate('Camp');
+    endRunAndReturnToCamp(() => {
+      dispatch({ type: 'END_RUN', payload: { outcome: 'flee' } });
+    });
   };
 
   const renderCell = (x, y) => {
@@ -1389,7 +1406,7 @@ export default function DungeonMapScreen({ navigation }) {
           </View>
           <View style={{ flex: 1 }}>
             <Button
-              title="Flee"
+              title="Retreat"
               icon={<ItemSprite spritesheet="icons-map" frameIndex={127} displaySize={24} />}
               variant="flee"
               onPress={() => setActiveModal('flee')}
@@ -1628,7 +1645,7 @@ export default function DungeonMapScreen({ navigation }) {
         </Modal>
 
         {/* ════════════════════════════════════════════════════════════════
-          5. FLEE DUNGEON CONFIRMATION MODAL
+          5. RETREAT DUNGEON CONFIRMATION MODAL
       ════════════════════════════════════════════════════════════════ */}
         <Modal visible={activeModal === 'flee'} transparent animationType="fade">
           <View style={styles.cozyOverlay}>
@@ -1637,7 +1654,7 @@ export default function DungeonMapScreen({ navigation }) {
                 <View style={styles.cozyBevel} pointerEvents="none" />
 
                 <Text style={styles.cozySubtitle}>
-                  Are you sure you want to escape? Fleeing ends the run early, but you keep everything you've gathered:
+                  Are you sure you want to retreat? Leaving ends the run early, but you keep everything you've gathered:
                 </Text>
 
                 <Text style={[styles.fleeLootPreviewTitle, { color: '#6A4A2A', fontWeight: 'bold', marginBottom: 8, textAlign: 'center' }]}>Loot You'll Keep:</Text>
@@ -1659,7 +1676,7 @@ export default function DungeonMapScreen({ navigation }) {
                 <View style={styles.fleeBtnRow}>
                   <TouchableOpacity activeOpacity={0.85} onPress={handleConfirmFlee} style={[styles.cozyButtonFlee, { flex: 1 }]}>
                     <View style={styles.cozyButtonFleeInner}>
-                      <Text style={styles.cozyButtonText}>FLEE</Text>
+                      <Text style={styles.cozyButtonText}>RETREAT</Text>
                     </View>
                   </TouchableOpacity>
 
@@ -1674,7 +1691,7 @@ export default function DungeonMapScreen({ navigation }) {
               <View style={styles.cozyTopWrap} pointerEvents="none">
                 <View style={styles.cozyTopOuter}>
                   <View style={styles.cozyTopInner}>
-                    <Text style={styles.cozyTopText}>FLEE REGION</Text>
+                    <Text style={styles.cozyTopText}>RETREAT</Text>
                   </View>
                 </View>
               </View>
