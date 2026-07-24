@@ -358,7 +358,7 @@ export default function HeroDefinitionScreen({ navigation }) {
                                 styles.elementBtnText,
                                 isSelected
                                   ? { color: el.color }
-                                  : { color: 'rgba(255, 243, 218, 0.4)' },
+                                  : { color: '#8CAF9F' },
                               ]}
                             >
                               {el.name}
@@ -1017,7 +1017,7 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
   elementBtnShadowUnselected: {
-    backgroundColor: '#0A1C1C',
+    backgroundColor: '#0D2118',
   },
   elementBtnOuter: {
     position: 'absolute',
@@ -1030,8 +1030,8 @@ const styles = StyleSheet.create({
     zIndex: 2,
   },
   elementBtnOuterUnselected: {
-    borderColor: '#4A3917',
-    backgroundColor: '#1E1E22',
+    borderColor: '#84735B',
+    backgroundColor: '#0D2118',
   },
   elementBtnInner: {
     flex: 1,
@@ -1043,11 +1043,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   elementBtnInnerUnselected: {
-    backgroundColor: '#132A2A',
-    borderTopColor: 'rgba(255, 243, 218, 0.15)',
-    borderLeftColor: 'rgba(255, 243, 218, 0.15)',
-    borderRightColor: 'rgba(255, 243, 218, 0.15)',
-    borderBottomColor: 'rgba(0, 0, 0, 0.35)',
+    backgroundColor: '#1B4030',
+    borderTopColor: '#4F856C',
+    borderLeftColor: '#4F856C',
+    borderRightColor: '#4F856C',
+    borderBottomColor: '#0D2118',
     borderBottomWidth: 3.5,
   },
   elementBtnText: {

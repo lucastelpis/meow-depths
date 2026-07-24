@@ -28,6 +28,7 @@ import { GEAR, CONSUMABLES, MATERIALS } from '../data/gear';
 import { ZONES } from '../data/zones';
 import { getImprovementLevel } from '../data/improvements';
 import ItemSprite from '../components/ItemSprite';
+import TabBar from '../components/ui/TabBar';
 import ParchmentModal from '../components/ui/ParchmentModal';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -63,8 +64,8 @@ function getStatDeltas(candidateDef, currentDef) {
 
 // ─── Tab Configuration ───────────────────────────────────────────────────────
 const TABS = [
-  { key: 'consumables', frameIndex: 26, label: 'Consumables' },
-  { key: 'armory', frameIndex: 10, label: 'Gear' },
+  { key: 'consumables', spritesheet: 'icons-1', frameIndex: 26, label: 'Consumables' },
+  { key: 'armory', spritesheet: 'icons-1', frameIndex: 10, label: 'Gear' },
 ];
 
 // ─── Material Metadata ───────────────────────────────────────────────────────
@@ -341,8 +342,6 @@ export default function ShopScreen() {
     return false;
   };
 
-
-
   return (
     <SafeAreaView style={styles.root}>
       {/* Background with subtle top radial gradient glow */}
@@ -393,33 +392,12 @@ export default function ShopScreen() {
       </View>
 
       {/* ── Segmented Tab Switcher ────────────────────────────────────────── */}
-      <View style={styles.tabContainer}>
-        {TABS.map(({ key, frameIndex, label }) => {
-          const isActive = activeTab === key;
-          return (
-            <View key={key} style={styles.tabWrapper}>
-              <View style={styles.tabShadow} />
-              <TouchableOpacity
-                style={styles.tabOuter}
-                onPress={() => setActiveTab(key)}
-                activeOpacity={0.8}
-              >
-                <View style={[styles.tabInner, isActive ? styles.tabInnerActive : styles.tabInnerInactive]}>
-                  <ItemSprite
-                    spritesheet="icons-1"
-                    frameIndex={frameIndex}
-                    displaySize={22}
-                    opacity={isActive ? 1.0 : 0.65}
-                  />
-                  <Text style={[styles.tabLabelText, isActive ? styles.tabLabelActive : styles.tabLabelInactive]}>
-                    {label}
-                  </Text>
-                </View>
-              </TouchableOpacity>
-            </View>
-          );
-        })}
-      </View>
+      <TabBar
+        style={styles.tabContainer}
+        activeKey={activeTab}
+        onSelect={setActiveTab}
+        tabs={TABS}
+      />
 
       <ScrollView
         contentContainerStyle={styles.scrollContent}
@@ -640,7 +618,6 @@ export default function ShopScreen() {
             </View>
           </View>
         )}
-        {activeTab === 'forge' && renderForge()}
       </ScrollView>
 
       {/* ── Gear purchase confirmation ──────────────────────────────────────── */}
@@ -941,81 +918,9 @@ const styles = StyleSheet.create({
 
   /* ── Tab Switcher ────────────────────────────────────────── */
   tabContainer: {
-    flexDirection: 'row',
-    gap: 8,
-    backgroundColor: 'transparent',
-    borderRadius: 0,
-    padding: 0,
     marginHorizontal: 16,
     marginTop: 18,
     marginBottom: 10,
-    borderWidth: 0,
-  },
-  tabWrapper: {
-    flex: 1,
-    height: 42,
-    position: 'relative',
-  },
-  tabShadow: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    top: 3,
-    height: 42,
-    borderRadius: 8,
-    zIndex: 1,
-    backgroundColor: '#0D2118',
-  },
-  tabOuter: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    top: 0,
-    height: 42,
-    borderRadius: 8,
-    borderWidth: 2.2,
-    borderColor: '#84735B',
-    backgroundColor: '#0D2118',
-    zIndex: 2,
-  },
-  tabInner: {
-    flex: 1,
-    flexDirection: 'row',
-    margin: 1.5,
-    borderRadius: 5,
-    borderWidth: 2.2,
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 6,
-  },
-  tabInnerActive: {
-    borderTopColor: '#FFF3DA',
-    borderLeftColor: '#FFF3DA',
-    borderRightColor: '#FFF3DA',
-    borderBottomColor: '#B5A07A',
-    borderBottomWidth: 3.5,
-    backgroundColor: '#F3E2BD',
-  },
-  tabInnerInactive: {
-    borderTopColor: '#4F856C',
-    borderLeftColor: '#4F856C',
-    borderRightColor: '#4F856C',
-    borderBottomColor: '#0D2118',
-    borderBottomWidth: 3.5,
-    backgroundColor: '#1B4030',
-  },
-  tabLabelText: {
-    fontFamily: 'Silkscreen-Regular',
-    fontSize: 14,
-    fontWeight: 'normal',
-    letterSpacing: 0,
-    textTransform: 'uppercase',
-  },
-  tabLabelActive: {
-    color: '#2A1A0C',
-  },
-  tabLabelInactive: {
-    color: '#8CAF9F',
   },
   tabContent: {
     marginTop: 12,

@@ -34,6 +34,7 @@ import { NOTES, NOTE_SPRITE } from '../data/notes';
 import { ENEMY_SPRITES, FALLBACK_ENEMY_SPRITE } from '../constants/sprites';
 import SpriteFrame from '../components/SpriteFrame';
 import ItemSprite from '../components/ItemSprite';
+import TabBar from '../components/ui/TabBar';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -204,30 +205,15 @@ export default function JournalScreen({ navigation, route }) {
       </View>
 
       {/* Top tabs */}
-      <View style={styles.tabContainer}>
-        {[
-          { key: 'creatures', label: 'Creatures' },
-          { key: 'notes', label: 'Notes' },
-        ].map((t) => {
-          const isActive = tab === t.key;
-          return (
-            <View key={t.key} style={styles.tabWrapper}>
-              <View style={styles.tabShadow} />
-              <TouchableOpacity
-                style={styles.tabOuter}
-                onPress={() => setTab(t.key)}
-                activeOpacity={0.8}
-              >
-                <View style={[styles.tabInner, isActive ? styles.tabInnerActive : styles.tabInnerInactive]}>
-                  <Text style={[styles.tabLabel, isActive ? styles.tabLabelActive : styles.tabLabelInactive]}>
-                    {t.label}
-                  </Text>
-                </View>
-              </TouchableOpacity>
-            </View>
-          );
-        })}
-      </View>
+      <TabBar
+        style={styles.tabContainer}
+        activeKey={tab}
+        onSelect={setTab}
+        tabs={[
+          { key: 'creatures', label: 'Creatures', spritesheet: 'icons-map', frameIndex: 125 },
+          { key: 'notes', label: 'Notes', spritesheet: NOTE_SPRITE.spritesheet, frameIndex: NOTE_SPRITE.frameIndex },
+        ]}
+      />
 
       {/* ── CREATURES TAB ────────────────────────────────────────── */}
       {tab === 'creatures' && (
@@ -402,73 +388,8 @@ const styles = StyleSheet.create({
 
   // Top tabs
   tabContainer: {
-    flexDirection: 'row',
     paddingHorizontal: 16,
     paddingTop: 12,
-    gap: 12,
-  },
-  tabWrapper: {
-    flex: 1,
-    height: 42,
-    position: 'relative',
-  },
-  tabShadow: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    top: 3,
-    height: 42,
-    borderRadius: 8,
-    zIndex: 1,
-    backgroundColor: '#0D2118',
-  },
-  tabOuter: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    top: 0,
-    height: 42,
-    borderRadius: 8,
-    borderWidth: 2.2,
-    borderColor: '#84735B',
-    backgroundColor: '#0D2118',
-    zIndex: 2,
-  },
-  tabInner: {
-    flex: 1,
-    margin: 1.5,
-    borderRadius: 5,
-    borderWidth: 2.2,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  tabInnerActive: {
-    borderTopColor: '#FFF3DA',
-    borderLeftColor: '#FFF3DA',
-    borderRightColor: '#FFF3DA',
-    borderBottomColor: '#B5A07A',
-    borderBottomWidth: 3.5,
-    backgroundColor: '#F3E2BD',
-  },
-  tabInnerInactive: {
-    borderTopColor: '#4F856C',
-    borderLeftColor: '#4F856C',
-    borderRightColor: '#4F856C',
-    borderBottomColor: '#0D2118',
-    borderBottomWidth: 3.5,
-    backgroundColor: '#1B4030',
-  },
-  tabLabel: {
-    fontFamily: 'Silkscreen-Regular',
-    fontSize: 14,
-    fontWeight: 'normal',
-    textTransform: 'uppercase',
-  },
-  tabLabelActive: {
-    color: '#2A1A0C',
-  },
-  tabLabelInactive: {
-    color: '#8CAF9F',
   },
 
   scroll: { padding: 16, paddingBottom: 40 },
