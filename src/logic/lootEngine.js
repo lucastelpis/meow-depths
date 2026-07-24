@@ -24,6 +24,17 @@
 // ---------------------------------------------------------------------------
 import { STAR_MULTIPLIERS } from '../data/enemies';
 
+// Zone → crystal colour. Accepts both the string zoneId ('zone1') and the
+// numeric `zone` field carried on enemies (1|2|3).
+const ZONE_COLOR = {
+  zone1: 'black', zone2: 'green', zone3: 'yellow',
+  1: 'black', 2: 'green', 3: 'yellow',
+};
+
+function crystalColor(zoneId, enemy) {
+  return ZONE_COLOR[zoneId] || ZONE_COLOR[enemy?.zone] || 'black';
+}
+
 // ============================================================================
 // 1) calculateDrops — roll for loot from one defeated enemy
 // ============================================================================
@@ -50,6 +61,8 @@ import { STAR_MULTIPLIERS } from '../data/enemies';
  */
 export function calculateDrops(enemy, zoneId, floorNumber) {
   const materials = [];
+  const floor = floorNumber || 1;
+  const color = crystalColor(zoneId, enemy);
 
   // -- Calculate XP and gold based on star level --------------------------------
   // Bosses use fixed xp / gold defined on their template.
@@ -65,6 +78,33 @@ export function calculateDrops(enemy, zoneId, floorNumber) {
     const mult = STAR_MULTIPLIERS[starLevel] || 1.0;
     xp = Math.floor((enemy.baseXp || 1) * mult);
     gold = Math.floor((enemy.baseGold || 1) * mult);
+  }
+
+  // -- Crystal drops ------------------------------------------------------------
+  // Crystals are the reinforcement (Forge) currency. Colour matches the zone;
+  // tier is gated by floor so deeper floors yield rarer crystals.
+  if (enemy.isBoss) {
+    // The boss is the ONLY source of Crystal Cores — a guaranteed 1, plus a
+    // couple of big crystals so the fight feels rewarding. The core gates the
+    // +5 reinforcement capstone for that zone's gear.
+    materials.push({ itemId: `${color}_crystal_core`, quantity: 1 });
+    materials.push({ itemId: `${color}_crystal_big`, quantity: 2 });
+  } else {
+    // Common enemies faucet the lower tiers.
+    // Shard: reliable, scales quantity up on tougher (3★+) foes.
+    if (Math.random() < 0.60) {
+      let qty = randomInRange(1, 2);
+      if ((enemy.stars || 1) >= 3) qty += 1;
+      materials.push({ itemId: `${color}_shard`, quantity: qty });
+    }
+    // Small crystal: chance ramps with floor depth, capped at 35%.
+    if (Math.random() < Math.min(0.35, floor * 0.035)) {
+      materials.push({ itemId: `${color}_crystal_small`, quantity: 1 });
+    }
+    // Big crystal: floors 6+ only, chance ramps from the 6th floor, capped 15%.
+    if (floor >= 6 && Math.random() < Math.min(0.15, (floor - 5) * 0.03)) {
+      materials.push({ itemId: `${color}_crystal_big`, quantity: 1 });
+    }
   }
 
   return { materials, gold, xp };

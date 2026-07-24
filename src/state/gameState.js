@@ -47,6 +47,7 @@ import { GEAR, CONSUMABLES } from '../data/gear';
 import { SKILLS, getSkillUpgradeCost } from '../data/skills';
 import { getInitialCampaignQuests, generateDailyQuests, syncPersistentQuests } from '../data/quests';
 import { getImprovementLevel, getUpgradeCost, canAfford, getMaxStaminaForLevel } from '../data/improvements';
+import { getReinforceLevel, getReinforceCost, MAX_REINFORCE_LEVEL } from '../data/reinforcement';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -98,6 +99,12 @@ const initialState = {
       storage: 1,   // expedition consumable capacity (replaces the old bag system)
       shop: 1,      // unlocked shop item tier
     },
+
+    // -- Gear Reinforcement (the Forge) --------------------------------------
+    // { [gearId]: level } — +1 DEF per level while equipped, up to +5.
+    // Keyed by gear id (all copies of a type share the level). See
+    // src/data/reinforcement.js.
+    reinforcements: {},
 
     // -- Equipment & Inventory -----------------------------------------------
     gear: {
@@ -1527,6 +1534,49 @@ function baseGameReducer(state, action) {
       }
 
       return { ...state, hero: heroPatch };
+    }
+
+    // -----------------------------------------------------------------------
+    // REINFORCE_GEAR — spend crystals to add +1 DEF to a gear piece (up to +5)
+    // Payload: { gearId: string }
+    // -----------------------------------------------------------------------
+    case 'REINFORCE_GEAR': {
+      const { gearId } = action.payload;
+      const gearDef = GEAR[gearId];
+      if (!gearDef) return state; // unknown gear id
+
+      const currentLevel = getReinforceLevel(state.hero, gearId);
+      if (currentLevel >= MAX_REINFORCE_LEVEL) return state; // already maxed
+
+      const cost = getReinforceCost(gearDef, currentLevel);
+      if (!cost) return state;
+
+      const owned = state.hero.inventory.materials || {};
+      if (!canAfford(cost, owned)) return state;
+
+      // Deduct crystals
+      const newMaterials = { ...owned };
+      for (const [itemId, qty] of Object.entries(cost)) {
+        newMaterials[itemId] = Math.max(0, (newMaterials[itemId] || 0) - qty);
+        if (newMaterials[itemId] === 0) delete newMaterials[itemId];
+      }
+
+      const newReinforcements = {
+        ...(state.hero.reinforcements || {}),
+        [gearId]: currentLevel + 1,
+      };
+
+      return {
+        ...state,
+        hero: {
+          ...state.hero,
+          reinforcements: newReinforcements,
+          inventory: {
+            ...state.hero.inventory,
+            materials: newMaterials,
+          },
+        },
+      };
     }
 
     // -----------------------------------------------------------------------

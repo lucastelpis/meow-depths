@@ -782,7 +782,7 @@ export default function CampScreen({ navigation }) {
 
           {/* Sub Navigation Cards — Row 2: Camp, Journal, News, Config */}
           <View style={[styles.subButtonsRow, { marginTop: 12 }]}>
-            {/* Camp (Improvements) */}
+            {/* Workshop (facility upgrades + gear forge) */}
             <View style={styles.subCardWrapper}>
               <View style={styles.subCardShadow} />
               <TouchableOpacity
@@ -793,9 +793,9 @@ export default function CampScreen({ navigation }) {
                 <View style={styles.subCardInner}>
                   <View style={styles.subSpriteContainer}>
                     <IconGlowBackground size={44} />
-                    <ItemSprite spritesheet="icons-map" frameIndex={31} displaySize={38} />
+                    <ItemSprite spritesheet="icons-map" frameIndex={126} displaySize={38} />
                   </View>
-                  <Text style={styles.subCardLabel}>CAMP</Text>
+                  <Text style={styles.subCardLabel}>WORKSHOP</Text>
                 </View>
               </TouchableOpacity>
             </View>

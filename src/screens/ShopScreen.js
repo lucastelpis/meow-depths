@@ -341,8 +341,6 @@ export default function ShopScreen() {
     return false;
   };
 
-
-
   return (
     <SafeAreaView style={styles.root}>
       {/* Background with subtle top radial gradient glow */}
@@ -640,7 +638,6 @@ export default function ShopScreen() {
             </View>
           </View>
         )}
-        {activeTab === 'forge' && renderForge()}
       </ScrollView>
 
       {/* ── Gear purchase confirmation ──────────────────────────────────────── */}

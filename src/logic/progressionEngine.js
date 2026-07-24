@@ -26,6 +26,7 @@
 // ---------------------------------------------------------------------------
 import SKILLS from '../data/skills';
 import { GEAR, SET_BONUSES } from '../data/gear';
+import { getReinforceBonus } from '../data/reinforcement';
 
 // ============================================================================
 // STANCES — always-on elemental innates, scale with hero level
@@ -255,6 +256,14 @@ export function calculateEffectiveStats(hero, skillDefinitions = SKILLS, runBuff
     // Add each stat from the gear piece
     if (gearDef.stats.attack) attack += gearDef.stats.attack;
     if (gearDef.stats.defence) defence += gearDef.stats.defence;
+
+    // Reinforcement (the Forge): weapons gain +ATK per level, armor gains +DEF.
+    const reinforceLevel = hero.reinforcements?.[gearId] || 0;
+    if (reinforceLevel > 0) {
+      const rb = getReinforceBonus(gearDef);
+      if (rb.stat === 'attack') attack += reinforceLevel * rb.perLevel;
+      else defence += reinforceLevel * rb.perLevel;
+    }
     if (gearDef.stats.maxHp) gearHp += gearDef.stats.maxHp;
     if (gearDef.stats.critChance) critChance += gearDef.stats.critChance;
     if (gearDef.stats.dodge) dodge += gearDef.stats.dodge;
