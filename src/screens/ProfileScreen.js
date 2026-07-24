@@ -158,8 +158,8 @@ const STAT_INFO = {
   agi: {
     title: 'Agility',
     color: '#06B6D4',
-    desc: 'Reflexes and footwork. Helps land critical hits and slip past blows.',
-    effects: ['+0.5% Crit Rate per point', '+0.5% Dodge Rate per point'],
+    desc: 'Reflexes and footwork. Sets your turn order in combat, helps land critical hits, and slips past blows.',
+    effects: ['Defines turn order in battle', '+0.5% Crit Rate per point', '+0.5% Dodge Rate per point'],
   },
   vit: {
     title: 'Vitality',

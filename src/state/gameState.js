@@ -167,7 +167,6 @@ const initialState = {
     totalRooms: 9,
     consumables: [],          // consumables brought into this run (array of item ID strings)
     lootCollected: { materials: {}, gold: 0, xp: 0, consumables: {} }, // loot accumulated during the run
-    heroBackup: null,         // backup of hero stats before the run starts
     runBuffs: {               // run-only buffs from rest rooms
       attackBonus: 0,
       critBonus: 0,
@@ -571,17 +570,6 @@ function baseGameReducer(state, action) {
           totalRooms: gridWidth * gridHeight,
           consumables: consumables || [],
           lootCollected: { materials: {}, gold: 0, xp: 0, consumables: {} },
-          heroBackup: {
-            level: state.hero.level,
-            xp: state.hero.xp,
-            maxHp: state.hero.maxHp,
-            attack: state.hero.attack,
-            defence: state.hero.defence,
-            statPoints: state.hero.statPoints || 0,
-            strength: state.hero.strength || 10,
-            agility: state.hero.agility || 10,
-            vitality: state.hero.vitality || 10,
-          },
           runBuffs: {
             attackBonus: 0,
             critBonus: 0,
@@ -831,23 +819,14 @@ function baseGameReducer(state, action) {
             updatedInventoryConsumables.push({ id, quantity: qty });
           }
         }
-      } else if (outcome === 'lose') {
-        // Defeat: revert levels, XP, and base stats gained during this run
-        if (state.currentRun.heroBackup) {
-          heroStats = {
-            ...heroStats,
-            level: state.currentRun.heroBackup.level,
-            xp: state.currentRun.heroBackup.xp,
-            maxHp: state.currentRun.heroBackup.maxHp,
-            attack: state.currentRun.heroBackup.attack,
-            defence: state.currentRun.heroBackup.defence,
-            statPoints: state.currentRun.heroBackup.statPoints || 0,
-            strength: state.currentRun.heroBackup.strength || 10,
-            agility: state.currentRun.heroBackup.agility || 10,
-            vitality: state.currentRun.heroBackup.vitality || 10,
-          };
-        }
       }
+      // NOTE: On 'lose' (death) the hero KEEPS everything earned during the run —
+      // XP, levels, stat points, and skill points. That progression is character
+      // mastery, not spoils, so death does not erase it. The run's haul
+      // (gold / materials / consumables) is only ever applied to permanent
+      // inventory in the 'win'/'flee' branches above, so a lost run discards its
+      // loot automatically. The cost of death is the spent stamina and the failed
+      // floor — no rollback of the hero.
 
       // Return any unused consumables from the run bag back to permanent inventory
       for (const id of (state.currentRun.consumables || [])) {
@@ -914,7 +893,6 @@ function baseGameReducer(state, action) {
           totalRooms: 9,
           consumables: [],
           lootCollected: { materials: {}, gold: 0, xp: 0, consumables: {} },
-          heroBackup: null,
           runBuffs: {
             attackBonus: 0,
             critBonus: 0,

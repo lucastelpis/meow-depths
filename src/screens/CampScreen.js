@@ -863,7 +863,7 @@ export default function CampScreen({ navigation }) {
       </ScrollView>
 
       {/* ═══════════════════════════════════════════════════════════════════
-          RESUME OR FLEE EXPEDITION MODAL
+          RESUME OR RETREAT EXPEDITION MODAL
           ═══════════════════════════════════════════════════════════════════ */}
       <Modal
         visible={resumeModalVisible}
@@ -881,7 +881,7 @@ export default function CampScreen({ navigation }) {
             </View>
 
             <Text style={styles.infoModalDesc}>
-              You closed the game in the middle of an active expedition. Would you like to resume your run or flee back to the Camp?
+              You closed the game in the middle of an active expedition. Would you like to resume your run or retreat back to the Camp?
             </Text>
 
             <View style={{ alignSelf: 'stretch', gap: 12, marginTop: 10 }}>
@@ -907,7 +907,7 @@ export default function CampScreen({ navigation }) {
                 }}
               >
                 <View style={styles.settingsResetBtnInner}>
-                  <Text style={styles.settingsResetBtnText}>FLEE TO CAMP</Text>
+                  <Text style={styles.settingsResetBtnText}>RETREAT TO CAMP</Text>
                 </View>
               </TouchableOpacity>
             </View>
