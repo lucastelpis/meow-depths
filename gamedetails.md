@@ -23,9 +23,9 @@ graph TD
     G --> C
     H --> C
     I -->|Victory| J[Clear Site & Collect Loot]
-    I -->|Defeat| K[Lose Run: All loot lost & XP/Stats reverted]
+    I -->|Defeat| K[Lose Run: All loot lost, but XP/levels/skill points kept]
     J --> C
-    C -->|Flee| L[Retreat: Keep 50% collected loot]
+    C -->|Retreat| L[Retreat to Camp: Keep 100% collected loot]
     C -->|Boss Defeated / All sites cleared| M[Win Run: Keep 100% loot]
     K --> A
     L --> A
