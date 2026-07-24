@@ -593,8 +593,17 @@ export default function CombatScreen() {
 
   const [heroState, setHeroState] = useState(() => initialCombatData?.hero || null);
   const [selectedEnemyIndex, setSelectedEnemyIndex] = useState(0);
-  // uid of the enemy currently taking its turn — drives the "acting" highlight
-  const [activeEnemyUid, setActiveEnemyUid] = useState(null);
+  // uid of the enemy currently taking its turn — drives the "acting" highlight.
+  // Seeded synchronously so that when the fight opens with a faster-than-hero
+  // enemy, the turn-order highlight already sits on that enemy on the FIRST
+  // paint — otherwise it briefly shows the hero and visibly jumps once the
+  // async opening enemy phase begins.
+  const [activeEnemyUid, setActiveEnemyUid] = useState(() => {
+    const data = initialCombatData;
+    if (!data) return null;
+    const { pre } = partitionByInitiative(data.enemies, data.hero);
+    return pre.length > 0 ? pre[0].uid : null;
+  });
   const [cooldowns, setCooldowns] = useState(() => initialCombatData?.cooldowns || {});
   const [combatLog, setCombatLog] = useState([]);
   const [lootResult, setLootResult] = useState(null);
@@ -1617,6 +1626,11 @@ export default function CombatScreen() {
       return { enemies: updatedEnemies, hero: updatedHero, dead: turnDead };
     }
 
+    // Highlight the first actor up front so the turn-order indicator points at
+    // whoever is about to act during the beat below (rather than defaulting to
+    // the hero for the length of the delay).
+    setActiveEnemyUid(list[0].uid);
+
     // A cozy beat before this group acts.
     await delay(700);
 
@@ -2543,93 +2557,81 @@ export default function CombatScreen() {
       </View>
 
       {/* ── Item selection modal ─────────────────────────────────────── */}
-      <Modal
+      <ParchmentModal
         visible={showItemModal}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowItemModal(false)}
+        onClose={() => setShowItemModal(false)}
+        title="SUPPLIES BAG"
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
-              <Defs>
-                <LinearGradient id="itemModalGrad" x1="0" y1="0" x2="0" y2="1">
-                  <Stop offset="0%" stopColor={theme.COLORS.panelGreenTop} stopOpacity="1" />
-                  <Stop offset="100%" stopColor={theme.COLORS.panelGreenBottom} stopOpacity="1" />
-                </LinearGradient>
-                <RadialGradient id="itemModalGlow" cx="50%" cy="0%" r="55%">
-                  <Stop offset="0%" stopColor={theme.COLORS.candleGold} stopOpacity="0.08" />
-                  <Stop offset="100%" stopColor={theme.COLORS.panelGreenTop} stopOpacity="0" />
-                </RadialGradient>
-              </Defs>
-              <Rect width="100%" height="100%" fill="url(#itemModalGrad)" rx={20} />
-              <Rect width="100%" height="100%" fill="url(#itemModalGlow)" rx={20} />
-              <Rect x="1" y="1" width="98%" height="98%" rx={19} fill="none" stroke="rgba(212, 167, 84, 0.18)" strokeWidth={1} />
-            </Svg>
-
-            <View style={styles.modalContentInner}>
-              <View style={styles.modalTitleRow}>
-                <ItemSprite spritesheet="storages-1" frameIndex={0} displaySize={24} />
-                <Text style={styles.modalTitle}>Supplies Bag</Text>
-              </View>
-
-              <ScrollView style={styles.modalItemScroll} showsVerticalScrollIndicator={false}>
-                {runConsumables.length === 0 ? (
-                  <Text style={styles.modalEmpty}>No potions or items available.</Text>
-                ) : (
-                  runConsumables.map((entry) => {
-                    const def = CONSUMABLES.find((c) => c.id === entry.id);
-                    return (
-                      <TouchableOpacity
-                        key={entry.id}
-                        style={styles.modalItem}
-                        onPress={() => handleUseItem(entry)}
-                        activeOpacity={0.8}
-                      >
-                        {/* Sprite box */}
-                        <View style={styles.modalItemIconBox}>
-                          {def?.spritesheet ? (
-                            <ItemSprite
-                              spritesheet={def.spritesheet}
-                              frameIndex={def.frameIndex}
-                              displaySize={44}
-                            />
-                          ) : null}
-                        </View>
-
-                        {/* Text section */}
-                        <View style={styles.modalItemText}>
-                          <Text style={styles.modalItemName}>
-                            {def?.name || entry.id}
-                          </Text>
-                          <Text style={styles.modalItemDesc}>
-                            {def?.description || ''}
-                          </Text>
-                        </View>
-
-                        {/* Quantity on the right */}
-                        <View style={styles.modalItemQuantityBox}>
-                          <Text style={styles.modalItemQuantityText}>
-                            <Text style={styles.modalItemQuantityLabel}>x</Text>
-                            {entry.quantity}
-                          </Text>
-                        </View>
-                      </TouchableOpacity>
-                    );
-                  })
-                )}
-              </ScrollView>
-
-              <Button
-                title="Cancel"
-                variant="secondary"
-                onPress={() => setShowItemModal(false)}
-                style={{ width: '100%', marginTop: 16 }}
-              />
-            </View>
+        {runConsumables.length === 0 ? (
+          <View style={styles.pmIconWrap}>
+            <ItemSprite spritesheet="storages-1" frameIndex={0} displaySize={40} />
           </View>
+        ) : null}
+
+        {runConsumables.length === 0 ? (
+          <Text style={styles.pmDesc}>Your bag is empty — no potions or items to use.</Text>
+        ) : (
+          <ScrollView
+            style={styles.pmItemScroll}
+            contentContainerStyle={styles.pmItemScrollContent}
+            showsVerticalScrollIndicator={false}
+          >
+            {runConsumables.map((entry) => {
+              const def = CONSUMABLES.find((c) => c.id === entry.id);
+              return (
+                <TouchableOpacity
+                  key={entry.id}
+                  style={styles.pmItem}
+                  onPress={() => handleUseItem(entry)}
+                  activeOpacity={0.85}
+                >
+                  {/* Sprite box */}
+                  <View style={styles.pmItemIconBox}>
+                    {def?.spritesheet ? (
+                      <ItemSprite
+                        spritesheet={def.spritesheet}
+                        frameIndex={def.frameIndex}
+                        displaySize={40}
+                      />
+                    ) : null}
+                  </View>
+
+                  {/* Text section */}
+                  <View style={styles.pmItemText}>
+                    <Text style={styles.pmItemName}>{def?.name || entry.id}</Text>
+                    {!!def?.description && (
+                      <Text style={styles.pmItemDesc}>{def.description}</Text>
+                    )}
+                  </View>
+
+                  {/* Quantity + explicit "USE" tap affordance on the right */}
+                  <View style={styles.pmItemRight}>
+                    <Text style={styles.pmItemQty}>
+                      <Text style={styles.pmItemQtyLabel}>x</Text>
+                      {entry.quantity}
+                    </Text>
+                    <View style={styles.pmItemUseChip}>
+                      <Text style={styles.pmItemUseText}>USE ›</Text>
+                    </View>
+                  </View>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+        )}
+
+        <View style={styles.pmBtnRow}>
+          <TouchableOpacity
+            activeOpacity={0.85}
+            onPress={() => setShowItemModal(false)}
+            style={[styles.pmBtnSecondaryOuter, { flex: 1 }]}
+          >
+            <View style={styles.pmBtnSecondaryInner}>
+              <Text style={styles.pmBtnSecondaryText}>CLOSE</Text>
+            </View>
+          </TouchableOpacity>
         </View>
-      </Modal>
+      </ParchmentModal>
 
       {/* ── Skill info popup ─────────────────────────────────────────── */}
       {renderSkillInfoModal()}
@@ -2648,9 +2650,9 @@ export default function CombatScreen() {
         </View>
 
         <Text style={styles.pmDesc}>
-          Are you sure you want to flee this battle?
+          Flee this battle and slip back to the map?
           {"\n\n"}
-          You keep any loot gathered so far, but this can only be used once per run.
+          You keep any loot gathered so far, but this can only be done once per run.
         </Text>
 
         <View style={styles.pmBtnRow}>
@@ -2748,6 +2750,7 @@ export default function CombatScreen() {
               {/* Level up messages */}
               {levelUpMessages.length > 0 && (
                 <View style={styles.levelUpSection}>
+                  <Text style={styles.levelUpHeader}>LEVEL UP!</Text>
                   {levelUpMessages.map((msg, i) => (
                     <View key={`lu_${i}`} style={styles.levelUpRow}>
                       <ItemSprite spritesheet="icons-map" frameIndex={29} displaySize={18} />
@@ -4464,20 +4467,6 @@ const styles = StyleSheet.create({
     padding: 20,
     zIndex: 2,
   },
-  modalTitle: {
-    fontFamily: 'Jersey10-Regular',
-    fontSize: 18,
-    color: '#F8FAFC',
-    fontWeight: 'normal',
-    textAlign: 'center',
-  },
-  modalTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    marginBottom: 14,
-  },
   fleeConfirmText: {
     fontFamily: 'Jersey10-Regular',
     fontSize: 16,
@@ -4639,74 +4628,90 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 8,
   },
-  modalItemScroll: {
-    maxHeight: 250,
+  /* ── Supplies-bag item rows (parchment aesthetic) ───────────────── */
+  pmItemScroll: {
+    width: '100%',
+    maxHeight: 260,
+    marginBottom: 14,
   },
-  modalEmpty: {
-    textAlign: 'center',
-    padding: theme.SPACING.lg,
+  pmItemScrollContent: {
+    paddingBottom: 2,
   },
-  modalItem: {
+  pmItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 14,
-    backgroundColor: 'rgba(255,255,255,0.04)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
-    borderRadius: 12,
-    padding: 12,
+    gap: 12,
+    backgroundColor: '#EFDDAE',
+    borderRadius: 8,
+    padding: 10,
     marginBottom: 10,
+    // Raised bevel — the game's shared "this is pressable" treatment.
+    borderWidth: 1.5,
+    borderTopColor: '#FBF0CC',
+    borderLeftColor: '#FBF0CC',
+    borderRightColor: '#C9A86A',
+    borderBottomColor: '#B08A4E',
+    borderBottomWidth: 4,
   },
-  modalItemIconBox: {
-    width: 60,
-    height: 60,
-    backgroundColor: 'rgba(0,0,0,0.3)',
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.06)',
+  pmItemIconBox: {
+    width: 54,
+    height: 54,
+    backgroundColor: '#F1E2BB',
+    borderRadius: 8,
+    borderWidth: 1.5,
+    borderColor: '#C9A86A',
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
   },
-  modalItemText: {
+  pmItemText: {
     flex: 1,
   },
-  modalItemName: {
+  pmItemName: {
     fontFamily: 'Jersey10-Regular',
-    fontSize: 16,
-    color: '#F8FAFC',
-    marginBottom: 4,
+    fontSize: 18,
+    color: '#3A2210',
+    marginBottom: 2,
   },
-  modalItemQuantityBox: {
-    marginLeft: 8,
+  pmItemDesc: {
+    fontFamily: 'Jersey10-Regular',
+    fontSize: 14,
+    color: '#6A4A2A',
+    lineHeight: 16,
+  },
+  pmItemRight: {
+    marginLeft: 4,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingRight: 4,
+    gap: 6,
   },
-  modalItemQuantityText: {
+  pmItemQty: {
     fontFamily: 'Silkscreen-Regular',
-    fontSize: 16,
-    color: '#D4A754',
+    fontSize: 15,
+    color: '#9A6B34',
   },
-  modalItemQuantityLabel: {
+  pmItemQtyLabel: {
     fontFamily: 'Silkscreen-Regular',
     fontSize: 10,
-    color: '#D4A754',
+    color: '#9A6B34',
   },
-  modalItemDesc: {
-    fontFamily: 'Silkscreen-Regular',
-    fontSize: 9,
-    color: 'rgba(255,255,255,0.5)',
-    lineHeight: 14,
+  pmItemUseChip: {
+    backgroundColor: '#6E5230',
+    borderRadius: 6,
+    borderWidth: 1.5,
+    borderTopColor: '#9A7B4C',
+    borderLeftColor: '#9A7B4C',
+    borderRightColor: '#9A7B4C',
+    borderBottomColor: '#2C2013',
+    borderBottomWidth: 3,
+    paddingHorizontal: 10,
+    paddingVertical: 3,
   },
-  modalCancel: {
-    alignItems: 'center',
-    paddingVertical: theme.SPACING.sm,
-    marginTop: theme.SPACING.sm,
-  },
-  modalCancelText: {
-    ...theme.FONTS.body,
-    color: theme.COLORS.danger,
+  pmItemUseText: {
+    fontFamily: 'Jersey10-Regular',
+    fontSize: 14,
+    color: '#EAD9BA',
+    letterSpacing: 0.5,
   },
 
   // ── Overlay inner content ─────────────────────────────────────────────────
@@ -4998,31 +5003,36 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
 
-  // ── Level up ──────────────────────────────────────────────────────────────
+  // ── Level up (cozy parchment well, matching the loot chips) ────────────────
   levelUpSection: {
-    backgroundColor: 'rgba(212,167,84,0.15)',
-    borderRadius: theme.BORDER_RADIUS.md,
-    padding: theme.SPACING.sm,
+    backgroundColor: '#F4E6C0',
+    borderColor: '#C9A86A',
+    borderWidth: 1.5,
+    borderRadius: 10,
+    padding: 12,
     width: '100%',
-    marginBottom: theme.SPACING.md,
+    marginBottom: 16,
+    gap: 8,
+  },
+  levelUpHeader: {
+    fontFamily: 'Silkscreen-Regular',
+    fontSize: 12,
+    color: '#7A4A12',
+    letterSpacing: 1.5,
+    textTransform: 'uppercase',
+    textAlign: 'center',
   },
   levelUpRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    paddingHorizontal: 8,
+    gap: 10,
     width: '100%',
-    marginBottom: 4,
-  },
-  levelUpStar: {
-    fontFamily: 'PressStart2P-Regular',
-    fontSize: 10,
-    color: '#D4A754',
   },
   levelUpText: {
-    ...theme.FONTS.body,
-    color: '#4A2E14',
-    fontWeight: 'bold',
+    fontFamily: 'Silkscreen-Regular',
+    fontSize: 10,
+    lineHeight: 15,
+    color: '#3A2210',
     textAlign: 'left',
     flex: 1,
   },
