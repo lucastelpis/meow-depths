@@ -4,7 +4,7 @@
  * Displays hero card, attributes, and 8-slot equipment grid.
  */
 
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -16,6 +16,7 @@ import {
   Alert,
   Dimensions,
   Animated,
+  Easing,
 } from 'react-native';
 import { Image as ExpoImage } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -30,6 +31,8 @@ import ResourceBar from '../components/ui/ResourceBar';
 import { HERO_SPRITE } from '../constants/sprites';
 import { GEAR, CONSUMABLES, MATERIALS, getGearForSlot } from '../data/gear';
 import ItemSprite from '../components/ItemSprite';
+import TabBar from '../components/ui/TabBar';
+import SubTabBar from '../components/ui/SubTabBar';
 import ParchmentModal from '../components/ui/ParchmentModal';
 
 const HERO_AVATAR_DISPLAY_SIZE = 80;
@@ -272,6 +275,24 @@ export default function ProfileScreen() {
   const previewVit = (hero.vitality || 10) + tempVitAlloc;
 
   const showControls = (hero.statPoints || 0) > 0;
+
+  // Rhythmic border shine on the stat-points banner while points are unspent.
+  const statGlow = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    let loop;
+    if (remainingPoints > 0) {
+      loop = Animated.loop(
+        Animated.sequence([
+          Animated.timing(statGlow, { toValue: 1, duration: 850, easing: Easing.inOut(Easing.ease), useNativeDriver: false }),
+          Animated.timing(statGlow, { toValue: 0, duration: 850, easing: Easing.inOut(Easing.ease), useNativeDriver: false }),
+        ])
+      );
+      loop.start();
+    } else {
+      statGlow.setValue(0);
+    }
+    return () => { if (loop) loop.stop(); };
+  }, [remainingPoints]);
 
   const adjustStat = (statType, amount) => {
     if (statType === 'str') {
@@ -736,51 +757,40 @@ export default function ProfileScreen() {
           </View>
 
           {/* ── Section 2: Tab Bar Switcher ── */}
-          <View style={styles.tabContainer}>
-            {TABS.map(({ key, spritesheet, frameIndex, label }) => {
-              const isActive = activeTab === key;
-              return (
-                <View key={key} style={styles.tabWrapper}>
-                  <View style={styles.tabShadow} />
-                  <TouchableOpacity
-                    style={styles.tabOuter}
-                    activeOpacity={0.8}
-                    onPress={() => {
-                      setActiveTab(key);
-                      setTempStrAlloc(0);
-                      setTempAgiAlloc(0);
-                      setTempVitAlloc(0);
-                    }}
-                  >
-                    <View style={[styles.tabInner, isActive ? styles.tabInnerActive : styles.tabInnerInactive]}>
-                      <ItemSprite
-                        spritesheet={spritesheet || "icons-1"}
-                        frameIndex={frameIndex}
-                        displaySize={22}
-                        opacity={isActive ? 1.0 : 0.75}
-                      />
-                      <Text style={[styles.tabLabel, isActive ? styles.tabLabelActive : styles.tabLabelInactive]}>
-                        {label}
-                      </Text>
-                    </View>
-                  </TouchableOpacity>
-                </View>
-              );
-            })}
-          </View>
+          <TabBar
+            style={styles.tabContainer}
+            activeKey={activeTab}
+            onSelect={(key) => {
+              setActiveTab(key);
+              setTempStrAlloc(0);
+              setTempAgiAlloc(0);
+              setTempVitAlloc(0);
+            }}
+            tabs={TABS}
+          />
 
           {/* ── Tab Contents ── */}
           {activeTab === 'stats' && (
             <View style={styles.tabContent}>
               {/* Stat Points Available Banner */}
               {(hero.statPoints || 0) > 0 && (
-                <View style={styles.pointsBadge}>
+                <Animated.View
+                  style={[
+                    styles.pointsBadge,
+                    remainingPoints > 0 && {
+                      borderColor: statGlow.interpolate({ inputRange: [0, 1], outputRange: ['rgba(63,181,110,0.4)', 'rgba(63,181,110,1)'] }),
+                      shadowColor: '#3FB56E',
+                      shadowOpacity: statGlow.interpolate({ inputRange: [0, 1], outputRange: [0.15, 0.65] }),
+                      shadowRadius: statGlow.interpolate({ inputRange: [0, 1], outputRange: [4, 12] }),
+                    },
+                  ]}
+                >
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                     <ItemSprite spritesheet="icons-map" frameIndex={29} displaySize={18} />
                     <Text style={styles.pointsBadgeText}>AVAILABLE STAT POINTS: </Text>
                     <Text style={styles.pointsBadgeNumber}>{remainingPoints}</Text>
                   </View>
-                </View>
+                </Animated.View>
               )}
 
               {/* Core Attributes List */}
@@ -1114,26 +1124,15 @@ export default function ProfileScreen() {
           {activeTab === 'equipment' && (
             <View style={styles.tabContent}>
               {/* Gear Subtabs */}
-              <View style={styles.subTabBar}>
-                <TouchableOpacity
-                  style={[styles.subTab, gearSubTab === 'equipped' ? styles.subTabActive : styles.subTabInactive]}
-                  onPress={() => setGearSubTab('equipped')}
-                  activeOpacity={0.8}
-                >
-                  <Text style={[styles.subTabText, gearSubTab === 'equipped' ? styles.subTabTextActive : styles.subTabTextInactive]}>
-                    Equipped
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.subTab, gearSubTab === 'owned' ? styles.subTabActive : styles.subTabInactive]}
-                  onPress={() => setGearSubTab('owned')}
-                  activeOpacity={0.8}
-                >
-                  <Text style={[styles.subTabText, gearSubTab === 'owned' ? styles.subTabTextActive : styles.subTabTextInactive]}>
-                    Owned
-                  </Text>
-                </TouchableOpacity>
-              </View>
+              <SubTabBar
+                style={styles.subTabBar}
+                activeKey={gearSubTab}
+                onSelect={setGearSubTab}
+                tabs={[
+                  { key: 'equipped', label: 'Equipped' },
+                  { key: 'owned', label: 'Owned' },
+                ]}
+              />
 
               {gearSubTab === 'equipped' && (
                 <View>
@@ -1843,121 +1842,15 @@ const styles = StyleSheet.create({
     backgroundColor: '#133131',
   },
   tabContainer: {
-    flexDirection: 'row',
-    gap: 8,
-    backgroundColor: 'transparent',
-    borderRadius: 0,
-    padding: 0,
     marginTop: 6,
     marginBottom: 16,
-    borderWidth: 0,
-  },
-  tabWrapper: {
-    flex: 1,
-    height: 44,
-    position: 'relative',
-  },
-  tabShadow: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    top: 3,
-    height: 44,
-    borderRadius: 8,
-    zIndex: 1,
-    backgroundColor: '#4F3C1E',
-  },
-  tabOuter: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    top: 0,
-    height: 44,
-    borderRadius: 8,
-    borderWidth: 2.2,
-    borderColor: '#84735B',
-    backgroundColor: '#4F3C1E',
-    zIndex: 2,
-  },
-  tabInner: {
-    flex: 1,
-    margin: 1.5,
-    borderRadius: 5,
-    borderWidth: 2.2,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-  },
-  tabInnerActive: {
-    backgroundColor: '#F3E2BD',
-    borderTopColor: '#FFF3DA',
-    borderLeftColor: '#FFF3DA',
-    borderRightColor: '#FFF3DA',
-    borderBottomColor: '#B5A07A',
-    borderBottomWidth: 3.5,
-  },
-  tabInnerInactive: {
-    backgroundColor: '#1B4030',
-    borderTopColor: '#4F856C',
-    borderLeftColor: '#4F856C',
-    borderRightColor: '#4F856C',
-    borderBottomColor: '#0D2118',
-    borderBottomWidth: 3.5,
-  },
-  tabLabel: {
-    fontFamily: 'Silkscreen-Regular',
-    fontSize: 14,
-    fontWeight: 'normal',
-    letterSpacing: 0,
-  },
-  tabLabelActive: {
-    color: '#2A1A0C',
-  },
-  tabLabelInactive: {
-    color: '#F3E2BD',
-    opacity: 0.6,
   },
   tabContent: {
     marginTop: 4,
   },
   subTabBar: {
-    flexDirection: 'row',
     marginTop: 6,
     marginBottom: 16,
-    backgroundColor: '#0D2118',
-    borderColor: '#3E2E15',
-    borderWidth: 2,
-    borderRadius: 8,
-    padding: 3,
-  },
-  subTab: {
-    flex: 1,
-    height: 32,
-    borderRadius: 5,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  subTabActive: {
-    backgroundColor: '#F3E2BD',
-    borderWidth: 1.5,
-    borderColor: '#B5A07A',
-  },
-  subTabInactive: {
-    backgroundColor: 'transparent',
-  },
-  subTabText: {
-    fontFamily: 'Silkscreen-Regular',
-    fontSize: 14,
-    fontWeight: 'normal',
-    textTransform: 'uppercase',
-  },
-  subTabTextActive: {
-    color: '#2A1A0C',
-  },
-  subTabTextInactive: {
-    color: '#FFF3DA',
-    opacity: 0.6,
   },
   pointsBadge: {
     flexDirection: 'row',

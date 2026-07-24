@@ -29,6 +29,7 @@ import Svg, { Defs, RadialGradient, Stop, Circle } from 'react-native-svg';
 import theme from '../constants/theme';
 import { useGame } from '../state/gameState';
 import ItemSprite from '../components/ItemSprite';
+import TabBar from '../components/ui/TabBar';
 import { GEAR, MATERIALS } from '../data/gear';
 import {
   IMPROVEMENTS,
@@ -375,26 +376,15 @@ export default function ImprovementsScreen({ navigation }) {
       </Modal>
 
       {/* ── Tab switcher: Facilities / Forge ──────────────────────────────── */}
-      <View style={styles.tabRow}>
-        <TouchableOpacity
-          style={[styles.tabBtn, activeTab === 'facilities' && styles.tabBtnActive]}
-          activeOpacity={0.85}
-          onPress={() => setActiveTab('facilities')}
-        >
-          <Text style={[styles.tabBtnText, activeTab === 'facilities' && styles.tabBtnTextActive]}>
-            FACILITIES
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.tabBtn, activeTab === 'forge' && styles.tabBtnActive]}
-          activeOpacity={0.85}
-          onPress={() => setActiveTab('forge')}
-        >
-          <Text style={[styles.tabBtnText, activeTab === 'forge' && styles.tabBtnTextActive]}>
-            FORGE
-          </Text>
-        </TouchableOpacity>
-      </View>
+      <TabBar
+        style={styles.tabRow}
+        activeKey={activeTab}
+        onSelect={setActiveTab}
+        tabs={[
+          { key: 'facilities', label: 'Facilities', spritesheet: 'icons-map', frameIndex: 60 },
+          { key: 'forge', label: 'Forge', spritesheet: 'icons-map', frameIndex: 77 },
+        ]}
+      />
 
       <ScrollView
         contentContainerStyle={styles.scrollContent}
@@ -577,31 +567,10 @@ const styles = StyleSheet.create({
 
   /* ── Tab switcher ────────────────────────────────────────── */
   tabRow: {
-    flexDirection: 'row',
-    gap: 8,
     paddingHorizontal: 16,
     paddingTop: 12,
     paddingBottom: 2,
   },
-  tabBtn: {
-    flex: 1,
-    alignItems: 'center',
-    paddingVertical: 8,
-    borderRadius: 8,
-    borderWidth: 2,
-    borderColor: '#5A4A2E',
-    borderBottomWidth: 4,
-    borderBottomColor: '#241A0C',
-    backgroundColor: '#2E2214',
-  },
-  tabBtnActive: {
-    borderColor: GOLD,
-    backgroundColor: '#4F3C1E',
-  },
-  tabBtnText: {
-    fontFamily: 'Jersey10-Regular', fontSize: 18, color: '#8A6E44', letterSpacing: 1,
-  },
-  tabBtnTextActive: { color: PARCH },
 
   /* ── Scroll body ─────────────────────────────────────────── */
   scrollContent: { paddingHorizontal: 16, paddingTop: 12, paddingBottom: 60 },

@@ -27,6 +27,7 @@ import {
   Pressable,
   Dimensions,
   Animated,
+  Easing,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -325,6 +326,24 @@ export default function SkillTreeScreen() {
   const [toast, setToast] = useState(null);
   const toastAnim = useRef(new Animated.Value(0)).current;
   const toastTimer = useRef(null);
+
+  // Rhythmic border shine on the skill-points bar while points are unspent.
+  const spGlow = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    let loop;
+    if ((hero.skillPoints || 0) > 0) {
+      loop = Animated.loop(
+        Animated.sequence([
+          Animated.timing(spGlow, { toValue: 1, duration: 850, easing: Easing.inOut(Easing.ease), useNativeDriver: false }),
+          Animated.timing(spGlow, { toValue: 0, duration: 850, easing: Easing.inOut(Easing.ease), useNativeDriver: false }),
+        ])
+      );
+      loop.start();
+    } else {
+      spGlow.setValue(0);
+    }
+    return () => { if (loop) loop.stop(); };
+  }, [hero.skillPoints]);
 
   const showToast = useCallback((message) => {
     setToast(message);
@@ -670,13 +689,23 @@ export default function SkillTreeScreen() {
       </View>
 
       {/* ── Skill Points Bar ─────────────────────────────────────────────── */}
-      <View style={styles.crystalBar}>
+      <Animated.View
+        style={[
+          styles.crystalBar,
+          (hero.skillPoints || 0) > 0 && {
+            borderColor: spGlow.interpolate({ inputRange: [0, 1], outputRange: ['rgba(63,181,110,0.4)', 'rgba(63,181,110,1)'] }),
+            shadowColor: '#3FB56E',
+            shadowOpacity: spGlow.interpolate({ inputRange: [0, 1], outputRange: [0.15, 0.65] }),
+            shadowRadius: spGlow.interpolate({ inputRange: [0, 1], outputRange: [4, 12] }),
+          },
+        ]}
+      >
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
           <ItemSprite spritesheet="icons-map" frameIndex={89} displaySize={16} />
           <Text style={{ fontFamily: 'Silkscreen-Regular', fontSize: 18, color: C.textDim }}>AVAILABLE SKILL POINTS:</Text>
           <Text style={{ fontFamily: 'Silkscreen-Regular', fontSize: 18, color: '#3FB56E' }}>{hero.skillPoints || 0}</Text>
         </View>
-      </View>
+      </Animated.View>
       <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {/* ── Stance card ──────────────────────────────────────────────── */}
         {stance && (
@@ -743,7 +772,7 @@ export default function SkillTreeScreen() {
                     styles.elementTabOuter,
                     isSelected
                       ? { borderColor: elColor, backgroundColor: '#1E1E20' }
-                      : { borderColor: '#84735B', backgroundColor: '#142C1C' }
+                      : { borderColor: '#84735B', backgroundColor: '#0D2118' }
                   ]}
                 >
                   {/* Inner Bevel & Highlights */}
@@ -759,12 +788,12 @@ export default function SkillTreeScreen() {
                           borderBottomWidth: 3,
                         }
                       : {
-                          backgroundColor: '#142C1C',
-                          borderTopColor: 'rgba(255, 243, 218, 0.15)',
-                          borderLeftColor: 'rgba(255, 243, 218, 0.15)',
-                          borderRightColor: 'rgba(255, 243, 218, 0.15)',
-                          borderBottomColor: 'rgba(0, 0, 0, 0.35)',
-                          borderBottomWidth: 3,
+                          backgroundColor: '#1B4030',
+                          borderTopColor: '#4F856C',
+                          borderLeftColor: '#4F856C',
+                          borderRightColor: '#4F856C',
+                          borderBottomColor: '#0D2118',
+                          borderBottomWidth: 3.5,
                         }
                   ]}>
                     {/* Icon Sprite */}
@@ -779,7 +808,7 @@ export default function SkillTreeScreen() {
                       styles.elementTabText,
                       isSelected
                         ? { color: elColor }
-                        : { color: 'rgba(255, 243, 218, 0.4)' }
+                        : { color: '#8CAF9F' }
                     ]}>
                       {el.label}
                     </Text>

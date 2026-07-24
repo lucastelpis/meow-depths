@@ -24,6 +24,8 @@ import { useFocusEffect } from '@react-navigation/native';
 import theme from '../constants/theme';
 import { useGame } from '../state/gameState';
 import ItemSprite from '../components/ItemSprite';
+import TabBar from '../components/ui/TabBar';
+import SubTabBar from '../components/ui/SubTabBar';
 import ParchmentModal from '../components/ui/ParchmentModal';
 import { isQuestUnlocked } from '../data/quests';
 import { CONSUMABLES } from '../data/gear';
@@ -323,57 +325,28 @@ export default function QuestScreen({ navigation }) {
       </View>
 
       {/* Top Tabs */}
-      <View style={styles.tabBar}>
-        {[
-          { key: 'dailies', label: 'Daily Tasks', frameIndex: 26 },
-          { key: 'campaign', label: 'Campaign', frameIndex: 38 },
-        ].map((t) => {
-          const isActive = tab === t.key;
-          return (
-            <View key={t.key} style={styles.tabWrapper}>
-              <View style={styles.tabShadow} />
-              <TouchableOpacity
-                style={styles.tabOuter}
-                activeOpacity={0.8}
-                onPress={() => setTab(t.key)}
-              >
-                <View style={[styles.tabInner, isActive ? styles.tabInnerActive : styles.tabInnerInactive]}>
-                  <ItemSprite
-                    spritesheet="icons-map"
-                    frameIndex={t.frameIndex}
-                    displaySize={16}
-                    opacity={isActive ? 1.0 : 0.65}
-                  />
-                  <Text style={[styles.tabText, isActive ? styles.tabTextActive : styles.tabTextInactive]}>{t.label}</Text>
-                </View>
-              </TouchableOpacity>
-            </View>
-          );
-        })}
-      </View>
+      <TabBar
+        style={styles.tabBar}
+        iconSize={16}
+        activeKey={tab}
+        onSelect={setTab}
+        tabs={[
+          { key: 'dailies', label: 'Daily Tasks', spritesheet: 'icons-map', frameIndex: 26 },
+          { key: 'campaign', label: 'Campaign', spritesheet: 'icons-map', frameIndex: 38 },
+        ]}
+      />
 
       {/* Campaign Sub-Tabs (only when campaign tab is selected) */}
       {tab === 'campaign' && (
-        <View style={styles.subTabBar}>
-          {[
-            { key: 'active', label: 'ACTIVE' },
-            { key: 'completed', label: 'COMPLETED' },
-          ].map((st) => {
-            const active = campaignSubTab === st.key;
-            return (
-              <TouchableOpacity
-                key={st.key}
-                style={[styles.subTab, active ? styles.subTabActive : styles.subTabInactive]}
-                onPress={() => setCampaignSubTab(st.key)}
-                activeOpacity={0.8}
-              >
-                <Text style={[styles.subTabText, active ? styles.subTabTextActive : styles.subTabTextInactive]}>
-                  {st.label}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
+        <SubTabBar
+          style={styles.subTabBar}
+          activeKey={campaignSubTab}
+          onSelect={setCampaignSubTab}
+          tabs={[
+            { key: 'active', label: 'Active' },
+            { key: 'completed', label: 'Completed' },
+          ]}
+        />
       )}
 
       {/* Content Section */}
@@ -577,77 +550,9 @@ const styles = StyleSheet.create({
     width: 44,
   },
   tabBar: {
-    flexDirection: 'row',
     paddingHorizontal: 16,
     paddingTop: 12,
-    gap: 8,
     marginBottom: 6,
-  },
-  tabWrapper: {
-    flex: 1,
-    height: 42,
-    position: 'relative',
-  },
-  tabShadow: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    top: 3,
-    height: 42,
-    borderRadius: 8,
-    zIndex: 1,
-    backgroundColor: '#0D2118',
-  },
-  tabOuter: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    top: 0,
-    height: 42,
-    borderRadius: 8,
-    borderWidth: 2.2,
-    borderColor: '#84735B',
-    backgroundColor: '#0D2118',
-    zIndex: 2,
-  },
-  tabInner: {
-    flex: 1,
-    margin: 1.5,
-    borderRadius: 5,
-    borderWidth: 2.2,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-  },
-  tabInnerActive: {
-    backgroundColor: '#F3E2BD',
-    borderTopColor: '#FFF3DA',
-    borderLeftColor: '#FFF3DA',
-    borderRightColor: '#FFF3DA',
-    borderBottomColor: '#B5A07A',
-    borderBottomWidth: 3.5,
-  },
-  tabInnerInactive: {
-    backgroundColor: '#1B4030',
-    borderTopColor: '#4F856C',
-    borderLeftColor: '#4F856C',
-    borderRightColor: '#4F856C',
-    borderBottomColor: '#0D2118',
-    borderBottomWidth: 3.5,
-  },
-  tabText: {
-    fontFamily: 'Silkscreen-Regular',
-    fontSize: 14,
-    letterSpacing: 0,
-    fontWeight: 'normal',
-    textTransform: 'uppercase',
-  },
-  tabTextActive: {
-    color: '#2A1A0C',
-  },
-  tabTextInactive: {
-    color: '#8CAF9F',
   },
   scroll: {
     padding: 16,
@@ -930,43 +835,9 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
   },
   subTabBar: {
-    flexDirection: 'row',
-    backgroundColor: '#0D2118',
-    borderColor: '#3E2E15',
-    borderWidth: 2,
-    borderRadius: 8,
-    padding: 3,
     marginHorizontal: 32,
     marginTop: 8,
     marginBottom: 16,
-  },
-  subTab: {
-    flex: 1,
-    height: 32,
-    borderRadius: 5,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  subTabActive: {
-    backgroundColor: '#F3E2BD',
-    borderWidth: 1.5,
-    borderColor: '#B5A07A',
-  },
-  subTabInactive: {
-    backgroundColor: 'transparent',
-  },
-  subTabText: {
-    fontFamily: 'Silkscreen-Regular',
-    fontSize: 14,
-    fontWeight: 'normal',
-    textTransform: 'uppercase',
-  },
-  subTabTextActive: {
-    color: '#2A1A0C',
-  },
-  subTabTextInactive: {
-    color: '#FFF3DA',
-    opacity: 0.6,
   },
   drOverlay: {
     flex: 1,
