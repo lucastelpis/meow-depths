@@ -1661,7 +1661,7 @@ const styles = StyleSheet.create({
   rewardInfoTag: {
     width: 16,
     height: 16,
-    borderRadius: 8,
+    borderRadius: 4,
     borderWidth: 1,
     borderColor: '#ECD8A6',
     backgroundColor: '#6E4524',

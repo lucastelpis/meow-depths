@@ -719,7 +719,7 @@ const styles = StyleSheet.create({
     right: 4,
     width: 20,
     height: 20,
-    borderRadius: 10,
+    borderRadius: 5,
     borderWidth: 1,
     borderColor: '#4F856C',
     backgroundColor: '#1B4030',

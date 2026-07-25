@@ -58,6 +58,8 @@ import Button from '../components/ui/Button';
 import ResourceBar from '../components/ui/ResourceBar';
 import ItemSprite from '../components/ItemSprite';
 import ParchmentModal from '../components/ui/ParchmentModal';
+import TutorialSequence from '../components/tutorial/TutorialSequence';
+import { TUTORIAL_TIPS } from '../data/tutorial';
 import { HERO_SPRITE, getEnemySprite } from '../constants/sprites';
 import SoundManager from '../utils/soundManager';
 import {
@@ -617,6 +619,16 @@ export default function CombatScreen() {
   const [infoSkillId, setInfoSkillId] = useState(null);
   const [showPassivesModal, setShowPassivesModal] = useState(false);
   const [levelUpMessages, setLevelUpMessages] = useState([]);
+
+  // One-time contextual tip (only for players who completed the welcome). It's a
+  // pure overlay — combat proceeds normally once the player dismisses it.
+  const tutorial = state.progress.tutorial || {};
+  const [tipVisible, setTipVisible] = useState(false);
+  useEffect(() => {
+    if (tutorial.completed && !tutorial.seenTips?.combat) {
+      setTipVisible(true);
+    }
+  }, []);
 
   // All unlocked passive skills — these are always active in combat (no equip needed).
   const activePassives = React.useMemo(() => {
@@ -2882,6 +2894,15 @@ export default function CombatScreen() {
           </View>
         </View>
       )}
+
+      <TutorialSequence
+        visible={tipVisible}
+        steps={[TUTORIAL_TIPS.combat]}
+        onFinish={() => {
+          setTipVisible(false);
+          dispatch({ type: 'MARK_TUTORIAL_TIP_SEEN', payload: { tipId: 'combat' } });
+        }}
+      />
     </SafeAreaView>
   );
 
@@ -4245,7 +4266,7 @@ const styles = StyleSheet.create({
     right: 3,
     width: 16,
     height: 16,
-    borderRadius: 8,
+    borderRadius: 4,
     borderWidth: 1,
     borderColor: theme.COLORS.panelBorderGoldStrong,
     backgroundColor: 'rgba(0,0,0,0.35)',
@@ -4971,7 +4992,7 @@ const styles = StyleSheet.create({
     right: 2,
     width: 18,
     height: 18,
-    borderRadius: 9,
+    borderRadius: 5,
     backgroundColor: '#6E4524',
     borderColor: '#ECD8A6',
     borderWidth: 1.5,

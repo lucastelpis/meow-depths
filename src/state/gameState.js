@@ -150,6 +150,16 @@ const initialState = {
       dailies: [],
       campaign: getInitialCampaignQuests(),
     },
+    // -- Tutorial / onboarding tips ------------------------------------------
+    // pendingWelcome is turned on ONLY inside SELECT_ELEMENT (which brand-new
+    // players run exactly once), so existing saves keep this default `false`
+    // via deepMerge and never see the tutorial. `completed` gates the in-context
+    // tips so they too only reach players who went through the welcome.
+    tutorial: {
+      pendingWelcome: false, // true for a new player who just finished onboarding
+      completed: false,      // true once the welcome sequence is finished/skipped
+      seenTips: {},          // { tipId: true } — worldMap / dungeonMap / combat
+    },
   },
 
   // -- Current Run (temporary, reset after each dungeon run) ----------------
@@ -195,7 +205,10 @@ const initialState = {
  *   ADVANCE_FLOOR    – move to the next dungeon floor
  *   BUY_CONSUMABLE   – spend gold on a consumable item
  *   CLEAR_ZONE       – mark a zone as completed
+ *   COMPLETE_TUTORIAL    – finish/skip the first-time welcome sequence
  *   CRAFT_GEAR       – spend materials + gold to create gear
+ *   MARK_TUTORIAL_TIP_SEEN – mark a one-time contextual tip as seen
+ *   REPLAY_TUTORIAL      – reset the tutorial so it plays from the start
  *   END_RUN          – finish the current dungeon run
  *   EQUIP_GEAR       – put gear in a slot (weapon/head/chest/legs/gloves/boots/trinket/storage)
  *   EQUIP_SKILL      – assign a skill to one of the two active slots
@@ -385,6 +398,15 @@ function baseGameReducer(state, action) {
           element,
           unlockedSkills,
           equippedSkills,
+        },
+        // Kick off the first-time tutorial. This runs only for brand-new players
+        // (element starts null), so existing saves never trip this flag.
+        progress: {
+          ...state.progress,
+          tutorial: {
+            ...(state.progress.tutorial || {}),
+            pendingWelcome: true,
+          },
         },
       };
     }
@@ -1312,6 +1334,61 @@ function baseGameReducer(state, action) {
         progress: {
           ...state.progress,
           readNotes: nextReadNotes,
+        },
+      };
+    }
+
+    // -----------------------------------------------------------------------
+    // COMPLETE_TUTORIAL — welcome sequence finished or skipped
+    // -----------------------------------------------------------------------
+    case 'COMPLETE_TUTORIAL': {
+      return {
+        ...state,
+        progress: {
+          ...state.progress,
+          tutorial: {
+            ...(state.progress.tutorial || {}),
+            pendingWelcome: false,
+            completed: true,
+          },
+        },
+      };
+    }
+
+    // -----------------------------------------------------------------------
+    // MARK_TUTORIAL_TIP_SEEN — mark a one-time contextual tip as seen
+    // Payload: { tipId: string }
+    // -----------------------------------------------------------------------
+    case 'MARK_TUTORIAL_TIP_SEEN': {
+      const tipId = action.payload?.tipId;
+      if (!tipId) return state;
+      const tutorial = state.progress.tutorial || {};
+      const nextSeenTips = { ...(tutorial.seenTips || {}) };
+      if (nextSeenTips[tipId]) return state;
+      nextSeenTips[tipId] = true;
+      return {
+        ...state,
+        progress: {
+          ...state.progress,
+          tutorial: { ...tutorial, seenTips: nextSeenTips },
+        },
+      };
+    }
+
+    // -----------------------------------------------------------------------
+    // REPLAY_TUTORIAL — reset the tutorial so it plays again from the start
+    // (triggered from the Camp settings menu)
+    // -----------------------------------------------------------------------
+    case 'REPLAY_TUTORIAL': {
+      return {
+        ...state,
+        progress: {
+          ...state.progress,
+          tutorial: {
+            pendingWelcome: true,
+            completed: false,
+            seenTips: {},
+          },
         },
       };
     }
