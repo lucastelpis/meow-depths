@@ -30,6 +30,8 @@ import { useGame } from '../state/gameState';
 import { ZONES } from '../data/zones';
 import ItemSprite from '../components/ItemSprite';
 import { DUNGEON_BANNERS } from '../constants/sprites';
+import TutorialSequence from '../components/tutorial/TutorialSequence';
+import { TUTORIAL_TIPS } from '../data/tutorial';
 
 // Define specific gradient colors for each zone for rich visual aesthetics
 const ZONE_GRADIENTS = {
@@ -75,9 +77,18 @@ const renderStatusBadge = (unlocked, isCleared) => {
 };
 
 export default function WorldMapScreen({ navigation }) {
-  const { state } = useGame();
+  const { state, dispatch } = useGame();
   const zoneList = Object.values(ZONES);
   const insets = useSafeAreaInsets();
+
+  // One-time contextual tip (only for players who completed the welcome).
+  const tutorial = state.progress.tutorial || {};
+  const [tipVisible, setTipVisible] = React.useState(false);
+  React.useEffect(() => {
+    if (tutorial.completed && !tutorial.seenTips?.worldMap) {
+      setTipVisible(true);
+    }
+  }, []);
 
   // ── Zone unlock helper ─────────────────────────────────────────────────────
   const isZoneUnlocked = (zone) => {
@@ -247,6 +258,15 @@ export default function WorldMapScreen({ navigation }) {
           );
         })}
       </ScrollView>
+
+      <TutorialSequence
+        visible={tipVisible}
+        steps={[TUTORIAL_TIPS.worldMap]}
+        onFinish={() => {
+          setTipVisible(false);
+          dispatch({ type: 'MARK_TUTORIAL_TIP_SEEN', payload: { tipId: 'worldMap' } });
+        }}
+      />
     </View>
   );
 }

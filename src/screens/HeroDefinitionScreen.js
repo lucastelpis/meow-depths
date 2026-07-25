@@ -961,7 +961,7 @@ const styles = StyleSheet.create({
   infoTag: {
     width: 18,
     height: 18,
-    borderRadius: 9,
+    borderRadius: 5,
     borderWidth: 1.5,
     borderColor: '#E8A73A',
     backgroundColor: 'rgba(0, 0, 0, 0.35)',
@@ -1375,7 +1375,7 @@ const styles = StyleSheet.create({
     right: 8,
     width: 18,
     height: 18,
-    borderRadius: 9,
+    borderRadius: 5,
     borderWidth: 1.5,
     borderColor: '#E8A73A',
     backgroundColor: 'rgba(0, 0, 0, 0.35)',

@@ -477,7 +477,7 @@ const styles = StyleSheet.create({
     right: -6,
     width: 14,
     height: 14,
-    borderRadius: 7,
+    borderRadius: 4,
     backgroundColor: theme.COLORS.damageRed || '#D8483F',
     borderColor: '#4A3917',
     borderWidth: 1.5,

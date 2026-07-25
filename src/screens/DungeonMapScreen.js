@@ -50,6 +50,8 @@ import ItemSprite from '../components/ItemSprite';
 import { isQuestUnlocked } from '../data/quests';
 import ScreenLoader from '../components/ScreenLoader';
 import { DUNGEON_RUN_ASSETS } from '../constants/sprites';
+import TutorialSequence from '../components/tutorial/TutorialSequence';
+import { TUTORIAL_TIPS } from '../data/tutorial';
 
 const ZONE_BACKGROUNDS = {
   zone1: require('../../assets/sprites/banners/soggy-ruins-zones.png'),
@@ -295,6 +297,16 @@ export default function DungeonMapScreen({ navigation }) {
   const { currentRun, hero } = state;
 
   const zoneId = state.currentRun?.zoneId || 'zone1';
+
+  // One-time contextual tip (only for players who completed the welcome).
+  const tutorial = state.progress.tutorial || {};
+  const [tipVisible, setTipVisible] = useState(false);
+  useEffect(() => {
+    if (tutorial.completed && !tutorial.seenTips?.dungeonMap) {
+      setTipVisible(true);
+    }
+  }, []);
+
   const runAssets = useMemo(() => [
     require('../../assets/sprites/units/hero/hero_head.png'),
     ...(DUNGEON_RUN_ASSETS[zoneId] || []),
@@ -2010,6 +2022,15 @@ export default function DungeonMapScreen({ navigation }) {
             </View>
           </View>
         </Modal>
+
+        <TutorialSequence
+          visible={tipVisible}
+          steps={[TUTORIAL_TIPS.dungeonMap]}
+          onFinish={() => {
+            setTipVisible(false);
+            dispatch({ type: 'MARK_TUTORIAL_TIP_SEEN', payload: { tipId: 'dungeonMap' } });
+          }}
+        />
       </SafeAreaView>
     </ScreenLoader>
   );
@@ -2777,7 +2798,7 @@ const styles = StyleSheet.create({
     right: 2,
     width: 18,
     height: 18,
-    borderRadius: 9,
+    borderRadius: 5,
     backgroundColor: '#6E4524',
     borderColor: '#ECD8A6',
     borderWidth: 1.5,
@@ -3422,7 +3443,7 @@ const styles = StyleSheet.create({
     right: -6,
     width: 14,
     height: 14,
-    borderRadius: 7,
+    borderRadius: 4,
     backgroundColor: '#D8483F',
     borderColor: '#4A3917',
     borderWidth: 1.5,

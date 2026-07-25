@@ -37,6 +37,7 @@ import { pickRandomThought } from '../data/mochiThoughts';
 import { isQuestUnlocked } from '../data/quests';
 import { CONSUMABLES, MATERIALS } from '../data/gear';
 import { getItemInfo } from '../data/itemInfo';
+import SpotlightTour from '../components/tutorial/SpotlightTour';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const BANNER_WIDTH = SCREEN_WIDTH - 40;
@@ -250,12 +251,89 @@ export default function CampScreen({ navigation }) {
   const [infoModal, setInfoModal] = React.useState(null); // { title: string, desc: string }
   const [staminaInfoVisible, setStaminaInfoVisible] = React.useState(false);
   const [resumeModalVisible, setResumeModalVisible] = React.useState(false);
+  const [tourVisible, setTourVisible] = React.useState(false);
+
+  // Refs for the guided-tour spotlight targets + scroll-into-view support.
+  const scrollRef = React.useRef(null);
+  const scrollYRef = React.useRef(0);
+  const staminaRef = React.useRef(null);
+  const dailyRef = React.useRef(null);
+  const expeditionRef = React.useRef(null);
+  const profileRef = React.useRef(null);
+  const skillsRef = React.useRef(null);
+  const marketRef = React.useRef(null);
+  const questsRef = React.useRef(null);
+  const workshopRef = React.useRef(null);
+  const journalRef = React.useRef(null);
 
   React.useEffect(() => {
     if (state.currentRun?.active) {
       setResumeModalVisible(true);
     }
+    // First-time guided tour — only new players have pendingWelcome set. Delay a
+    // beat so the hub has laid out and target refs are measurable.
+    if (state.progress.tutorial?.pendingWelcome) {
+      const t = setTimeout(() => setTourVisible(true), 450);
+      return () => clearTimeout(t);
+    }
   }, []);
+
+  // Camp guided-tour stops. Each `ref` points at the real UI element to spotlight;
+  // the intro/outro have no ref and render as a centered card.
+  const tourSteps = React.useMemo(
+    () => [
+      {
+        title: 'WELCOME',
+        body: `${hero.name || 'Your cat'} is ready for adventure! Here's a quick tour of Camp — your home base.`,
+      },
+      {
+        ref: staminaRef,
+        title: 'STAMINA',
+        body: 'Each expedition costs 1 stamina charge. It refills over time — or use a stamina potion when you run low.',
+      },
+      {
+        ref: dailyRef,
+        title: 'DAILY TASKS',
+        body: 'Complete daily tasks for free rewards. New ones appear every day, so check back often.',
+      },
+      {
+        ref: expeditionRef,
+        title: 'START EXPEDITION',
+        body: 'The heart of the game. Pick a region, explore it tile by tile, fight enemies, and grab loot.',
+      },
+      {
+        ref: profileRef,
+        title: 'PROFILE',
+        body: 'Your stats, level, and equipment. Spend stat points here to make yourself stronger.',
+      },
+      {
+        ref: skillsRef,
+        title: 'SKILLS',
+        body: 'Unlock and upgrade combat skills with the skill points you earn from leveling up.',
+      },
+      {
+        ref: marketRef,
+        title: 'MARKET',
+        body: 'Spend gold on gear, potions, and supplies to prep for tougher expeditions.',
+      },
+      {
+        ref: questsRef,
+        title: 'QUESTS',
+        body: 'Take on daily and story quests for bonus gold, materials, and rewards.',
+      },
+      {
+        ref: workshopRef,
+        title: 'WORKSHOP',
+        body: 'Upgrade camp facilities and reinforce your gear with the materials you collect.',
+      },
+      {
+        ref: journalRef,
+        title: 'JOURNAL',
+        body: "Track the creatures you've met and the field notes you've found. That's the tour — tap Start Expedition when you're ready!",
+      },
+    ],
+    [hero.name]
+  );
 
   // Mochi's banner thought — re-rolled from the unlocked pool each time the hub
   // gains focus, so the hero "says" something new on every visit.
@@ -554,6 +632,9 @@ export default function CampScreen({ navigation }) {
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView
+        ref={scrollRef}
+        onScroll={(e) => { scrollYRef.current = e.nativeEvent.contentOffset.y; }}
+        scrollEventThrottle={16}
         contentContainerStyle={styles.scroll}
         showsVerticalScrollIndicator={false}
       >
@@ -582,6 +663,8 @@ export default function CampScreen({ navigation }) {
 
               {/* Tag 3: Stamina (Rectangular progress bar tag) */}
               <TouchableOpacity
+                ref={staminaRef}
+                collapsable={false}
                 style={[styles.bannerTag, { overflow: 'hidden', position: 'relative' }]}
                 activeOpacity={0.7}
                 onPress={() => setStaminaInfoVisible(true)}
@@ -611,7 +694,7 @@ export default function CampScreen({ navigation }) {
 
 
         {/* Daily Quests Card */}
-        <View style={styles.dailyRewardWrapper}>
+        <View ref={dailyRef} collapsable={false} style={styles.dailyRewardWrapper}>
           <View style={styles.dailyRewardShadow} />
           <TouchableOpacity
             activeOpacity={0.8}
@@ -667,6 +750,8 @@ export default function CampScreen({ navigation }) {
         <View style={styles.navGrid}>
           {/* Enter Regions (WorldMap) — Full Width */}
           <TouchableOpacity
+            ref={expeditionRef}
+            collapsable={false}
             style={styles.dungeonCard}
             activeOpacity={0.8}
             onPress={() => navigation.navigate('WorldMap')}
@@ -689,7 +774,7 @@ export default function CampScreen({ navigation }) {
           {/* Sub Navigation Cards — Row 1: Profile, Skills, Market, Quests */}
           <View style={styles.subButtonsRow}>
             {/* Profile */}
-            <View style={styles.subCardWrapper}>
+            <View ref={profileRef} collapsable={false} style={styles.subCardWrapper}>
               <View style={styles.subCardShadow} />
               <TouchableOpacity
                 style={styles.subCardOuter}
@@ -716,7 +801,7 @@ export default function CampScreen({ navigation }) {
             </View>
 
             {/* Skills */}
-            <View style={styles.subCardWrapper}>
+            <View ref={skillsRef} collapsable={false} style={styles.subCardWrapper}>
               <View style={styles.subCardShadow} />
               <TouchableOpacity
                 style={styles.subCardOuter}
@@ -739,7 +824,7 @@ export default function CampScreen({ navigation }) {
             </View>
 
             {/* Market */}
-            <View style={styles.subCardWrapper}>
+            <View ref={marketRef} collapsable={false} style={styles.subCardWrapper}>
               <View style={styles.subCardShadow} />
               <TouchableOpacity
                 style={styles.subCardOuter}
@@ -757,7 +842,7 @@ export default function CampScreen({ navigation }) {
             </View>
 
             {/* Quests */}
-            <View style={styles.subCardWrapper}>
+            <View ref={questsRef} collapsable={false} style={styles.subCardWrapper}>
               <View style={styles.subCardShadow} />
               <TouchableOpacity
                 style={styles.subCardOuter}
@@ -783,7 +868,7 @@ export default function CampScreen({ navigation }) {
           {/* Sub Navigation Cards — Row 2: Camp, Journal, News, Config */}
           <View style={[styles.subButtonsRow, { marginTop: 12 }]}>
             {/* Workshop (facility upgrades + gear forge) */}
-            <View style={styles.subCardWrapper}>
+            <View ref={workshopRef} collapsable={false} style={styles.subCardWrapper}>
               <View style={styles.subCardShadow} />
               <TouchableOpacity
                 style={styles.subCardOuter}
@@ -801,7 +886,7 @@ export default function CampScreen({ navigation }) {
             </View>
 
             {/* Journal */}
-            <View style={styles.subCardWrapper}>
+            <View ref={journalRef} collapsable={false} style={styles.subCardWrapper}>
               <View style={styles.subCardShadow} />
               <TouchableOpacity
                 style={styles.subCardOuter}
@@ -1302,6 +1387,26 @@ export default function CampScreen({ navigation }) {
         </TouchableOpacity>
         <Text style={[styles.settingsHint, { marginBottom: 20 }]}>Reclaims all Strength, Agility, Vitality points, and crystal skill upgrades.</Text>
 
+        <Text style={styles.settingsSectionLabel}>Help</Text>
+
+        <TouchableOpacity
+          activeOpacity={0.85}
+          style={styles.settingsAudioBtn}
+          onPress={() => {
+            dispatch({ type: 'REPLAY_TUTORIAL' });
+            setSettingsModalVisible(false);
+            scrollRef.current?.scrollTo({ y: 0, animated: false });
+            setTimeout(() => setTourVisible(true), 300);
+          }}
+        >
+          <View style={styles.settingsAudioBtnInner}>
+            <Text style={styles.settingsAudioBtnText}>REPLAY TUTORIAL</Text>
+          </View>
+        </TouchableOpacity>
+        <Text style={[styles.settingsHint, { marginBottom: 20 }]}>
+          Replays the beginner guide and in-context tips.
+        </Text>
+
         <Text style={styles.settingsSectionLabel}>Save Data</Text>
 
         <TouchableOpacity
@@ -1331,6 +1436,18 @@ export default function CampScreen({ navigation }) {
         </TouchableOpacity>
         <Text style={styles.settingsHint}>This permanently deletes all of your progress.</Text>
       </ParchmentModal>
+
+      {/* First-time guided tour of the Camp hub */}
+      <SpotlightTour
+        visible={tourVisible}
+        steps={tourSteps}
+        scrollRef={scrollRef}
+        scrollYRef={scrollYRef}
+        onFinish={() => {
+          setTourVisible(false);
+          dispatch({ type: 'COMPLETE_TUTORIAL' });
+        }}
+      />
 
     </SafeAreaView>
   );
@@ -2475,7 +2592,7 @@ const styles = StyleSheet.create({
     right: 4,
     width: 20,
     height: 20,
-    borderRadius: 10,
+    borderRadius: 5,
     borderWidth: 1,
     borderColor: '#C9A86A',
     backgroundColor: '#4F3C1E',
@@ -2687,9 +2804,9 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: -6,
     right: -6,
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+    width: 20,
+    height: 20,
+    borderRadius: 5,
     backgroundColor: '#D8483F',
     borderColor: '#b98c33ff',
     borderWidth: 2,
@@ -2699,11 +2816,11 @@ const styles = StyleSheet.create({
   },
   questBadgeText: {
     fontFamily: 'PressStart2P-Regular',
-    fontSize: 14,
+    fontSize: 11,
     color: '#FFF3DA',
     fontWeight: 'bold',
     textAlign: 'center',
-    lineHeight: 14,
+    lineHeight: 11,
     marginTop: -1,
   },
 
