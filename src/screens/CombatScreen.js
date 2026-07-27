@@ -86,6 +86,14 @@ import { calculateEffectiveStats, checkLevelUp, getStanceBonus, applyHealingEffi
 import { useGame } from '../state/gameState';
 import theme from '../constants/theme';
 
+// Per-zone battle backgrounds. Metro needs fully static require() strings, so
+// these are hard-coded per zone rather than built from a template.
+const BATTLE_BACKGROUNDS = {
+  zone1: require('../../assets/sprites/banners/battle_bg_1.1.png'),
+  zone2: require('../../assets/sprites/banners/battle_bg_2.1.png'),
+  zone3: require('../../assets/sprites/banners/battle_bg_3-1.png'),
+};
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -2317,18 +2325,19 @@ export default function CombatScreen() {
 
       {/* ══ Battlefield arena ════════════════════════════════════════ */}
       <View style={styles.battlefield}>
-        {/* Background image (same for all zones for now) */}
+        {/* Background image — per zone */}
         <ExpoImage
-          source={require('../../assets/sprites/banners/battle_bg_1.png')}
+          source={BATTLE_BACKGROUNDS[state.currentRun?.zoneId] || BATTLE_BACKGROUNDS.zone1}
           style={styles.battlefieldBg}
           contentFit="fill"
           transition={0}
         />
 
-        {/* ── Info bar ──
-             Line 1: encounter-type badge  ·  dungeon & zone
-             Line 2: turn #  ·  upcoming turn order (by AGI) ── */}
+        {/* ── Info bar (single row) ──
+             Left:  encounter-type badge · dungeon & zone
+             Right: turn # · upcoming turn order (by AGI) ── */}
         <View style={styles.infoBar}>
+          {/* Row 1 — encounter badge (left) · zone (right) */}
           <View style={styles.infoBarLine1}>
             <View style={[styles.encounterBadge, roomType === 'boss' && styles.encounterBadgeBoss]}>
               {roomType === 'boss' && (
@@ -2349,15 +2358,15 @@ export default function CombatScreen() {
             </Text>
           </View>
 
-          <View style={styles.infoBarDivider} />
-
-          <View style={styles.infoBarLine2}>
-            {/* Turn counter — a wider pill, matching the tile height */}
-            <View style={styles.turnCounterPill}>
-              <Text style={styles.turnCounterLabel}>TURN</Text>
-              <Text style={styles.turnCounterNum}>{turnCount + 1}</Text>
-            </View>
-            {(combatPhase === 'playerTurn' || combatPhase === 'enemyTurn') && turnOrderDisplay.length > 0 && (
+          {/* Row 2 — turn counter · upcoming order */}
+          {(combatPhase === 'playerTurn' || combatPhase === 'enemyTurn') && turnOrderDisplay.length > 0 && (
+            <>
+            <View style={styles.infoBarDivider} />
+            <View style={styles.infoBarLine2}>
+              <View style={styles.turnCounterPill}>
+                <Text style={styles.turnCounterLabel}>TURN</Text>
+                <Text style={styles.turnCounterNum}>{turnCount + 1}</Text>
+              </View>
               <View style={styles.turnOrderRow}>
                 {turnOrderDisplay.map((t, idx) => (
                   <View
@@ -2368,12 +2377,13 @@ export default function CombatScreen() {
                       t.isCurrent && styles.turnOrderTileActive,
                     ]}
                   >
-                    <ItemSprite spritesheet="portraits-1" frameIndex={t.portrait} displaySize={34} />
+                    <ItemSprite spritesheet="portraits-1" frameIndex={t.portrait} displaySize={28} />
                   </View>
                 ))}
               </View>
-            )}
-          </View>
+            </View>
+            </>
+          )}
         </View>
 
         {/* ── Stage: hero left, enemies right ── */}
@@ -3831,8 +3841,7 @@ const styles = StyleSheet.create({
     marginTop: 10,
     marginBottom: 6,
     paddingHorizontal: 11,
-    paddingTop: 9,
-    paddingBottom: 4,
+    paddingVertical: 7,
     backgroundColor: 'rgba(8, 6, 3, 0.72)',
     borderWidth: 1,
     borderColor: 'rgba(212, 167, 84, 0.30)',
@@ -3853,7 +3862,7 @@ const styles = StyleSheet.create({
   },
   infoBarLine2: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     gap: 8,
   },
   encounterBadge: {
@@ -3865,7 +3874,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(245, 207, 74, 0.10)',
     borderWidth: 1,
     borderColor: 'rgba(212, 167, 84, 0.35)',
-    borderRadius: theme.BORDER_RADIUS.pill,
+    borderRadius: 8,
   },
   encounterBadgeBoss: {
     backgroundColor: 'rgba(216, 72, 63, 0.14)',
@@ -3982,20 +3991,34 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'row',
     flexWrap: 'wrap',
-    alignItems: 'flex-start',
+    alignItems: 'center',
+    gap: 5,
+  },
+  turnOrderBar: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+    marginHorizontal: 10,
+    marginBottom: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    backgroundColor: 'rgba(8, 6, 3, 0.72)',
+    borderWidth: 1,
+    borderColor: 'rgba(212, 167, 84, 0.30)',
+    borderRadius: theme.BORDER_RADIUS.card,
+    zIndex: 2,
   },
   turnOrderTile: {
-    width: 38,
-    height: 38,
-    borderRadius: 10,
+    width: 32,
+    height: 32,
+    borderRadius: 8,
     borderWidth: 1.5,
     borderColor: 'rgba(212, 167, 84, 0.25)',
     backgroundColor: 'rgba(0, 0, 0, 0.35)',
     overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 5,
-    marginBottom: 4,
   },
   turnOrderTileHero: {
     borderColor: 'rgba(92, 196, 137, 0.6)',
@@ -4010,14 +4033,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    height: 38,
+    height: 32,
     paddingHorizontal: 12,
-    borderRadius: 9,
+    borderRadius: 8,
     borderWidth: 1.5,
     borderColor: 'rgba(212, 167, 84, 0.38)',
     backgroundColor: 'rgba(245, 207, 74, 0.12)',
-    marginRight: 5,
-    marginBottom: 4,
   },
   turnCounterLabel: {
     fontFamily: 'Silkscreen-Regular',
@@ -4046,7 +4067,7 @@ const styles = StyleSheet.create({
   },
   dividerLabel: {
     ...theme.FONTS.label,
-    fontSize: 9,
+    fontSize: 11,
     letterSpacing: 1.5,
     color: theme.COLORS.candleGold,
   },
@@ -4193,9 +4214,9 @@ const styles = StyleSheet.create({
   },
   logText: {
     ...theme.FONTS.small,
-    fontSize: 8,
+    fontSize: 10,
     fontWeight: '600',
-    lineHeight: 12,
+    lineHeight: 15,
   },
 
   /* ── Action buttons ──────────────────────────────────────────── */

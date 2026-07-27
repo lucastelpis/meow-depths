@@ -120,7 +120,7 @@ function AppNavigator() {
       {/* Pre-render heavy combat backgrounds behind the navigation stack so they cache perfectly at screen size */}
       {hasElement && (
         <ExpoImage
-          source={require('./assets/sprites/banners/battle_bg_1.png')}
+          source={require('./assets/sprites/banners/battle_bg_3-1.png')}
           style={[StyleSheet.absoluteFill, { opacity: 0.01 }]}
           contentFit="fill"
         />

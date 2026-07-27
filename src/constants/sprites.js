@@ -423,7 +423,9 @@ export const HUB_ASSETS = [
   require('../../assets/sprites/banners/twisted_gardens_banner_600x300.png'),
   require('../../assets/sprites/banners/sunken_docks_banner_600x300.png'),
   require('../../assets/sprites/background-hub.png'),
-  require('../../assets/sprites/banners/battle_bg_1.png'),
+  require('../../assets/sprites/banners/battle_bg_1.1.png'),
+  require('../../assets/sprites/banners/battle_bg_2.1.png'),
+  require('../../assets/sprites/banners/battle_bg_3-1.png'),
 ];
 
 export const DUNGEON_RUN_ASSETS = {
@@ -434,7 +436,7 @@ export const DUNGEON_RUN_ASSETS = {
     require('../../assets/sprites/items/status-icons-1.png'),
     require('../../assets/sprites/items/consumables-1.png'),
     require('../../assets/sprites/banners/soggy_sewers.png'),
-    require('../../assets/sprites/banners/battle_bg_1.png'),
+    require('../../assets/sprites/banners/battle_bg_1.1.png'),
     require('../../assets/sprites/units/dungeon-1/portraits.png'),
     require('../../assets/sprites/units/dungeon-1/rat.png'),
     require('../../assets/sprites/units/dungeon-1/slime.png'),
@@ -449,7 +451,7 @@ export const DUNGEON_RUN_ASSETS = {
     require('../../assets/sprites/items/status-icons-1.png'),
     require('../../assets/sprites/items/consumables-1.png'),
     require('../../assets/sprites/banners/twisted_gardens_banner_600x300.png'),
-    require('../../assets/sprites/banners/battle_bg_1.png'),
+    require('../../assets/sprites/banners/battle_bg_2.1.png'),
     require('../../assets/sprites/units/dungeon-1/portraits.png'),
     require('../../assets/sprites/units/dungeon-1/plant.png'),
     require('../../assets/sprites/units/dungeon-1/beetle.png'),
@@ -465,7 +467,7 @@ export const DUNGEON_RUN_ASSETS = {
     require('../../assets/sprites/items/status-icons-1.png'),
     require('../../assets/sprites/items/consumables-1.png'),
     require('../../assets/sprites/banners/sunken_docks_banner_600x300.png'),
-    require('../../assets/sprites/banners/battle_bg_1.png'),
+    require('../../assets/sprites/banners/battle_bg_3-1.png'),
     require('../../assets/sprites/units/dungeon-1/portraits.png'),
     require('../../assets/sprites/units/dungeon-1/jellyfish.png'),
     require('../../assets/sprites/units/dungeon-1/crab.png'),
