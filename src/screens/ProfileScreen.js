@@ -30,6 +30,7 @@ import AnimatedSprite from '../components/AnimatedSprite';
 import ResourceBar from '../components/ui/ResourceBar';
 import { HERO_SPRITE } from '../constants/sprites';
 import { GEAR, CONSUMABLES, MATERIALS, getGearForSlot } from '../data/gear';
+import { getReinforceLevel, getReinforceBonus } from '../data/reinforcement';
 import ItemSprite from '../components/ItemSprite';
 import TabBar from '../components/ui/TabBar';
 import SubTabBar from '../components/ui/SubTabBar';
@@ -57,13 +58,14 @@ const SLOT_EMPTY_FRAME = {
   legs: 5,
   gloves: 7,
   boots: 9,
-  trinket: 11,
+  trinket: 10, // leather belt silhouette
+  trinket2: 10, // second trinket slot — same leather belt silhouette
 };
 
 // Faded weapon silhouette shown in the empty weapon slot
 const WEAPONS_SHEET = require('../../assets/sprites/items/weapons-1.png');
 const WEAPONS_FRAME_SIZE = 32;
-const WEAPONS_FRAMES = 7;
+const WEAPONS_FRAMES = 10;
 
 const TABS = [
   { key: 'stats', spritesheet: 'icons-map', frameIndex: 29, label: 'Stats' },
@@ -139,12 +141,9 @@ const LORE_DESCRIPTIONS = {
 };
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const minItemWidth = 100;
 const gap = 10;
 const padding = 16;
 const availableWidth = SCREEN_WIDTH - (padding * 2);
-const numColumns = Math.max(1, Math.floor((availableWidth + gap) / (minItemWidth + gap)));
-const itemWidth = (availableWidth - (gap * (numColumns - 1))) / numColumns;
 
 // ─── Stat & attribute explanations (shown in the (i) info popup) ──────────────
 const STAT_INFO = {
@@ -232,6 +231,37 @@ const SLOT_ROWS = [
   ['trinket', 'trinket2'],
 ];
 
+// Owned-tab type filter: icon-only chips (reusing the empty-slot silhouettes);
+// 'all' is the only text entry.
+const GEAR_TYPE_FILTERS = [
+  { key: 'all', label: 'ALL' },
+  { key: 'weapon', spritesheet: 'weapons-1', frameIndex: 1 },
+  { key: 'head', spritesheet: 'equipment-leather', frameIndex: 1 },
+  { key: 'chest', spritesheet: 'equipment-leather', frameIndex: 3 },
+  { key: 'gloves', spritesheet: 'equipment-leather', frameIndex: 7 },
+  { key: 'legs', spritesheet: 'equipment-leather', frameIndex: 5 },
+  { key: 'boots', spritesheet: 'equipment-leather', frameIndex: 9 },
+  { key: 'trinket', spritesheet: 'equipment-leather', frameIndex: 10 },
+];
+
+// Compact stat line for a gear piece (base + reinforcement), e.g. "ATK +7  CRIT +5%".
+const LIST_STAT_FIELDS = [
+  { key: 'attack', label: 'ATK', percent: false },
+  { key: 'defence', label: 'DEF', percent: false },
+  { key: 'maxHp', label: 'HP', percent: false },
+  { key: 'critChance', label: 'CRIT', percent: true },
+  { key: 'dodge', label: 'DODGE', percent: true },
+];
+function gearStatText(gearDef, reinfLevel) {
+  const bonus = getReinforceBonus(gearDef);
+  const add = reinfLevel * bonus.perLevel;
+  return LIST_STAT_FIELDS.reduce((parts, { key, label, percent }) => {
+    const val = (gearDef.stats?.[key] || 0) + (key === bonus.stat ? add : 0);
+    if (val) parts.push(`${label} +${percent ? Math.round(val * 100) + '%' : val}`);
+    return parts;
+  }, []).join('  ');
+}
+
 export default function ProfileScreen() {
   const navigation = useNavigation();
   const route = useRoute();
@@ -241,6 +271,7 @@ export default function ProfileScreen() {
   const initialTab = route.params?.initialTab || 'stats';
   const [activeTab, setActiveTab] = useState(initialTab);
   const [gearSubTab, setGearSubTab] = useState('equipped');
+  const [ownedFilter, setOwnedFilter] = useState('all'); // Owned-tab gear-type filter
 
   // Cozy scrollbar slider values
   const [contentHeight, setContentHeight] = useState(1);
@@ -468,16 +499,27 @@ export default function ProfileScreen() {
       { key: 'dodge', label: 'DODGE', percent: true },
     ];
 
+    // Reinforcement adds to one stat (ATK for weapons, DEF otherwise). Fold it
+    // into the shown value for this item and — for accurate deltas — the equipped one.
+    const reinfBonus = getReinforceBonus(item);
+    const reinfAdd = getReinforceLevel(hero, item.id) * reinfBonus.perLevel;
+    const curBonus = currentDef ? getReinforceBonus(currentDef) : null;
+    const curReinfAdd = currentDef
+      ? getReinforceLevel(hero, currentDef.id) * (curBonus?.perLevel || 0)
+      : 0;
+
     const elements = [];
     STAT_FIELDS.forEach(({ key, label, percent }) => {
-      const val = item.stats[key];
+      const addForKey = key === reinfBonus.stat ? reinfAdd : 0;
+      const val = (item.stats[key] || 0) + addForKey;
       if (!val) return;
 
       const formattedVal = percent ? `+${Math.round(val * 100)}%` : `+${val}`;
-      let deltaNode = null;
 
+      let deltaNode = null;
       if (!isEquipped) {
-        const currentVal = currentDef?.stats?.[key] || 0;
+        const curAddForKey = curBonus && key === curBonus.stat ? curReinfAdd : 0;
+        const currentVal = (currentDef?.stats?.[key] || 0) + curAddForKey;
         const diff = val - currentVal;
         if (Math.abs(diff) >= 0.0001) {
           const sign = diff > 0 ? '+' : '';
@@ -547,6 +589,18 @@ export default function ProfileScreen() {
   const handleEquipFromSlot = (gearId) => {
     dispatch({ type: 'EQUIP_GEAR', payload: { slot: modalData.slotKey, gearId } });
     setSelectedSlot(null);
+  };
+
+  // Equip a piece straight from the Owned list. Slot === type for everything
+  // except trinkets, which have two slots — prefer an empty one.
+  const handleEquipDirect = (gearDef) => {
+    let slot = gearDef.type;
+    if (slot === 'trinket') {
+      if (!hero.gear?.trinket) slot = 'trinket';
+      else if (!hero.gear?.trinket2) slot = 'trinket2';
+      else slot = 'trinket';
+    }
+    dispatch({ type: 'EQUIP_GEAR', payload: { slot, gearId: gearDef.id } });
   };
 
   const handleUnequip = () => {
@@ -1211,6 +1265,9 @@ export default function ProfileScreen() {
                                       numberOfLines={2}
                                     >
                                       {isEmpty ? 'Empty' : gearDef.name}
+                                      {!isEmpty && getReinforceLevel(hero, gearDef.id) > 0 ? (
+                                        <Text style={styles.reinforcePlusModal}> +{getReinforceLevel(hero, gearDef.id)}</Text>
+                                      ) : null}
                                     </Text>
                                   </View>
 
@@ -1222,7 +1279,7 @@ export default function ProfileScreen() {
                                       isWeapon ? (
                                         <SpriteFrame
                                           source={WEAPONS_SHEET}
-                                          frameIndex={0}
+                                          frameIndex={1}
                                           frameSize={WEAPONS_FRAME_SIZE}
                                           totalFrames={WEAPONS_FRAMES}
                                           displaySize={36}
@@ -1276,10 +1333,40 @@ export default function ProfileScreen() {
                       <Text style={styles.emptyDesc}>Visit the Shop to buy equipment with Gold.</Text>
                     </View>
                   ) : (
-                    <View style={styles.gridContainer}>
+                    <>
+                    {/* Type filter (icon-only; 'all' is text) */}
+                    <View style={styles.ownedFilterBar}>
+                      {GEAR_TYPE_FILTERS.map((f) => {
+                        const active = ownedFilter === f.key;
+                        return (
+                          <TouchableOpacity
+                            key={f.key}
+                            style={[styles.ownedFilterChip, active && styles.ownedFilterChipActive]}
+                            activeOpacity={0.85}
+                            onPress={() => setOwnedFilter(f.key)}
+                          >
+                            {f.label ? (
+                              <Text style={[styles.ownedFilterAllText, active && styles.ownedFilterAllTextActive]}>
+                                {f.label}
+                              </Text>
+                            ) : (
+                              <ItemSprite
+                                spritesheet={f.spritesheet}
+                                frameIndex={f.frameIndex}
+                                displaySize={26}
+                                opacity={active ? 1 : 0.55}
+                              />
+                            )}
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </View>
+
+                    <View style={styles.ownedList}>
                       {[...(hero.inventory?.craftedGear || [])]
                         .map(gearId => ({ id: gearId, ...GEAR[gearId] }))
                         .filter(item => !!item.name)
+                        .filter(item => ownedFilter === 'all' || item.type === ownedFilter)
                         .sort((a, b) => {
                           if (a.zone !== b.zone) {
                             return a.zone - b.zone;
@@ -1289,51 +1376,66 @@ export default function ProfileScreen() {
                         .map((gearDef) => {
                           const gearId = gearDef.id;
                           const isEquipped = Object.values(hero.gear).includes(gearId);
+                          const reinf = getReinforceLevel(hero, gearId);
                           return (
                             <TouchableOpacity
                               key={gearId}
                               style={[
-                                styles.gridCard,
-                                { width: itemWidth, height: itemWidth },
-                                isEquipped && styles.gridCardGearEquipped,
+                                styles.listRow,
+                                isEquipped && styles.listRowEquipped,
                               ]}
                               onPress={() => handleOpenSlot(gearDef.type)}
                               activeOpacity={0.8}
                             >
-                              <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
-                                <Rect width="100%" height="100%" fill="rgba(255,255,255,0.015)" rx={14} />
-                                <Rect x="1" y="1" width="98%" height="98%" rx={13} fill="none"
-                                  stroke={isEquipped ? 'rgba(212,167,84,0.4)' : 'rgba(255,255,255,0.04)'} strokeWidth={isEquipped ? 1.5 : 1} />
-                              </Svg>
-                              <View style={styles.gridCardInner}>
-                                <Text style={styles.gridName} numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.8}>{gearDef.name}</Text>
-                                <View style={styles.gridIconWrap}>
-                                  {gearDef.spritesheet ? (
-                                    <ItemSprite
-                                      spritesheet={gearDef.spritesheet}
-                                      frameIndex={gearDef.frameIndex}
-                                      displaySize={42}
-                                    />
-                                  ) : (
-                                    <ItemSprite spritesheet="icons-map" frameIndex={17} displaySize={42} />
-                                  )}
-                                </View>
-                                <View style={styles.gridTagSlot}>
-                                  {isEquipped ? (
-                                    <View style={[styles.gridTagBadge, styles.gridEquippedBadge]}>
-                                      <Text style={[styles.gridTagText, styles.gridEquippedText]}>EQUIPPED</Text>
-                                    </View>
-                                  ) : (
-                                    <View style={[styles.gridTagBadge, styles.gridSlotBadge]}>
-                                      <Text style={styles.gridTagText}>{gearDef.type.toUpperCase()}</Text>
-                                    </View>
-                                  )}
-                                </View>
+                              <View style={styles.listIconBox}>
+                                {gearDef.spritesheet ? (
+                                  <ItemSprite
+                                    spritesheet={gearDef.spritesheet}
+                                    frameIndex={gearDef.frameIndex}
+                                    displaySize={38}
+                                  />
+                                ) : (
+                                  <ItemSprite spritesheet="icons-map" frameIndex={17} displaySize={38} />
+                                )}
+                              </View>
+
+                              {/* Middle column: name (top) + stats (bottom) */}
+                              <View style={styles.listNameCol}>
+                                <Text style={styles.listName} numberOfLines={2}>
+                                  {gearDef.name}
+                                  {reinf > 0 ? (
+                                    <Text style={styles.reinforcePlus}> +{reinf}</Text>
+                                  ) : null}
+                                </Text>
+                                {!!gearStatText(gearDef, reinf) && (
+                                  <Text style={styles.listStats} numberOfLines={1}>
+                                    {gearStatText(gearDef, reinf)}
+                                  </Text>
+                                )}
+                              </View>
+
+                              {/* Right column: type on top, button on bottom */}
+                              <View style={styles.listRightCol}>
+                                <Text style={styles.listType}>{gearDef.type.toUpperCase()}</Text>
+                                {isEquipped ? (
+                                  <View style={[styles.equipBtn, styles.equipBtnEquipped]}>
+                                    <Text style={[styles.equipBtnText, styles.equipBtnTextEquipped]}>EQUIPPED</Text>
+                                  </View>
+                                ) : (
+                                  <TouchableOpacity
+                                    style={styles.equipBtn}
+                                    activeOpacity={0.85}
+                                    onPress={() => handleEquipDirect(gearDef)}
+                                  >
+                                    <Text style={styles.equipBtnText}>EQUIP</Text>
+                                  </TouchableOpacity>
+                                )}
                               </View>
                             </TouchableOpacity>
                           );
                         })}
                     </View>
+                    </>
                   )}
                 </View>
               )}
@@ -1466,7 +1568,12 @@ export default function ProfileScreen() {
                             )}
                           </View>
                           <View style={{ flex: 1 }}>
-                            <Text style={styles.compareItemName} numberOfLines={1}>{item.name}</Text>
+                            <Text style={styles.compareItemName} numberOfLines={1}>
+                              {item.name}
+                              {getReinforceLevel(hero, item.id) > 0 ? (
+                                <Text style={styles.reinforcePlusModal}> +{getReinforceLevel(hero, item.id)}</Text>
+                              ) : null}
+                            </Text>
                             {!!item.description && (
                               <Text style={styles.compareItemDesc}>{item.description}</Text>
                             )}
@@ -2710,7 +2817,8 @@ const styles = StyleSheet.create({
   },
   slotCardInfo: {
     flex: 1,
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
+    alignItems: 'flex-start',
     gap: 4,
     height: '100%',
   },
@@ -2857,7 +2965,7 @@ const styles = StyleSheet.create({
   compareItemName: {
     fontFamily: 'Jersey10-Regular',
     fontWeight: 'normal',
-    fontSize: 24,
+    fontSize: 21,
     color: '#4A2E14',
     flexShrink: 1,
     marginRight: 8,
@@ -3033,11 +3141,14 @@ const styles = StyleSheet.create({
   gridContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 10,
+    justifyContent: 'space-between',
+    rowGap: 10,
     paddingVertical: 4,
     width: '100%',
   },
   gridCard: {
+    width: '48%',
+    height: 128,
     borderRadius: 12,
     overflow: 'hidden',
     borderWidth: 1.5,
@@ -3066,13 +3177,130 @@ const styles = StyleSheet.create({
   },
   gridName: {
     fontFamily: 'Jersey10-Regular',
-    fontSize: 18,
+    fontSize: 20,
     color: '#F3E2BD',
     textAlign: 'center',
-    lineHeight: 18,
-    height: 36,
+    lineHeight: 20,
+    height: 40,
     width: '100%',
   },
+  reinforcePlus: { color: '#9BE6A6' },
+  reinforcePlusModal: { color: '#2E7D32' },
+
+  /* ── Owned-tab list ──────────────────────────────────────── */
+  ownedList: {
+    width: '100%',
+    gap: 8,
+    paddingVertical: 4,
+  },
+  listRow: {
+    flexDirection: 'row',
+    alignItems: 'stretch',
+    gap: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: 'rgba(212, 167, 84, 0.25)',
+    backgroundColor: 'rgba(16, 44, 28, 0.45)',
+  },
+  listRowEquipped: {
+    borderColor: 'rgba(212,167,84,0.6)',
+    backgroundColor: 'rgba(41, 66, 27, 0.55)',
+  },
+  listIconBox: {
+    width: 46,
+    height: 46,
+    alignSelf: 'center',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
+    backgroundColor: 'rgba(0,0,0,0.25)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  listNameCol: {
+    flex: 1,
+    justifyContent: 'space-between',
+  },
+  listName: {
+    fontFamily: 'Jersey10-Regular',
+    fontSize: 21,
+    color: '#F3E2BD',
+  },
+  listStats: {
+    fontFamily: 'Jersey10-Regular',
+    fontSize: 18,
+    color: '#B29B66',
+    letterSpacing: 0.3,
+    marginTop: 4,
+  },
+  listRightCol: {
+    alignItems: 'flex-end',
+    justifyContent: 'space-between',
+    minHeight: 46,
+  },
+  listType: {
+    fontFamily: 'Silkscreen-Regular',
+    fontSize: 10,
+    color: 'rgba(243,226,189,0.5)',
+    letterSpacing: 0.5,
+  },
+  equipBtn: {
+    paddingHorizontal: 11,
+    paddingVertical: 4,
+    borderRadius: 6,
+    borderWidth: 1.5,
+    borderColor: '#4F856C',
+    borderBottomWidth: 2.5,
+    borderBottomColor: '#0D2118',
+    backgroundColor: '#1B4030',
+  },
+  equipBtnEquipped: {
+    borderColor: 'rgba(212,167,84,0.5)',
+    borderBottomColor: 'rgba(212,167,84,0.3)',
+    backgroundColor: 'rgba(212,167,84,0.12)',
+  },
+  equipBtnText: {
+    fontFamily: 'Silkscreen-Regular',
+    fontSize: 13,
+    color: '#B7F0C4',
+    letterSpacing: 0.5,
+  },
+  equipBtnTextEquipped: {
+    color: '#D4A754',
+  },
+
+  /* ── Owned-tab type filter bar ───────────────────────────── */
+  ownedFilterBar: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 5,
+    marginBottom: 12,
+  },
+  ownedFilterChip: {
+    width: 37,
+    height: 37,
+    borderRadius: 7,
+    borderWidth: 1.5,
+    borderColor: 'rgba(255,255,255,0.10)',
+    backgroundColor: 'rgba(255,255,255,0.03)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  ownedFilterChipActive: {
+    borderColor: 'rgba(212,167,84,0.7)',
+    backgroundColor: 'rgba(212,167,84,0.15)',
+  },
+  ownedFilterAllText: {
+    fontFamily: 'Jersey10-Regular',
+    fontSize: 15,
+    color: 'rgba(243,226,189,0.5)',
+    letterSpacing: 0.5,
+  },
+  ownedFilterAllTextActive: { color: '#F3E2BD' },
   gridTagSlot: {
     minHeight: 16,
     alignItems: 'center',

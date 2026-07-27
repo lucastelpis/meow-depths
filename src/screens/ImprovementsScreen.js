@@ -51,6 +51,20 @@ import {
 // Base camp resources shown as chips in the top resource bar.
 const CAMP_RESOURCES = ['wood', 'cloth', 'stone'];
 
+// Forge sub-bar: filter the reinforcement roster by gear type. Icon-only —
+// each type reuses the faded silhouette from the matching empty equipment slot
+// (see ProfileScreen); 'all' is the only text entry.
+const FORGE_FILTERS = [
+  { key: 'all', label: 'ALL' },
+  { key: 'weapon', spritesheet: 'weapons-1', frameIndex: 1 },
+  { key: 'head', spritesheet: 'equipment-leather', frameIndex: 1 },
+  { key: 'chest', spritesheet: 'equipment-leather', frameIndex: 3 },
+  { key: 'legs', spritesheet: 'equipment-leather', frameIndex: 5 },
+  { key: 'gloves', spritesheet: 'equipment-leather', frameIndex: 7 },
+  { key: 'boots', spritesheet: 'equipment-leather', frameIndex: 9 },
+  // Trinkets are intentionally excluded — they cannot be reinforced.
+];
+
 // Every crystal material, in drop order, shown in the Crystals inventory modal.
 // Derived from MATERIALS so new crystal tiers appear automatically.
 const CRYSTAL_IDS = Object.keys(MATERIALS).filter(
@@ -83,12 +97,18 @@ export default function ImprovementsScreen({ navigation }) {
   const ownedMaterials = hero.inventory.materials || {};
   const [crystalsOpen, setCrystalsOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('facilities'); // 'facilities' | 'forge'
+  const [forgeFilter, setForgeFilter] = useState('all'); // gear-type filter in Forge
 
   // Gear the hero owns, ordered by zone then name — the Forge tab's roster.
+  // Trinkets are excluded: they cannot be reinforced.
   const ownedGear = (hero.inventory.craftedGear || [])
     .map((id) => GEAR[id])
-    .filter(Boolean)
+    .filter((g) => g && g.type !== 'trinket')
     .sort((a, b) => (a.zone || 0) - (b.zone || 0) || a.name.localeCompare(b.name));
+
+  // Roster narrowed to the selected type ('all' shows everything).
+  const filteredGear =
+    forgeFilter === 'all' ? ownedGear : ownedGear.filter((g) => g.type === forgeFilter);
 
   const handleUpgrade = (id, cost) => {
     if (!cost || !canAfford(cost, ownedMaterials)) return;
@@ -215,17 +235,14 @@ export default function ImprovementsScreen({ navigation }) {
           </View>
 
           <View style={styles.titleCol}>
-            <View style={styles.nameRow}>
-              <Text style={styles.cardName} numberOfLines={1}>{gearDef.name}</Text>
-              {isEquipped && (
-                <View style={styles.equippedTag}>
-                  <Text style={styles.equippedTagText}>EQUIPPED</Text>
-                </View>
-              )}
-            </View>
+            <Text style={styles.cardName} numberOfLines={1}>
+              {gearDef.name}
+              {level > 0 ? <Text style={styles.cardNamePlus}> +{level}</Text> : null}
+            </Text>
             <Text style={styles.cardBlurb}>
               {gearDef.type ? gearDef.type.toUpperCase() : 'GEAR'}, +{totalStat} {bonus.label}
               {reinfAdd > 0 ? ` (+${reinfAdd})` : ''}
+              {isEquipped ? <Text style={styles.equippedInline}>, EQUIPPED</Text> : ''}
             </Text>
           </View>
 
@@ -382,7 +399,7 @@ export default function ImprovementsScreen({ navigation }) {
         onSelect={setActiveTab}
         tabs={[
           { key: 'facilities', label: 'Facilities', spritesheet: 'icons-map', frameIndex: 60 },
-          { key: 'forge', label: 'Forge', spritesheet: 'icons-map', frameIndex: 77 },
+          { key: 'forge', label: 'Forge', spritesheet: 'weapons-1', frameIndex: 1 },
         ]}
       />
 
@@ -403,12 +420,45 @@ export default function ImprovementsScreen({ navigation }) {
               Reinforce gear with dungeon crystals — each level adds +1 ATK to weapons
               or +1 DEF to armour while equipped (max +{MAX_REINFORCE_LEVEL}).
             </Text>
+
+            {/* Type filter sub-bar (icon-only; 'all' is text) */}
+            <View style={styles.filterBar}>
+              {FORGE_FILTERS.map((f) => {
+                const active = forgeFilter === f.key;
+                return (
+                  <TouchableOpacity
+                    key={f.key}
+                    style={[styles.filterChip, active && styles.filterChipActive]}
+                    activeOpacity={0.85}
+                    onPress={() => setForgeFilter(f.key)}
+                  >
+                    {f.label ? (
+                      <Text style={[styles.filterAllText, active && styles.filterAllTextActive]}>
+                        {f.label}
+                      </Text>
+                    ) : (
+                      <ItemSprite
+                        spritesheet={f.spritesheet}
+                        frameIndex={f.frameIndex}
+                        displaySize={28}
+                        opacity={active ? 1 : 0.55}
+                      />
+                    )}
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+
             {ownedGear.length === 0 ? (
               <Text style={styles.emptyText}>
                 No gear to reinforce yet. Craft or buy gear first, then bring dungeon crystals here.
               </Text>
+            ) : filteredGear.length === 0 ? (
+              <Text style={styles.emptyText}>
+                No gear of this type yet.
+              </Text>
             ) : (
-              ownedGear.map(renderGearCard)
+              filteredGear.map(renderGearCard)
             )}
           </>
         )}
@@ -582,6 +632,36 @@ const styles = StyleSheet.create({
     fontFamily: 'Jersey10-Regular', fontSize: 16, color: '#C9A867',
     textAlign: 'center', marginTop: 24, opacity: 0.8,
   },
+  /* ── Forge type filter sub-bar ───────────────────────────── */
+  filterBar: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 14,
+  },
+  filterChip: {
+    width: 40,
+    height: 40,
+    borderRadius: 8,
+    borderWidth: 1.5,
+    borderColor: '#5A4A2E',
+    backgroundColor: '#241A0C',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  filterChipActive: {
+    borderColor: GOLD,
+    backgroundColor: '#4F3C1E',
+  },
+  filterAllText: {
+    fontFamily: 'Jersey10-Regular', fontSize: 16, color: '#8A6E44', letterSpacing: 0.5,
+  },
+  filterAllTextActive: { color: PARCH },
+
+  equippedInline: { color: '#9BE6A6' },
+  cardNamePlus: { color: '#9BE6A6' },
   nameRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   equippedTag: {
     backgroundColor: '#16240F',
