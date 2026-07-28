@@ -376,8 +376,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   headerTitleText: {
-    fontFamily: 'Jersey10-Regular',
-    fontSize: 28,
+    ...theme.FONTS.screenTitle,
     color: '#FFF3DA',
     textAlign: 'center',
     textShadowColor: '#000',
@@ -395,9 +394,7 @@ const styles = StyleSheet.create({
   scroll: { padding: 16, paddingBottom: 40 },
 
   emptyText: {
-    fontFamily: 'Jersey10-Regular',
-    fontSize: 22,
-    lineHeight: 22,
+    ...theme.FONTS.prose,
     color: 'rgba(207,224,238,0.35)',
     fontStyle: 'italic',
     textAlign: 'center',
@@ -424,16 +421,14 @@ const styles = StyleSheet.create({
   },
   cardHeadInfo: { flex: 1, marginLeft: 12, justifyContent: 'center' },
   cardNameRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 },
-  cardName: { fontFamily: 'Jersey10-Regular', fontSize: 24, color: theme.COLORS.ghostWhite, flexShrink: 1 },
+  cardName: { ...theme.FONTS.title, color: theme.COLORS.ghostWhite, flexShrink: 1 },
   bossTag: { borderWidth: 1, borderRadius: 5, paddingHorizontal: 6, paddingVertical: 2 },
-  bossTagText: { fontFamily: 'Silkscreen-Regular', fontSize: 11, color: '#FFF3DA' },
-  cardRegion: { fontFamily: 'Jersey10-Regular', fontSize: 16, color: 'rgba(207,224,238,0.4)', marginTop: 3 },
+  bossTagText: { ...theme.FONTS.chip, color: '#FFF3DA' },
+  cardRegion: { ...theme.FONTS.proseSm, color: 'rgba(207,224,238,0.4)', marginTop: 3 },
   dropRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 8 },
-  dropLabel: { fontFamily: 'Jersey10-Regular', fontSize: 16, color: 'rgba(207,224,238,0.4)', marginRight: 2 },
+  dropLabel: { ...theme.FONTS.proseSm, color: 'rgba(207,224,238,0.4)', marginRight: 2 },
   cardLore: {
-    fontFamily: 'Jersey10-Regular',
-    fontSize: 18,
-    lineHeight: 18,
+    ...theme.FONTS.prose,
     color: 'rgba(207,224,238,0.7)',
     marginTop: 12,
     fontStyle: 'italic',
@@ -455,7 +450,7 @@ const styles = StyleSheet.create({
     borderColor: theme.COLORS.panelBorderGold,
     backgroundColor: theme.COLORS.panelGreen,
   },
-  regionTabText: { fontFamily: 'Jersey10-Regular', fontSize: 18, color: 'rgba(207,224,238,0.55)' },
+  regionTabText: { ...theme.FONTS.chip, color: 'rgba(207,224,238,0.55)' },
 
   // Note rows
   noteRow: {
@@ -468,8 +463,8 @@ const styles = StyleSheet.create({
     padding: 12,
     marginBottom: 10,
   },
-  noteTitle: { fontFamily: 'Jersey10-Regular', fontSize: 22, color: theme.COLORS.warmGlow },
-  noteSub: { fontFamily: 'Jersey10-Regular', fontSize: 16, color: 'rgba(207,224,238,0.4)', marginTop: 2 },
+  noteTitle: { ...theme.FONTS.title, color: theme.COLORS.warmGlow },
+  noteSub: { ...theme.FONTS.proseSm, color: 'rgba(207,224,238,0.4)', marginTop: 2 },
   noteChevron: { fontSize: 26, color: theme.COLORS.candleGold, marginLeft: 6 },
   noteBadge: {
     position: 'absolute',
@@ -485,6 +480,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     zIndex: 10,
   },
+  // exception: tiny "!" badge glyph — no PressStart role goes below displaySm (12)
   noteBadgeText: {
     fontFamily: 'PressStart2P-Regular',
     fontSize: 8,
@@ -530,9 +526,9 @@ const styles = StyleSheet.create({
   },
   readerClose: { position: 'absolute', top: 12, right: 14, zIndex: 5 },
   readerCloseText: { fontSize: 24, color: '#6E4524', fontWeight: 'bold' },
-  readerTitle: { fontFamily: 'Jersey10-Regular', fontSize: 26, lineHeight: 26, color: '#4A3417', marginBottom: 6, paddingRight: 24 },
-  readerContext: { fontFamily: 'Jersey10-Regular', fontSize: 18, color: '#7A5C30', fontStyle: 'italic' },
+  readerTitle: { ...theme.FONTS.title, color: '#4A3417', marginBottom: 6, paddingRight: 24 },
+  readerContext: { ...theme.FONTS.prose, color: '#7A5C30', fontStyle: 'italic' },
   readerDivider: { height: 1, backgroundColor: '#C9A86A', marginVertical: 12 },
   readerScroll: { flex: 1, width: '100%', paddingRight: 10 },
-  readerBody: { fontFamily: 'Jersey10-Regular', fontSize: 20, lineHeight: 24, color: '#3A2C16' },
+  readerBody: { ...theme.FONTS.prose, color: '#3A2C16' },
 });

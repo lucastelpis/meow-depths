@@ -19,6 +19,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import ItemSprite from '../components/ItemSprite';
+import theme from '../constants/theme';
 
 // ─── News feed content ───────────────────────────────────────────────────────
 // Newest first. Each post: { id, date, title, body }.
@@ -127,7 +128,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#1E1E20', paddingVertical: 6, paddingHorizontal: 20,
   },
   headerTitleText: {
-    fontFamily: 'Jersey10-Regular', fontSize: 28, color: PARCH, textAlign: 'center',
+    ...theme.FONTS.screenTitle, color: PARCH, textAlign: 'center',
     textShadowColor: '#000', textShadowOffset: { width: 1, height: 1 }, textShadowRadius: 1,
   },
   headerSpacer: { width: 44, height: 44 },
@@ -159,12 +160,12 @@ const styles = StyleSheet.create({
   },
   postHeaderText: { flex: 1 },
   postTitle: {
-    fontFamily: 'Jersey10-Regular', fontSize: 22, color: PARCH, letterSpacing: 0.5,
+    ...theme.FONTS.title, color: PARCH, letterSpacing: 0.5,
   },
   postDate: {
-    fontFamily: 'Silkscreen-Regular', fontSize: 9, color: GOLD, marginTop: 2,
+    ...theme.FONTS.chip, color: GOLD, marginTop: 2,
   },
   postBody: {
-    fontFamily: 'Jersey10-Regular', fontSize: 17, lineHeight: 22, color: '#F0E0BC',
+    ...theme.FONTS.prose, color: '#F0E0BC',
   },
 });

@@ -109,6 +109,12 @@ const FONTS = {
     fontWeight: 'normal',
     fontSize: 22, // panel / card / modal title
   },
+  proseLg: {
+    fontFamily: 'Jersey10-Regular',
+    fontWeight: 'normal',
+    fontSize: 24, // lead / hero reading text — lore & onboarding panels only, use sparingly
+    lineHeight: 36,
+  },
   prose: {
     fontFamily: 'Jersey10-Regular',
     fontWeight: 'normal',
@@ -143,12 +149,12 @@ const FONTS = {
   caption: {
     fontFamily: 'Silkscreen-Regular',
     fontWeight: 'normal',
-    fontSize: 10, // small tag / helper text
+    fontSize: 11, // smallest reading text — helper / small tag (= iOS Caption 2, the min readable floor)
   },
-  micro: {
+  glyph: {
     fontFamily: 'Silkscreen-Regular',
     fontWeight: 'normal',
-    fontSize: 9, // tiny glyph / badge
+    fontSize: 9, // tiny glyph / badge ONLY — below iOS 11pt / Material 11sp text floors, do not use for reading text
   },
 
   // ── PressStart2P — retro display values ────────────────────────

@@ -659,7 +659,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   chevronText: {
-    ...theme.FONTS.micro,
+    ...theme.FONTS.glyph,
     fontWeight: 'bold',
     color: '#FFF3DA',
   },

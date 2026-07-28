@@ -29,6 +29,7 @@ import { Image as ExpoImage } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useGame } from '../state/gameState';
+import theme from '../constants/theme';
 
 const { width: W, height: H } = Dimensions.get('window');
 
@@ -186,9 +187,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   loreText: {
-    fontFamily: 'Jersey10-Regular',
-    fontSize: 28,
-    lineHeight: 30,
+    ...theme.FONTS.proseLg,
     color: '#FFFFFF',
     textShadowColor: 'rgba(0, 0, 0, 0.9)',
     textShadowOffset: { width: 0, height: 1.5 },
@@ -212,9 +211,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
   },
   topTagText: {
-    fontFamily: 'Silkscreen-Regular',
-    fontSize: 12,
-    letterSpacing: 0,
+    ...theme.FONTS.chip,
     color: '#2A1A0C',
   },
 
@@ -244,6 +241,8 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     paddingHorizontal: 16,
   },
+  // exception: PressStart title sits between displaySm (12) and displayLg (18);
+  // 16 fits the fixed plaque width without re-wrapping to a 3rd line
   titlePlaqueText: {
     fontFamily: 'PressStart2P-Regular',
     fontSize: 16,
@@ -298,6 +297,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  // exception: cozy Jersey CTA (button role is Silkscreen); Jersey button taxonomy deferred
   btnLabel: {
     fontFamily: 'Jersey10-Regular',
     fontSize: 28,
@@ -314,8 +314,7 @@ const styles = StyleSheet.create({
     borderTopColor: 'rgba(255, 243, 218, 0.08)',
   },
   confirmSubtext: {
-    fontFamily: 'Silkscreen-Regular',
-    fontSize: 10,
+    ...theme.FONTS.caption,
     color: 'rgba(255, 243, 218, 0.45)',
     textAlign: 'center',
   },
