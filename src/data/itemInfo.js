@@ -29,6 +29,13 @@ export function getItemInfo(itemId) {
     return { title: def.name.toUpperCase(), desc: def.description };
   }
 
+  if (normalized === 'mystery_materials') {
+    return {
+      title: 'MYSTERY RESOURCES',
+      desc: 'A surprise stack of camp resources. The exact mix of Wood, Stone, and Cloth is rolled when you claim the reward.',
+    };
+  }
+
   if (normalized === 'wood') {
     return { title: 'WOOD', desc: 'Sturdy timber earned from quests. Used to upgrade Camp Improvements.' };
   }

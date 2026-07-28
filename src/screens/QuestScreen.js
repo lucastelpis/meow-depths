@@ -27,7 +27,7 @@ import ItemSprite from '../components/ItemSprite';
 import TabBar from '../components/ui/TabBar';
 import SubTabBar from '../components/ui/SubTabBar';
 import ParchmentModal from '../components/ui/ParchmentModal';
-import { isQuestUnlocked } from '../data/quests';
+import { isQuestUnlocked, rollMysteryMaterials } from '../data/quests';
 import { CONSUMABLES } from '../data/gear';
 import { getItemInfo } from '../data/itemInfo';
 
@@ -154,6 +154,18 @@ export default function QuestScreen({ navigation }) {
           <Text style={styles.rewardMiniText}><Text style={{ fontSize: 11 }}>x</Text>{qty}</Text>
         </View>
       );
+    } else if (type === 'mystery') {
+      // Unrevealed reward: a mystery-box icon standing in for `qty` random camp
+      // resources. The concrete mix is rolled only when the player claims.
+      return (
+        <View key={key} style={styles.rewardMiniChip}>
+          <TouchableOpacity style={styles.infoTagSmall} onPress={handlePressInfo} activeOpacity={0.7}>
+            <Text style={styles.infoTagText}>?</Text>
+          </TouchableOpacity>
+          <ItemSprite spritesheet="icons-map" frameIndex={91} displaySize={36} />
+          <Text style={styles.rewardMiniText}><Text style={{ fontSize: 11 }}>x</Text>{qty}</Text>
+        </View>
+      );
     }
     return null;
   };
@@ -202,6 +214,26 @@ export default function QuestScreen({ navigation }) {
         <Text style={styles.drChipLabel}>{displayName}</Text>
       </View>
     );
+  };
+
+  // Rolls a quest's mystery-box materials into a concrete mix at claim time,
+  // returning a quest whose rewards show the resolved resources (so the
+  // celebration reveals the real drop) and carrying the roll on `_resolvedMaterials`
+  // so the reducer grants exactly what was shown. Quests without a mystery
+  // reward pass through unchanged.
+  const resolveQuestRewards = (quest) => {
+    if (!(quest.rewards?.mysteryMaterials > 0)) return quest;
+    const rolled = rollMysteryMaterials(quest.rewards.mysteryMaterials);
+    const mergedMaterials = { ...(quest.rewards.materials || {}) };
+    for (const [id, qty] of Object.entries(rolled)) {
+      mergedMaterials[id] = (mergedMaterials[id] || 0) + qty;
+    }
+    const { mysteryMaterials, ...restRewards } = quest.rewards;
+    return {
+      ...quest,
+      rewards: { ...restRewards, materials: mergedMaterials },
+      _resolvedMaterials: rolled,
+    };
   };
 
   const renderQuestRow = (quest) => {
@@ -256,6 +288,8 @@ export default function QuestScreen({ navigation }) {
                 {quest.rewards.materials && Object.entries(quest.rewards.materials).map(([id, qty]) =>
                   renderRewardChip('materials', id, qty)
                 )}
+                {quest.rewards.mysteryMaterials > 0 &&
+                  renderRewardChip('mystery', 'mystery_materials', quest.rewards.mysteryMaterials)}
               </View>
             </View>
 
@@ -279,7 +313,7 @@ export default function QuestScreen({ navigation }) {
             <TouchableOpacity
               style={styles.claimBtnOuter}
               activeOpacity={0.8}
-              onPress={() => setCelebrationQuest(quest)}
+              onPress={() => setCelebrationQuest(resolveQuestRewards(quest))}
             >
               <View style={styles.claimBtnInner}>
                 <Text style={styles.claimBtnTextActive}>CLAIM REWARD</Text>
@@ -431,7 +465,13 @@ export default function QuestScreen({ navigation }) {
                 activeOpacity={0.8}
                 onPress={() => {
                   if (celebrationQuest) {
-                    dispatch({ type: 'CLAIM_QUEST_REWARD', payload: { questId: celebrationQuest.id } });
+                    dispatch({
+                      type: 'CLAIM_QUEST_REWARD',
+                      payload: {
+                        questId: celebrationQuest.id,
+                        resolvedMaterials: celebrationQuest._resolvedMaterials,
+                      },
+                    });
                     setCelebrationQuest(null);
                   }
                 }}

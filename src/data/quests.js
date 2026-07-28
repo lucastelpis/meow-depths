@@ -2,6 +2,22 @@
  * quests.js — Daily and Campaign Quests configuration and generation logic.
  */
 
+// The camp resources a "mystery" quest reward can roll into. Kept here as the
+// single source of truth so generation, display, and the claim-time roll agree.
+export const MYSTERY_RESOURCE_TYPES = ['wood', 'stone', 'cloth'];
+
+// Resolves a `mysteryMaterials` count into a concrete { type: qty } map by
+// rolling each unit independently and evenly across the resource types. Called
+// at CLAIM time (not generation) so the mix is a genuine surprise on open.
+export function rollMysteryMaterials(count) {
+  const result = {};
+  for (let i = 0; i < count; i++) {
+    const type = MYSTERY_RESOURCE_TYPES[Math.floor(Math.random() * MYSTERY_RESOURCE_TYPES.length)];
+    result[type] = (result[type] || 0) + 1;
+  }
+  return result;
+}
+
 // Simple seeded random helper to keep daily quests consistent throughout the calendar day.
 export function getSeededRandom(seedStr) {
   let hash = 0;
@@ -41,15 +57,17 @@ export function generateDailyQuests(hero, progress, dateStr) {
   const currentZone = getHighestUnlockedZone(progress);
   const color = getZoneCrystalColor(currentZone);
 
-  // Daily quests reward gold + a random camp resource (wood/stone/cloth); no
-  // consumables. Quests are the PRIMARY resource faucet (treasure is secondary),
-  // tuned so a full day of play yields at most ~1 cheap Camp upgrade. The free
-  // login quest grants a single unit; earned dailies grant a small stack.
-  const RESOURCE_TYPES = ['wood', 'stone', 'cloth'];
+  // Daily quests reward gold + a "mystery" stack of camp resources
+  // (wood/stone/cloth); no consumables. Quests are the PRIMARY resource faucet
+  // (treasure is secondary), tuned so a full day of play yields at most ~1 cheap
+  // Camp upgrade. The reward stores only a `mysteryMaterials` COUNT — the actual
+  // mix is rolled at claim time (see rollMysteryMaterials) so it's a surprise on
+  // open. The free login quest grants a single unit; earned dailies a small stack.
+  const RESOURCE_TYPES = MYSTERY_RESOURCE_TYPES;
   const randInt = (min, max) => min + Math.floor(rand() * (max - min + 1));
   const randomResourceReward = (gold, min = 2, max = 4) => ({
     gold,
-    materials: { [RESOURCE_TYPES[Math.floor(rand() * RESOURCE_TYPES.length)]]: randInt(min, max) },
+    mysteryMaterials: randInt(min, max),
   });
 
   // 1. Report to Camp (Always generated as Quest 1)
@@ -791,6 +809,30 @@ export function syncPersistentQuests(state) {
 
   const hero = state.hero;
   const progress = state.progress;
+
+  // One-time format migration: dailies generated before the "mystery resources"
+  // reward change stored concrete `rewards.materials`; the current generator
+  // emits `rewards.mysteryMaterials`. Detect the stale format via the always-
+  // present login quest and regenerate today's set so existing characters see
+  // the new reward immediately (resets today's daily progress, which is fine —
+  // it's the same deterministic set, just with the new reward shape).
+  const loginDaily = (questsState.dailies || []).find(q => q.id === 'daily_visit_camp');
+  const staleRewardFormat =
+    loginDaily &&
+    loginDaily.rewards &&
+    loginDaily.rewards.materials &&
+    loginDaily.rewards.mysteryMaterials === undefined;
+  if (staleRewardFormat && questsState.lastGeneratedDate) {
+    try {
+      questsState = {
+        ...questsState,
+        dailies: generateDailyQuests(hero, progress, questsState.lastGeneratedDate),
+      };
+      changed = true;
+    } catch (e) {
+      // If regeneration fails for any reason, leave the stored dailies as-is.
+    }
+  }
 
   // Build a reference set of today's dailies so rewritten flavor (desc) reaches
   // an already-generated set without regenerating it (which would reset

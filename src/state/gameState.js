@@ -45,7 +45,7 @@ import { calculateEffectiveStats, applyHealingEfficiency, checkLevelUp } from '.
 import { recalculateStamina, getStaminaRegenInterval } from '../logic/staminaEngine';
 import { GEAR, CONSUMABLES } from '../data/gear';
 import { SKILLS, getSkillUpgradeCost } from '../data/skills';
-import { getInitialCampaignQuests, generateDailyQuests, syncPersistentQuests } from '../data/quests';
+import { getInitialCampaignQuests, generateDailyQuests, syncPersistentQuests, rollMysteryMaterials } from '../data/quests';
 import { getImprovementLevel, getUpgradeCost, canAfford, getMaxStaminaForLevel } from '../data/improvements';
 import { getReinforceLevel, getReinforceCost, MAX_REINFORCE_LEVEL } from '../data/reinforcement';
 
@@ -1672,6 +1672,18 @@ function baseGameReducer(state, action) {
 
       if (quest.rewards.materials) {
         for (const [itemId, qty] of Object.entries(quest.rewards.materials)) {
+          newMaterials[itemId] = (newMaterials[itemId] || 0) + qty;
+        }
+      }
+
+      // Mystery-box materials: the quest stores only a COUNT; the concrete mix
+      // is rolled evenly across resource types at claim time. The UI rolls first
+      // and passes the result so the celebration shows exactly what's granted;
+      // fall back to a fresh roll if claimed without a pre-resolved payload.
+      if (quest.rewards.mysteryMaterials > 0) {
+        const rolled = action.payload.resolvedMaterials
+          || rollMysteryMaterials(quest.rewards.mysteryMaterials);
+        for (const [itemId, qty] of Object.entries(rolled)) {
           newMaterials[itemId] = (newMaterials[itemId] || 0) + qty;
         }
       }

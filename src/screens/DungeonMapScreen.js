@@ -1285,6 +1285,22 @@ export default function DungeonMapScreen({ navigation }) {
                   Zone {currentRun.floorNumber || 1} of {zone.floorCount || 10}
                 </Text>
               </View>
+              <TouchableOpacity
+                style={[styles.questsTag, {
+                  borderColor: zTheme.accent + '33',
+                  backgroundColor: zTheme.accent + '12',
+                }]}
+                onPress={() => setActiveModal('quests')}
+                activeOpacity={0.7}
+              >
+                <ItemSprite spritesheet="icons-map" frameIndex={73} displaySize={13} />
+                <Text style={[styles.questsTagText, { color: zTheme.accent }]}>Quests</Text>
+                {hasClaimableQuestReward && (
+                  <View style={styles.questTagBadge}>
+                    <Text style={styles.questBadgeText}>!</Text>
+                  </View>
+                )}
+              </TouchableOpacity>
               <View style={[styles.roomsBadge, {
                 borderColor: zTheme.accent + '33',
                 backgroundColor: zTheme.accent + '12',
@@ -1401,20 +1417,6 @@ export default function DungeonMapScreen({ navigation }) {
               onPress={() => setActiveModal('bag')}
               style={{ width: '100%' }}
             />
-          </View>
-          <View style={{ flex: 1, position: 'relative', overflow: 'visible' }}>
-            <Button
-              title="Quests"
-              icon={<ItemSprite spritesheet="icons-map" frameIndex={73} displaySize={24} />}
-              variant="secondary"
-              onPress={() => setActiveModal('quests')}
-              style={{ width: '100%' }}
-            />
-            {hasClaimableQuestReward && (
-              <View style={styles.questBadge}>
-                <Text style={styles.questBadgeText}>!</Text>
-              </View>
-            )}
           </View>
           <View style={{ flex: 1 }}>
             <Button
@@ -2113,6 +2115,36 @@ const styles = StyleSheet.create({
     ...theme.FONTS.label,
     fontSize: 12,
     fontWeight: 'bold',
+  },
+  questsTag: {
+    borderRadius: theme.BORDER_RADIUS.pill,
+    borderWidth: 1,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    alignSelf: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginRight: 6,
+  },
+  questsTagText: {
+    ...theme.FONTS.label,
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
+  questTagBadge: {
+    position: 'absolute',
+    top: -6,
+    right: -6,
+    width: 14,
+    height: 14,
+    borderRadius: 4,
+    backgroundColor: '#D8483F',
+    borderColor: '#4A3917',
+    borderWidth: 1.5,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10,
   },
 
   hudDivider: {
@@ -3405,18 +3437,21 @@ const styles = StyleSheet.create({
   trackerQuestHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     marginBottom: 4,
   },
   trackerQuestTitle: {
     fontFamily: 'Jersey10-Regular',
     fontSize: 20,
     color: '#4B3621',
+    flex: 1,
+    marginRight: 8,
   },
   trackerQuestTag: {
     fontFamily: 'Jersey10-Regular',
     fontSize: 16,
     fontWeight: 'bold',
+    flexShrink: 0,
   },
   trackerQuestDesc: {
     fontSize: 13,
@@ -3436,20 +3471,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#5CC489',
     fontWeight: 'bold',
-  },
-  questBadge: {
-    position: 'absolute',
-    top: -6,
-    right: -6,
-    width: 14,
-    height: 14,
-    borderRadius: 4,
-    backgroundColor: '#D8483F',
-    borderColor: '#4A3917',
-    borderWidth: 1.5,
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 10,
   },
   questBadgeText: {
     fontFamily: 'PressStart2P-Regular',

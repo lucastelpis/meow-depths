@@ -34,7 +34,7 @@ import { getStaminaRegenInterval } from '../logic/staminaEngine';
 import { SKILLS } from '../data/skills';
 import ItemSprite from '../components/ItemSprite';
 import { pickRandomThought } from '../data/mochiThoughts';
-import { isQuestUnlocked } from '../data/quests';
+import { isQuestUnlocked, rollMysteryMaterials } from '../data/quests';
 import { CONSUMABLES, MATERIALS } from '../data/gear';
 import { getItemInfo } from '../data/itemInfo';
 import SpotlightTour from '../components/tutorial/SpotlightTour';
@@ -401,6 +401,17 @@ export default function CampScreen({ navigation }) {
     return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
   }, [currentStamina, maxStamina, hero.lastStaminaRegenTime, state, nowTs]);
 
+  // Current recharge rate (in hours) derived from Cooktop level + equipped gear.
+  // Formatted as whole hours, or Xh Ym when gear multipliers make it fractional.
+  const staminaRateText = React.useMemo(() => {
+    const intervalMs = getStaminaRegenInterval(state);
+    const totalMin = Math.round(intervalMs / 60000);
+    const h = Math.floor(totalMin / 60);
+    const m = totalMin % 60;
+    if (m === 0) return `1 charge every ${h}h`;
+    return `1 charge every ${h}h ${m}m`;
+  }, [state]);
+
   const staminaPotionCount = React.useMemo(() => {
     const entry = state.hero.inventory.consumables?.find(c => c.id === 'stamina_potion');
     return entry ? entry.quantity : 0;
@@ -579,6 +590,18 @@ export default function CampScreen({ navigation }) {
           <Text style={styles.rewardMiniText}><Text style={{ fontSize: 11 }}>x</Text>{qty}</Text>
         </View>
       );
+    } else if (type === 'mystery') {
+      // Unrevealed reward: a mystery-box icon standing in for `qty` random camp
+      // resources. The concrete mix is rolled only when the player claims.
+      return (
+        <View key={key} style={styles.rewardMiniChip}>
+          <TouchableOpacity style={styles.infoTagSmall} onPress={handlePressInfo} activeOpacity={0.7}>
+            <Text style={styles.infoTagText}>?</Text>
+          </TouchableOpacity>
+          <ItemSprite spritesheet="icons-map" frameIndex={91} displaySize={36} />
+          <Text style={styles.rewardMiniText}><Text style={{ fontSize: 11 }}>x</Text>{qty}</Text>
+        </View>
+      );
     }
     return null;
   };
@@ -627,6 +650,26 @@ export default function CampScreen({ navigation }) {
         <Text style={styles.drChipLabel}>{displayName}</Text>
       </View>
     );
+  };
+
+  // Rolls a quest's mystery-box materials into a concrete mix at claim time,
+  // returning a quest whose rewards show the resolved resources (so the
+  // celebration reveals the real drop) and carrying the roll on `_resolvedMaterials`
+  // so the reducer grants exactly what was shown. Quests without a mystery
+  // reward pass through unchanged.
+  const resolveQuestRewards = (quest) => {
+    if (!(quest.rewards?.mysteryMaterials > 0)) return quest;
+    const rolled = rollMysteryMaterials(quest.rewards.mysteryMaterials);
+    const mergedMaterials = { ...(quest.rewards.materials || {}) };
+    for (const [id, qty] of Object.entries(rolled)) {
+      mergedMaterials[id] = (mergedMaterials[id] || 0) + qty;
+    }
+    const { mysteryMaterials, ...restRewards } = quest.rewards;
+    return {
+      ...quest,
+      rewards: { ...restRewards, materials: mergedMaterials },
+      _resolvedMaterials: rolled,
+    };
   };
 
   return (
@@ -1017,11 +1060,22 @@ export default function CampScreen({ navigation }) {
           {currentStamina >= maxStamina ? 'Fully Charged' : `Next charge in: ${staminaCountdown}`}
         </Text>
 
+        <View style={styles.staminaChipRow}>
+          <View style={styles.staminaRateChip}>
+            <ItemSprite spritesheet="icons-map" frameIndex={134} displaySize={22} />
+            <Text style={styles.staminaRateText}>Max charges: {maxStamina}</Text>
+          </View>
+          <View style={styles.staminaRateChip}>
+            <ItemSprite spritesheet="icons-map" frameIndex={60} displaySize={22} />
+            <Text style={styles.staminaRateText}>Recharge: {staminaRateText}</Text>
+          </View>
+        </View>
+
         <View style={styles.staminaBoxParchment}>
           <Text style={styles.staminaBoxTextDark}>
-            • Stamina is required to start expeditions (1 charge per run).{"\n\n"}
-            • By default, 1 charge recovers every 8 hours and the maximum charges are 3.{"\n\n"}
-            • You can also use consumables to instantly restore stamina.
+            • Each <Text style={styles.staminaHighlight}>expedition</Text> costs <Text style={styles.staminaHighlight}>1 charge</Text>.{"\n\n"}
+            • Upgrade the <Text style={styles.staminaHighlight}>Camp</Text> in the Workshop for <Text style={styles.staminaHighlight}>more charges</Text>.{"\n\n"}
+            • Upgrade the <Text style={styles.staminaHighlight}>Cooktop</Text> in the Workshop to <Text style={styles.staminaHighlight}>recharge faster</Text>.
           </Text>
         </View>
 
@@ -1124,7 +1178,13 @@ export default function CampScreen({ navigation }) {
                       style={styles.drButton}
                       activeOpacity={0.8}
                       onPress={() => {
-                        dispatch({ type: 'CLAIM_QUEST_REWARD', payload: { questId: celebrationQuest.id } });
+                        dispatch({
+                          type: 'CLAIM_QUEST_REWARD',
+                          payload: {
+                            questId: celebrationQuest.id,
+                            resolvedMaterials: celebrationQuest._resolvedMaterials,
+                          },
+                        });
                         setCelebrationQuest(null);
                       }}
                     >
@@ -1269,6 +1329,8 @@ export default function CampScreen({ navigation }) {
                                   Object.entries(quest.rewards.materials).map(([id, qty]) =>
                                     renderRewardChip('materials', id, qty)
                                   )}
+                                {quest.rewards.mysteryMaterials > 0 &&
+                                  renderRewardChip('mystery', 'mystery_materials', quest.rewards.mysteryMaterials)}
                               </View>
                             </View>
 
@@ -1278,7 +1340,7 @@ export default function CampScreen({ navigation }) {
                                 <TouchableOpacity
                                   style={styles.claimBtnOuter}
                                   activeOpacity={0.8}
-                                  onPress={() => setCelebrationQuest(quest)}
+                                  onPress={() => setCelebrationQuest(resolveQuestRewards(quest))}
                                 >
                                   <View style={styles.claimBtnInner}>
                                     <Text style={styles.claimBtnText}>CLAIM REWARD</Text>
@@ -2245,6 +2307,30 @@ const styles = StyleSheet.create({
   staminaTimerTextDark: {
     color: '#9A6B34',
   },
+  staminaChipRow: {
+    flexDirection: 'column',
+    alignSelf: 'stretch',
+    gap: 8,
+    marginTop: 8,
+    marginBottom: 8,
+  },
+  staminaRateChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: '#F4E6C0',
+    borderColor: '#C9A86A',
+    borderWidth: 1.5,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  staminaRateText: {
+    fontFamily: 'Jersey10-Regular',
+    fontSize: 20,
+    color: '#4A2E14',
+  },
   staminaBoxParchment: {
     alignSelf: 'stretch',
     backgroundColor: '#F4E6C0',
@@ -2261,6 +2347,9 @@ const styles = StyleSheet.create({
     lineHeight: 25,
     color: '#4A2E14',
     textAlign: 'left',
+  },
+  staminaHighlight: {
+    color: '#B5502A',
   },
   potionCardParchment: {
     alignSelf: 'stretch',
