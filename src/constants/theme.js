@@ -88,36 +88,120 @@ const SHADOWS = {
   },
 };
 
-// ─── Font Presets ───────────────────────────────────────────────────────────────
+// ─── Typography Roles ───────────────────────────────────────────────────────────
+// Each font family owns a semantic job — don't mix them:
+//   • Jersey10   → titles & readable prose
+//   • Silkscreen → UI labels, chips, buttons
+//   • PressStart → retro numeric / display values
+//
+// Spread a role into a text style and let it supply family + size + casing:
+//   headerText: { ...theme.FONTS.screenTitle, color: theme.COLORS.parchment }
+// Only override when a spot is a deliberate exception; keep those rare.
 const FONTS = {
-  display: {
-    fontFamily: 'PressStart2P-Regular', // Retro 8-bit NES display font
+  // ── Jersey10 — titles & prose ──────────────────────────────────
+  screenTitle: {
+    fontFamily: 'Jersey10-Regular',
     fontWeight: 'normal',
-    fontSize: 18, // Decreased from 24 as Press Start is wider and taller
+    fontSize: 28, // top-of-screen header
+  },
+  title: {
+    fontFamily: 'Jersey10-Regular',
+    fontWeight: 'normal',
+    fontSize: 22, // panel / card / modal title
+  },
+  prose: {
+    fontFamily: 'Jersey10-Regular',
+    fontWeight: 'normal',
+    fontSize: 18, // default body copy & descriptions (readable on mobile)
+    lineHeight: 27,
+  },
+  proseSm: {
+    fontFamily: 'Jersey10-Regular',
+    fontWeight: 'normal',
+    fontSize: 14, // dense / secondary body copy
+    lineHeight: 21,
+  },
+
+  // ── Silkscreen — UI labels, chips, buttons ─────────────────────
+  button: {
+    fontFamily: 'Silkscreen-Regular',
+    fontWeight: 'normal',
+    fontSize: 14,
+    letterSpacing: 0.5,
+    textTransform: 'uppercase', // primary action buttons
+  },
+  labelLg: {
+    fontFamily: 'Silkscreen-Regular',
+    fontWeight: 'normal',
+    fontSize: 14, // prominent stat / progress label
+  },
+  chip: {
+    fontFamily: 'Silkscreen-Regular',
+    fontWeight: 'normal',
+    fontSize: 12, // standard label / chip value
+  },
+  caption: {
+    fontFamily: 'Silkscreen-Regular',
+    fontWeight: 'normal',
+    fontSize: 10, // small tag / helper text
+  },
+  micro: {
+    fontFamily: 'Silkscreen-Regular',
+    fontWeight: 'normal',
+    fontSize: 9, // tiny glyph / badge
+  },
+
+  // ── PressStart2P — retro display values ────────────────────────
+  displayLg: {
+    fontFamily: 'PressStart2P-Regular',
+    fontWeight: 'normal',
+    fontSize: 18, // big retro display
+  },
+  displaySm: {
+    fontFamily: 'PressStart2P-Regular',
+    fontWeight: 'normal',
+    fontSize: 12, // inline numeric value
+  },
+
+  // ── Legacy presets (still referenced in CombatScreen, DungeonMap,
+  //    WorldMap, ResourceBar, tutorials). Do NOT change these values —
+  //    they'll be migrated to the roles above screen-by-screen, then
+  //    removed. `heading`≈subtitle, `display`≈displayLg, `small`≈micro. ──
+  display: {
+    fontFamily: 'PressStart2P-Regular',
+    fontWeight: 'normal',
+    fontSize: 18,
   },
   heading: {
-    fontFamily: 'Jersey10-Regular', // Cozy, highly legible pixel font for headers
+    fontFamily: 'Jersey10-Regular',
     fontWeight: 'normal',
     fontSize: 16,
   },
   body: {
-    fontFamily: 'Jersey10-Regular', // Cozy, highly legible pixel font for body text
+    fontFamily: 'Jersey10-Regular',
     fontWeight: 'normal',
     fontSize: 13,
-    lineHeight: 19.5, // 1.5x of 13px
+    lineHeight: 19.5,
   },
   label: {
-    fontFamily: 'Silkscreen-Regular', // Crisp micro pixel font
+    fontFamily: 'Silkscreen-Regular',
     fontWeight: 'normal',
     fontSize: 10,
     letterSpacing: 0.5,
     textTransform: 'uppercase',
   },
   small: {
-    fontFamily: 'Silkscreen-Regular', // Crisp micro pixel font
+    fontFamily: 'Silkscreen-Regular',
     fontWeight: 'normal',
     fontSize: 10,
     lineHeight: 14,
+  },
+  tiny: {
+    // Was referenced 4× in WorldMapScreen but never defined (silent no-op).
+    // Defined now so the role resolves; those sites still override size explicitly.
+    fontFamily: 'Silkscreen-Regular',
+    fontWeight: 'normal',
+    fontSize: 9,
   },
 };
 

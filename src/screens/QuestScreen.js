@@ -578,8 +578,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   headerTitleText: {
-    fontFamily: 'Jersey10-Regular',
-    fontSize: 28,
+    ...theme.FONTS.screenTitle,
     color: '#FFF3DA',
     textAlign: 'center',
     textShadowColor: '#000',
@@ -611,18 +610,15 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   countdownLabel: {
-    fontFamily: 'Silkscreen-Regular',
-    fontSize: 14,
+    ...theme.FONTS.labelLg,
     color: 'rgba(207,224,238,0.75)',
   },
   countdownValue: {
-    fontFamily: 'PressStart2P-Regular',
-    fontSize: 12,
+    ...theme.FONTS.displaySm,
     color: theme.COLORS.candleGold,
   },
   emptyText: {
-    fontFamily: 'Jersey10-Regular',
-    fontSize: 16,
+    ...theme.FONTS.prose,
     color: 'rgba(207,224,238,0.35)',
     textAlign: 'center',
     marginVertical: 40,
@@ -663,8 +659,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   chevronText: {
-    fontFamily: 'Silkscreen-Regular',
-    fontSize: 9,
+    ...theme.FONTS.micro,
     fontWeight: 'bold',
     color: '#FFF3DA',
   },
@@ -675,17 +670,14 @@ const styles = StyleSheet.create({
     paddingTop: 10,
   },
   questTitle: {
-    fontFamily: 'Silkscreen-Regular',
-    fontSize: 16,
-    color: theme.COLORS.warmGlow,
+    ...theme.FONTS.labelLg, // card title (Silkscreen), emphasised with bold
     fontWeight: 'bold',
+    color: theme.COLORS.warmGlow,
     flex: 1,
     marginRight: 8,
   },
   questDesc: {
-    fontFamily: 'Jersey10-Regular',
-    fontSize: 22,
-    lineHeight: 26,
+    ...theme.FONTS.prose,
     color: 'rgba(207,224,238,0.7)',
     marginBottom: 8,
   },
@@ -711,8 +703,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   progressBarText: {
-    fontFamily: 'Silkscreen-Regular',
-    fontSize: 14,
+    ...theme.FONTS.labelLg,
     color: '#FFF3DA',
     textShadowColor: 'rgba(0, 0, 0, 0.8)',
     textShadowOffset: { width: 1, height: 1 },
@@ -726,8 +717,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   rewardsLabel: {
-    fontFamily: 'Silkscreen-Regular',
-    fontSize: 13,
+    ...theme.FONTS.chip,
     color: 'rgba(207,224,238,0.5)',
   },
   rewardsList: {
@@ -748,8 +738,7 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   rewardMiniText: {
-    fontFamily: 'Silkscreen-Regular',
-    fontSize: 14,
+    ...theme.FONTS.labelLg,
     color: theme.COLORS.warmGlow,
     textAlign: 'center',
   },
@@ -768,18 +757,15 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
   infoTagText: {
-    fontFamily: 'Silkscreen-Regular',
-    fontSize: 11,
+    ...theme.FONTS.caption,
     fontWeight: 'bold',
     color: '#FFF3DA',
   },
   // Shared ParchmentModal content styles (item info popup)
   pmDesc: {
-    fontFamily: 'Jersey10-Regular',
-    fontSize: 19,
+    ...theme.FONTS.prose,
     color: '#4A2E14',
     textAlign: 'center',
-    lineHeight: 23,
     marginBottom: 14,
   },
   pmBtnCol: {
@@ -803,6 +789,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.1)',
   },
+  // exception: secondary button uses Jersey (softer look); no Jersey button role yet
   pmBtnSecondaryText: {
     fontFamily: 'Jersey10-Regular',
     fontSize: 16,
@@ -851,10 +838,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   claimBtnTextActive: {
-    fontFamily: 'Silkscreen-Regular',
-    fontSize: 14,
+    ...theme.FONTS.button,
     color: '#FFF3DA',
-    textTransform: 'uppercase',
   },
   claimBtn: {
     width: '100%',
@@ -869,10 +854,8 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   claimBtnText: {
-    fontFamily: 'Silkscreen-Regular',
-    fontSize: 14,
+    ...theme.FONTS.button,
     color: '#8A9384',
-    textTransform: 'uppercase',
   },
   subTabBar: {
     marginHorizontal: 32,
@@ -947,8 +930,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   drTopText: {
-    fontFamily: 'PressStart2P-Regular',
-    fontSize: 12,
+    ...theme.FONTS.displaySm,
     color: '#FFF3DA',
     textAlign: 'center',
     textShadowColor: '#000',
@@ -956,8 +938,7 @@ const styles = StyleSheet.create({
     textShadowRadius: 1,
   },
   drSubtitle: {
-    fontFamily: 'Silkscreen-Regular',
-    fontSize: 11,
+    ...theme.FONTS.caption,
     color: '#4A2E14',
     textAlign: 'center',
     letterSpacing: 0.3,
@@ -986,14 +967,12 @@ const styles = StyleSheet.create({
     minWidth: 84,
   },
   drChipQty: {
-    fontFamily: 'Silkscreen-Regular',
-    fontSize: 13,
+    ...theme.FONTS.chip,
     color: '#3A2210',
     marginTop: 6,
   },
   drChipLabel: {
-    fontFamily: 'Silkscreen-Regular',
-    fontSize: 10,
+    ...theme.FONTS.caption,
     color: '#9A7A4A',
     textTransform: 'uppercase',
     marginTop: 2,
@@ -1024,8 +1003,7 @@ const styles = StyleSheet.create({
     borderBottomColor: '#5A3318',
   },
   drButtonText: {
-    fontFamily: 'Silkscreen-Regular',
-    fontSize: 12,
+    ...theme.FONTS.button,
     color: '#FFF3DA',
     letterSpacing: 1,
     textTransform: 'uppercase',
