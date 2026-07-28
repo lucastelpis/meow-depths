@@ -23,6 +23,7 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 
 import ItemSprite from '../ItemSprite';
+import theme from '../../constants/theme';
 
 export default function TabBar({
   tabs,
@@ -130,9 +131,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 3.5,
   },
   label: {
-    fontFamily: 'Silkscreen-Regular',
-    fontSize: 14,
-    fontWeight: 'normal',
+    ...theme.FONTS.labelLg,
     letterSpacing: 0,
   },
   labelUppercase: { textTransform: 'uppercase' },

@@ -16,6 +16,7 @@
 
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import theme from '../../constants/theme';
 
 export default function SubTabBar({ tabs, activeKey, onSelect, style }) {
   return (
@@ -64,9 +65,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   text: {
-    fontFamily: 'Silkscreen-Regular',
-    fontSize: 14,
-    fontWeight: 'normal',
+    ...theme.FONTS.labelLg,
     textTransform: 'uppercase',
   },
   textActive: { color: '#2A1A0C' },

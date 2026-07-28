@@ -158,8 +158,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   topText: {
-    fontFamily: 'PressStart2P-Regular',
-    fontSize: 12,
+    ...theme.FONTS.displaySm,
     color: '#FFF3DA',
     textAlign: 'center',
     textShadowColor: '#000',

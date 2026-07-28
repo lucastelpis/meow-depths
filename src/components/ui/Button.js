@@ -171,6 +171,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: theme.SPACING.tight,
   },
+  // typography: deferred — button taxonomy (Jersey cozy vs Silkscreen pixel)
+  // decided in final consolidation phase; keep raw Jersey 20 for now.
   title: {
     fontFamily: 'Jersey10-Regular',
     fontSize: 20,
