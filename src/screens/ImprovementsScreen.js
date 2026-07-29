@@ -399,7 +399,7 @@ export default function ImprovementsScreen({ navigation }) {
         onSelect={setActiveTab}
         tabs={[
           { key: 'facilities', label: 'Facilities', spritesheet: 'icons-map', frameIndex: 60 },
-          { key: 'forge', label: 'Forge', spritesheet: 'weapons-1', frameIndex: 1 },
+          { key: 'forge', label: 'Forge', spritesheet: 'icons-map', frameIndex: 77 },
         ]}
       />
 

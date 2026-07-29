@@ -725,8 +725,9 @@ export default function CombatScreen() {
     return enemyDamageOpacitiesRef.current[uid];
   }, []);
 
-  // Target Selection border/glow pulsing animation value
-  const targetBlinkAnim = useRef(new Animated.Value(1)).current;
+  // Single native-driven pulsing animation for ALL combat highlights (sprite glow + HP bar borders + target arrow)
+  // Using native driver means it never freezes during heavy JS combat work
+  const pulseAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     const handleHardwareBack = () => {
@@ -740,42 +741,71 @@ export default function CombatScreen() {
     return () => subscription.remove();
   }, [state.currentRun?.combatFleeUsed]);
 
-  useEffect(() => {
+  const pulseAnimRef = useRef(null);
+
+  const startPulseLoop = useCallback(() => {
+    // Stop any existing loop
+    if (pulseAnimRef.current) {
+      pulseAnimRef.current.stop();
+    }
+    pulseAnim.setValue(0);
+
     const anim = Animated.loop(
       Animated.sequence([
-        Animated.timing(targetBlinkAnim, {
-          toValue: 0.1,
-          duration: 300,
-          useNativeDriver: false,
+        Animated.timing(pulseAnim, {
+          toValue: 1,
+          duration: 400,
+          useNativeDriver: true,
         }),
-        Animated.timing(targetBlinkAnim, {
-          toValue: 1.0,
-          duration: 300,
-          useNativeDriver: false,
+        Animated.timing(pulseAnim, {
+          toValue: 0,
+          duration: 400,
+          useNativeDriver: true,
         }),
-      ])
+      ]),
+      { resetBeforeIteration: false }
     );
 
-    if (combatPhase === 'playerTurn') {
-      anim.start();
-    } else {
-      anim.stop();
-      targetBlinkAnim.setValue(1);
-    }
+    pulseAnimRef.current = anim;
+    anim.start();
+  }, [pulseAnim]);
 
+  // Start on mount
+  useEffect(() => {
+    startPulseLoop();
     return () => {
-      anim.stop();
+      if (pulseAnimRef.current) {
+        pulseAnimRef.current.stop();
+      }
     };
-  }, [combatPhase]);
+  }, []);
 
-  const targetBorderColor = targetBlinkAnim.interpolate({
-    inputRange: [0.1, 1.0],
-    outputRange: ['rgba(245, 207, 74, 0.2)', 'rgba(245, 207, 74, 1)'],
+  // Force-restart the pulse loop on every phase or active-enemy change
+  // This covers: playerTurn↔enemyTurn transitions AND each new enemy actor
+  useEffect(() => {
+    startPulseLoop();
+  }, [combatPhase, activeEnemyUid, startPulseLoop]);
+
+  // Sprite tint glow opacity: pulses 0.0 → 0.35 → 0.0
+  const spriteGlowOpacity = pulseAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0.0, 0.35],
   });
 
-  const targetBackgroundColor = targetBlinkAnim.interpolate({
-    inputRange: [0.1, 1.0],
-    outputRange: ['rgba(245, 207, 74, 0.02)', 'rgba(245, 207, 74, 0.12)'],
+  // HP bar border opacity: pulses 0.3 → 1.0 → 0.3
+  const hpBorderOpacity = pulseAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0.3, 1.0],
+  });
+
+  // Target arrow bounce: pulses -3 → 3 → -3
+  const arrowBounce = pulseAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [-3, 3],
+  });
+  const arrowBounceNegative = pulseAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [3, -3],
   });
 
   const triggerHeroAttackLunge = useCallback((duration) => {
@@ -1667,7 +1697,7 @@ export default function CombatScreen() {
 
       // Focus on the active enemy currently taking their turn/attacking
       setActiveEnemyUid(enemy.uid);
-      await delay(350); // Beat before the enemy acts, for high-fidelity combat feel
+      await delay(1000); // 1 sec dramatic buffer before the enemy attacks
 
       const enemyData = ENEMIES[enemy.id] || enemy;
       const spriteDef = getEnemySprite(enemy);
@@ -2361,27 +2391,27 @@ export default function CombatScreen() {
           {/* Row 2 — turn counter · upcoming order */}
           {(combatPhase === 'playerTurn' || combatPhase === 'enemyTurn') && turnOrderDisplay.length > 0 && (
             <>
-            <View style={styles.infoBarDivider} />
-            <View style={styles.infoBarLine2}>
-              <View style={styles.turnCounterPill}>
-                <Text style={styles.turnCounterLabel}>TURN</Text>
-                <Text style={styles.turnCounterNum}>{turnCount + 1}</Text>
+              <View style={styles.infoBarDivider} />
+              <View style={styles.infoBarLine2}>
+                <View style={styles.turnCounterPill}>
+                  <Text style={styles.turnCounterLabel}>TURN</Text>
+                  <Text style={styles.turnCounterNum}>{turnCount + 1}</Text>
+                </View>
+                <View style={styles.turnOrderRow}>
+                  {turnOrderDisplay.map((t, idx) => (
+                    <View
+                      key={`${t.key}_${idx}`}
+                      style={[
+                        styles.turnOrderTile,
+                        t.kind === 'hero' && styles.turnOrderTileHero,
+                        t.isCurrent && styles.turnOrderTileActive,
+                      ]}
+                    >
+                      <ItemSprite spritesheet="portraits-1" frameIndex={t.portrait} displaySize={28} />
+                    </View>
+                  ))}
+                </View>
               </View>
-              <View style={styles.turnOrderRow}>
-                {turnOrderDisplay.map((t, idx) => (
-                  <View
-                    key={`${t.key}_${idx}`}
-                    style={[
-                      styles.turnOrderTile,
-                      t.kind === 'hero' && styles.turnOrderTileHero,
-                      t.isCurrent && styles.turnOrderTileActive,
-                    ]}
-                  >
-                    <ItemSprite spritesheet="portraits-1" frameIndex={t.portrait} displaySize={28} />
-                  </View>
-                ))}
-              </View>
-            </View>
             </>
           )}
         </View>
@@ -2954,188 +2984,242 @@ export default function CombatScreen() {
 
   // ── Hero node: name + HP + status on top, sprite below ──────────────────
   function renderHeroNode() {
+    const isHeroTurn = combatPhase === 'playerTurn';
     const tintColor = heroState?.playerHoT ? '#3B9EFF' : '#F5CF4A';
+    const heroGlowColor = '#F5CF4A';
+
     return (
       <View style={[styles.charNode, { width: HERO_DISPLAY_SIZE, paddingHorizontal: 0, paddingVertical: 0 }]}>
-        {/* Sprite & Layout Wrapper */}
-        <View style={[styles.spriteWrapper, { width: HERO_DISPLAY_SIZE, height: HERO_DISPLAY_SIZE }]}>
-          {/* Sprite backlight — radial halo behind Mochi */}
-          <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
-            <Defs>
-              <RadialGradient id="heroBacklight" cx="50%" cy="50%" r="50%">
-                <Stop offset="0%" stopColor={tintColor} stopOpacity={heroState?.playerHoT ? 0.25 : 0.14} />
-                <Stop offset="100%" stopColor="transparent" stopOpacity="0" />
-              </RadialGradient>
-            </Defs>
-            <Rect width="100%" height="100%" fill="url(#heroBacklight)" />
-          </Svg>
+        {/* Outer Wrapper for Hero */}
+        <View style={[
+          styles.enemySelectable,
+          {
+            width: HERO_DISPLAY_SIZE,
+            paddingHorizontal: 0,
+            paddingVertical: 0,
+          }
+        ]}>
+          {/* Sprite & Layout Wrapper */}
+          <View style={[styles.spriteWrapper, { width: HERO_DISPLAY_SIZE, height: HERO_DISPLAY_SIZE }]}>
+            {/* Sprite backlight — radial halo behind Mochi */}
+            <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
+              <Defs>
+                <RadialGradient id="heroBacklight" cx="50%" cy="50%" r="50%">
+                  <Stop offset="0%" stopColor={tintColor} stopOpacity={heroState?.playerHoT ? 0.25 : 0.08} />
+                  <Stop offset="100%" stopColor="transparent" stopOpacity="0" />
+                </RadialGradient>
+              </Defs>
+              <Rect width="100%" height="100%" fill="url(#heroBacklight)" />
+            </Svg>
 
-          {/* Status effects row - locked to the top inside sprite container.
-              Flame Guard has no status-effect entry of its own, so inject a
-              transient 'guard' badge driven by its active fields. */}
-          <View style={[styles.enemyEffectsTop, { position: 'absolute', top: 20, left: 0, right: 0 }]}>
-            {renderEffectsRow(
-              heroState.flameGuardActive
-                ? [...(heroState.effects || []), { type: 'guard', duration: heroState.flameGuardTurnsRemaining }]
-                : heroState.effects,
-              'hero'
-            )}
-          </View>
+            {/* Status effects row - locked to the top inside sprite container.
+                Flame Guard has no status-effect entry of its own, so inject a
+                transient 'guard' badge driven by its active fields. */}
+            <View style={[styles.enemyEffectsTop, { position: 'absolute', top: 20, left: 0, right: 0 }]}>
+              {renderEffectsRow(
+                heroState.flameGuardActive
+                  ? [...(heroState.effects || []), { type: 'guard', duration: heroState.flameGuardTurnsRemaining }]
+                  : heroState.effects,
+                'hero'
+              )}
+            </View>
 
-          {/* Animated View wrapper for lunge/recoil translation */}
-          <Animated.View style={{ transform: [{ translateX: heroTranslateX }], width: '100%', height: '100%', position: 'absolute', justifyContent: 'center', alignItems: 'center' }}>
-            {/* Stage platform below hero — soft radial shadow */}
-            {(() => {
-              const shadowWidth = HERO_DISPLAY_SIZE * 0.38;
-              const shadowHeight = 17;
-              return (
-                <View style={[
-                  styles.heroStagePlatform,
-                  {
-                    bottom: Math.round(HERO_DISPLAY_SIZE * (HERO_SPRITE.platformOffsetFactor || 0.18)),
-                    alignSelf: 'center',
-                  }
-                ]}>
-                  <Svg width={shadowWidth} height={shadowHeight}>
-                    <Defs>
-                      <RadialGradient id="heroShadowGlow" cx="50%" cy="50%" r="50%">
-                        <Stop offset="0%" stopColor="#000000" stopOpacity="0.95" />
-                        <Stop offset="60%" stopColor="#000000" stopOpacity="0.6" />
-                        <Stop offset="100%" stopColor="#000000" stopOpacity="0" />
-                      </RadialGradient>
-                    </Defs>
-                    <Ellipse
-                      cx={shadowWidth / 2}
-                      cy={shadowHeight / 2}
-                      rx={shadowWidth / 2}
-                      ry={shadowHeight / 2}
-                      fill="url(#heroShadowGlow)"
-                    />
-                  </Svg>
-                </View>
-              );
-            })()}
+            {/* Animated View wrapper for lunge/recoil translation */}
+            <Animated.View style={{ transform: [{ translateX: heroTranslateX }], width: '100%', height: '100%', position: 'absolute', justifyContent: 'center', alignItems: 'center' }}>
+              {/* Stage platform below hero — soft radial shadow */}
+              {(() => {
+                const shadowWidth = HERO_DISPLAY_SIZE * 0.38;
+                const shadowHeight = 17;
+                return (
+                  <View style={[
+                    styles.heroStagePlatform,
+                    {
+                      bottom: Math.round(HERO_DISPLAY_SIZE * (HERO_SPRITE.platformOffsetFactor || 0.18)),
+                      alignSelf: 'center',
+                    }
+                  ]}>
+                    <Svg width={shadowWidth} height={shadowHeight}>
+                      <Defs>
+                        <RadialGradient id="heroShadowGlow" cx="50%" cy="50%" r="50%">
+                          <Stop offset="0%" stopColor="#000000" stopOpacity="0.95" />
+                          <Stop offset="60%" stopColor="#000000" stopOpacity="0.6" />
+                          <Stop offset="100%" stopColor="#000000" stopOpacity="0" />
+                        </RadialGradient>
+                      </Defs>
+                      <Ellipse
+                        cx={shadowWidth / 2}
+                        cy={shadowHeight / 2}
+                        rx={shadowWidth / 2}
+                        ry={shadowHeight / 2}
+                        fill="url(#heroShadowGlow)"
+                      />
+                    </Svg>
+                  </View>
+                );
+              })()}
 
-            {(() => {
-              const isIdle = heroAnim === 'idle';
-              const isGuard = heroAnim === 'guard';
-              const isAttack = heroAnim === 'attack' || heroAnim.startsWith('attack_hit');
-              const isSkill = !isIdle && !isGuard && !isAttack;
+              {(() => {
+                const isIdle = heroAnim === 'idle';
+                const isGuard = heroAnim === 'guard';
+                const isAttack = heroAnim === 'attack' || heroAnim.startsWith('attack_hit');
+                const isSkill = !isIdle && !isGuard && !isAttack;
 
-              const baseAnim = heroAnim.split('_hit')[0];
-              const skillDef = isSkill ? HERO_SPRITE[baseAnim] : null;
+                const baseAnim = heroAnim.split('_hit')[0];
+                const skillDef = isSkill ? HERO_SPRITE[baseAnim] : null;
 
-              return (
-                <>
-                  <AnimatedSprite
-                    key="hero_sprite_idle"
-                    source={HERO_SPRITE.idle.source}
-                    frameSize={HERO_SPRITE.idle.frameSize}
-                    totalFrames={HERO_SPRITE.idle.frames}
-                    rowIndex={HERO_SPRITE.idle.rowIndex}
-                    totalRows={HERO_SPRITE.idle.totalRows}
-                    fps={8}
-                    loop={true}
-                    active={isIdle}
-                    displaySize={HERO_DISPLAY_SIZE}
-                    pointerEvents={isIdle ? 'auto' : 'none'}
-                    style={[styles.heroCardSprite, { position: 'absolute', opacity: isIdle ? 1 : 0 }]}
-                    tintColor="#ff3333"
-                    tintOpacity={heroDamageOpacity}
-                  />
-                  <AnimatedSprite
-                    key="hero_sprite_guard"
-                    source={HERO_SPRITE.guard.source}
-                    frameSize={HERO_SPRITE.guard.frameSize}
-                    totalFrames={HERO_SPRITE.guard.frames}
-                    rowIndex={HERO_SPRITE.guard.rowIndex}
-                    totalRows={HERO_SPRITE.guard.totalRows}
-                    fps={8}
-                    loop={true}
-                    active={isGuard}
-                    displaySize={HERO_DISPLAY_SIZE}
-                    pointerEvents={isGuard ? 'auto' : 'none'}
-                    style={[styles.heroCardSprite, { position: 'absolute', opacity: isGuard ? 1 : 0 }]}
-                    tintColor="#ff3333"
-                    tintOpacity={heroDamageOpacity}
-                  />
-                  <AnimatedSprite
-                    key="hero_sprite_attack"
-                    source={HERO_SPRITE.attack.source}
-                    frameSize={HERO_SPRITE.attack.frameSize}
-                    totalFrames={HERO_SPRITE.attack.frames}
-                    rowIndex={HERO_SPRITE.attack.rowIndex}
-                    totalRows={HERO_SPRITE.attack.totalRows}
-                    fps={heroAnimFps}
-                    loop={false}
-                    active={isAttack}
-                    onComplete={undefined}
-                    displaySize={HERO_DISPLAY_SIZE}
-                    pointerEvents={isAttack ? 'auto' : 'none'}
-                    style={[styles.heroCardSprite, { position: 'absolute', opacity: isAttack ? 1 : 0 }]}
-                    tintColor="#ff3333"
-                    tintOpacity={heroDamageOpacity}
-                  />
-                  {/* Skill Animation — remounts fresh on each skill via key */}
-                  {isSkill && skillDef && (
+                const heroSpriteTintColor = isHeroTurn ? heroGlowColor : '#ff3333';
+                const heroSpriteTintOpacity = isHeroTurn ? spriteGlowOpacity : heroDamageOpacity;
+
+                return (
+                  <>
                     <AnimatedSprite
-                      key={`hero_sprite_skill_${heroAnim}`}
-                      source={skillDef.source}
-                      frameSize={skillDef.frameSize}
-                      totalFrames={skillDef.frames}
-                      rowIndex={skillDef.rowIndex}
-                      totalRows={skillDef.totalRows}
+                      key="hero_sprite_idle"
+                      source={HERO_SPRITE.idle.source}
+                      frameSize={HERO_SPRITE.idle.frameSize}
+                      totalFrames={HERO_SPRITE.idle.frames}
+                      rowIndex={HERO_SPRITE.idle.rowIndex}
+                      totalRows={HERO_SPRITE.idle.totalRows}
+                      fps={8}
+                      loop={true}
+                      active={isIdle}
+                      displaySize={HERO_DISPLAY_SIZE}
+                      pointerEvents={isIdle ? 'auto' : 'none'}
+                      style={[styles.heroCardSprite, { position: 'absolute', opacity: isIdle ? 1 : 0 }]}
+                      tintColor={heroSpriteTintColor}
+                      tintOpacity={heroSpriteTintOpacity}
+                    />
+                    <AnimatedSprite
+                      key="hero_sprite_guard"
+                      source={HERO_SPRITE.guard.source}
+                      frameSize={HERO_SPRITE.guard.frameSize}
+                      totalFrames={HERO_SPRITE.guard.frames}
+                      rowIndex={HERO_SPRITE.guard.rowIndex}
+                      totalRows={HERO_SPRITE.guard.totalRows}
+                      fps={8}
+                      loop={true}
+                      active={isGuard}
+                      displaySize={HERO_DISPLAY_SIZE}
+                      pointerEvents={isGuard ? 'auto' : 'none'}
+                      style={[styles.heroCardSprite, { position: 'absolute', opacity: isGuard ? 1 : 0 }]}
+                      tintColor={heroSpriteTintColor}
+                      tintOpacity={heroSpriteTintOpacity}
+                    />
+                    <AnimatedSprite
+                      key="hero_sprite_attack"
+                      source={HERO_SPRITE.attack.source}
+                      frameSize={HERO_SPRITE.attack.frameSize}
+                      totalFrames={HERO_SPRITE.attack.frames}
+                      rowIndex={HERO_SPRITE.attack.rowIndex}
+                      totalRows={HERO_SPRITE.attack.totalRows}
                       fps={heroAnimFps}
                       loop={false}
-                      active={true}
+                      active={isAttack}
                       onComplete={undefined}
                       displaySize={HERO_DISPLAY_SIZE}
-                      pointerEvents="auto"
-                      style={[styles.heroCardSprite, { position: 'absolute' }]}
-                      tintColor="#ff3333"
-                      tintOpacity={heroDamageOpacity}
+                      pointerEvents={isAttack ? 'auto' : 'none'}
+                      style={[styles.heroCardSprite, { position: 'absolute', opacity: isAttack ? 1 : 0 }]}
+                      tintColor={heroSpriteTintColor}
+                      tintOpacity={heroSpriteTintOpacity}
                     />
-                  )}
-                </>
-              );
-            })()}
-          </Animated.View>
+                    {/* Skill Animation — remounts fresh on each skill via key */}
+                    {isSkill && skillDef && (
+                      <AnimatedSprite
+                        key={`hero_sprite_skill_${heroAnim}`}
+                        source={skillDef.source}
+                        frameSize={skillDef.frameSize}
+                        totalFrames={skillDef.frames}
+                        rowIndex={skillDef.rowIndex}
+                        totalRows={skillDef.totalRows}
+                        fps={heroAnimFps}
+                        loop={false}
+                        active={true}
+                        onComplete={undefined}
+                        displaySize={HERO_DISPLAY_SIZE}
+                        pointerEvents="auto"
+                        style={[styles.heroCardSprite, { position: 'absolute' }]}
+                        tintColor={heroSpriteTintColor}
+                        tintOpacity={heroSpriteTintOpacity}
+                      />
+                    )}
+                  </>
+                );
+              })()}
+            </Animated.View>
 
-          {/* Info block locked to bottom inside the sprite container */}
-          <View style={[styles.enemyInfoBottom, { position: 'absolute', bottom: 1.5, left: 0, right: 0 }]}>
-            <View style={[styles.charHpBar, { width: '55%' }]}>
-              <ResourceBar variant="heroHp" current={heroState.hp} max={heroState.maxHp} barHeight={17} fontSize={14} />
+            {/* Info block locked to bottom inside the sprite container */}
+            <View style={[styles.enemyInfoBottom, { position: 'absolute', bottom: 1.5, left: 0, right: 0 }]}>
+              <View style={[
+                styles.charHpBar,
+                {
+                  width: '55%',
+                  borderRadius: 6,
+                  padding: 1,
+                }
+              ]}>
+                {isHeroTurn && (
+                  <Animated.View pointerEvents="none" style={{
+                    position: 'absolute', top: -1.5, left: -1.5, right: -1.5, bottom: -1.5,
+                    borderWidth: 1.5, borderColor: '#F5CF4A', borderRadius: 6,
+                    opacity: hpBorderOpacity,
+                  }} />
+                )}
+                <ResourceBar variant="heroHp" current={heroState.hp} max={heroState.maxHp} barHeight={13} fontSize={13} />
+              </View>
+              <Text style={styles.charName} numberOfLines={1}>
+                {heroState.name || 'Mochi'}{' '}
+                <Text style={styles.starText}>
+                  {(heroState?.level || state.hero?.level || 1)}
+                </Text>
+              </Text>
             </View>
-            <Text style={styles.charName} numberOfLines={1}>{heroState.name || 'Mochi'}</Text>
-          </View>
 
-          {popups
-            .filter((p) => p.targetUid === 'hero')
-            .map((p) => (
-              <DamagePopup
-                key={p.id}
-                amount={p.amount}
-                isHeal={p.isHeal}
-                isMiss={p.isMiss}
-                isCrit={p.isCrit}
-                onComplete={() => removePopup(p.id)}
-              />
-            ))}
+            {popups
+              .filter((p) => p.targetUid === 'hero')
+              .map((p) => (
+                <DamagePopup
+                  key={p.id}
+                  amount={p.amount}
+                  isHeal={p.isHeal}
+                  isMiss={p.isMiss}
+                  isCrit={p.isCrit}
+                  onComplete={() => removePopup(p.id)}
+                />
+              ))}
+          </View>
         </View>
       </View>
     );
   }
 
-  // ── Enemy node: name + ★ + HP + status on top, sprite below ─────────────
+  // ── Enemy node: name + ★ + HP + status on top, sprite below ─────────────────────
   function renderEnemyNode(enemy, slotStyle) {
     const idx = enemies.findIndex(e => e.uid === enemy.uid);
     const isSelected = idx === selectedEnemyIndex && combatPhase === 'playerTurn';
-    const isActing = enemy.uid === activeEnemyUid;
+    const isActing = combatPhase === 'enemyTurn' && enemy.uid === activeEnemyUid;
     const spriteDef = getEnemySprite(enemy);
     const displaySize = enemy.isBoss ? BOSS_DISPLAY_SIZE : ENEMY_DISPLAY_SIZE;
     const platformBottom = Math.round(displaySize * (spriteDef.platformOffsetFactor || 0.25));
+    const arrowTop = Math.round(displaySize * (spriteDef.targetArrowOffset || 0.07));
     const animKey = enemyAnims[enemy.uid] || 'idle';
-    const glowColor = isSelected ? '#F5CF4A' : isActing ? '#D8483F' : '#707F94';
+
+    // Active Turn = Yellow sprite glow; Target = Red sprite glow
+    const glowColor = isActing ? '#F5CF4A' : isSelected ? '#FF4444' : '#707F94';
+
+    const enemyBorderFixedColor = isActing
+      ? '#F5CF4A'
+      : isSelected
+        ? '#D8483F'
+        : null;
+
+    const enemySpriteTintColor = isActing
+      ? '#F5CF4A'
+      : isSelected
+        ? '#FF4444'
+        : '#ff3333';
+
+    const enemySpriteTintOpacity = (isActing || isSelected)
+      ? spriteGlowOpacity
+      : getEnemyDamageOpacity(enemy.uid);
 
     return (
       <TouchableOpacity
@@ -3148,18 +3232,57 @@ export default function CombatScreen() {
         onPress={() => setSelectedEnemyIndex(idx)}
         activeOpacity={0.8}
       >
-        {/* Container 3: Outer wrapper */}
+        {/* Outer Wrapper for Enemy */}
         <View style={[
           styles.enemySelectable,
-          { width: displaySize, paddingHorizontal: 0, paddingVertical: 0 }
+          {
+            width: displaySize,
+            paddingHorizontal: 0,
+            paddingVertical: 0,
+          }
         ]}>
+          {/* Target Pointer Arrows floating on left and right */}
+          {isSelected && (
+            <>
+              {/* Left Arrow (points right) */}
+              <Animated.View style={{
+                position: 'absolute',
+                left: 20,
+                top: '50%',
+                marginTop: -7,
+                zIndex: 12,
+                alignItems: 'center',
+                transform: [{ translateX: arrowBounce }, { rotate: '-90deg' }]
+              }}>
+                <Svg width="18" height="14" viewBox="0 0 18 14">
+                  <Path d="M 1,1 L 17,1 L 9,13 Z" fill="#FF4444" stroke="#2D0A0A" strokeWidth="1.5" />
+                </Svg>
+              </Animated.View>
+
+              {/* Right Arrow (points left) */}
+              <Animated.View style={{
+                position: 'absolute',
+                right: 20,
+                top: '50%',
+                marginTop: -7,
+                zIndex: 12,
+                alignItems: 'center',
+                transform: [{ translateX: arrowBounceNegative }, { rotate: '90deg' }]
+              }}>
+                <Svg width="18" height="14" viewBox="0 0 18 14">
+                  <Path d="M 1,1 L 17,1 L 9,13 Z" fill="#FF4444" stroke="#2D0A0A" strokeWidth="1.5" />
+                </Svg>
+              </Animated.View>
+            </>
+          )}
+
           {/* Sprite & Layout Wrapper */}
           <View style={[styles.spriteWrapper, { width: displaySize, height: displaySize }]}>
             {/* Subtle backlight halo behind enemy */}
             <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
               <Defs>
                 <RadialGradient id={`enemyBacklight_${enemy.uid}`} cx="50%" cy="50%" r="50%">
-                  <Stop offset="0%" stopColor={glowColor} stopOpacity={isSelected || isActing ? 0.12 : 0.04} />
+                  <Stop offset="0%" stopColor={glowColor} stopOpacity={0.04} />
                   <Stop offset="100%" stopColor="transparent" stopOpacity="0" />
                 </RadialGradient>
               </Defs>
@@ -3167,7 +3290,7 @@ export default function CombatScreen() {
             </Svg>
 
             {/* Status effects row - locked to the top inside sprite container */}
-            <View style={[styles.enemyEffectsTop, { position: 'absolute', top: 20, left: 0, right: 0 }]}>
+            <View style={[styles.enemyEffectsTop, { position: 'absolute', top: 25, left: 0, right: 0 }]}>
               {renderEffectsRow(enemy.effects, `enemy_${enemy.uid}`)}
             </View>
 
@@ -3220,8 +3343,8 @@ export default function CombatScreen() {
                 flipX={!spriteDef.faceLeft}
                 pointerEvents={animKey === 'idle' ? 'auto' : 'none'}
                 style={[styles.enemySprite, { position: 'absolute', opacity: animKey === 'idle' ? 1 : 0 }]}
-                tintColor="#ff3333"
-                tintOpacity={getEnemyDamageOpacity(enemy.uid)}
+                tintColor={enemySpriteTintColor}
+                tintOpacity={enemySpriteTintOpacity}
               />
               <AnimatedSprite
                 key={`${enemy.uid}_attack_${animKey}`}
@@ -3240,34 +3363,30 @@ export default function CombatScreen() {
                 flipX={!spriteDef.faceLeft}
                 pointerEvents={(animKey === 'attack' || animKey.startsWith('attack_hit')) ? 'auto' : 'none'}
                 style={[styles.enemySprite, { position: 'absolute', opacity: (animKey === 'attack' || animKey.startsWith('attack_hit')) ? 1 : 0 }]}
-                tintColor="#ff3333"
-                tintOpacity={getEnemyDamageOpacity(enemy.uid)}
+                tintColor={enemySpriteTintColor}
+                tintOpacity={enemySpriteTintOpacity}
               />
             </Animated.View>
 
             {/* Info block locked to bottom inside the sprite container */}
             <View style={[styles.enemyInfoBottom, { position: 'absolute', bottom: 1.5, left: 0, right: 0 }]}>
-              <Animated.View style={[
+              <View style={[
                 styles.charHpBar,
                 {
                   width: '55%',
-                  borderWidth: 1.5,
-                  borderColor: isSelected
-                    ? targetBorderColor
-                    : isActing
-                      ? '#D8483F'
-                      : 'transparent',
-                  backgroundColor: isSelected
-                    ? targetBackgroundColor
-                    : isActing
-                      ? 'rgba(216, 72, 63, 0.06)'
-                      : 'transparent',
                   borderRadius: 6,
-                  padding: 1.5,
+                  padding: 1,
                 }
               ]}>
+                {enemyBorderFixedColor && (
+                  <Animated.View pointerEvents="none" style={{
+                    position: 'absolute', top: -1.5, left: -1.5, right: -1.5, bottom: -1.5,
+                    borderWidth: 1.5, borderColor: enemyBorderFixedColor, borderRadius: 6,
+                    opacity: hpBorderOpacity,
+                  }} />
+                )}
                 <ResourceBar variant="enemyHp" current={enemy.hp} max={enemy.maxHp} barHeight={13} fontSize={13} />
-              </Animated.View>
+              </View>
               <Text style={styles.charName} numberOfLines={1}>
                 {enemy.name}{' '}
                 <Text style={[styles.starText, enemy.isBoss && styles.starTextBoss]}>

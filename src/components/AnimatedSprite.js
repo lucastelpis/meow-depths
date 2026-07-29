@@ -164,20 +164,31 @@ export default function AnimatedSprite({
         contentFit="fill"
       />
       {!!tintColor && (
-        <AnimatedExpoImage
-          source={source}
-          transition={0}
+        <Animated.View
           style={{
-            width:    frameSize * finalTotalFrames * scale,
-            height:   frameSize * totalRows * scale,
             position: 'absolute',
-            left:     -(currentFrame * displaySize),
-            top:      -(rowIndex * displaySize),
-            tintColor: tintColor,
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
             opacity: tintOpacity,
           }}
-          contentFit="fill"
-        />
+          pointerEvents="none"
+        >
+          <ExpoImage
+            source={source}
+            transition={0}
+            style={{
+              width:    frameSize * finalTotalFrames * scale,
+              height:   frameSize * totalRows * scale,
+              position: 'absolute',
+              left:     -(currentFrame * displaySize),
+              top:      -(rowIndex * displaySize),
+              tintColor: tintColor,
+            }}
+            contentFit="fill"
+          />
+        </Animated.View>
       )}
     </View>
   );

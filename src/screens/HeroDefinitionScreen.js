@@ -216,7 +216,7 @@ export default function HeroDefinitionScreen({ navigation }) {
           </TouchableOpacity>
 
           {/* Banner Boxed with Border Outline + Plaque Title Overlay */}
-          <View style={[styles.bannerOuter, { aspectRatio: BANNER_ASPECT_RATIO }]}>
+          <View style={[styles.bannerOuter, { flex: 1 }]}>
             <View style={styles.bannerContainer}>
               <ExpoImage
                 source={require('../../assets/sprites/banners/onboarding-banner.png')}
@@ -252,7 +252,7 @@ export default function HeroDefinitionScreen({ navigation }) {
               pagingEnabled
               scrollEnabled={false}
               showsHorizontalScrollIndicator={false}
-              style={{ width: SLIDE_WIDTH }}
+              style={{ width: SLIDE_WIDTH, flex: 1 }}
               contentContainerStyle={{ width: SLIDE_WIDTH * 2 }}
             >
               {/* SLIDE 1: NAME SECTION */}
@@ -291,7 +291,7 @@ export default function HeroDefinitionScreen({ navigation }) {
               {/* SLIDE 2: ELEMENT SECTION */}
               <View style={[styles.slide, { width: SLIDE_WIDTH }]}>
                 <View style={styles.headingWithInfo}>
-                  <Text style={styles.sectionHeading}>WHAT IS YOUR ELEMENTAL AFFINITY?</Text>
+                  <Text style={styles.sectionHeading}>CHOOSE YOUR ELEMENTAL AFFINITY</Text>
                   <TouchableOpacity
                     style={styles.infoTag}
                     onPress={() => setInfoModal({
@@ -522,11 +522,11 @@ export default function HeroDefinitionScreen({ navigation }) {
                 <Text style={styles.modalTitle}>ARE YOU READY?</Text>
                 <Text style={styles.modalBody}>
                   You are about to begin your journey as{' '}
-                  <Text style={{ color: '#FFF3DA', fontFamily: 'PressStart2P-Regular', fontSize: 13 }}>
+                  <Text style={{ color: '#FFF3DA', ...theme.FONTS.displaySm }}>
                     {heroName.trim() || 'Mochi'}
                   </Text>{' '}
                   with{' '}
-                  <Text style={{ color: selectedElDef.color, fontFamily: 'PressStart2P-Regular', fontSize: 13 }}>
+                  <Text style={{ color: selectedElDef.color, ...theme.FONTS.displaySm }}>
                     {selectedElDef.name}
                   </Text>{' '}
                   affinity.
@@ -777,29 +777,29 @@ export default function HeroDefinitionScreen({ navigation }) {
                   <Text style={styles.modalSkillStatsTitle}>CORE STATS GUIDE</Text>
 
                   <View style={{ marginBottom: 10 }}>
-                    <Text style={{ fontFamily: 'Silkscreen-Regular', fontSize: 10, color: '#F9D99A', marginBottom: 2 }}>STRENGTH (STR)</Text>
-                    <Text style={{ fontFamily: 'Jersey10-Regular', fontSize: 15, color: 'rgba(255, 243, 218, 0.8)', lineHeight: 17 }}>
+                    <Text style={{ ...theme.FONTS.caption, color: '#F9D99A', marginBottom: 2 }}>STRENGTH (STR)</Text>
+                    <Text style={{ ...theme.FONTS.proseSm, color: 'rgba(255, 243, 218, 0.8)' }}>
                       +1 Attack per point. Increases raw physical damage.
                     </Text>
                   </View>
 
                   <View style={{ marginBottom: 10 }}>
-                    <Text style={{ fontFamily: 'Silkscreen-Regular', fontSize: 10, color: '#06B6D4', marginBottom: 2 }}>AGILITY (AGI)</Text>
-                    <Text style={{ fontFamily: 'Jersey10-Regular', fontSize: 15, color: 'rgba(255, 243, 218, 0.8)', lineHeight: 17 }}>
+                    <Text style={{ ...theme.FONTS.caption, color: '#06B6D4', marginBottom: 2 }}>AGILITY (AGI)</Text>
+                    <Text style={{ ...theme.FONTS.proseSm, color: 'rgba(255, 243, 218, 0.8)' }}>
                       +0.5% Crit Rate & +0.5% Dodge Rate per point. Helps land critical hits and dodge enemy attacks.
                     </Text>
                   </View>
 
                   <View style={{ marginBottom: 10 }}>
-                    <Text style={{ fontFamily: 'Silkscreen-Regular', fontSize: 10, color: '#5CC489', marginBottom: 2 }}>VITALITY (VIT)</Text>
-                    <Text style={{ fontFamily: 'Jersey10-Regular', fontSize: 15, color: 'rgba(255, 243, 218, 0.8)', lineHeight: 17 }}>
+                    <Text style={{ ...theme.FONTS.caption, color: '#5CC489', marginBottom: 2 }}>VITALITY (VIT)</Text>
+                    <Text style={{ ...theme.FONTS.proseSm, color: 'rgba(255, 243, 218, 0.8)' }}>
                       +5 Max HP & +0.5% Status Resistance per point. Boosts total health and resilience.
                     </Text>
                   </View>
 
                   <View>
-                    <Text style={{ fontFamily: 'Silkscreen-Regular', fontSize: 10, color: '#D4A754', marginBottom: 2 }}>DEFENSE (DEF)</Text>
-                    <Text style={{ fontFamily: 'Jersey10-Regular', fontSize: 15, color: 'rgba(255, 243, 218, 0.8)', lineHeight: 17 }}>
+                    <Text style={{ ...theme.FONTS.caption, color: '#D4A754', marginBottom: 2 }}>DEFENSE (DEF)</Text>
+                    <Text style={{ ...theme.FONTS.proseSm, color: 'rgba(255, 243, 218, 0.8)' }}>
                       Reduces incoming damage from enemy attacks.
                     </Text>
                   </View>
@@ -878,6 +878,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 16,
   },
+  // exception: PressStart title plaque between displaySm (12) and displayLg (18)
   titlePlaqueText: {
     fontFamily: 'PressStart2P-Regular',
     fontSize: 14,
@@ -894,6 +895,7 @@ const styles = StyleSheet.create({
     width: '100%',
     position: 'relative',
     marginBottom: 16,
+    minHeight: 180, // floor on short screens; otherwise flexes to fill leftover space (clips the art less)
   },
   bannerContainer: {
     ...StyleSheet.absoluteFillObject,
@@ -936,7 +938,7 @@ const styles = StyleSheet.create({
 
   /* Carousel content section */
   carouselContainer: {
-    height: 250,
+    height: 250, // content-sized; the banner (flex) takes the leftover vertical space
     overflow: 'hidden',
     marginBottom: 10,
   },
@@ -953,8 +955,7 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   sectionHeading: {
-    fontFamily: 'Silkscreen-Regular',
-    fontSize: 14,
+    ...theme.FONTS.labelLg,
     letterSpacing: 0.5,
     color: '#FFF3DA',
   },
@@ -991,8 +992,7 @@ const styles = StyleSheet.create({
     paddingBottom: 2,
     borderBottomWidth: 2,
     borderBottomColor: 'rgba(232, 167, 58, 0.5)',
-    fontFamily: 'Jersey10-Regular',
-    fontSize: 26,
+    ...theme.FONTS.title,
     color: '#FFF3DA',
   },
 
@@ -1081,19 +1081,16 @@ const styles = StyleSheet.create({
     lineHeight: 16,
   },
   innateBoxLabel: {
-    fontFamily: 'Silkscreen-Regular',
-    fontSize: 16,
+    ...theme.FONTS.labelLg,
     letterSpacing: 0,
   },
   innateBoxValue: {
-    fontFamily: 'Jersey10-Regular',
-    fontSize: 17,
+    ...theme.FONTS.prose,
     color: '#FFF3DA',
   },
   detailTaglineText: {
-    fontFamily: 'Jersey10-Regular',
-    fontSize: 18,
-    lineHeight: 18,
+    ...theme.FONTS.prose,
+    lineHeight: 18, // match original tight leading — fixed-height carousel, prose's 27 overflows
     letterSpacing: 1,
     paddingHorizontal: 5,
     color: '#FFF3DA',
@@ -1154,8 +1151,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   confirmSubtext: {
-    fontFamily: 'Silkscreen-Regular',
-    fontSize: 10,
+    ...theme.FONTS.caption,
     color: 'rgba(255, 243, 218, 0.45)',
     textAlign: 'center',
   },
@@ -1183,6 +1179,7 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
     elevation: 10,
   },
+  // exception: PressStart modal title sits between displaySm (12) and displayLg (18)
   modalTitle: {
     fontFamily: 'PressStart2P-Regular',
     fontSize: 16,
@@ -1194,9 +1191,7 @@ const styles = StyleSheet.create({
     textShadowRadius: 2,
   },
   modalBody: {
-    fontFamily: 'Jersey10-Regular',
-    fontSize: 20,
-    lineHeight: 25,
+    ...theme.FONTS.prose,
     color: 'rgba(255, 243, 218, 0.8)',
     textAlign: 'center',
     marginBottom: 20,
@@ -1214,8 +1209,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   modalWarningText: {
-    fontFamily: 'Jersey10-Regular',
-    fontSize: 17,
+    ...theme.FONTS.prose,
     color: '#FF8A65',
     marginLeft: 8,
     flexShrink: 1,
@@ -1299,6 +1293,7 @@ const styles = StyleSheet.create({
   },
 
   /* Help modal specific styles */
+  // exception: PressStart help-modal title between displaySm (12) and displayLg (18)
   helpModalTitle: {
     fontFamily: 'PressStart2P-Regular',
     fontSize: 14,
@@ -1310,9 +1305,7 @@ const styles = StyleSheet.create({
     textShadowRadius: 1,
   },
   helpModalBody: {
-    fontFamily: 'Jersey10-Regular',
-    fontSize: 20,
-    lineHeight: 25,
+    ...theme.FONTS.prose,
     color: '#FFF3DA',
     textAlign: 'center',
     marginBottom: 24,
@@ -1358,16 +1351,14 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   columnLabel: {
-    fontFamily: 'Silkscreen-Regular',
-    fontSize: 12,
+    ...theme.FONTS.chip,
     letterSpacing: 0,
     marginBottom: 6,
   },
   innateValueText: {
-    fontFamily: 'Jersey10-Regular',
-    fontSize: 20,
+    ...theme.FONTS.prose,
+    lineHeight: 22, // compact: fixed-height card
     color: '#FFF3DA',
-    lineHeight: 22,
   },
   infoQuestionBtn: {
     position: 'absolute',
@@ -1398,11 +1389,10 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   skillNameText: {
-    fontFamily: 'Jersey10-Regular',
-    fontSize: 20,
+    ...theme.FONTS.prose,
+    lineHeight: 22, // compact: fixed-height card
     color: '#FFF3DA',
     flex: 1,
-    lineHeight: 22,
   },
 
   /* Starting Skill Detail Modal inside Onboarding */
@@ -1429,8 +1419,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   modalSkillNameText: {
-    fontFamily: 'PressStart2P-Regular',
-    fontSize: 11,
+    ...theme.FONTS.displaySm,
     textTransform: 'uppercase',
     marginBottom: 6,
     lineHeight: 14,
@@ -1448,6 +1437,7 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(240, 138, 74, 0.4)',
     backgroundColor: 'rgba(0,0,0,0.25)',
   },
+  // exception: tiny type badge (8px); below caption floor, bumping would break the compact pill
   typeBadgeText: {
     fontFamily: 'Silkscreen-Regular',
     fontSize: 8,
@@ -1458,16 +1448,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 4,
   },
+  // exception: tiny cooldown badge (8px); below caption floor, matches typeBadgeText
   modalSkillCooldown: {
     fontFamily: 'Silkscreen-Regular',
     fontSize: 8,
     color: '#FFA07A',
   },
   modalSkillDescText: {
-    fontFamily: 'Jersey10-Regular',
-    fontSize: 17,
+    ...theme.FONTS.prose,
     color: 'rgba(255,243,218,0.8)',
-    lineHeight: 20,
     marginBottom: 16,
   },
   modalSkillStatsBox: {
@@ -1478,8 +1467,7 @@ const styles = StyleSheet.create({
     marginBottom: 18,
   },
   modalSkillStatsTitle: {
-    fontFamily: 'Silkscreen-Regular',
-    fontSize: 9,
+    ...theme.FONTS.caption,
     color: 'rgba(255,243,218,0.45)',
     marginBottom: 8,
   },
@@ -1489,13 +1477,11 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   modalSkillStatLabel: {
-    fontFamily: 'Jersey10-Regular',
-    fontSize: 16,
+    ...theme.FONTS.proseSm,
     color: 'rgba(255,243,218,0.6)',
   },
   modalSkillStatValue: {
-    fontFamily: 'Jersey10-Regular',
-    fontSize: 16,
+    ...theme.FONTS.proseSm,
     color: '#FFF3DA',
   },
   modalSkillOkBtn: {

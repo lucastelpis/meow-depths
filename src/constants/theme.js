@@ -127,6 +127,11 @@ const FONTS = {
     fontSize: 14, // dense / secondary body copy
     lineHeight: 21,
   },
+  value: {
+    fontFamily: 'Jersey10-Regular',
+    fontWeight: 'normal',
+    fontSize: 22, // prominent numeric / display value (gold, XP, counts, costs) — its own token, not a title
+  },
 
   // ── Silkscreen — UI labels, chips, buttons ─────────────────────
   button: {

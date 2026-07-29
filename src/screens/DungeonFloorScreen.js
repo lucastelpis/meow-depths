@@ -28,6 +28,7 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import Svg, { Defs, RadialGradient, LinearGradient, Stop, Rect, Line, Path } from 'react-native-svg';
 
 import { useGame } from '../state/gameState';
+import theme from '../constants/theme';
 import { ZONES, getFloorCompletionReward } from '../data/zones';
 import { CONSUMABLES, MATERIALS } from '../data/gear';
 import { getItemInfo } from '../data/itemInfo';
@@ -641,7 +642,7 @@ export default function DungeonFloorScreen() {
                     </TouchableOpacity>
                   </View>
 
-                  <Text style={styles.detailTitleCompact}>PACK SUPPLIES</Text>
+                  <Text style={styles.detailTitleCompact}>Pack Supplies</Text>
 
                   {/* Slot Pips Indicator */}
                   <View style={styles.slotIndicatorModal}>
@@ -1109,8 +1110,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   headerTitleText: {
-    fontFamily: 'Jersey10-Regular',
-    fontSize: 28,
+    ...theme.FONTS.screenTitle,
     color: '#FFF3DA',
     textAlign: 'center',
     textShadowColor: '#000',
@@ -1212,8 +1212,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   detailTitleCompact: {
-    fontFamily: 'Jersey10-Regular',
-    fontSize: 26,
+    ...theme.FONTS.title,
     color: '#FFE39B',
   },
   detailHeaderStars: {
@@ -1232,8 +1231,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#231F2B',
   },
   gridBadgeTextCompact: {
-    fontFamily: 'Silkscreen-Regular',
-    fontSize: 14,
+    ...theme.FONTS.labelLg,
     color: '#FFE39B',
     lineHeight: 14,
   },
@@ -1268,8 +1266,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   rewardName: {
-    fontFamily: 'Jersey10-Regular',
-    fontSize: 22,
+    ...theme.FONTS.value, // reward amount
     color: '#EAD9BA',
     marginTop: 4,
     textAlign: 'center',
@@ -1277,8 +1274,7 @@ const styles = StyleSheet.create({
   },
 
   subHeaderCompact: {
-    fontFamily: 'Silkscreen-Regular',
-    fontSize: 16,
+    ...theme.FONTS.labelLg,
     color: '#FFE39B',
     letterSpacing: 0.5,
     marginBottom: 6,
@@ -1374,8 +1370,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   loadoutSubTitle: {
-    fontFamily: 'Silkscreen-Regular',
-    fontSize: 12,
+    ...theme.FONTS.chip,
     color: '#FFE39B',
   },
   slotIndicatorModal: {
@@ -1393,8 +1388,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFE39B',
   },
   slotText: {
-    fontFamily: 'Silkscreen-Regular',
-    fontSize: 16,
+    ...theme.FONTS.labelLg,
     color: '#EAD9BA',
     marginLeft: 4,
   },
@@ -1403,8 +1397,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   emptySuppliesText: {
-    fontFamily: 'Jersey10-Regular',
-    fontSize: 12,
+    ...theme.FONTS.proseSm,
     color: '#EAD9BA',
     fontStyle: 'italic',
     paddingVertical: 12,
@@ -1429,13 +1422,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   supplyName: {
-    fontFamily: 'Jersey10-Regular',
-    fontSize: 20,
+    ...theme.FONTS.prose,
     color: '#EAD9BA',
   },
   supplyOwned: {
-    fontFamily: 'Silkscreen-Regular',
-    fontSize: 10,
+    ...theme.FONTS.caption,
     color: '#FFE39B',
   },
   supplyControls: {
@@ -1521,8 +1512,7 @@ const styles = StyleSheet.create({
     marginTop: -2,
   },
   cntText: {
-    fontFamily: 'Jersey10-Regular',
-    fontSize: 22,
+    ...theme.FONTS.value, // packed count
     color: '#EAD9BA',
     minWidth: 22,
     textAlign: 'center',
@@ -1539,8 +1529,7 @@ const styles = StyleSheet.create({
     marginLeft: -4,
   },
   questBadgeTextCompact: {
-    fontFamily: 'Silkscreen-Regular',
-    fontSize: 14,
+    ...theme.FONTS.labelLg,
     color: '#FFF3DA',
     fontWeight: 'bold',
     lineHeight: 14,
@@ -1576,8 +1565,7 @@ const styles = StyleSheet.create({
   },
   modalTitle: {
     flex: 1,
-    fontFamily: 'Jersey10-Regular',
-    fontSize: 26,
+    ...theme.FONTS.title,
     color: '#3A2210',
     marginLeft: 8,
   },
@@ -1595,15 +1583,12 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   modalQuestDesc: {
-    fontFamily: 'Jersey10-Regular',
-    fontSize: 22,
+    ...theme.FONTS.prose,
     color: '#4A2E14',
-    lineHeight: 22,
     marginBottom: 16,
   },
   modalSectionLabel: {
-    fontFamily: 'Silkscreen-Regular',
-    fontSize: 14,
+    ...theme.FONTS.labelLg,
     color: '#8A6E44',
     marginBottom: 6,
   },
@@ -1630,8 +1615,7 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   modalProgressText: {
-    fontFamily: 'Silkscreen-Regular',
-    fontSize: 14,
+    ...theme.FONTS.labelLg,
     color: '#4A2E14',
   },
   modalRewardsSection: {
@@ -1654,8 +1638,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   modalRewardText: {
-    fontFamily: 'Jersey10-Regular',
-    fontSize: 20,
+    ...theme.FONTS.value, // reward amount (quest modal)
     color: '#3A2210',
   },
   rewardInfoTag: {
@@ -1669,8 +1652,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   rewardInfoTagText: {
-    fontFamily: 'Silkscreen-Regular',
-    fontSize: 9,
+    ...theme.FONTS.glyph,
     color: '#F4E6C0',
   },
   rewardInfoOverlay: {
@@ -1701,8 +1683,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   rewardInfoTitle: {
-    fontFamily: 'PressStart2P-Regular',
-    fontSize: 12,
+    ...theme.FONTS.displaySm,
     color: '#4A2E14',
     textAlign: 'center',
     marginBottom: 12,
@@ -1738,11 +1719,9 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   pmDesc: {
-    fontFamily: 'Jersey10-Regular',
-    fontSize: 19,
+    ...theme.FONTS.prose,
     color: '#4A2E14',
     textAlign: 'center',
-    lineHeight: 23,
     marginBottom: 14,
   },
   pmStaminaInfoBox: {
@@ -1755,10 +1734,8 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   pmStaminaInfoBoxText: {
-    fontFamily: 'Jersey10-Regular',
-    fontSize: 15,
+    ...theme.FONTS.proseSm,
     color: '#6A4A2A',
-    lineHeight: 17,
   },
   pmBtnCol: {
     width: '100%',
@@ -1863,8 +1840,7 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
   cozyStaminaCostText: {
-    fontFamily: 'Jersey10-Regular',
-    fontSize: 22,
+    ...theme.FONTS.value, // stamina cost
     color: '#FFE39B', // Soft gold
     fontWeight: 'bold',
     lineHeight: 22,

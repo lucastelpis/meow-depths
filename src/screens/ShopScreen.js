@@ -831,8 +831,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   headerTitleText: {
-    fontFamily: 'Jersey10-Regular',
-    fontSize: 28,
+    ...theme.FONTS.screenTitle,
     color: '#FFF3DA',
     textAlign: 'center',
     textShadowColor: '#000',
@@ -853,10 +852,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   goldBadgeText: {
-    fontFamily: 'Jersey10-Regular',
-    fontSize: 20,
+    ...theme.FONTS.value,
     letterSpacing: 0.5,
-    fontWeight: 'normal',
     color: '#FFD700',
   },
 
@@ -869,9 +866,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.2)',
   },
   materialsLabel: {
-    fontFamily: 'Silkscreen-Regular',
-    fontSize: 12,
-    fontWeight: 'normal',
+    ...theme.FONTS.labelLg,
     color: '#707F94',
     textTransform: 'uppercase',
     letterSpacing: 1.2,
@@ -881,8 +876,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
   },
   emptyMaterials: {
-    fontFamily: 'Jersey10-Regular',
-    fontSize: 12,
+    ...theme.FONTS.proseSm,
     color: 'rgba(255, 255, 255, 0.25)',
     fontStyle: 'italic',
     paddingVertical: 4,
@@ -904,16 +898,13 @@ const styles = StyleSheet.create({
     marginRight: 6,
   },
   materialName: {
-    fontFamily: 'Jersey10-Regular',
-    fontSize: 12,
+    ...theme.FONTS.proseSm,
     color: 'rgba(255, 255, 255, 0.7)',
     marginRight: 8,
   },
   materialQty: {
-    fontFamily: 'Jersey10-Regular',
-    fontSize: 12,
+    ...theme.FONTS.proseSm,
     color: '#D4A754',
-    fontWeight: 'normal',
   },
 
   /* ── Tab Switcher ────────────────────────────────────────── */
@@ -932,14 +923,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
   },
   introTitle: {
-    fontFamily: 'Jersey10-Regular',
-    fontSize: 20,
-    fontWeight: 'normal',
+    ...theme.FONTS.title,
     color: '#F8FAFC',
   },
   introDesc: {
-    fontFamily: 'Jersey10-Regular',
-    fontSize: 20,
+    ...theme.FONTS.prose,
     color: '#707F94',
     marginTop: 3,
   },
@@ -956,18 +944,14 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   emptyArmoryTitle: {
-    fontFamily: 'Jersey10-Regular',
-    fontSize: 20,
+    ...theme.FONTS.title,
     color: '#D4A754',
-    fontWeight: 'normal',
     letterSpacing: 0.5,
     marginTop: 4,
   },
   emptyArmoryDesc: {
-    fontFamily: 'Silkscreen-Regular',
-    fontSize: 13,
+    ...theme.FONTS.chip,
     color: '#707F94',
-    fontWeight: 'normal',
     textAlign: 'center',
     lineHeight: 20,
     letterSpacing: 0,
@@ -1015,23 +999,18 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   shopRowName: {
-    fontFamily: 'Jersey10-Regular',
-    fontSize: 22,
+    ...theme.FONTS.title,
     color: '#F8FAFC',
-    fontWeight: 'normal',
   },
   shopOwnedText: {
-    fontFamily: 'Jersey10-Regular',
-    fontSize: 18,
+    ...theme.FONTS.prose,
     color: '#10B981',
     marginTop: 2,
   },
   shopRowDesc: {
-    fontFamily: 'Jersey10-Regular',
-    fontSize: 20,
+    ...theme.FONTS.prose,
     color: '#707F94',
     marginTop: 4,
-    lineHeight: 20,
     flexShrink: 1,
   },
   /* ── Quantity stepper + buy area ─────────────────────────── */
@@ -1109,8 +1088,7 @@ const styles = StyleSheet.create({
     color: 'rgba(255, 255, 255, 0.15)',
   },
   stepQty: {
-    fontFamily: 'Jersey10-Regular',
-    fontSize: 20,
+    ...theme.FONTS.value,
     color: '#FFF3DA',
     textAlign: 'center',
     flex: 1,
@@ -1202,9 +1180,7 @@ const styles = StyleSheet.create({
     marginTop: 18,
   },
   zoneHeader: {
-    fontFamily: 'Jersey10-Regular',
-    fontSize: 15,
-    fontWeight: 'normal',
+    ...theme.FONTS.labelLg, // section divider label — Silkscreen (uppercase belongs to Silkscreen, was uppercase Jersey)
     color: '#D4A754',
     marginBottom: 12,
     letterSpacing: 0.5,
@@ -1235,10 +1211,8 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   gearName: {
-    fontFamily: 'Jersey10-Regular',
-    fontSize: 22,
+    ...theme.FONTS.title,
     color: '#F8FAFC',
-    fontWeight: 'normal',
   },
   gearMetaRow: {
     flexDirection: 'row',
@@ -1255,18 +1229,14 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
   },
   gearTypeBadgeText: {
-    fontFamily: 'Silkscreen-Regular',
-    fontSize: 12,
-    fontWeight: 'normal',
+    ...theme.FONTS.chip,
     color: '#D4A754',
     letterSpacing: 0.5,
   },
   statPreview: {
-    fontFamily: 'Silkscreen-Regular',
-    fontSize: 13,
+    ...theme.FONTS.chip,
     letterSpacing: 0,
     color: '#10B981',
-    fontWeight: 'normal',
     marginTop: 4,
   },
 
@@ -1301,8 +1271,7 @@ const styles = StyleSheet.create({
     minHeight: 80,
   },
   lockedZoneText: {
-    fontFamily: 'Jersey10-Regular',
-    fontSize: 12,
+    ...theme.FONTS.proseSm,
     color: 'rgba(255, 255, 255, 0.25)',
     fontStyle: 'italic',
     textAlign: 'center',
@@ -1310,9 +1279,7 @@ const styles = StyleSheet.create({
 
   /* ── Forge Section ───────────────────────────────────────── */
   subSectionTitle: {
-    fontFamily: 'Jersey10-Regular',
-    fontWeight: 'normal',
-    fontSize: 13,
+    ...theme.FONTS.labelLg, // section label — Silkscreen (was uppercase Jersey)
     color: '#D4A754',
     letterSpacing: 1,
     textTransform: 'uppercase',
@@ -1352,9 +1319,7 @@ const styles = StyleSheet.create({
     borderRadius: 3,
   },
   vaultZoneLabel: {
-    fontFamily: 'Silkscreen-Regular',
-    fontSize: 10,
-    fontWeight: 'normal',
+    ...theme.FONTS.caption,
     letterSpacing: 0.5,
     textTransform: 'uppercase',
   },
@@ -1377,6 +1342,7 @@ const styles = StyleSheet.create({
     fontSize: 20,
     marginBottom: 4,
   },
+  // exception: tiny vault-box item label (8px); below caption floor, bumping would break the compact box
   vaultItemName: {
     fontFamily: 'Silkscreen-Regular',
     fontSize: 8,
@@ -1395,9 +1361,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.01)',
   },
   vaultItemQtyText: {
-    fontFamily: 'Jersey10-Regular',
-    fontSize: 11,
-    fontWeight: 'normal',
+    ...theme.FONTS.proseSm,
   },
   vaultItemQtyTextEmpty: {
     color: 'rgba(255,255,255,0.2)',
@@ -1426,14 +1390,12 @@ const styles = StyleSheet.create({
     fontSize: 26,
   },
   recipeMaterialName: {
-    fontFamily: 'Jersey10-Regular',
-    fontSize: 13,
+    ...theme.FONTS.proseSm,
     color: '#F8FAFC',
     textAlign: 'center',
   },
   recipeQtyLabel: {
-    fontFamily: 'Silkscreen-Regular',
-    fontSize: 9,
+    ...theme.FONTS.caption,
     textAlign: 'center',
   },
   recipeArrowCol: {
@@ -1446,6 +1408,7 @@ const styles = StyleSheet.create({
     color: '#D4A754',
     opacity: 0.5,
   },
+  // exception: tiny recipe-flow arrow label (7px); decorative, below any role
   recipeArrowText: {
     fontFamily: 'Silkscreen-Regular',
     fontSize: 7,
@@ -1483,14 +1446,12 @@ const styles = StyleSheet.create({
 
   /* ── Post-purchase equip modal (parchment) ─────────────────── */
   equipModalItemName: {
-    fontFamily: 'Jersey10-Regular',
-    fontSize: 24,
+    ...theme.FONTS.title,
     color: '#4A2E14',
     textAlign: 'center',
   },
   equipModalSub: {
-    fontFamily: 'Silkscreen-Regular',
-    fontSize: 9,
+    ...theme.FONTS.caption,
     letterSpacing: 0.5,
     color: '#7A5C30',
     textAlign: 'center',
@@ -1521,13 +1482,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   buyItemName: {
-    fontFamily: 'Jersey10-Regular',
-    fontSize: 18,
+    ...theme.FONTS.prose,
     color: '#4A2E14',
   },
   buyItemStats: {
-    fontFamily: 'Jersey10-Regular',
-    fontSize: 14,
+    ...theme.FONTS.proseSm,
     color: '#1D7044',
     marginTop: 2,
   },
@@ -1541,8 +1500,7 @@ const styles = StyleSheet.create({
     alignSelf: 'stretch',
   },
   buyPriceLabel: {
-    fontFamily: 'Silkscreen-Regular',
-    fontSize: 10,
+    ...theme.FONTS.caption,
     letterSpacing: 0.5,
     color: '#7A5C30',
   },
@@ -1552,8 +1510,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   buyPriceText: {
-    fontFamily: 'Jersey10-Regular',
-    fontSize: 20,
+    ...theme.FONTS.value,
     color: '#8E5A1D',
   },
 
@@ -1569,8 +1526,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
   },
   equipDeltaEmpty: {
-    fontFamily: 'Jersey10-Regular',
-    fontSize: 15,
+    ...theme.FONTS.proseSm,
     color: '#5A3D1E',
     textAlign: 'center',
   },
@@ -1581,14 +1537,12 @@ const styles = StyleSheet.create({
     paddingVertical: 3,
   },
   equipDeltaLabel: {
-    fontFamily: 'Silkscreen-Regular',
-    fontSize: 10,
+    ...theme.FONTS.caption,
     letterSpacing: 0.5,
     color: '#7A5C30',
   },
   equipDeltaValue: {
-    fontFamily: 'Jersey10-Regular',
-    fontSize: 18,
+    ...theme.FONTS.proseSm,
   },
   equipModalBtnRow: {
     flexDirection: 'row',
